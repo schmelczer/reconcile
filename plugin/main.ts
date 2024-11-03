@@ -9,7 +9,8 @@ import {
 	Setting,
 } from "obsidian";
 
-// Remember to rename these classes and interfaces!
+import * as plugin from "../backend/sync_wasm/pkg/sync_wasm.js";
+import * as wasmBin from "../backend/sync_wasm/pkg/sync_wasm_bg.wasm";
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -25,6 +26,8 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		console.info('Starting plugin "Sample Plugin"');
 		await this.loadSettings();
+
+		await plugin.default(Promise.resolve(wasmBin.default));
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon(
@@ -86,7 +89,7 @@ export default class MyPlugin extends Plugin {
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
 		this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-			console.log("click", evt);
+			console.log("click", evt, plugin.greet());
 		});
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
