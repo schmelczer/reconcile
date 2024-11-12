@@ -1,8 +1,8 @@
-use std::cmp::Ordering;
-
 use ropey::Rope;
 use serde::{Deserialize, Serialize};
 use similar::{Change, ChangeTag};
+use std::cmp::Ordering;
+use std::fmt::Display;
 
 use crate::errors::SyncLibError;
 
@@ -12,10 +12,36 @@ pub enum Operation {
         index: u64,
         text: String,
     },
+
     Delete {
         index: u64,
         deleted_character_count: u64,
     },
+}
+
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operation::Insert { index, text } => {
+                write!(f, "+\"{}\" at {}", text, index)
+            }
+            Operation::Delete {
+                index,
+                deleted_character_count,
+            } => {
+                write!(f, "-{} at {}", deleted_character_count, index)
+            }
+        }
+    }
+}
+
+impl Default for Operation {
+    fn default() -> Self {
+        Operation::Insert {
+            index: 0,
+            text: "".to_string(),
+        }
+    }
 }
 
 impl Operation {
@@ -78,10 +104,7 @@ impl Operation {
     }
 
     pub fn with_shifted_index(&self, offset: i64) -> Result<Self, SyncLibError> {
-        let new_index: i64 = self.index() as i64 + offset;
-        let new_index: u64 = new_index
-            .try_into()
-            .map_err(|err| SyncLibError::OperationShiftingError(format!("{}", err)))?;
+        let new_index = self.index().saturating_add_signed(offset);
         Ok(self.with_index(new_index))
     }
 }
