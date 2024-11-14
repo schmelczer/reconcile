@@ -1,6 +1,5 @@
 use ropey::Rope;
 use serde::{Deserialize, Serialize};
-use similar::{Change, ChangeTag};
 use std::cmp::Ordering;
 use std::fmt::Display;
 
@@ -36,7 +35,7 @@ impl Display for Operation {
 }
 
 impl Operation {
-    pub fn create(tag: ChangeTag, index: i64, text: &str) -> Result<Self, SyncLibError> {
+    pub fn create_insert(index: i64, text: &str) -> Result<Option<Self>, SyncLibError> {
         if index < 0 {
             return Err(SyncLibError::NegativeOperationIndexError(format!(
                 "Index {} is negative",
@@ -44,29 +43,17 @@ impl Operation {
             )));
         }
 
-        Ok(match tag {
-            ChangeTag::Insert => Operation::Insert {
-                index,
-                text: text.to_string(),
-            },
-            ChangeTag::Delete => Operation::Delete {
-                index,
-                deleted_character_count: text.chars().count() as i64,
-            },
-            _ => {
-                return Err(SyncLibError::OperationConversionError(format!(
-                    "Cannot convert editing operation because {:?}",
-                    tag
-                )))
-            }
-        })
+        if text.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(Operation::Insert {
+            index,
+            text: text.to_string(),
+        }))
     }
 
-    pub fn create_insert(index: i64, text: &str) -> Result<Self, SyncLibError> {
-        Self::create(ChangeTag::Insert, index, text)
-    }
-
-    pub fn create_delete(index: i64, length: i64) -> Result<Self, SyncLibError> {
+    pub fn create_delete(index: i64, length: i64) -> Result<Option<Self>, SyncLibError> {
         if index < 0 {
             return Err(SyncLibError::NegativeOperationIndexError(format!(
                 "Index {} is negative",
@@ -81,16 +68,20 @@ impl Operation {
             )));
         }
 
-        Ok(Operation::Delete {
+        if length == 0 {
+            return Ok(None);
+        }
+
+        Ok(Some(Operation::Delete {
             index,
             deleted_character_count: length,
-        })
+        }))
     }
 
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
         let index: usize = self.start_index() as usize;
         match self {
-            Operation::Insert { text, .. } => rope_text.try_insert(index, &text).map_err(|err| {
+            Operation::Insert { text, .. } => rope_text.try_insert(index, text).map_err(|err| {
                 SyncLibError::OperationApplicationError(format!("Failed to insert text: {}", err))
             }),
             Operation::Delete {
@@ -133,6 +124,10 @@ impl Operation {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Returns the range of indices of characters that the operation affects, inclusive.
     pub fn range(&self) -> std::ops::RangeInclusive<i64> {
         self.start_index()..=self.end_index()
@@ -144,6 +139,7 @@ impl Operation {
                 index,
                 text: text.clone(),
             },
+
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -177,7 +173,7 @@ impl Ord for Operation {
 
 impl PartialOrd for Operation {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
+        Some(self.cmp(other))
     }
 }
 
@@ -187,8 +183,6 @@ mod tests {
 
     #[test]
     fn test_creation_errors() {
-        insta::assert_debug_snapshot!(Operation::create(ChangeTag::Insert, -1, "hi"));
-        insta::assert_debug_snapshot!(Operation::create(ChangeTag::Equal, 0, "hi"));
         insta::assert_debug_snapshot!(Operation::create_insert(-1, "hi"));
         insta::assert_debug_snapshot!(Operation::create_delete(0, -1));
         insta::assert_debug_snapshot!(Operation::create_delete(-1, -1));
@@ -212,7 +206,7 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() -> Result<(), SyncLibError> {
         let mut rope = Rope::from_str("hello world");
-        let operation = Operation::create(ChangeTag::Delete, 6, "world")?;
+        let operation = Operation::create_delete(5, 6)?.unwrap();
 
         operation.apply(&mut rope)?;
 
@@ -239,7 +233,7 @@ mod tests {
     #[test]
     fn test_apply_insert_with_create() -> Result<(), SyncLibError> {
         let mut rope = Rope::from_str("hello");
-        let operation = Operation::create(ChangeTag::Insert, 5, " my friend")?;
+        let operation = Operation::create_insert(5, " my friend")?.unwrap();
 
         operation.apply(&mut rope)?;
 

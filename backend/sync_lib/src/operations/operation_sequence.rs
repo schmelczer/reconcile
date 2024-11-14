@@ -1,11 +1,9 @@
-use super::{operation, Operation};
+use super::Operation;
 use crate::errors::SyncLibError;
-use log::info;
 use ropey::Rope;
-use serde::{de, Deserialize, Serialize};
-use similar::utils::diff_graphemes;
+use serde::{Deserialize, Serialize};
+use similar::Algorithm;
 use similar::{utils::TextDiffRemapper, ChangeTag, TextDiff};
-use similar::{Algorithm, DiffableStrRef};
 
 #[derive(Debug, Clone, Default)]
 struct MergeContext {
@@ -43,7 +41,7 @@ impl OperationSequence {
         if diff_ratio > diff_ratio_threshold {
             return Err(SyncLibError::DiffTooLarge {
                 diff_ratio,
-                diff_ratio_limit: diff_ratio_threshold as f32,
+                diff_ratio_limit: diff_ratio_threshold,
             });
         }
 
@@ -56,16 +54,18 @@ impl OperationSequence {
             .map(|(tag, text)| match tag {
                 ChangeTag::Equal => {
                     index += text.chars().count();
-                    None
+                    Ok(None)
                 }
                 ChangeTag::Insert => {
-                    let result = Some(Operation::create(tag, index as i64, text));
+                    let result = Operation::create_insert(index as i64, text);
                     index += text.chars().count();
                     result
                 }
-                ChangeTag::Delete => Some(Operation::create(tag, index as i64, text)),
+                ChangeTag::Delete => {
+                    Operation::create_delete(index as i64, text.chars().count() as i64)
+                }
             })
-            .flat_map(Option::into_iter)
+            .flat_map(|result| result.transpose().into_iter())
             .collect::<Result<Vec<_>, SyncLibError>>()
             .map(Self::new)
     }
@@ -93,7 +93,7 @@ impl OperationSequence {
         loop {
             let left_op = self.operations.get(left_index);
             let right_op = other.operations.get(right_index);
-            println!("");
+            println!();
             println!("{:#?} <> {:#?}", left_op.cloned(), right_op.cloned());
 
             println!("{:?} <> {:?}", left_delete_context, right_delete_context);
@@ -161,12 +161,12 @@ impl OperationSequence {
 
                 if last_delete
                     .range()
-                    .contains(&(&operation.start_index() + affecting_context.shift))
+                    .contains(&(operation.start_index() + affecting_context.shift))
                 {
-                    affecting_context.last_delete = Some(Operation::create_delete(
+                    affecting_context.last_delete = Operation::create_delete(
                         last_delete.start_index() + operation.len(),
                         0.max(last_delete.len() - operation.len()),
-                    )?);
+                    )?;
 
                     Some(operation.with_index(last_delete.start_index()))
                 } else {
@@ -188,15 +188,15 @@ impl OperationSequence {
                 {
                     affecting_context.shift -=
                         shifted_operation.start_index() - last_delete.start_index();
-                    affecting_context.last_delete = Some(Operation::create_delete(
-                        shifted_operation.end_index() + 1,
-                        last_delete.end_index() - shifted_operation.end_index(),
-                    )?);
+                    affecting_context.last_delete = Operation::create_delete(
+                        shifted_operation.start_index(),
+                        last_delete.len() - shifted_operation.len(),
+                    )?;
 
                     None
                 } else if last_delete
                     .range()
-                    .contains(&shifted_operation.start_index())
+                    .contains(&(operation.start_index() + affecting_context.shift))
                 {
                     let overlap = last_delete.end_index()
                         - (operation.start_index() + affecting_context.shift)
@@ -204,10 +204,10 @@ impl OperationSequence {
                     affecting_context.last_delete = None;
                     affecting_context.shift -= last_delete.len() - overlap;
 
-                    let operation = Some(Operation::create_delete(
+                    let operation = Operation::create_delete(
                         last_delete.start_index(),
                         operation.len() - overlap,
-                    )?);
+                    )?;
                     Self::replace_delete_in_produced_context(produced_context, operation.clone());
                     operation
                 } else {
@@ -246,7 +246,6 @@ impl OperationSequence {
 
 #[cfg(test)]
 mod tests {
-    use crate::operations::test;
 
     use super::*;
 
@@ -296,6 +295,8 @@ mod tests {
 
     #[test]
     fn test_merges() {
+        test_merge_both_ways("a b c d e", "a e", "a c e", "a e");
+
         test_merge_both_ways(
             "hello world",
             "hi, world",
