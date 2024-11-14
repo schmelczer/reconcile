@@ -2,23 +2,20 @@ use super::{operation, Operation};
 use crate::errors::SyncLibError;
 use log::info;
 use ropey::Rope;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 use similar::utils::diff_graphemes;
 use similar::{utils::TextDiffRemapper, ChangeTag, TextDiff};
 use similar::{Algorithm, DiffableStrRef};
 
-#[derive(Debug)]
-struct OperationWithTransformContext {
-    operation: Option<Operation>,
-    delete_state: Option<DeleteMergeState>,
-    shift_change: i64,
+#[derive(Debug, Clone, Default)]
+struct MergeContext {
+    last_delete: Option<Operation>,
+    shift: i64,
 }
 
-#[derive(Debug, Clone)]
-struct DeleteMergeState {
-    start: u64,
-    length: u64,
-    is_same_side: bool,
+enum Source {
+    Left,
+    Right,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -53,8 +50,7 @@ impl OperationSequence {
         let remapper = TextDiffRemapper::from_text_diff(&diff, left, right);
 
         let mut index = 0;
-        let operations = diff
-            .ops()
+        diff.ops()
             .iter()
             .flat_map(move |x| remapper.iter_slices(x))
             .map(|(tag, text)| match tag {
@@ -63,16 +59,15 @@ impl OperationSequence {
                     None
                 }
                 ChangeTag::Insert => {
-                    let result = Some(Operation::new(tag, index as u64, text));
+                    let result = Some(Operation::create(tag, index as i64, text));
                     index += text.chars().count();
                     result
                 }
-                ChangeTag::Delete => Some(Operation::new(tag, index as u64, text)),
+                ChangeTag::Delete => Some(Operation::create(tag, index as i64, text)),
             })
             .flat_map(Option::into_iter)
-            .collect::<Vec<_>>();
-
-        Ok(Self::new(operations))
+            .collect::<Result<Vec<_>, SyncLibError>>()
+            .map(Self::new)
     }
 
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
@@ -89,11 +84,9 @@ impl OperationSequence {
         let mut merged_operations =
             Vec::with_capacity(self.operations.len() + other.operations.len());
 
-        let mut left_delete_state: Option<DeleteMergeState> = None;
-        let mut right_delete_state: Option<DeleteMergeState> = None;
+        let mut left_delete_context = MergeContext::default();
+        let mut right_delete_context = MergeContext::default();
 
-        let mut left_cursor_offset: i64 = 0;
-        let mut right_cursor_offset: i64 = 0;
         let mut left_index: usize = 0;
         let mut right_index: usize = 0;
 
@@ -101,185 +94,153 @@ impl OperationSequence {
             let left_op = self.operations.get(left_index);
             let right_op = other.operations.get(right_index);
             println!("");
-            println!(
-                "{} <> {}",
-                left_op.cloned().unwrap_or_default(),
-                right_op.cloned().unwrap_or_default()
-            );
-            println!(
-                "cursor_offset: {} <> {}",
-                left_cursor_offset, right_cursor_offset
-            );
-            println!("{:?} <> {:?}", left_delete_state, right_delete_state);
+            println!("{:#?} <> {:#?}", left_op.cloned(), right_op.cloned());
+
+            println!("{:?} <> {:?}", left_delete_context, right_delete_context);
 
             match (left_op, right_op, left_op.cmp(&right_op)) {
                 (Some(left_op), None, _)
                 | (Some(left_op), Some(_), std::cmp::Ordering::Less | std::cmp::Ordering::Equal) => {
                     println!("Left op: {:?}", left_op);
 
-                    let context = Self::merge_operation_with_state(
+                    if let Some(op) = Self::merge_operations_with_context(
                         left_op,
-                        right_delete_state.clone(),
-                        left_cursor_offset as i64,
-                    )?;
-                    println!("Context: {:?}", context);
-                    if let Some(op) = context.operation {
+                        &mut right_delete_context,
+                        &mut left_delete_context,
+                    )? {
                         merged_operations.push(op);
                     }
 
-                    if let Some(DeleteMergeState {
-                        is_same_side: false,
-                        ..
-                    }) = context.delete_state
-                    {
-                        left_delete_state = context.delete_state;
-                    } else {
-                        right_delete_state = context.delete_state;
-                    }
-
-                    right_cursor_offset += context.shift_change;
                     left_index += 1;
                 }
                 (None, Some(right_op), _)
                 | (Some(_), Some(right_op), std::cmp::Ordering::Greater) => {
                     println!("Right op: {:?}", right_op);
-                    let context = Self::merge_operation_with_state(
+
+                    if let Some(op) = Self::merge_operations_with_context(
                         right_op,
-                        left_delete_state.clone(),
-                        right_cursor_offset as i64,
-                    )?;
-                    println!("Context: {:?}", context);
-                    if let Some(op) = context.operation {
+                        &mut left_delete_context,
+                        &mut right_delete_context,
+                    )? {
                         merged_operations.push(op);
                     }
-                    if let Some(DeleteMergeState {
-                        is_same_side: false,
-                        ..
-                    }) = context.delete_state
-                    {
-                        right_delete_state = context.delete_state;
-                    } else {
-                        left_delete_state = context.delete_state;
-                    }
 
-                    left_cursor_offset += context.shift_change;
                     right_index += 1;
                 }
                 (None, None, _) => {
                     break;
                 }
             };
+
+            println!("last {:?}", merged_operations.last().unwrap());
+            println!("{:?} <> {:?}", left_delete_context, right_delete_context);
         }
 
         Ok(Self::new(merged_operations))
     }
 
-    fn merge_operation_with_state(
+    fn merge_operations_with_context(
         operation: &Operation,
-        state: Option<DeleteMergeState>,
-        shift: i64,
-    ) -> Result<OperationWithTransformContext, SyncLibError> {
-        Ok(match (operation, state) {
-            (Operation::Insert { text, .. }, None) => OperationWithTransformContext {
-                operation: Some(operation.with_shifted_index(shift)?),
-                delete_state: None,
-                shift_change: text.chars().count() as i64,
-            },
+        affecting_context: &mut MergeContext,
+        produced_context: &mut MergeContext,
+    ) -> Result<Option<Operation>, SyncLibError> {
+        Ok(match (operation, affecting_context.last_delete.clone()) {
+            (Operation::Insert { .. }, None) => {
+                produced_context.shift += operation.len();
+                Some(operation.with_shifted_index(affecting_context.shift))
+            }
 
-            (
-                Operation::Delete {
-                    index,
-                    deleted_character_count,
-                },
-                None,
-            ) => OperationWithTransformContext {
-                operation: Some(operation.with_shifted_index(shift)?),
-                delete_state: Some(DeleteMergeState {
-                    start: (*index as i64 + shift).try_into().map_err(|_| {
-                        SyncLibError::OperationShiftingError("Failed to shift index".to_string())
-                    })?,
-                    length: *deleted_character_count,
-                    is_same_side: false,
-                }),
-                shift_change: 0,
-            },
+            (Operation::Delete { .. }, None) => {
+                let operation = Some(operation.with_shifted_index(affecting_context.shift));
+                Self::replace_delete_in_produced_context(produced_context, operation.clone());
+                operation
+            }
 
-            (Operation::Insert { index, text }, Some(state)) => {
-                if (state.start..state.start + state.length).contains(index) {
-                    let len = text.chars().count() as u64;
-                    OperationWithTransformContext {
-                        operation: Some(operation.with_index(state.start)),
-                        delete_state: Some(DeleteMergeState {
-                            start: state.start + len,
-                            length: state.length.saturating_sub(len),
-                            is_same_side: true,
-                        }),
-                        shift_change: len as i64,
-                    }
+            (Operation::Insert { .. }, Some(last_delete)) => {
+                produced_context.shift += operation.len();
+
+                if last_delete
+                    .range()
+                    .contains(&(&operation.start_index() + affecting_context.shift))
+                {
+                    affecting_context.last_delete = Some(Operation::create_delete(
+                        last_delete.start_index() + operation.len(),
+                        0.max(last_delete.len() - operation.len()),
+                    )?);
+
+                    Some(operation.with_index(last_delete.start_index()))
                 } else {
-                    let len = text.chars().count() as i64;
-                    OperationWithTransformContext {
-                        operation: Some(operation.with_shifted_index(shift - state.length as i64)?),
-                        delete_state: None,
-                        shift_change: len - (state.length as i64),
-                    }
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        affecting_context,
+                        last_delete,
+                    );
+                    Some(operation.with_shifted_index(affecting_context.shift))
                 }
             }
 
-            (
-                Operation::Delete {
-                    index,
-                    deleted_character_count,
-                },
-                Some(state),
-            ) => {
-                let translated_index = *index as i64 + shift;
-                if (state.start as i64..state.start as i64 + state.length as i64)
-                    .contains(&translated_index)
-                    && (state.start as i64..state.start as i64 + state.length as i64)
-                        .contains(&(translated_index as i64 + *deleted_character_count as i64 - 1))
+            (Operation::Delete { .. }, Some(last_delete)) => {
+                let shifted_operation = operation.with_shifted_index(affecting_context.shift);
+
+                if last_delete
+                    .range()
+                    .contains(&shifted_operation.start_index())
+                    && last_delete.range().contains(&shifted_operation.end_index())
                 {
-                    OperationWithTransformContext {
-                        operation: None,
-                        delete_state: Some(state),
-                        shift_change: 0,
-                    }
-                } else if (state.start as i64..state.start as i64 + state.length as i64)
-                    .contains(&translated_index)
+                    affecting_context.shift -=
+                        shifted_operation.start_index() - last_delete.start_index();
+                    affecting_context.last_delete = Some(Operation::create_delete(
+                        shifted_operation.end_index() + 1,
+                        last_delete.end_index() - shifted_operation.end_index(),
+                    )?);
+
+                    None
+                } else if last_delete
+                    .range()
+                    .contains(&shifted_operation.start_index())
                 {
-                    let overlap =
-                        (state.start + state.length).saturating_add_signed(translated_index);
-                    OperationWithTransformContext {
-                        operation: Some(Operation::Delete {
-                            index: state.start + state.length,
-                            deleted_character_count: deleted_character_count - overlap,
-                        }),
-                        delete_state: Some(DeleteMergeState {
-                            start: state.start + state.length,
-                            length: deleted_character_count - overlap,
-                            is_same_side: false,
-                        }),
-                        shift_change: -(overlap as i64),
-                    }
+                    let overlap = last_delete.end_index()
+                        - (operation.start_index() + affecting_context.shift)
+                        + 1;
+                    affecting_context.last_delete = None;
+                    affecting_context.shift -= last_delete.len() - overlap;
+
+                    let operation = Some(Operation::create_delete(
+                        last_delete.start_index(),
+                        operation.len() - overlap,
+                    )?);
+                    Self::replace_delete_in_produced_context(produced_context, operation.clone());
+                    operation
                 } else {
-                    OperationWithTransformContext {
-                        operation: Some(operation.with_shifted_index(shift - state.length as i64)?),
-                        delete_state: Some(DeleteMergeState {
-                            start: ((*index as i64 + shift) - state.length as i64)
-                                .try_into()
-                                .map_err(|_| {
-                                    SyncLibError::OperationShiftingError(
-                                        "Failed to shift index".to_string(),
-                                    )
-                                })?,
-                            length: *deleted_character_count,
-                            is_same_side: false,
-                        }),
-                        shift_change: -(state.length as i64),
-                    }
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        affecting_context,
+                        last_delete,
+                    );
+
+                    let operation = Some(operation.with_shifted_index(affecting_context.shift));
+                    Self::replace_delete_in_produced_context(produced_context, operation.clone());
+                    operation
                 }
             }
         })
+    }
+
+    fn replace_delete_in_produced_context(
+        produced_context: &mut MergeContext,
+        delete: Option<Operation>,
+    ) {
+        if let Some(produced_last_delete) = produced_context.last_delete.take() {
+            produced_context.shift -= produced_last_delete.len();
+        }
+
+        produced_context.last_delete = delete;
+    }
+
+    fn pick_up_dangling_delete_from_affecting_context(
+        affecting_context: &mut MergeContext,
+        last_delete: Operation,
+    ) {
+        affecting_context.shift -= last_delete.len();
+        affecting_context.last_delete = None;
     }
 }
 
@@ -335,16 +296,42 @@ mod tests {
 
     #[test]
     fn test_merges() {
-        // test_merge(
-        //     "hello world",
-        //     "hi, world",
-        //     "hello my friend!",
-        //     "hi, my friend!",
-        // );
+        test_merge_both_ways(
+            "hello world",
+            "hi, world",
+            "hello my friend!",
+            "hi, my friend!",
+        );
 
-        // test_merge("hello world", "world !", "hi hello world", "hi world !");
+        test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
 
-        test_merge("a b", "c d", "a b c d", "c d c d")
+        test_merge_both_ways("a b", "c d", "a b c d", "c d c d");
+
+        test_merge_both_ways(
+            "both delete the same word",
+            "both the same word",
+            "both the same word",
+            "both the same word",
+        );
+
+        test_merge_both_ways(
+            "both delete the same word but one a bit more",
+            "both the same word",
+            "both same word",
+            "both same word",
+        );
+
+        test_merge_both_ways(
+            "long text with one big delete and many small",
+            "long small",
+            "long with big and small",
+            "long small",
+        );
+    }
+
+    fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
+        test_merge(original, edit_1, edit_2, expected);
+        test_merge(original, edit_2, edit_1, expected);
     }
 
     fn test_merge(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
@@ -354,13 +341,16 @@ mod tests {
             OperationSequence::try_from_string_diff(&original.to_string(), edit_1, 1.0).unwrap();
         let operations_2 =
             OperationSequence::try_from_string_diff(&original.to_string(), edit_2, 1.0).unwrap();
-        let merged = operations_1.merge(&operations_2).unwrap();
         println!("Operations 1: {:?}", operations_1);
         println!("Operations 2: {:?}", operations_2);
+
+        assert_eq!(operations_1.apply(&mut original.clone()).unwrap(), edit_1);
+        assert_eq!(operations_2.apply(&mut original.clone()).unwrap(), edit_2);
+
+        let merged = operations_1.merge(&operations_2).unwrap();
         println!("Merged: {:?}", merged);
 
         let result = merged.apply(&mut original).unwrap();
-
         assert_eq!(result, expected);
     }
 }
