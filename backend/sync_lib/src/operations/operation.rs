@@ -180,6 +180,7 @@ impl PartialOrd for Operation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn test_creation_errors() {

@@ -16,15 +16,18 @@ enum Source {
     Right,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct OperationSequence {
     operations: Vec<Operation>,
 }
 
+pub fn tokenize(text: &str) -> Vec<&str> {
+    text.split_inclusive(|c: char| c.is_whitespace()).collect()
+}
+
 impl OperationSequence {
     pub fn new(mut operations: Vec<Operation>) -> Self {
-        operations.sort();
-
+        // operations.sort();
         Self { operations }
     }
 
@@ -33,9 +36,12 @@ impl OperationSequence {
         right: &str,
         diff_ratio_threshold: f32,
     ) -> Result<Self, SyncLibError> {
+        let left_tokens = tokenize(left);
+        let right_tokens = tokenize(right);
+
         let diff = TextDiff::configure()
-            .algorithm(Algorithm::Myers)
-            .diff_words(left, right);
+            .algorithm(Algorithm::Patience)
+            .diff_slices(&left_tokens, &right_tokens);
 
         let diff_ratio = 1.0 - diff.ratio();
         if diff_ratio > diff_ratio_threshold {
@@ -72,9 +78,7 @@ impl OperationSequence {
 
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
         for operation in &self.operations {
-            println!("Applying operation: {:?}", operation);
             operation.apply(rope_text)?;
-            println!("Text after operation: {}", rope_text);
         }
 
         Ok(rope_text)
@@ -157,19 +161,22 @@ impl OperationSequence {
             }
 
             (Operation::Insert { .. }, Some(last_delete)) => {
-                produced_context.shift += operation.len();
-
                 if last_delete
                     .range()
                     .contains(&(operation.start_index() + affecting_context.shift))
                 {
+                    let moved_operation = operation.with_index(last_delete.start_index());
+                    produced_context.shift += operation.len();
+
                     affecting_context.last_delete = Operation::create_delete(
-                        last_delete.start_index() + operation.len(),
-                        0.max(last_delete.len() - operation.len()),
+                        moved_operation.end_index() + 1,
+                        last_delete.len(),
                     )?;
 
-                    Some(operation.with_index(last_delete.start_index()))
+                    Some(moved_operation)
                 } else {
+                    produced_context.shift += operation.len();
+
                     Self::pick_up_dangling_delete_from_affecting_context(
                         affecting_context,
                         last_delete,
@@ -186,11 +193,9 @@ impl OperationSequence {
                     .contains(&shifted_operation.start_index())
                     && last_delete.range().contains(&shifted_operation.end_index())
                 {
-                    affecting_context.shift -=
-                        shifted_operation.start_index() - last_delete.start_index();
                     affecting_context.last_delete = Operation::create_delete(
-                        shifted_operation.start_index(),
-                        last_delete.len() - shifted_operation.len(),
+                        last_delete.start_index(),
+                        last_delete.len() - operation.len(), // it's fully contained so it must be >= 0
                     )?;
 
                     None
@@ -209,6 +214,7 @@ impl OperationSequence {
                         operation.len() - overlap,
                     )?;
                     Self::replace_delete_in_produced_context(produced_context, operation.clone());
+
                     operation
                 } else {
                     Self::pick_up_dangling_delete_from_affecting_context(
@@ -246,6 +252,10 @@ impl OperationSequence {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+    use pretty_assertions::{assert_eq, assert_ne};
+    use similar::DiffableStr;
+    use std::{fs, path::Path};
 
     use super::*;
 
@@ -295,7 +305,57 @@ mod tests {
 
     #[test]
     fn test_merges() {
+        // Both replaced one token but different
+        test_merge_both_ways(
+            "original_1 original_2 original_3",
+            "original_1 edit_1 original_3",
+            "original_1 original_2 edit_2",
+            "original_1 edit_1 edit_2",
+        );
+
+        // Both replaced the same one token
+        test_merge_both_ways(
+            "original_1 original_2 original_3",
+            "original_1 edit_1 original_3",
+            "original_1 edit_1 original_3",
+            "original_1 edit_1 edit_1 original_3",
+        );
+
+        // One deleted a large range, the other deleted subranges and inserted as well
+        test_merge_both_ways(
+            "original_1 original_2 original_3 original_4 original_5",
+            "original_1 original_5",
+            "original_1 edit_1 original_3 edit_2 original_5",
+            "original_1 edit_1 edit_2 original_5",
+        );
+
+        // One deleted a large range, the other inserted and deleted a partially overlapping range
+        test_merge_both_ways(
+            "original_1 original_2 original_3 original_4 original_5",
+            "original_1 original_5",
+            "original_1 edit_1 original_3 edit_2",
+            "original_1 edit_1 edit_2",
+        );
+
         test_merge_both_ways("a b c d e", "a e", "a c e", "a e");
+
+        test_merge_both_ways("a 0 1 2 b", "a b", "a E 1 F b", "a E F b");
+
+        test_merge_both_ways(
+            "a this one delete b",
+            "a b",
+            "a my one change b",
+            "a my change b",
+        );
+
+        test_merge_both_ways(
+            "this stays, this is one big delete, don't touch this",
+            "this stays, , don't touch this",
+            "this stays, my one change, don't touch this",
+            "this stays, my change, don't touch this",
+        );
+
+        test_merge_both_ways("1 2 3 4 5 6", "1 6", "1 2 4 ", "1 ");
 
         test_merge_both_ways(
             "hello world",
@@ -306,7 +366,7 @@ mod tests {
 
         test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
 
-        test_merge_both_ways("a b", "c d", "a b c d", "c d c d");
+        test_merge_both_ways("a b", "c d", "a b c d", "c b c d");
 
         test_merge_both_ways(
             "both delete the same word",
@@ -330,28 +390,55 @@ mod tests {
         );
     }
 
-    fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
-        test_merge(original, edit_1, edit_2, expected);
-        test_merge(original, edit_2, edit_1, expected);
+    #[test]
+
+    fn test_merge_files_without_panics() {
+        let files = vec![
+            "pride_and_prejudice.txt",
+            "romeo_and_juliet.txt",
+            "room_with_a_view.txt",
+        ];
+
+        let root = Path::new("test/resources/");
+        println!("{:?}", root.canonicalize().unwrap());
+        let contents = files
+            .into_iter()
+            .map(|name| fs::read_to_string(root.join(name)).unwrap())
+            .map(|text| text.slice(0..10000).to_string())
+            .collect::<Vec<_>>();
+
+        contents
+            .iter()
+            .permutations(3)
+            .unique()
+            .for_each(|permutations| {
+                test_merge(permutations[0], permutations[1], permutations[2]);
+            });
     }
 
-    fn test_merge(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
+    fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
+        assert_eq!(test_merge(original, edit_1, edit_2), expected);
+        assert_eq!(test_merge(original, edit_2, edit_1), expected);
+    }
+
+    fn test_merge(original: &str, edit_1: &str, edit_2: &str) -> String {
+        // println!("Original: {}", original);
         let mut original = Rope::from_str(original);
 
         let operations_1 =
             OperationSequence::try_from_string_diff(&original.to_string(), edit_1, 1.0).unwrap();
         let operations_2 =
             OperationSequence::try_from_string_diff(&original.to_string(), edit_2, 1.0).unwrap();
-        println!("Operations 1: {:?}", operations_1);
-        println!("Operations 2: {:?}", operations_2);
+        // println!("Operations 1: {:?}", operations_1);
+        // println!("Operations 2: {:?}", operations_2);
 
         assert_eq!(operations_1.apply(&mut original.clone()).unwrap(), edit_1);
         assert_eq!(operations_2.apply(&mut original.clone()).unwrap(), edit_2);
 
         let merged = operations_1.merge(&operations_2).unwrap();
-        println!("Merged: {:?}", merged);
+        // println!("Merged: {:?}", merged);
 
         let result = merged.apply(&mut original).unwrap();
-        assert_eq!(result, expected);
+        result.to_string()
     }
 }
