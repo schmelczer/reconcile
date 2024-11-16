@@ -5,6 +5,7 @@ use std::fmt::Display;
 
 use crate::errors::SyncLibError;
 
+/// Represents a change that can be applied to a text document.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Operation {
     Insert {
@@ -36,12 +37,7 @@ impl Display for Operation {
 
 impl Operation {
     pub fn create_insert(index: i64, text: &str) -> Result<Option<Self>, SyncLibError> {
-        if index < 0 {
-            return Err(SyncLibError::NegativeOperationIndexError(format!(
-                "Index {} is negative",
-                index
-            )));
-        }
+        Self::validate_index(index)?;
 
         if text.is_empty() {
             return Ok(None);
@@ -54,12 +50,7 @@ impl Operation {
     }
 
     pub fn create_delete(index: i64, length: i64) -> Result<Option<Self>, SyncLibError> {
-        if index < 0 {
-            return Err(SyncLibError::NegativeOperationIndexError(format!(
-                "Index {} is negative",
-                index
-            )));
-        }
+        Self::validate_index(index)?;
 
         if length < 0 {
             return Err(SyncLibError::NegativeOperationIndexError(format!(
@@ -124,6 +115,7 @@ impl Operation {
         }
     }
 
+    /// Returns true if applying operation wouldn't change the text.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -133,8 +125,10 @@ impl Operation {
         self.start_index()..=self.end_index()
     }
 
-    pub fn with_index(&self, index: i64) -> Self {
-        match self {
+    pub fn with_index(&self, index: i64) -> Result<Self, SyncLibError> {
+        Self::validate_index(index)?;
+
+        Ok(match self {
             Operation::Insert { text, .. } => Operation::Insert {
                 index,
                 text: text.clone(),
@@ -147,12 +141,22 @@ impl Operation {
                 index,
                 deleted_character_count: *deleted_character_count,
             },
-        }
+        })
     }
 
-    pub fn with_shifted_index(&self, offset: i64) -> Self {
-        let new_index = 0.max(self.start_index() + offset);
-        self.with_index(new_index)
+    pub fn with_shifted_index(&self, offset: i64) -> Result<Self, SyncLibError> {
+        self.with_index(self.start_index() + offset)
+    }
+
+    fn validate_index(index: i64) -> Result<(), SyncLibError> {
+        if index < 0 {
+            return Err(SyncLibError::NegativeOperationIndexError(format!(
+                "Index {} is negative",
+                index
+            )));
+        }
+
+        Ok(())
     }
 }
 
@@ -180,13 +184,21 @@ impl PartialOrd for Operation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_creation_errors() {
         insta::assert_debug_snapshot!(Operation::create_insert(-1, "hi"));
         insta::assert_debug_snapshot!(Operation::create_delete(0, -1));
         insta::assert_debug_snapshot!(Operation::create_delete(-1, -1));
+        insta::assert_debug_snapshot!(Operation::create_insert(0, "hi")
+            .unwrap()
+            .unwrap()
+            .with_index(-1));
+        insta::assert_debug_snapshot!(Operation::create_insert(1, "hi")
+            .unwrap()
+            .unwrap()
+            .with_shifted_index(-2));
     }
 
     #[test]

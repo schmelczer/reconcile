@@ -7,31 +7,19 @@ OperationSequence {
     operations: [
         Delete {
             index: 0,
-            deleted_character_count: 5,
+            deleted_character_count: 13,
         },
         Insert {
             index: 0,
-            text: "Hello,",
+            text: "Hello, my friend! ",
         },
         Delete {
-            index: 7,
-            deleted_character_count: 5,
+            index: 26,
+            deleted_character_count: 10,
         },
         Insert {
-            index: 7,
-            text: "my friend",
-        },
-        Insert {
-            index: 29,
-            text: " doing",
-        },
-        Delete {
-            index: 36,
-            deleted_character_count: 6,
-        },
-        Insert {
-            index: 36,
-            text: " Albert",
+            index: 26,
+            text: "you doing? Albert",
         },
     ],
 }
