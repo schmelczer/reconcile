@@ -1,0 +1,10 @@
+---
+source: sync_lib/src/operations/operation.rs
+expression: "Operation::create_insert(1, \"hi\").unwrap().unwrap().with_shifted_index(-2)"
+snapshot_kind: text
+---
+Err(
+    NegativeOperationIndexError(
+        "Index -1 is negative",
+    ),
+)

@@ -1,0 +1,8 @@
+---
+source: sync_lib/src/operations/operation_sequence.rs
+expression: operations
+snapshot_kind: text
+---
+OperationSequence {
+    operations: [],
+}

@@ -1,0 +1,10 @@
+---
+source: sync_lib/src/operations/operation.rs
+expression: "Operation::create_delete(0, -1)"
+snapshot_kind: text
+---
+Err(
+    NegativeOperationIndexError(
+        "Length -1 is negative",
+    ),
+)

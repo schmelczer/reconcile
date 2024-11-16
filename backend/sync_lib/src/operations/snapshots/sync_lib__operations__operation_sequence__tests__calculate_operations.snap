@@ -1,0 +1,37 @@
+---
+source: sync_lib/src/operations/operation_sequence.rs
+expression: operations
+snapshot_kind: text
+---
+OperationSequence {
+    operations: [
+        Delete {
+            index: 0,
+            deleted_character_count: 5,
+        },
+        Insert {
+            index: 0,
+            text: "Hello,",
+        },
+        Delete {
+            index: 7,
+            deleted_character_count: 5,
+        },
+        Insert {
+            index: 7,
+            text: "my friend",
+        },
+        Insert {
+            index: 29,
+            text: " doing",
+        },
+        Delete {
+            index: 36,
+            deleted_character_count: 6,
+        },
+        Insert {
+            index: 36,
+            text: " Albert",
+        },
+    ],
+}
