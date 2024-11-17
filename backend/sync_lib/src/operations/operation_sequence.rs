@@ -9,22 +9,17 @@ use similar::{utils::TextDiffRemapper, ChangeTag, TextDiff};
 
 #[derive(Debug, Clone, Default)]
 struct MergeContext {
-    last_delete: Option<Operation>,
+    previous_delete: Option<Operation>,
     shift: i64,
 }
 
-enum Source {
-    Left,
-    Right,
+pub fn tokenize(text: &str) -> Vec<&str> {
+    text.split_inclusive(|c: char| c.is_whitespace()).collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct OperationSequence {
     operations: Vec<Operation>,
-}
-
-pub fn tokenize(text: &str) -> Vec<&str> {
-    text.split_inclusive(|c: char| c.is_whitespace()).collect()
 }
 
 impl OperationSequence {
@@ -64,13 +59,11 @@ impl OperationSequence {
                     Ok(None)
                 }
                 ChangeTag::Insert => {
-                    let result = Operation::create_insert(index as i64, text);
+                    let result = Operation::create_insert(index, text);
                     index += text.chars().count();
                     result
                 }
-                ChangeTag::Delete => {
-                    Operation::create_delete(index as i64, text.chars().count() as i64)
-                }
+                ChangeTag::Delete => Operation::create_delete(index, text.chars().count()),
             })
             .flat_map(|result| result.transpose().into_iter())
             .collect::<Result<Vec<_>, SyncLibError>>()
@@ -96,32 +89,77 @@ impl OperationSequence {
         let mut right_index: usize = 0;
 
         loop {
-            let left_op = self.operations.get(left_index);
-            let right_op = other.operations.get(right_index);
-            // println!();
-            // println!("{:#?} <> {:#?}", left_op.cloned(), right_op.cloned());
+            let shifted_left_op = self
+                .operations
+                .get(left_index)
+                .map(|op| {
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        op,
+                        &mut right_merge_context,
+                    );
+                    op.with_shifted_index(right_merge_context.shift)
+                })
+                .transpose()?;
 
-            // println!("{:?} <> {:?}", left_merge_context, right_merge_context);
+            let shifted_right_op = other
+                .operations
+                .get(right_index)
+                .map(|op| {
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        op,
+                        &mut left_merge_context,
+                    );
+                    op.with_shifted_index(left_merge_context.shift)
+                })
+                .transpose()?;
 
-            let left_op_index = if let Some(delete) = left_merge_context.last_delete.as_ref() {
-                delete.end_index()
-            } else {
-                left_op
-                    .map(|op| op.start_index() + right_merge_context.shift)
-                    .unwrap_or_default()
-            };
+            println!();
 
-            let right_op_index = if let Some(delete) = right_merge_context.last_delete.as_ref() {
-                delete.end_index()
-            } else {
-                right_op
-                    .map(|op| op.start_index() + left_merge_context.shift)
-                    .unwrap_or_default()
-            };
+            let left_op_index = shifted_left_op
+                .as_ref()
+                .map(|op| {
+                    op.start_index().max(
+                        left_merge_context
+                            .previous_delete
+                            .as_ref()
+                            .map(|op| op.end_index())
+                            .unwrap_or_default(),
+                    ) as i64
+                })
+                .unwrap_or_default();
+
+            let right_op_index = shifted_right_op
+                .as_ref()
+                .map(|op| {
+                    op.start_index().max(
+                        right_merge_context
+                            .previous_delete
+                            .as_ref()
+                            .map(|op| op.end_index())
+                            .unwrap_or_default(),
+                    ) as i64
+                })
+                .unwrap_or_default();
+
+            println!(
+                "{:#?} (idx {}) <> {:#?} (idx {})",
+                shifted_left_op.clone(),
+                left_op_index,
+                shifted_right_op.clone(),
+                right_op_index
+            );
+
+            println!("{:?} <> {:?}", left_merge_context, right_merge_context);
 
             let result = left_op_index.cmp(&right_op_index);
-            let order = if result == Ordering::Equal && left_op.is_some() && right_op.is_some() {
-                match (left_op.unwrap(), right_op.unwrap()) {
+            let order = if result == Ordering::Equal
+                && shifted_left_op.is_some()
+                && shifted_right_op.is_some()
+            {
+                match (
+                    shifted_left_op.as_ref().unwrap(),
+                    shifted_right_op.as_ref().unwrap(),
+                ) {
                     (Operation::Insert { .. }, Operation::Delete { .. }) => Ordering::Greater,
                     (Operation::Delete { .. }, Operation::Insert { .. }) => Ordering::Less,
                     _ => Ordering::Equal,
@@ -130,10 +168,10 @@ impl OperationSequence {
                 result
             };
 
-            match (left_op, right_op, order) {
+            match (shifted_left_op, shifted_right_op, order) {
                 (Some(left_op), None, _)
                 | (Some(left_op), Some(_), std::cmp::Ordering::Less | std::cmp::Ordering::Equal) => {
-                    // println!("Left op: {:?}", left_op);
+                    println!("Left op: {:?}", left_op);
 
                     if let Some(op) = Self::merge_operations_with_context(
                         left_op,
@@ -147,7 +185,7 @@ impl OperationSequence {
                 }
                 (None, Some(right_op), _)
                 | (Some(_), Some(right_op), std::cmp::Ordering::Greater) => {
-                    // println!("Right op: {:?}", right_op);
+                    println!("Right op: {:?}", right_op);
 
                     if let Some(op) = Self::merge_operations_with_context(
                         right_op,
@@ -164,108 +202,111 @@ impl OperationSequence {
                 }
             };
 
-            // println!("last {:?}", merged_operations.last().unwrap());
-            // println!("{:?} <> {:?}", left_merge_context, right_merge_context);
+            println!("last {:?}", merged_operations.last().unwrap());
+            println!("{:?} <> {:?}", left_merge_context, right_merge_context);
         }
 
         Ok(Self::new(merged_operations))
     }
 
     fn merge_operations_with_context(
-        operation: &Operation,
+        aligned_operation: Operation,
         affecting_context: &mut MergeContext,
         produced_context: &mut MergeContext,
     ) -> Result<Option<Operation>, SyncLibError> {
-        Ok(match (operation, affecting_context.last_delete.clone()) {
-            (Operation::Insert { .. }, None) => {
-                produced_context.shift += operation.len();
-                Some(operation.with_shifted_index(affecting_context.shift)?)
-            }
-
-            (Operation::Delete { .. }, None) => {
-                let operation = Some(operation.with_shifted_index(affecting_context.shift)?);
-                Self::replace_delete_in_produced_context(produced_context, operation.clone());
-                operation
-            }
-
-            (Operation::Insert { .. }, Some(last_delete)) => {
-                produced_context.shift += operation.len();
-
-                if last_delete
-                    .range()
-                    .contains(&(operation.start_index() + affecting_context.shift))
-                {
-                    let moved_operation = operation.with_index(last_delete.start_index())?;
-
-                    affecting_context.last_delete = Operation::create_delete(
-                        moved_operation.end_index() + 1,
-                        last_delete.len(),
-                    )?;
-
-                    Some(moved_operation)
-                } else {
-                    Self::pick_up_dangling_delete_from_affecting_context(
-                        affecting_context,
-                        last_delete,
-                    );
-                    Some(operation.with_shifted_index(affecting_context.shift)?)
+        Ok(
+            match (aligned_operation, affecting_context.previous_delete.clone()) {
+                (operation @ Operation::Insert { .. }, None) => {
+                    produced_context.shift += operation.len() as i64;
+                    Some(operation)
                 }
-            }
 
-            (Operation::Delete { .. }, Some(last_delete)) => {
-                let updated_delete = if last_delete
-                    .range()
-                    .contains(&(operation.start_index() + affecting_context.shift))
-                {
-                    let overlap = last_delete.end_index()
-                        - (operation.start_index() + affecting_context.shift)
-                        + 1;
-
-                    affecting_context.last_delete = Operation::create_delete(
-                        last_delete.start_index(),
-                        0.max(last_delete.len() - operation.len()),
-                    )?;
-
-                    if last_delete.end_index() < operation.end_index() + affecting_context.shift {
-                        affecting_context.shift -= last_delete.len() - overlap
-                    }
-
-                    Operation::create_delete(
-                        last_delete.start_index(),
-                        0.max(operation.len() - overlap),
-                    )?
-                } else {
-                    Self::pick_up_dangling_delete_from_affecting_context(
-                        affecting_context,
-                        last_delete,
+                (operation @ Operation::Delete { .. }, None) => {
+                    Self::replace_delete_in_produced_context(
+                        produced_context,
+                        Some(operation.clone()),
                     );
+                    Some(operation)
+                }
 
-                    Some(operation.with_shifted_index(affecting_context.shift)?)
-                };
+                (operation @ Operation::Insert { .. }, Some(previous_delete)) => {
+                    produced_context.shift += operation.len() as i64;
 
-                Self::replace_delete_in_produced_context(produced_context, updated_delete.clone());
-                updated_delete
-            }
-        })
+                    if previous_delete.range().contains(&operation.start_index()) {
+                        let moved_operation =
+                            operation.with_index(previous_delete.start_index())?;
+
+                        affecting_context.previous_delete = Operation::create_delete(
+                            moved_operation.end_index() + 1,
+                            previous_delete.len(),
+                        )?;
+
+                        Some(moved_operation)
+                    } else {
+                        Some(operation)
+                    }
+                }
+
+                (operation @ Operation::Delete { .. }, Some(previous_delete)) => {
+                    let updated_delete = if previous_delete
+                        .range()
+                        .contains(&operation.start_index())
+                    {
+                        let overlap =
+                            previous_delete.end_index() as i64 - operation.start_index() as i64 + 1;
+
+                        affecting_context.previous_delete = Operation::create_delete(
+                            previous_delete.start_index(),
+                            0.max(previous_delete.len() as i64 - operation.len() as i64) as usize,
+                        )?;
+
+                        if previous_delete.end_index() < operation.end_index() {
+                            affecting_context.shift -= previous_delete.len() as i64 - overlap
+                        }
+
+                        Operation::create_delete(
+                            previous_delete.start_index(),
+                            0.max(operation.len() as i64 - overlap) as usize,
+                        )?
+                    } else {
+                        Some(operation)
+                    };
+
+                    Self::replace_delete_in_produced_context(
+                        produced_context,
+                        updated_delete.clone(),
+                    );
+                    updated_delete
+                }
+            },
+        )
     }
 
     fn replace_delete_in_produced_context(
         produced_context: &mut MergeContext,
         delete: Option<Operation>,
     ) {
-        if let Some(produced_last_delete) = produced_context.last_delete.take() {
-            produced_context.shift -= produced_last_delete.len();
+        if let Some(produced_previous_delete) = produced_context.previous_delete.take() {
+            produced_context.shift -= produced_previous_delete.len() as i64;
         }
 
-        produced_context.last_delete = delete;
+        produced_context.previous_delete = delete;
     }
 
     fn pick_up_dangling_delete_from_affecting_context(
+        next_operation: &Operation,
         affecting_context: &mut MergeContext,
-        last_delete: Operation,
     ) {
-        affecting_context.shift -= last_delete.len();
-        affecting_context.last_delete = None;
+        match affecting_context.previous_delete.as_ref() {
+            Some(previous_delete)
+                if next_operation.start_index() as i64 + affecting_context.shift
+                    > previous_delete.end_index() as i64 =>
+            {
+                affecting_context.shift -= previous_delete.len() as i64;
+                affecting_context.previous_delete = None;
+            }
+            _ => {}
+        }
     }
 }
 
@@ -356,6 +397,9 @@ mod tests {
             "original_1 edit_1 edit_2",
         );
 
+        // Merge a replace and an append
+        test_merge_both_ways("a b ", "c d ", "a b c d ", "c d c d ");
+
         test_merge_both_ways("a b c d e", "a e", "a c e", "a e");
 
         test_merge_both_ways("a 0 1 2 b", "a b", "a E 1 F b", "a E F b");
@@ -384,8 +428,6 @@ mod tests {
         );
 
         test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
-
-        test_merge_both_ways("a b", "c d", "a b c d", "c db c d");
 
         test_merge_both_ways(
             "both delete the same word",
