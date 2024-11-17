@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::Operation;
 use crate::errors::SyncLibError;
 use ropey::Rope;
@@ -87,8 +89,8 @@ impl OperationSequence {
         let mut merged_operations =
             Vec::with_capacity(self.operations.len() + other.operations.len());
 
-        let mut left_delete_context = MergeContext::default();
-        let mut right_delete_context = MergeContext::default();
+        let mut left_merge_context = MergeContext::default();
+        let mut right_merge_context = MergeContext::default();
 
         let mut left_index: usize = 0;
         let mut right_index: usize = 0;
@@ -96,20 +98,47 @@ impl OperationSequence {
         loop {
             let left_op = self.operations.get(left_index);
             let right_op = other.operations.get(right_index);
-            println!();
-            println!("{:#?} <> {:#?}", left_op.cloned(), right_op.cloned());
+            // println!();
+            // println!("{:#?} <> {:#?}", left_op.cloned(), right_op.cloned());
 
-            println!("{:?} <> {:?}", left_delete_context, right_delete_context);
+            // println!("{:?} <> {:?}", left_merge_context, right_merge_context);
 
-            match (left_op, right_op, left_op.cmp(&right_op)) {
+            let left_op_index = if let Some(delete) = left_merge_context.last_delete.as_ref() {
+                delete.end_index()
+            } else {
+                left_op
+                    .map(|op| op.start_index() + right_merge_context.shift)
+                    .unwrap_or_default()
+            };
+
+            let right_op_index = if let Some(delete) = right_merge_context.last_delete.as_ref() {
+                delete.end_index()
+            } else {
+                right_op
+                    .map(|op| op.start_index() + left_merge_context.shift)
+                    .unwrap_or_default()
+            };
+
+            let result = left_op_index.cmp(&right_op_index);
+            let order = if result == Ordering::Equal && left_op.is_some() && right_op.is_some() {
+                match (left_op.unwrap(), right_op.unwrap()) {
+                    (Operation::Insert { .. }, Operation::Delete { .. }) => Ordering::Greater,
+                    (Operation::Delete { .. }, Operation::Insert { .. }) => Ordering::Less,
+                    _ => Ordering::Equal,
+                }
+            } else {
+                result
+            };
+
+            match (left_op, right_op, order) {
                 (Some(left_op), None, _)
                 | (Some(left_op), Some(_), std::cmp::Ordering::Less | std::cmp::Ordering::Equal) => {
-                    println!("Left op: {:?}", left_op);
+                    // println!("Left op: {:?}", left_op);
 
                     if let Some(op) = Self::merge_operations_with_context(
                         left_op,
-                        &mut right_delete_context,
-                        &mut left_delete_context,
+                        &mut right_merge_context,
+                        &mut left_merge_context,
                     )? {
                         merged_operations.push(op);
                     }
@@ -118,12 +147,12 @@ impl OperationSequence {
                 }
                 (None, Some(right_op), _)
                 | (Some(_), Some(right_op), std::cmp::Ordering::Greater) => {
-                    println!("Right op: {:?}", right_op);
+                    // println!("Right op: {:?}", right_op);
 
                     if let Some(op) = Self::merge_operations_with_context(
                         right_op,
-                        &mut left_delete_context,
-                        &mut right_delete_context,
+                        &mut left_merge_context,
+                        &mut right_merge_context,
                     )? {
                         merged_operations.push(op);
                     }
@@ -135,8 +164,8 @@ impl OperationSequence {
                 }
             };
 
-            println!("last {:?}", merged_operations.last().unwrap());
-            println!("{:?} <> {:?}", left_delete_context, right_delete_context);
+            // println!("last {:?}", merged_operations.last().unwrap());
+            // println!("{:?} <> {:?}", left_merge_context, right_merge_context);
         }
 
         Ok(Self::new(merged_operations))
@@ -242,6 +271,9 @@ impl OperationSequence {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, path::Path};
+
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -337,7 +369,7 @@ mod tests {
 
         test_merge_both_ways(
             "this stays, this is one big delete, don't touch this",
-            "this stays, , don't touch this",
+            "this stays, don't touch this",
             "this stays, my one change, don't touch this",
             "this stays, my change, don't touch this",
         );
@@ -353,7 +385,7 @@ mod tests {
 
         test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
 
-        test_merge_both_ways("a b", "c d", "a b c d", "c b c d");
+        test_merge_both_ways("a b", "c d", "a b c d", "c db c d");
 
         test_merge_both_ways(
             "both delete the same word",
@@ -366,7 +398,7 @@ mod tests {
             "both delete the same word but one a bit more",
             "both the same word",
             "both same word",
-            "both same word",
+            "both same wordword",
         );
 
         test_merge_both_ways(
@@ -377,31 +409,30 @@ mod tests {
         );
     }
 
-    // #[test]
+    #[test]
 
-    // fn test_merge_files_without_panicing() {
-    //     let files = vec![
-    //         "pride_and_prejudice.txt",
-    //         "romeo_and_juliet.txt",
-    //         "room_with_a_view.txt",
-    //     ];
+    fn test_merge_files_without_panicing() {
+        let files = vec![
+            "pride_and_prejudice.txt",
+            "romeo_and_juliet.txt",
+            "room_with_a_view.txt",
+        ];
 
-    //     let root = Path::new("test/resources/");
-    //     println!("{:?}", root.canonicalize().unwrap());
-    //     let contents = files
-    //         .into_iter()
-    //         .map(|name| fs::read_to_string(root.join(name)).unwrap())
-    //         .map(|text| text.slice(0..10000).to_string())
-    //         .collect::<Vec<_>>();
+        let root = Path::new("test/resources/");
+        let contents = files
+            .into_iter()
+            .map(|name| fs::read_to_string(root.join(name)).unwrap())
+            .map(|text| text[0..50000].to_string())
+            .collect::<Vec<_>>();
 
-    //     contents
-    //         .iter()
-    //         .permutations(3)
-    //         .unique()
-    //         .for_each(|permutations| {
-    //             test_merge(permutations[0], permutations[1], permutations[2]);
-    //         });
-    // }
+        contents
+            .iter()
+            .permutations(3)
+            .unique()
+            .for_each(|permutations| {
+                test_merge(permutations[0], permutations[1], permutations[2]);
+            });
+    }
 
     fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
         assert_eq!(test_merge(original, edit_1, edit_2), expected);

@@ -1,6 +1,5 @@
 use ropey::Rope;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use std::fmt::Display;
 
 use crate::errors::SyncLibError;
@@ -17,22 +16,6 @@ pub enum Operation {
         index: i64,
         deleted_character_count: i64,
     },
-}
-
-impl Display for Operation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Operation::Insert { index, text } => {
-                write!(f, "+\"{}\" at {}", text, index)
-            }
-            Operation::Delete {
-                index,
-                deleted_character_count,
-            } => {
-                write!(f, "-{} at {}", deleted_character_count, index)
-            }
-        }
-    }
 }
 
 impl Operation {
@@ -69,6 +52,7 @@ impl Operation {
         }))
     }
 
+    /// Tries to apply the operation to the given text, returning the modified text.
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
         let index: usize = self.start_index() as usize;
         match self {
@@ -99,6 +83,14 @@ impl Operation {
         }
     }
 
+    /// Returns the index based on which concurrent operations must be ordered.
+    pub fn comparison_index(&self) -> i64 {
+        match self {
+            Operation::Insert { .. } => self.start_index(),
+            Operation::Delete { .. } => self.end_index(),
+        }
+    }
+
     /// Returns the index of the last character that the operation affects.
     pub fn end_index(&self) -> i64 {
         self.start_index() + self.len() - 1
@@ -125,6 +117,7 @@ impl Operation {
         self.start_index()..=self.end_index()
     }
 
+    /// Clones the operation while updating the index.
     pub fn with_index(&self, index: i64) -> Result<Self, SyncLibError> {
         Self::validate_index(index)?;
 
@@ -133,7 +126,6 @@ impl Operation {
                 index,
                 text: text.clone(),
             },
-
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -144,6 +136,8 @@ impl Operation {
         })
     }
 
+    /// Clones the operation while shifting the index by the given offset.
+    /// The offset can be negative but the resulting index must be non-negative.
     pub fn with_shifted_index(&self, offset: i64) -> Result<Self, SyncLibError> {
         self.with_index(self.start_index() + offset)
     }
@@ -160,24 +154,23 @@ impl Operation {
     }
 }
 
-impl Ord for Operation {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let result = self.start_index().cmp(&other.start_index());
-        if result == Ordering::Equal {
-            match (self, other) {
-                (Operation::Insert { .. }, Operation::Delete { .. }) => Ordering::Greater,
-                (Operation::Delete { .. }, Operation::Insert { .. }) => Ordering::Less,
-                _ => Ordering::Equal,
+impl Display for Operation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operation::Insert { index, text } => {
+                write!(f, "Insert '{}' from index {}", text, index)
             }
-        } else {
-            result
+            Operation::Delete {
+                index,
+                deleted_character_count,
+            } => {
+                write!(
+                    f,
+                    "Delete {} characters index {}",
+                    deleted_character_count, index
+                )
+            }
         }
-    }
-}
-
-impl PartialOrd for Operation {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
     }
 }
 
