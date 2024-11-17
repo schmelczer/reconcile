@@ -5,6 +5,6 @@ snapshot_kind: text
 ---
 Err(
     NegativeOperationIndexError(
-        "Index -1 is negative",
+        "Index -1 is negative but operations must have a non-negative index",
     ),
 )

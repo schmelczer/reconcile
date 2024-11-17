@@ -5,23 +5,25 @@ use std::fmt::Display;
 use crate::errors::SyncLibError;
 
 /// Represents a change that can be applied to a text document.
+/// Operation is tied to a ropey::Rope and is mainly expected to be
+/// created by OperationSequence.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Operation {
     Insert {
-        index: i64,
+        index: usize,
         text: String,
     },
 
     Delete {
-        index: i64,
-        deleted_character_count: i64,
+        index: usize,
+        deleted_character_count: usize,
     },
 }
 
 impl Operation {
-    pub fn create_insert(index: i64, text: &str) -> Result<Option<Self>, SyncLibError> {
-        Self::validate_index(index)?;
-
+    /// Creates an insert operation with the given index and text.
+    /// If the text is empty (meaning that the operation would be a no-op), returns None.
+    pub fn create_insert(index: usize, text: &str) -> Result<Option<Self>, SyncLibError> {
         if text.is_empty() {
             return Ok(None);
         }
@@ -32,29 +34,25 @@ impl Operation {
         }))
     }
 
-    pub fn create_delete(index: i64, length: i64) -> Result<Option<Self>, SyncLibError> {
-        Self::validate_index(index)?;
-
-        if length < 0 {
-            return Err(SyncLibError::NegativeOperationIndexError(format!(
-                "Length {} is negative",
-                length
-            )));
-        }
-
-        if length == 0 {
+    /// Creates a delete operation with the given index and number of to-be-deleted characters.
+    /// If the operation would delete 0 (meaning that the operation would be a no-op), returns None.
+    pub fn create_delete(
+        index: usize,
+        deleted_character_count: usize,
+    ) -> Result<Option<Self>, SyncLibError> {
+        if deleted_character_count == 0 {
             return Ok(None);
         }
 
         Ok(Some(Operation::Delete {
             index,
-            deleted_character_count: length,
+            deleted_character_count,
         }))
     }
 
-    /// Tries to apply the operation to the given text, returning the modified text.
+    /// Tries to apply the operation to the given ropey::Rope text, returning the modified text.
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
-        let index: usize = self.start_index() as usize;
+        let index: usize = self.start_index();
         match self {
             Operation::Insert { text, .. } => rope_text.try_insert(index, text).map_err(|err| {
                 SyncLibError::OperationApplicationError(format!("Failed to insert text: {}", err))
@@ -63,7 +61,7 @@ impl Operation {
                 deleted_character_count,
                 ..
             } => rope_text
-                .try_remove(index..index + *deleted_character_count as usize)
+                .try_remove(index..index + { *deleted_character_count })
                 .map_err(|err| {
                     SyncLibError::OperationApplicationError(format!(
                         "Failed to remove text: {}",
@@ -76,30 +74,23 @@ impl Operation {
     }
 
     /// Returns the index of the first character that the operation affects.
-    pub fn start_index(&self) -> i64 {
+    pub fn start_index(&self) -> usize {
         match self {
             Operation::Insert { index, .. } => *index,
             Operation::Delete { index, .. } => *index,
         }
     }
 
-    /// Returns the index based on which concurrent operations must be ordered.
-    pub fn comparison_index(&self) -> i64 {
-        match self {
-            Operation::Insert { .. } => self.start_index(),
-            Operation::Delete { .. } => self.end_index(),
-        }
-    }
-
     /// Returns the index of the last character that the operation affects.
-    pub fn end_index(&self) -> i64 {
+    pub fn end_index(&self) -> usize {
+        // len() must be greater than 0 because operations must be non-empty
         self.start_index() + self.len() - 1
     }
 
-    /// Returns the number of affected characters.
-    pub fn len(&self) -> i64 {
+    /// Returns the number of affected characters. It is always greater than 0 because empty operations cannot be created.
+    pub fn len(&self) -> usize {
         match self {
-            Operation::Insert { text, .. } => text.chars().count() as i64,
+            Operation::Insert { text, .. } => text.chars().count(),
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -107,20 +98,13 @@ impl Operation {
         }
     }
 
-    /// Returns true if applying operation wouldn't change the text.
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// Returns the range of indices of characters that the operation affects, inclusive.
-    pub fn range(&self) -> std::ops::RangeInclusive<i64> {
+    pub fn range(&self) -> std::ops::RangeInclusive<usize> {
         self.start_index()..=self.end_index()
     }
 
     /// Clones the operation while updating the index.
-    pub fn with_index(&self, index: i64) -> Result<Self, SyncLibError> {
-        Self::validate_index(index)?;
-
+    pub fn with_index(&self, index: usize) -> Result<Self, SyncLibError> {
         Ok(match self {
             Operation::Insert { text, .. } => Operation::Insert {
                 index,
@@ -139,18 +123,14 @@ impl Operation {
     /// Clones the operation while shifting the index by the given offset.
     /// The offset can be negative but the resulting index must be non-negative.
     pub fn with_shifted_index(&self, offset: i64) -> Result<Self, SyncLibError> {
-        self.with_index(self.start_index() + offset)
-    }
+        let index = self.start_index() as i64 + offset;
 
-    fn validate_index(index: i64) -> Result<(), SyncLibError> {
-        if index < 0 {
-            return Err(SyncLibError::NegativeOperationIndexError(format!(
-                "Index {} is negative",
+        self.with_index(index.try_into().map_err(|_| {
+            SyncLibError::NegativeOperationIndexError(format!(
+                "Index {} is negative but operations must have a non-negative index",
                 index
-            )));
-        }
-
-        Ok(())
+            ))
+        })?)
     }
 }
 
@@ -180,14 +160,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_creation_errors() {
-        insta::assert_debug_snapshot!(Operation::create_insert(-1, "hi"));
-        insta::assert_debug_snapshot!(Operation::create_delete(0, -1));
-        insta::assert_debug_snapshot!(Operation::create_delete(-1, -1));
-        insta::assert_debug_snapshot!(Operation::create_insert(0, "hi")
-            .unwrap()
-            .unwrap()
-            .with_index(-1));
+    fn test_shifting_error() {
         insta::assert_debug_snapshot!(Operation::create_insert(1, "hi")
             .unwrap()
             .unwrap()
