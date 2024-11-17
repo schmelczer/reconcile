@@ -1,0 +1,18 @@
+[package]
+name = "reconcile"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ropey = { version = "1.6.1", default-features = false, features = ["simd"]  } #
+thiserror = {workspace = true}
+log = {workspace = true}
+serde = { version = "1.0.215", optional = true }
+
+[features]
+serde = [ "dep:serde" ]
+
+[dev-dependencies]
+insta = "1.41.1"
+itertools = "0.13.0"
+pretty_assertions = "1.4.1"

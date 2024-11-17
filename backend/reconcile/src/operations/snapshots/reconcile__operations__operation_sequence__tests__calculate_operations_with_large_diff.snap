@@ -1,0 +1,42 @@
+---
+source: reconcile/src/operations/operation_sequence.rs
+expression: result
+snapshot_kind: text
+---
+OperationSequence {
+    operations: [
+        Insert {
+            index: 0,
+            text: "Hello, my friend! ",
+        },
+        Delete {
+            index: 18,
+            deleted_character_count: 13,
+            deleted_text: Some(
+                "hello world! ",
+            ),
+        },
+        Delete {
+            index: 26,
+            deleted_character_count: 5,
+            deleted_text: Some(
+                "you? ",
+            ),
+        },
+        Delete {
+            index: 26,
+            deleted_character_count: 5,
+            deleted_text: Some(
+                " Adam",
+            ),
+        },
+        Insert {
+            index: 26,
+            text: "you ",
+        },
+        Insert {
+            index: 30,
+            text: "doing? Albert",
+        },
+    ],
+}

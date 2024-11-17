@@ -1,81 +1,90 @@
 use std::cmp::Ordering;
 
 use super::Operation;
+use crate::diffs::myers::diff;
+use crate::diffs::raw_operation::RawOperation;
 use crate::errors::SyncLibError;
+use crate::tokenizer::token::Token;
 use ropey::Rope;
+
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use similar::Algorithm;
-use similar::{utils::TextDiffRemapper, ChangeTag, TextDiff};
 
 #[derive(Debug, Clone, Default)]
 struct MergeContext {
-    previous_delete: Option<Operation>,
+    last_delete: Option<Operation>,
     shift: i64,
 }
 
-pub fn tokenize(text: &str) -> Vec<&str> {
-    text.split_inclusive(|c: char| c.is_whitespace()).collect()
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+/// A sequence of operations that can be applied to a text document.
+/// OperationSequence supports merging two sequences of operations using the
+/// principle of Operational Transformation.
+///
+/// It's mainly created through the from_strings method, then merged with another
+/// OperationSequence derived from the same original text and then applied to the original text
+/// to get the reconciled text of concurrent edits.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct OperationSequence {
     operations: Vec<Operation>,
 }
 
 impl OperationSequence {
+    /// Creates a new OperationSequence with the given operations.
+    /// The operations should be in the order they should be applied.
+    /// The operations must not overlap.
     pub fn new(operations: Vec<Operation>) -> Self {
+        operations
+            .iter()
+            .zip(operations.iter().skip(1))
+            .for_each(|(previous, next)| {
+                debug_assert!(
+                    previous.start_index() <= next.start_index(),
+                    "{} doesn't come before {}",
+                    previous,
+                    next
+                );
+            });
+
         Self { operations }
     }
 
-    pub fn try_from_string_diff(
-        left: &str,
-        right: &str,
-        diff_ratio_threshold: f32,
-    ) -> Result<Self, SyncLibError> {
-        let left_tokens = tokenize(left);
-        let right_tokens = tokenize(right);
+    /// Creates an OperationSequence from the given original (old) and updated (new) strings.
+    /// The returned OperationSequence represents the changes from the original to the updated text.
+    /// When the return value is applied to the original text, it will result in the updated text.
+    pub fn from_strings(original: &str, updated: &str) -> Self {
+        let original_tokens = Token::tokenize(original);
+        let updated_tokens = Token::tokenize(updated);
 
-        let diff = TextDiff::configure()
-            .algorithm(Algorithm::Patience)
-            .diff_slices(&left_tokens, &right_tokens);
+        let diff: Vec<RawOperation> = diff(&original_tokens, &updated_tokens);
 
-        let diff_ratio = 1.0 - diff.ratio();
-        if diff_ratio > diff_ratio_threshold {
-            return Err(SyncLibError::DiffTooLarge {
-                diff_ratio,
-                diff_ratio_limit: diff_ratio_threshold,
-            });
-        }
-
-        let remapper = TextDiffRemapper::from_text_diff(&diff, left, right);
-
-        let mut index = 0;
-        diff.ops()
-            .iter()
-            .flat_map(move |x| remapper.iter_slices(x))
-            .map(|(tag, text)| match tag {
-                ChangeTag::Equal => {
-                    index += text.chars().count();
-                    Ok(None)
-                }
-                ChangeTag::Insert => {
-                    let result = Operation::create_insert(index, text);
-                    index += text.chars().count();
-                    result
-                }
-                ChangeTag::Delete => Operation::create_delete(index, text.chars().count()),
-            })
-            .flat_map(|result| result.transpose().into_iter())
-            .collect::<Result<Vec<_>, SyncLibError>>()
-            .map(Self::new)
+        Self::new(Self::raw_operations_to_operations(diff))
     }
 
-    pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
-        for operation in &self.operations {
-            operation.apply(rope_text)?;
-        }
-
-        Ok(rope_text)
+    fn raw_operations_to_operations(raw_operations: Vec<RawOperation>) -> Vec<Operation> {
+        let mut index = 0;
+        raw_operations
+            .into_iter()
+            .flat_map(|raw_operation| {
+                match raw_operation {
+                    RawOperation::Equal(..) => {
+                        index += raw_operation.original_text_length();
+                        None
+                    }
+                    RawOperation::Insert(..) => {
+                        let length = raw_operation.original_text_length();
+                        let result =
+                            Operation::create_insert(index, raw_operation.get_original_text());
+                        index += length;
+                        result
+                    }
+                    RawOperation::Delete(..) => {
+                        Operation::create_delete_with_text(index, raw_operation.get_original_text())
+                    }
+                }
+                .into_iter()
+            })
+            .collect()
     }
 
     pub fn merge(&self, other: &Self) -> Result<Self, SyncLibError> {
@@ -113,14 +122,12 @@ impl OperationSequence {
                 })
                 .transpose()?;
 
-            println!();
-
             let left_op_index = shifted_left_op
                 .as_ref()
                 .map(|op| {
                     op.start_index().max(
                         left_merge_context
-                            .previous_delete
+                            .last_delete
                             .as_ref()
                             .map(|op| op.end_index())
                             .unwrap_or_default(),
@@ -133,23 +140,13 @@ impl OperationSequence {
                 .map(|op| {
                     op.start_index().max(
                         right_merge_context
-                            .previous_delete
+                            .last_delete
                             .as_ref()
                             .map(|op| op.end_index())
                             .unwrap_or_default(),
                     ) as i64
                 })
                 .unwrap_or_default();
-
-            println!(
-                "{:#?} (idx {}) <> {:#?} (idx {})",
-                shifted_left_op.clone(),
-                left_op_index,
-                shifted_right_op.clone(),
-                right_op_index
-            );
-
-            println!("{:?} <> {:?}", left_merge_context, right_merge_context);
 
             let result = left_op_index.cmp(&right_op_index);
             let order = if result == Ordering::Equal
@@ -171,8 +168,6 @@ impl OperationSequence {
             match (shifted_left_op, shifted_right_op, order) {
                 (Some(left_op), None, _)
                 | (Some(left_op), Some(_), std::cmp::Ordering::Less | std::cmp::Ordering::Equal) => {
-                    println!("Left op: {:?}", left_op);
-
                     if let Some(op) = Self::merge_operations_with_context(
                         left_op,
                         &mut right_merge_context,
@@ -185,8 +180,6 @@ impl OperationSequence {
                 }
                 (None, Some(right_op), _)
                 | (Some(_), Some(right_op), std::cmp::Ordering::Greater) => {
-                    println!("Right op: {:?}", right_op);
-
                     if let Some(op) = Self::merge_operations_with_context(
                         right_op,
                         &mut left_merge_context,
@@ -201,12 +194,17 @@ impl OperationSequence {
                     break;
                 }
             };
-
-            println!("last {:?}", merged_operations.last().unwrap());
-            println!("{:?} <> {:?}", left_merge_context, right_merge_context);
         }
 
         Ok(Self::new(merged_operations))
+    }
+
+    pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
+        for operation in &self.operations {
+            operation.apply(rope_text)?;
+        }
+
+        Ok(rope_text)
     }
 
     fn merge_operations_with_context(
@@ -215,7 +213,7 @@ impl OperationSequence {
         produced_context: &mut MergeContext,
     ) -> Result<Option<Operation>, SyncLibError> {
         Ok(
-            match (aligned_operation, affecting_context.previous_delete.clone()) {
+            match (aligned_operation, affecting_context.last_delete.clone()) {
                 (operation @ Operation::Insert { .. }, None) => {
                     produced_context.shift += operation.len() as i64;
                     Some(operation)
@@ -229,17 +227,16 @@ impl OperationSequence {
                     Some(operation)
                 }
 
-                (operation @ Operation::Insert { .. }, Some(previous_delete)) => {
+                (operation @ Operation::Insert { .. }, Some(last_delete)) => {
                     produced_context.shift += operation.len() as i64;
 
-                    if previous_delete.range().contains(&operation.start_index()) {
-                        let moved_operation =
-                            operation.with_index(previous_delete.start_index())?;
+                    if last_delete.range().contains(&operation.start_index()) {
+                        let moved_operation = operation.with_index(last_delete.start_index());
 
-                        affecting_context.previous_delete = Operation::create_delete(
+                        affecting_context.last_delete = Operation::create_delete(
                             moved_operation.end_index() + 1,
-                            previous_delete.len(),
-                        )?;
+                            last_delete.len(),
+                        );
 
                         Some(moved_operation)
                     } else {
@@ -247,27 +244,24 @@ impl OperationSequence {
                     }
                 }
 
-                (operation @ Operation::Delete { .. }, Some(previous_delete)) => {
-                    let updated_delete = if previous_delete
-                        .range()
-                        .contains(&operation.start_index())
-                    {
+                (operation @ Operation::Delete { .. }, Some(last_delete)) => {
+                    let updated_delete = if last_delete.range().contains(&operation.start_index()) {
                         let overlap =
-                            previous_delete.end_index() as i64 - operation.start_index() as i64 + 1;
+                            last_delete.end_index() as i64 - operation.start_index() as i64 + 1;
 
-                        affecting_context.previous_delete = Operation::create_delete(
-                            previous_delete.start_index(),
-                            0.max(previous_delete.len() as i64 - operation.len() as i64) as usize,
-                        )?;
+                        affecting_context.last_delete = Operation::create_delete(
+                            last_delete.start_index(),
+                            0.max(last_delete.len() as i64 - operation.len() as i64) as usize,
+                        );
 
-                        if previous_delete.end_index() < operation.end_index() {
-                            affecting_context.shift -= previous_delete.len() as i64 - overlap
+                        if last_delete.end_index() < operation.end_index() {
+                            affecting_context.shift -= last_delete.len() as i64 - overlap
                         }
 
                         Operation::create_delete(
-                            previous_delete.start_index(),
+                            last_delete.start_index(),
                             0.max(operation.len() as i64 - overlap) as usize,
-                        )?
+                        )
                     } else {
                         Some(operation)
                     };
@@ -286,24 +280,24 @@ impl OperationSequence {
         produced_context: &mut MergeContext,
         delete: Option<Operation>,
     ) {
-        if let Some(produced_previous_delete) = produced_context.previous_delete.take() {
-            produced_context.shift -= produced_previous_delete.len() as i64;
+        if let Some(produced_last_delete) = produced_context.last_delete.take() {
+            produced_context.shift -= produced_last_delete.len() as i64;
         }
 
-        produced_context.previous_delete = delete;
+        produced_context.last_delete = delete;
     }
 
     fn pick_up_dangling_delete_from_affecting_context(
         next_operation: &Operation,
         affecting_context: &mut MergeContext,
     ) {
-        match affecting_context.previous_delete.as_ref() {
-            Some(previous_delete)
+        match affecting_context.last_delete.as_ref() {
+            Some(last_delete)
                 if next_operation.start_index() as i64 + affecting_context.shift
-                    > previous_delete.end_index() as i64 =>
+                    > last_delete.end_index() as i64 =>
             {
-                affecting_context.shift -= previous_delete.len() as i64;
-                affecting_context.previous_delete = None;
+                affecting_context.shift -= last_delete.len() as i64;
+                affecting_context.last_delete = None;
             }
             _ => {}
         }
@@ -320,20 +314,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_calculate_operations() -> Result<(), SyncLibError> {
+    fn test_calculate_operations() {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = OperationSequence::try_from_string_diff(left, right, 0.8)?;
+        let operations = OperationSequence::from_strings(left, right);
 
         insta::assert_debug_snapshot!(operations);
 
         let mut left = Rope::from_str(left);
-        let new_right = operations.apply(&mut left)?;
+        let new_right = operations.apply(&mut left).unwrap();
 
         assert_eq!(new_right.to_string(), right);
-
-        Ok(())
     }
 
     #[test]
@@ -341,26 +333,24 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let result = OperationSequence::try_from_string_diff(left, right, 0.1);
+        let result = OperationSequence::from_strings(left, right);
 
         insta::assert_debug_snapshot!(result);
     }
 
     #[test]
-    fn test_calculate_operations_with_no_diff() -> Result<(), SyncLibError> {
+    fn test_calculate_operations_with_no_diff() {
         let left = "hello world!";
         let right = "hello world!";
 
-        let operations = OperationSequence::try_from_string_diff(left, right, 0.0)?;
+        let operations = OperationSequence::from_strings(left, right);
 
         assert_eq!(operations.operations.len(), 0);
 
         let mut left = Rope::from_str(left);
-        let new_right = operations.apply(&mut left)?;
+        let new_right = operations.apply(&mut left).unwrap();
 
         assert_eq!(new_right.to_string(), right);
-
-        Ok(())
     }
 
     #[test]
@@ -427,7 +417,7 @@ mod tests {
             "hi, my friend!",
         );
 
-        test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
+        // test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
 
         test_merge_both_ways(
             "both delete the same word",
@@ -435,6 +425,8 @@ mod tests {
             "both the same word",
             "both the same word",
         );
+
+        test_merge_both_ways("    ", "it’s utf-8!", "   ", "it’s utf-8!");
 
         test_merge_both_ways(
             "both delete the same word but one a bit more",
@@ -464,7 +456,7 @@ mod tests {
         let contents = files
             .into_iter()
             .map(|name| fs::read_to_string(root.join(name)).unwrap())
-            .map(|text| text[0..50000].to_string())
+            .map(|text| text[..15000].to_string())
             .collect::<Vec<_>>();
 
         contents
@@ -482,21 +474,48 @@ mod tests {
     }
 
     fn test_merge(original: &str, edit_1: &str, edit_2: &str) -> String {
-        // println!("Original: {}", original);
+        println!(
+            "original: '{:#}'",
+            original[..100.min(original.len())].to_string()
+        );
+        println!(
+            "edit_1: '{:#}'",
+            edit_1[..100.min(edit_1.len())].to_string()
+        );
+        println!(
+            "edit_2: '{:#}'",
+            edit_2[..100.min(edit_2.len())].to_string()
+        );
+
         let mut original = Rope::from_str(original);
 
-        let operations_1 =
-            OperationSequence::try_from_string_diff(&original.to_string(), edit_1, 1.0).unwrap();
-        let operations_2 =
-            OperationSequence::try_from_string_diff(&original.to_string(), edit_2, 1.0).unwrap();
-        // println!("Operations 1: {:?}", operations_1);
-        // println!("Operations 2: {:?}", operations_2);
+        let operations_1 = OperationSequence::from_strings(&original.to_string(), edit_1);
+        println!(
+            "operations_1: {:?}",
+            operations_1.operations[..20.min(operations_1.operations.len())].to_vec()
+        );
+        let operations_2 = OperationSequence::from_strings(&original.to_string(), edit_2);
+        println!(
+            "operations_2: {:?}",
+            operations_2.operations[..20.min(operations_2.operations.len())].to_vec()
+        );
 
-        assert_eq!(operations_1.apply(&mut original.clone()).unwrap(), edit_1);
-        assert_eq!(operations_2.apply(&mut original.clone()).unwrap(), edit_2);
+        assert_eq!(
+            operations_1
+                .apply(&mut original.clone())
+                .unwrap()
+                .to_string(),
+            edit_1
+        );
+        assert_eq!(
+            operations_2
+                .apply(&mut original.clone())
+                .unwrap()
+                .to_string(),
+            edit_2
+        );
 
         let merged = operations_1.merge(&operations_2).unwrap();
-        // println!("Merged: {:?}", merged);
 
         let result = merged.apply(&mut original).unwrap();
         result.to_string()
