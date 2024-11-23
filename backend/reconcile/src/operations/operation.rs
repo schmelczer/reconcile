@@ -91,7 +91,8 @@ impl Operation {
                 if let Some(text) = deleted_text {
                     debug_assert_eq!(
                         rope_text.get_slice(self.range()).unwrap().to_string(),
-                        *text
+                        *text,
+                        "Text to delete does not match the text in the rope"
                     );
                 }
 
@@ -130,6 +131,12 @@ impl Operation {
                 ..
             } => *deleted_character_count,
         }
+    }
+
+    /// The operation cannot be empty.
+    pub fn is_empty(&self) -> bool {
+        debug_assert!(self.len() > 0, "Operation cannot be empty");
+        false
     }
 
     /// Returns the range of indices of characters that the operation affects, inclusive.
@@ -172,6 +179,70 @@ impl Operation {
         })?;
 
         Ok(self.with_index(non_negative_index))
+    }
+
+    /// Merges the operation with another operation that is consequtive to this operation.
+    /// The other operation must start where this operation ends.
+    /// The two operations must be of the same type, otherwise panics.
+    pub fn merge(self, other: &Self) -> Self {
+        match (self, other) {
+            (
+                Operation::Insert { index, text },
+                Operation::Insert {
+                    text: other_text, ..
+                },
+            ) => {
+                let end_index = index + text.chars().count();
+                debug_assert!(
+                    end_index == other.start_index(),
+                    "Cannot merge non-consequtive inserts with index {} and {}",
+                    end_index,
+                    other.start_index()
+                );
+
+                Operation::Insert {
+                    index,
+                    text: text + other_text,
+                }
+            }
+            (
+                Operation::Delete {
+                    index,
+                    deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                    deleted_text,
+                },
+                Operation::Delete {
+                    index: other_index,
+                    deleted_character_count: other_deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                        deleted_text: other_deleted_text,
+                },
+            ) => {
+                debug_assert!(
+                    index == *other_index,
+                    "Cannot merge non-consequtive deletes",
+                );
+
+                Operation::Delete {
+                    index,
+                    deleted_character_count: deleted_character_count
+                        + other_deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                    deleted_text: deleted_text
+                        .into_iter()
+                        .flat_map(|t1| other_deleted_text.as_ref().map(|t2| t1 + t2).into_iter())
+                        .last(),
+                }
+            }
+            (this, other) => panic!(
+                "Cannot merge operations of different type: {:?} and {:?}",
+                &this, &other
+            ),
+        }
     }
 }
 
@@ -222,7 +293,7 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() -> Result<(), SyncLibError> {
         let mut rope = Rope::from_str("hello world");
-        let operation = Operation::create_delete_with_text(5, "world ".to_string()).unwrap();
+        let operation = Operation::create_delete_with_text(5, " world".to_string()).unwrap();
 
         operation.apply(&mut rope)?;
 
