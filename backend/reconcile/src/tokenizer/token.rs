@@ -1,26 +1,52 @@
+use std::hash::Hash;
+
 #[derive(Debug, Clone)]
-pub struct Token {
-    pub normalised: String,
-    pub original: String,
+pub struct Token<T>
+where
+    T: PartialEq + Hash + Clone,
+{
+    normalised: T,
+    original: String,
 }
 
-impl Token {
-    pub fn new(normalised: String, original: String) -> Self {
+impl<T> Token<T>
+where
+    T: PartialEq + Hash + Clone,
+{
+    pub fn new(normalised: T, original: String) -> Self {
         Token {
             normalised,
             original,
         }
     }
 
-    pub fn tokenize(text: &str) -> Vec<Token> {
-        text.split_inclusive(|c: char| c.is_whitespace())
-            .map(|s| Token::new(s.to_string(), s.to_string()))
-            .collect()
+    pub fn original(&self) -> &str {
+        &self.original
+    }
+
+    pub fn normalised(&self) -> &T {
+        &self.normalised
+    }
+
+    pub fn get_original_length(&self) -> usize {
+        self.original.chars().count()
     }
 }
 
-impl PartialEq for Token {
+impl<T> PartialEq for Token<T>
+where
+    T: PartialEq + Hash + Clone,
+{
     fn eq(&self, other: &Self) -> bool {
         self.normalised == other.normalised
+    }
+}
+
+impl<T> Hash for Token<T>
+where
+    T: PartialEq + Hash + Clone,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.normalised.hash(state);
     }
 }

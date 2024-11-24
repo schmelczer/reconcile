@@ -18,6 +18,7 @@
 //! without making reasonable progress.
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
+use std::hash::Hash;
 use std::ops::{Index, IndexMut, Range};
 use std::vec;
 
@@ -33,11 +34,14 @@ use super::raw_operation::RawOperation;
 ///
 /// This diff is done with an optional deadline that defines the maximal
 /// execution time permitted before it bails and falls back to an approximation.
-pub fn diff(old: &[Token], new: &[Token]) -> Vec<RawOperation> {
+pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
+where
+    T: PartialEq + Hash + Clone,
+{
     let max_d = max_d(old.len(), new.len());
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
-    let mut result: Vec<RawOperation> = vec![];
+    let mut result: Vec<RawOperation<T>> = vec![];
     conquer(
         old,
         0..old.len(),
@@ -118,14 +122,17 @@ fn split_at(range: Range<usize>, at: usize) -> (Range<usize>, Range<usize>) {
 /// simultaneously run the basic algorithm in both the forward and reverse
 /// directions until furthest reaching forward and reverse paths starting at
 /// opposing corners 'overlap'.
-fn find_middle_snake(
-    old: &[Token],
+fn find_middle_snake<T>(
+    old: &[Token<T>],
     old_range: Range<usize>,
-    new: &[Token],
+    new: &[Token<T>],
     new_range: Range<usize>,
     vf: &mut V,
     vb: &mut V,
-) -> Option<(usize, usize)> {
+) -> Option<(usize, usize)>
+where
+    T: PartialEq + Hash + Clone,
+{
     let n = old_range.len();
     let m = new_range.len();
 
@@ -222,15 +229,17 @@ fn find_middle_snake(
     None
 }
 
-fn conquer(
-    old: &[Token],
+fn conquer<T>(
+    old: &[Token<T>],
     mut old_range: Range<usize>,
-    new: &[Token],
+    new: &[Token<T>],
     mut new_range: Range<usize>,
     vf: &mut V,
     vb: &mut V,
-    result: &mut Vec<RawOperation>,
-) {
+    result: &mut Vec<RawOperation<T>>,
+) where
+    T: PartialEq + Hash + Clone,
+{
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
     if common_prefix_len > 0 {
