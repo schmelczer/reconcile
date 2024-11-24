@@ -4,10 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ropey = { version = "1.6.1", default-features = false, features = ["simd"]  } #
+ropey = { version = "1.6.1", default-features = false, features = ["simd"]  }
 thiserror = {workspace = true}
 log = {workspace = true}
-itertools = "0.13.0"
 
 # optional dependencies
 serde = { version = "1.0.215", optional = true }
@@ -18,3 +17,4 @@ serde = [ "dep:serde" ]
 [dev-dependencies]
 insta = "1.41.1"
 pretty_assertions = "1.4.1"
+test-case = "3.3.1"
