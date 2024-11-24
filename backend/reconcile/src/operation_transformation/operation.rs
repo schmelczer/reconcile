@@ -6,9 +6,11 @@ use crate::errors::SyncLibError;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use super::merge_context::MergeContext;
+
 /// Represents a change that can be applied to a text document.
 /// Operation is tied to a ropey::Rope and is mainly expected to be
-/// created by OperationSequence.
+/// created by EditedText.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Operation {
@@ -68,6 +70,15 @@ impl Operation {
     }
 
     /// Tries to apply the operation to the given ropey::Rope text, returning the modified text.
+    ///
+    /// # Errors
+    ///
+    /// Returns a SyncLibError::OperationApplicationError if the operation cannot be applied.
+    ///
+    /// # Panics
+    ///
+    /// When compiled in debug mode, panics if a delete operation is attempted on a range
+    /// of text that does not match the text to be deleted.
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
         match self {
             Operation::Insert { text, .. } => rope_text
@@ -145,12 +156,9 @@ impl Operation {
     }
 
     /// Clones the operation while updating the index.
-    pub fn with_index(&self, index: usize) -> Self {
+    pub fn with_index(self, index: usize) -> Self {
         match self {
-            Operation::Insert { text, .. } => Operation::Insert {
-                index,
-                text: text.clone(),
-            },
+            Operation::Insert { text, .. } => Operation::Insert { index, text },
             Operation::Delete {
                 deleted_character_count,
 
@@ -159,26 +167,159 @@ impl Operation {
                 ..
             } => Operation::Delete {
                 index,
-                deleted_character_count: *deleted_character_count,
+                deleted_character_count,
 
                 #[cfg(debug_assertions)]
-                deleted_text: deleted_text.clone(),
+                deleted_text,
             },
         }
     }
 
     /// Clones the operation while shifting the index by the given offset.
     /// The offset can be negative but the resulting index must be non-negative.
-    pub fn with_shifted_index(&self, offset: i64) -> Result<Self, SyncLibError> {
+    ///
+    /// # Panics
+    ///
+    /// In debug mode, panics if the resulting index is negative.
+    pub fn with_shifted_index(self, offset: i64) -> Self {
         let index = self.start_index() as i64 + offset;
-        let non_negative_index = index.try_into().map_err(|_| {
-            SyncLibError::NegativeOperationIndexError(format!(
-                "Index {} is negative but operations must have a non-negative index",
-                index
-            ))
-        })?;
+        debug_assert!(index >= 0, "Shifted index must be non-negative");
 
-        Ok(self.with_index(non_negative_index))
+        self.with_index(index as usize)
+    }
+
+    /// Merges the operation with the given context, producing a new operation and updating the context.
+    /// This implements a comples FSM that handles the merging of operations in a way that is consistent with the text.
+    /// The contexts are updated in-place.
+    pub fn merge_operations_with_context(
+        self,
+        affecting_context: &mut MergeContext,
+        produced_context: &mut MergeContext,
+    ) -> Option<Operation> {
+        affecting_context.consume_delete_if_behind_operation(&self);
+
+        let operation = self.with_shifted_index(affecting_context.shift);
+
+        match (operation, affecting_context.last_delete.clone()) {
+            (operation @ Operation::Insert { .. }, None) => {
+                produced_context.shift += operation.len() as i64;
+                Some(operation)
+            }
+
+            (operation @ Operation::Delete { .. }, None) => {
+                produced_context.replace_delete(Some(operation.clone()));
+                Some(operation)
+            }
+
+            (operation @ Operation::Insert { .. }, Some(last_delete)) => {
+                produced_context.shift += operation.len() as i64;
+
+                debug_assert!(
+                        last_delete.range().contains(&operation.start_index()),
+                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
+                    );
+
+                let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
+
+                let moved_operation = operation.with_index(last_delete.start_index());
+
+                affecting_context.last_delete = Operation::create_delete(
+                    moved_operation.end_index() + 1,
+                    (last_delete.len() as i64 - difference) as usize,
+                );
+                affecting_context.shift -= difference;
+
+                Some(moved_operation)
+            }
+
+            (operation @ Operation::Delete { .. }, Some(last_delete)) => {
+                debug_assert!(
+                        last_delete.range().contains(&operation.start_index()),
+                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
+                    );
+
+                let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
+
+                let updated_delete = Operation::create_delete(
+                    last_delete.start_index(),
+                    0.max(operation.end_index() as i64 - last_delete.end_index() as i64) as usize,
+                );
+
+                affecting_context.shift -= difference;
+                affecting_context.last_delete = Operation::create_delete(
+                    last_delete.start_index(),
+                    0.max(last_delete.end_index() as i64 - operation.end_index() as i64) as usize,
+                );
+
+                produced_context.replace_delete(updated_delete.clone());
+
+                updated_delete
+            }
+        }
+    }
+
+    /// Merges the operation with another operation that is consequtive to this operation.
+    /// The other operation must start where this operation ends.
+    /// The two operations must be of the same type, otherwise panics.
+    pub fn extend(self, other: &Self) -> Self {
+        match (self, other) {
+            (
+                Operation::Insert { index, text },
+                Operation::Insert {
+                    text: other_text, ..
+                },
+            ) => {
+                let end_index = index + text.chars().count();
+                debug_assert!(
+                    end_index == other.start_index(),
+                    "Cannot merge non-consequtive inserts with index {} and {}",
+                    end_index,
+                    other.start_index()
+                );
+
+                Operation::Insert {
+                    index,
+                    text: text + other_text,
+                }
+            }
+            (
+                Operation::Delete {
+                    index,
+                    deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                    deleted_text,
+                },
+                Operation::Delete {
+                    index: other_index,
+                    deleted_character_count: other_deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                        deleted_text: other_deleted_text,
+                },
+            ) => {
+                debug_assert!(
+                    index == *other_index,
+                    "Cannot merge non-consequtive deletes",
+                );
+
+                Operation::Delete {
+                    index,
+                    deleted_character_count: deleted_character_count
+                        + other_deleted_character_count,
+
+                    #[cfg(debug_assertions)]
+                    deleted_text: deleted_text
+                        .into_iter()
+                        .flat_map(|t1| other_deleted_text.as_ref().map(|t2| t1 + t2).into_iter())
+                        .last(),
+                }
+            }
+            (this, other) => panic!(
+                "Cannot merge operations of different type: {:?} and {:?}",
+                &this, &other
+            ),
+        }
     }
 }
 
@@ -195,7 +336,7 @@ impl Display for Operation {
                 #[cfg(debug_assertions)]
                 deleted_text,
             } => {
-                if cfg!(debug_assertions) {
+                if cfg!(debug_assertions) && deleted_text.is_some() {
                     write!(
                         f,
                         "<delete '{}' from index {}>",
@@ -220,6 +361,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
+    #[should_panic]
     fn test_shifting_error() {
         insta::assert_debug_snapshot!(Operation::create_insert(1, "hi".to_string())
             .unwrap()

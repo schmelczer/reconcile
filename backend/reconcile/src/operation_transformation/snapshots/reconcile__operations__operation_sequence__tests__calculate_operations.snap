@@ -1,60 +1,60 @@
 ---
 source: reconcile/src/operations/operation_sequence.rs
-expression: result
+expression: operations
 snapshot_kind: text
 ---
-OperationSequence {
+EditedText {
     operations: [
-        (
-            0,
-            Insert {
+        OrderedOperation {
+            order: 0,
+            operation: Insert {
                 index: 0,
                 text: "Hello, my friend! ",
             },
-        ),
-        (
-            0,
-            Delete {
+        },
+        OrderedOperation {
+            order: 0,
+            operation: Delete {
                 index: 18,
                 deleted_character_count: 13,
                 deleted_text: Some(
                     "hello world! ",
                 ),
             },
-        ),
-        (
-            21,
-            Delete {
+        },
+        OrderedOperation {
+            order: 21,
+            operation: Delete {
                 index: 26,
                 deleted_character_count: 5,
                 deleted_text: Some(
                     "you? ",
                 ),
             },
-        ),
-        (
-            26,
-            Delete {
+        },
+        OrderedOperation {
+            order: 26,
+            operation: Delete {
                 index: 26,
                 deleted_character_count: 5,
                 deleted_text: Some(
                     " Adam",
                 ),
             },
-        ),
-        (
-            31,
-            Insert {
+        },
+        OrderedOperation {
+            order: 31,
+            operation: Insert {
                 index: 26,
                 text: "you ",
             },
-        ),
-        (
-            31,
-            Insert {
+        },
+        OrderedOperation {
+            order: 31,
+            operation: Insert {
                 index: 30,
                 text: "doing? Albert",
             },
-        ),
+        },
     ],
 }

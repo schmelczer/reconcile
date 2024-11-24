@@ -1,0 +1,45 @@
+---
+source: reconcile/src/operation_transformation/edited_text.rs
+assertion_line: 242
+expression: operations
+snapshot_kind: text
+---
+EditedText {
+    text: "hello world! How are you?  Adam",
+    operations: [
+        OrderedOperation {
+            order: 0,
+            operation: Insert {
+                index: 0,
+                text: "Hello, my friend! ",
+            },
+        },
+        OrderedOperation {
+            order: 0,
+            operation: Delete {
+                index: 18,
+                deleted_character_count: 13,
+                deleted_text: Some(
+                    "hello world! ",
+                ),
+            },
+        },
+        OrderedOperation {
+            order: 21,
+            operation: Delete {
+                index: 26,
+                deleted_character_count: 10,
+                deleted_text: Some(
+                    "you?  Adam",
+                ),
+            },
+        },
+        OrderedOperation {
+            order: 31,
+            operation: Insert {
+                index: 26,
+                text: "you doing? Albert",
+            },
+        },
+    ],
+}
