@@ -3,10 +3,14 @@ use crate::diffs::raw_operation::RawOperation;
 use crate::errors::SyncLibError;
 use crate::operation_transformation::merge_context::MergeContext;
 use crate::tokenizer::token::Token;
+use crate::tokenizer::word_tokenizer::word_tokenizer;
 use crate::utils::ordered_operation::OrderedOperation;
 use crate::utils::side::Side;
 use crate::{diffs::myers::diff, utils::merge_iters::MergeSorted};
 use ropey::Rope;
+use std::hash::Hash;
+use std::iter;
+use std::path::Iter;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -29,121 +33,129 @@ impl<'a> EditedText<'a> {
     /// Create an EditedText from the given original (old) and updated (new) strings.
     /// The returned EditedText represents the changes from the original to the updated text.
     /// When the return value is applied to the original text, it will result in the updated text.
+    /// The default word tokenizer is used to tokenize the text which splits the text on whitespaces.
     pub fn from_strings(original: &'a str, updated: &str) -> Self {
-        let original_tokens = Token::tokenize(original);
-        let updated_tokens = Token::tokenize(updated);
+        Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
+    }
 
-        let diff: Vec<RawOperation> = diff(&original_tokens, &updated_tokens);
+    /// Create an EditedText from the given original (old) and updated (new) strings.
+    /// The returned EditedText represents the changes from the original to the updated text.
+    /// When the return value is applied to the original text, it will result in the updated text.
+    /// The tokenizer function is used to tokenize the text.
+    pub fn from_strings_with_tokenizer<F, T>(
+        original: &'a str,
+        updated: &str,
+        tokenizer: &F,
+    ) -> Self
+    where
+        F: Fn(&str) -> Vec<Token<T>>,
+        T: PartialEq + Hash + Clone,
+    {
+        let original_tokens = (tokenizer)(original);
+        let updated_tokens = (tokenizer)(updated);
+
+        let diff: Vec<RawOperation<T>> = diff(&original_tokens, &updated_tokens);
 
         Self::new(
             original,
-            Self::elongate_operations(Self::cook_operations(diff)),
+            // Self::cook_operations(diff),
+            Self::cook_operations(Self::elongate_operations(diff.into_iter())).collect(),
         )
     }
 
     // Turn raw operations into ordered operations while keeping track of old & new indexes.
-    fn cook_operations(raw_operations: Vec<RawOperation>) -> Vec<OrderedOperation> {
+    fn cook_operations<I, T>(raw_operations: I) -> impl Iterator<Item = OrderedOperation>
+    where
+        I: IntoIterator<Item = RawOperation<T>>,
+        T: PartialEq + Hash + Clone,
+    {
         let mut new_index = 0; // this is the start index of the operation on the new text
         let mut order = 0; // this is the start index of the operation on the original text
 
-        raw_operations
-            .into_iter()
-            .flat_map(|raw_operation| {
-                let length = raw_operation.original_text_length();
+        raw_operations.into_iter().flat_map(move |raw_operation| {
+            let length = raw_operation.original_text_length();
 
-                let operation = match raw_operation {
-                    RawOperation::Equal(..) => {
-                        new_index += length;
-                        order += length;
+            let operation = match raw_operation {
+                RawOperation::Equal(..) => {
+                    new_index += length;
+                    order += length;
 
-                        None
-                    }
-                    RawOperation::Insert(..) => {
-                        let op =
-                            Operation::create_insert(new_index, raw_operation.get_original_text())
-                                .map(|operation| OrderedOperation { order, operation });
-
-                        new_index += length;
-
-                        op
-                    }
-                    RawOperation::Delete(..) => {
-                        let op = if cfg!(debug_assertions) {
-                            Operation::create_delete_with_text(
-                                new_index,
-                                raw_operation.get_original_text(),
-                            )
-                        } else {
-                            Operation::create_delete(new_index, length)
-                        }
-                        .map(|operation| OrderedOperation { order, operation });
-
-                        order += length;
-
-                        op
-                    }
-                };
-
-                operation.into_iter()
-            })
-            .collect()
-    }
-
-    // TODO: shift ops befor compacting
-    fn elongate_operations(operations: Vec<OrderedOperation>) -> Vec<OrderedOperation> {
-        let mut maybe_previous: Option<OrderedOperation> = None;
-
-        let mut result: Vec<OrderedOperation> = operations
-            .into_iter()
-            .flat_map(|next| {
-                if let Some(previous) = maybe_previous.take() {
-                    match (previous, next) {
-                        (
-                            previous @ OrderedOperation {
-                                operation: Operation::Insert { .. },
-                                ..
-                            },
-                            next @ OrderedOperation {
-                                operation: Operation::Insert { .. },
-                                ..
-                            },
-                        ) if previous.operation.end_index() + 1 == next.operation.start_index() => {
-                            maybe_previous = Some(OrderedOperation {
-                                order: previous.order,
-                                operation: previous.operation.extend(&next.operation),
-                            });
-                            None
-                        }
-                        (
-                            previous @ OrderedOperation {
-                                operation: Operation::Delete { .. },
-                                ..
-                            },
-                            next @ OrderedOperation {
-                                operation: Operation::Delete { .. },
-                                ..
-                            },
-                        ) if previous.operation.start_index() == next.operation.start_index() => {
-                            maybe_previous = Some(OrderedOperation {
-                                order: previous.order,
-                                operation: previous.operation.extend(&next.operation),
-                            });
-                            None
-                        }
-                        (previous, next) => {
-                            maybe_previous = Some(next);
-                            Some(previous)
-                        }
-                    }
-                } else {
-                    maybe_previous = Some(next.clone());
                     None
                 }
-                .into_iter()
+                RawOperation::Insert(..) => {
+                    let op = Operation::create_insert(new_index, raw_operation.get_original_text())
+                        .map(|operation| OrderedOperation { order, operation });
+
+                    new_index += length;
+
+                    op
+                }
+                RawOperation::Delete(..) => {
+                    let op = if cfg!(debug_assertions) {
+                        Operation::create_delete_with_text(
+                            new_index,
+                            raw_operation.get_original_text(),
+                        )
+                    } else {
+                        Operation::create_delete(new_index, length)
+                    }
+                    .map(|operation| OrderedOperation { order, operation });
+
+                    order += length;
+
+                    op
+                }
+            };
+
+            operation.into_iter()
+        })
+    }
+
+    fn elongate_operations<I, T>(raw_operations: I) -> Vec<RawOperation<T>>
+    where
+        I: IntoIterator<Item = RawOperation<T>>,
+        T: PartialEq + Hash + Clone,
+    {
+        let mut maybe_previous_insert: Option<RawOperation<T>> = None;
+        let mut maybe_previous_delete: Option<RawOperation<T>> = None;
+
+        let mut result: Vec<RawOperation<T>> = raw_operations
+            .into_iter()
+            .flat_map(|next| match next {
+                RawOperation::Insert(..) => {
+                    if let Some(prev) = maybe_previous_insert.take() {
+                        maybe_previous_insert = prev.extend(next);
+                    } else {
+                        maybe_previous_insert = Some(next);
+                    }
+
+                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
+                }
+                RawOperation::Delete(..) => {
+                    if let Some(prev) = maybe_previous_delete.take() {
+                        maybe_previous_delete = prev.extend(next);
+                    } else {
+                        maybe_previous_delete = Some(next);
+                    }
+
+                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
+                }
+                RawOperation::Equal(..) => Box::new(
+                    maybe_previous_insert
+                        .take()
+                        .into_iter()
+                        .chain(maybe_previous_delete.take())
+                        .chain(iter::once(next)),
+                )
+                    as Box<dyn Iterator<Item = RawOperation<T>>>,
             })
             .collect();
 
-        if let Some(prev) = maybe_previous {
+        if let Some(prev) = maybe_previous_insert {
+            result.push(prev);
+        }
+
+        if let Some(prev) = maybe_previous_delete {
             result.push(prev);
         }
 
@@ -257,20 +269,20 @@ mod tests {
         assert_eq!(new_right.to_string(), text);
     }
 
-    // #[test]
-    // fn test_calculate_operations_with_insert() {
-    //     let original = "hello world! ...";
-    //     let left = "Hello world! How are you?";
-    //     let right = "hello world! I'm Andras.";
-    //     let expected = "Hello world! I'm Andras. How are you?";
+    #[test]
+    fn test_calculate_operations_with_insert() {
+        let original = "hello world! ...";
+        let left = "hello world! I'm Andras.";
+        let right = "Hello world! How are you?";
+        let expected = "Hello world! I'm Andras.How are you?";
 
-    //     let operations_1 = EditedText::from_strings(original, left);
-    //     println!("{:#?}", operations_1);
-    //     let operations_2 = EditedText::from_strings(original, right);
-    //     println!("{:#?}", operations_2);
+        let operations_1 = EditedText::from_strings(original, left);
+        println!("{:#?}", operations_1);
+        let operations_2 = EditedText::from_strings(original, right);
+        println!("{:#?}", operations_2);
 
-    //     let operations = operations_1.merge(operations_2);
+        let operations = operations_1.merge(operations_2);
 
-    //     assert_eq!(operations.apply().unwrap(), expected);
-    // }
+        assert_eq!(operations.apply().unwrap(), expected);
+    }
 }

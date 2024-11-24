@@ -25,19 +25,19 @@ EditedText {
         },
         OrderedOperation {
             order: 21,
-            operation: Delete {
+            operation: Insert {
                 index: 26,
+                text: "you doing? Albert",
+            },
+        },
+        OrderedOperation {
+            order: 21,
+            operation: Delete {
+                index: 43,
                 deleted_character_count: 10,
                 deleted_text: Some(
                     "you?  Adam",
                 ),
-            },
-        },
-        OrderedOperation {
-            order: 31,
-            operation: Insert {
-                index: 26,
-                text: "you doing? Albert",
             },
         },
     ],
