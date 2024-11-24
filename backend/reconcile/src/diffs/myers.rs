@@ -25,9 +25,10 @@ use std::time::Instant;
 use std::vec;
 
 use crate::tokenizer::token::Token;
+use crate::utils::common_prefix_len::common_prefix_len;
+use crate::utils::common_suffix_len::common_suffix_len;
 
 use super::raw_operation::RawOperation;
-use super::utils::{common_prefix_len, common_suffix_len};
 
 /// Myers' diff algorithm.
 ///
