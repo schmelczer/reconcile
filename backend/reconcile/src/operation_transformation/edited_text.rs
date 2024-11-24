@@ -10,7 +10,6 @@ use crate::{diffs::myers::diff, utils::merge_iters::MergeSorted};
 use ropey::Rope;
 use std::hash::Hash;
 use std::iter;
-use std::path::Iter;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -59,7 +58,7 @@ impl<'a> EditedText<'a> {
         Self::new(
             original,
             // Self::cook_operations(diff),
-            Self::cook_operations(Self::elongate_operations(diff.into_iter())).collect(),
+            Self::cook_operations(Self::elongate_operations(diff)).collect(),
         )
     }
 

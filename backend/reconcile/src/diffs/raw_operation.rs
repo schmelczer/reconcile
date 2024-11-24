@@ -37,13 +37,13 @@ where
     pub fn extend(self, other: RawOperation<T>) -> Option<RawOperation<T>> {
         match (self, other) {
             (RawOperation::Insert(tokens1), RawOperation::Insert(tokens2)) => Some(
-                RawOperation::Insert(tokens1.into_iter().chain(tokens2.into_iter()).collect()),
+                RawOperation::Insert(tokens1.into_iter().chain(tokens2).collect()),
             ),
             (RawOperation::Delete(tokens1), RawOperation::Delete(tokens2)) => Some(
-                RawOperation::Delete(tokens1.into_iter().chain(tokens2.into_iter()).collect()),
+                RawOperation::Delete(tokens1.into_iter().chain(tokens2).collect()),
             ),
             (RawOperation::Equal(tokens1), RawOperation::Equal(tokens2)) => Some(
-                RawOperation::Equal(tokens1.into_iter().chain(tokens2.into_iter()).collect()),
+                RawOperation::Equal(tokens1.into_iter().chain(tokens2).collect()),
             ),
             _ => None,
         }
