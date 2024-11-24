@@ -1,10 +1,11 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, result, vec};
 
 use super::Operation;
 use crate::diffs::myers::diff;
 use crate::diffs::raw_operation::RawOperation;
 use crate::errors::SyncLibError;
 use crate::tokenizer::token::Token;
+use itertools::Itertools;
 use ropey::Rope;
 
 #[cfg(feature = "serde")]
@@ -26,27 +27,37 @@ struct MergeContext {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct OperationSequence {
-    operations: Vec<Operation>,
+    operations: Vec<(usize, Operation)>,
 }
 
 impl OperationSequence {
     /// Creates a new OperationSequence with the given operations.
     /// The operations should be in the order they should be applied.
     /// The operations must not overlap.
-    pub fn new(operations: Vec<Operation>) -> Self {
-        operations
-            .iter()
-            .zip(operations.iter().skip(1))
-            .for_each(|(previous, next)| {
+    pub fn new(operations: Vec<(usize, Operation)>) -> Self {
+        operations.iter().zip(operations.iter().skip(1)).for_each(
+            |((i_prev, previous), (i_next, next))| {
                 debug_assert!(
-                    previous.start_index() <= next.start_index(),
-                    "{} doesn't come before {}",
+                    i_prev == i_next
+                        || i_prev + previous.len() <= *i_next
+                        || !(matches!(previous, Operation::Delete { .. })
+                            && matches!(next, Operation::Insert { .. })),
+                    "{} and {} overlap with old index {i_prev} and {i_next}",
                     previous,
                     next
                 );
-            });
+                debug_assert!(
+                    previous.start_index() <= next.start_index(),
+                    "{} must not come before {} yet it does",
+                    previous,
+                    next
+                );
+            },
+        );
 
-        Self { operations }
+        Self {
+            operations, // operations: Self::merge_subsequent_operations(operations),
+        }
     }
 
     /// Creates an OperationSequence from the given original (old) and updated (new) strings.
@@ -58,37 +69,55 @@ impl OperationSequence {
 
         let diff: Vec<RawOperation> = diff(&original_tokens, &updated_tokens);
 
-        Self::new(Self::raw_operations_to_operations(diff))
+        Self::new(Self::cook_operations(diff))
     }
 
-    fn raw_operations_to_operations(raw_operations: Vec<RawOperation>) -> Vec<Operation> {
-        let mut index = 0;
+    fn cook_operations(raw_operations: Vec<RawOperation>) -> Vec<(usize, Operation)> {
+        let mut new_index = 0;
+        let mut old_index = 0;
+
         raw_operations
             .into_iter()
             .flat_map(|raw_operation| {
-                match raw_operation {
+                let length = raw_operation.original_text_length();
+
+                let operation = match raw_operation {
                     RawOperation::Equal(..) => {
-                        index += raw_operation.original_text_length();
+                        new_index += length;
+                        old_index += length;
+
                         None
                     }
                     RawOperation::Insert(..) => {
-                        let length = raw_operation.original_text_length();
-                        let result =
-                            Operation::create_insert(index, raw_operation.get_original_text());
-                        index += length;
-                        result
+                        let op =
+                            Operation::create_insert(new_index, raw_operation.get_original_text())
+                                .map(|op| (old_index, op));
+
+                        new_index += length;
+
+                        op
                     }
                     RawOperation::Delete(..) => {
-                        Operation::create_delete_with_text(index, raw_operation.get_original_text())
+                        let op = Operation::create_delete_with_text(
+                            new_index,
+                            raw_operation.get_original_text(),
+                        )
+                        .map(|op| (old_index, op));
+
+                        old_index += length;
+
+                        op
                     }
-                }
-                .into_iter()
+                };
+
+                operation.into_iter()
             })
+            .sorted_by_key(|(order, _)| *order)
             .collect()
     }
 
     pub fn merge(&self, other: &Self) -> Result<Self, SyncLibError> {
-        let mut merged_operations =
+        let mut merged_operations: Vec<Operation> =
             Vec::with_capacity(self.operations.len() + other.operations.len());
 
         let mut left_merge_context = MergeContext::default();
@@ -98,81 +127,55 @@ impl OperationSequence {
         let mut right_index: usize = 0;
 
         loop {
-            let shifted_left_op = self
-                .operations
-                .get(left_index)
-                .map(|op| {
-                    Self::pick_up_dangling_delete_from_affecting_context(
-                        op,
-                        &mut right_merge_context,
-                    );
-                    op.with_shifted_index(right_merge_context.shift)
-                })
-                .transpose()?;
+            let left_op = self.operations.get(left_index);
+            let right_op = other.operations.get(right_index);
 
-            let shifted_right_op = other
-                .operations
-                .get(right_index)
-                .map(|op| {
-                    Self::pick_up_dangling_delete_from_affecting_context(
-                        op,
-                        &mut left_merge_context,
-                    );
-                    op.with_shifted_index(left_merge_context.shift)
-                })
-                .transpose()?;
+            let order = left_op
+                .map(|(order, _)| order)
+                .cmp(&right_op.map(|(order, _)| order));
 
-            let left_op_index = shifted_left_op
-                .as_ref()
-                .map(|op| {
-                    op.start_index().max(
-                        left_merge_context
-                            .last_delete
-                            .as_ref()
-                            .map(|op| op.end_index())
-                            .unwrap_or_default(),
-                    ) as i64
-                })
-                .unwrap_or_default();
+            println!("left_op: {:#?} <> right_op: {:#?}", left_op, right_op);
 
-            let right_op_index = shifted_right_op
-                .as_ref()
-                .map(|op| {
-                    op.start_index().max(
-                        right_merge_context
-                            .last_delete
-                            .as_ref()
-                            .map(|op| op.end_index())
-                            .unwrap_or_default(),
-                    ) as i64
-                })
-                .unwrap_or_default();
+            let left_op = left_op.map(|(_, op)| op);
+            let right_op = right_op.map(|(_, op)| op);
 
-            let result = left_op_index.cmp(&right_op_index);
-            let order = if result == Ordering::Equal
-                && shifted_left_op.is_some()
-                && shifted_right_op.is_some()
-            {
-                match (
-                    shifted_left_op.as_ref().unwrap(),
-                    shifted_right_op.as_ref().unwrap(),
-                ) {
-                    (Operation::Insert { .. }, Operation::Delete { .. }) => Ordering::Greater,
-                    (Operation::Delete { .. }, Operation::Insert { .. }) => Ordering::Less,
-                    _ => Ordering::Equal,
-                }
-            } else {
-                result
-            };
+            // let order = if order == Ordering::Equal {
+            //     match (left_op.as_ref(), right_op.as_ref()) {
+            //         (Some(Operation::Insert { .. }), Some(Operation::Delete { .. })) => {
+            //             Ordering::Greater
+            //         }
+            //         (Some(Operation::Delete { .. }), Some(Operation::Insert { .. })) => {
+            //             Ordering::Less
+            //         }
+            //         _ => Ordering::Equal,
+            //     }
+            // } else {
+            //     order
+            // };
 
-            match (shifted_left_op, shifted_right_op, order) {
+            // debug_assert!(
+            //     right_merge_context.last_delete.is_none()
+            //         || left_merge_context.last_delete.is_none(),
+            //     "Both contexts have a last delete"
+            // );
+
+            match (left_op, right_op, order) {
                 (Some(left_op), None, _)
                 | (Some(left_op), Some(_), std::cmp::Ordering::Less | std::cmp::Ordering::Equal) => {
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        left_op.start_index(),
+                        &mut right_merge_context,
+                    );
+
                     if let Some(op) = Self::merge_operations_with_context(
-                        left_op,
+                        left_op.with_shifted_index(right_merge_context.shift)?,
                         &mut right_merge_context,
                         &mut left_merge_context,
                     )? {
+                        // println!("merged {:#?}", &op);
+                        if let Some(last) = merged_operations.last() {
+                            debug_assert!(op.start_index() >= last.start_index());
+                        }
                         merged_operations.push(op);
                     }
 
@@ -180,11 +183,20 @@ impl OperationSequence {
                 }
                 (None, Some(right_op), _)
                 | (Some(_), Some(right_op), std::cmp::Ordering::Greater) => {
+                    Self::pick_up_dangling_delete_from_affecting_context(
+                        right_op.start_index(),
+                        &mut left_merge_context,
+                    );
+
                     if let Some(op) = Self::merge_operations_with_context(
-                        right_op,
+                        right_op.with_shifted_index(left_merge_context.shift)?,
                         &mut left_merge_context,
                         &mut right_merge_context,
                     )? {
+                        // println!("merged {:#?}", &op);
+                        if let Some(last) = merged_operations.last() {
+                            debug_assert!(op.start_index() >= last.start_index());
+                        }
                         merged_operations.push(op);
                     }
 
@@ -194,13 +206,22 @@ impl OperationSequence {
                     break;
                 }
             };
+
+            println!(
+                "{:#?} <> {:#?}\n\n\n",
+                left_merge_context, right_merge_context
+            );
         }
 
-        Ok(Self::new(merged_operations))
+        println!("merged_operations: {:#?}", merged_operations.to_vec());
+
+        Ok(Self::new(
+            merged_operations.into_iter().map(|op| (0, op)).collect(),
+        ))
     }
 
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
-        for operation in &self.operations {
+        for (_, operation) in &self.operations {
             operation.apply(rope_text)?;
         }
 
@@ -230,46 +251,52 @@ impl OperationSequence {
                 (operation @ Operation::Insert { .. }, Some(last_delete)) => {
                     produced_context.shift += operation.len() as i64;
 
-                    if last_delete.range().contains(&operation.start_index()) {
-                        let moved_operation = operation.with_index(last_delete.start_index());
+                    debug_assert!(
+                        last_delete.range().contains(&operation.start_index()),
+                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
+                    );
 
-                        affecting_context.last_delete = Operation::create_delete(
-                            moved_operation.end_index() + 1,
-                            last_delete.len(),
-                        );
+                    let difference =
+                        operation.start_index() as i64 - last_delete.start_index() as i64;
 
-                        Some(moved_operation)
-                    } else {
-                        Some(operation)
-                    }
+                    let moved_operation = operation.with_index(last_delete.start_index());
+
+                    affecting_context.last_delete = Operation::create_delete(
+                        moved_operation.end_index() + 1,
+                        (last_delete.len() as i64 - difference) as usize,
+                    );
+                    affecting_context.shift -= difference;
+
+                    Some(moved_operation)
                 }
 
                 (operation @ Operation::Delete { .. }, Some(last_delete)) => {
-                    let updated_delete = if last_delete.range().contains(&operation.start_index()) {
-                        let overlap =
-                            last_delete.end_index() as i64 - operation.start_index() as i64 + 1;
+                    debug_assert!(
+                        last_delete.range().contains(&operation.start_index()),
+                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
+                    );
 
-                        affecting_context.last_delete = Operation::create_delete(
-                            last_delete.start_index(),
-                            0.max(last_delete.len() as i64 - operation.len() as i64) as usize,
-                        );
+                    let difference =
+                        operation.start_index() as i64 - last_delete.start_index() as i64;
 
-                        if last_delete.end_index() < operation.end_index() {
-                            affecting_context.shift -= last_delete.len() as i64 - overlap
-                        }
+                    let updated_delete = Operation::create_delete(
+                        last_delete.start_index(),
+                        0.max(operation.end_index() as i64 - last_delete.end_index() as i64)
+                            as usize,
+                    );
 
-                        Operation::create_delete(
-                            last_delete.start_index(),
-                            0.max(operation.len() as i64 - overlap) as usize,
-                        )
-                    } else {
-                        Some(operation)
-                    };
+                    affecting_context.shift -= difference;
+                    affecting_context.last_delete = Operation::create_delete(
+                        last_delete.start_index(),
+                        0.max(last_delete.end_index() as i64 - operation.end_index() as i64)
+                            as usize,
+                    );
 
                     Self::replace_delete_in_produced_context(
                         produced_context,
                         updated_delete.clone(),
                     );
+
                     updated_delete
                 }
             },
@@ -288,12 +315,12 @@ impl OperationSequence {
     }
 
     fn pick_up_dangling_delete_from_affecting_context(
-        next_operation: &Operation,
+        start_index: usize,
         affecting_context: &mut MergeContext,
     ) {
         match affecting_context.last_delete.as_ref() {
             Some(last_delete)
-                if next_operation.start_index() as i64 + affecting_context.shift
+                if start_index as i64 + affecting_context.shift
                     > last_delete.end_index() as i64 =>
             {
                 affecting_context.shift -= last_delete.len() as i64;
@@ -326,16 +353,6 @@ mod tests {
         let new_right = operations.apply(&mut left).unwrap();
 
         assert_eq!(new_right.to_string(), right);
-    }
-
-    #[test]
-    fn test_calculate_operations_with_large_diff() {
-        let left = "hello world! How are you?  Adam";
-        let right = "Hello, my friend! How are you doing? Albert";
-
-        let result = OperationSequence::from_strings(left, right);
-
-        insta::assert_debug_snapshot!(result);
     }
 
     #[test]
@@ -445,7 +462,7 @@ mod tests {
 
     #[test]
 
-    fn test_merge_files_without_panicing() {
+    fn test_merge_files_without_panic() {
         let files = vec![
             "pride_and_prejudice.txt",
             "romeo_and_juliet.txt",
@@ -474,31 +491,31 @@ mod tests {
     }
 
     fn test_merge(original: &str, edit_1: &str, edit_2: &str) -> String {
-        println!(
-            "original: '{:#}'",
-            original[..100.min(original.len())].to_string()
-        );
-        println!(
-            "edit_1: '{:#}'",
-            edit_1[..100.min(edit_1.len())].to_string()
-        );
-        println!(
-            "edit_2: '{:#}'",
-            edit_2[..100.min(edit_2.len())].to_string()
-        );
+        // println!(
+        //     "original: '{:#}'",
+        //     original[..100.min(original.len())].to_string()
+        // );
+        // println!(
+        //     "edit_1: '{:#}'",
+        //     edit_1[..100.min(edit_1.len())].to_string()
+        // );
+        // println!(
+        //     "edit_2: '{:#}'",
+        //     edit_2[..100.min(edit_2.len())].to_string()
+        // );
 
         let mut original = Rope::from_str(original);
 
         let operations_1 = OperationSequence::from_strings(&original.to_string(), edit_1);
-        println!(
-            "operations_1: {:?}",
-            operations_1.operations[..20.min(operations_1.operations.len())].to_vec()
-        );
+        // println!(
+        //     "operations_1: {:#?}",
+        //     operations_1.operations[..20.min(operations_1.operations.len())].to_vec()
+        // );
         let operations_2 = OperationSequence::from_strings(&original.to_string(), edit_2);
-        println!(
-            "operations_2: {:?}",
-            operations_2.operations[..20.min(operations_2.operations.len())].to_vec()
-        );
+        // println!(
+        //     "operations_2: {:#?}",
+        //     operations_2.operations[..20.min(operations_2.operations.len())].to_vec()
+        // );
 
         assert_eq!(
             operations_1

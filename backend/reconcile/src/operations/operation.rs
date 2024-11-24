@@ -122,6 +122,11 @@ impl Operation {
         self.start_index() + self.len() - 1
     }
 
+    /// Returns the range of indices of characters that the operation affects, inclusive.
+    pub fn range(&self) -> std::ops::RangeInclusive<usize> {
+        self.start_index()..=self.end_index()
+    }
+
     /// Returns the number of affected characters. It is always greater than 0 because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
@@ -137,11 +142,6 @@ impl Operation {
     pub fn is_empty(&self) -> bool {
         debug_assert!(self.len() > 0, "Operation cannot be empty");
         false
-    }
-
-    /// Returns the range of indices of characters that the operation affects, inclusive.
-    pub fn range(&self) -> std::ops::RangeInclusive<usize> {
-        self.start_index()..=self.end_index()
     }
 
     /// Clones the operation while updating the index.
@@ -179,70 +179,6 @@ impl Operation {
         })?;
 
         Ok(self.with_index(non_negative_index))
-    }
-
-    /// Merges the operation with another operation that is consequtive to this operation.
-    /// The other operation must start where this operation ends.
-    /// The two operations must be of the same type, otherwise panics.
-    pub fn merge(self, other: &Self) -> Self {
-        match (self, other) {
-            (
-                Operation::Insert { index, text },
-                Operation::Insert {
-                    text: other_text, ..
-                },
-            ) => {
-                let end_index = index + text.chars().count();
-                debug_assert!(
-                    end_index == other.start_index(),
-                    "Cannot merge non-consequtive inserts with index {} and {}",
-                    end_index,
-                    other.start_index()
-                );
-
-                Operation::Insert {
-                    index,
-                    text: text + other_text,
-                }
-            }
-            (
-                Operation::Delete {
-                    index,
-                    deleted_character_count,
-
-                    #[cfg(debug_assertions)]
-                    deleted_text,
-                },
-                Operation::Delete {
-                    index: other_index,
-                    deleted_character_count: other_deleted_character_count,
-
-                    #[cfg(debug_assertions)]
-                        deleted_text: other_deleted_text,
-                },
-            ) => {
-                debug_assert!(
-                    index == *other_index,
-                    "Cannot merge non-consequtive deletes",
-                );
-
-                Operation::Delete {
-                    index,
-                    deleted_character_count: deleted_character_count
-                        + other_deleted_character_count,
-
-                    #[cfg(debug_assertions)]
-                    deleted_text: deleted_text
-                        .into_iter()
-                        .flat_map(|t1| other_deleted_text.as_ref().map(|t2| t1 + t2).into_iter())
-                        .last(),
-                }
-            }
-            (this, other) => panic!(
-                "Cannot merge operations of different type: {:?} and {:?}",
-                &this, &other
-            ),
-        }
     }
 }
 

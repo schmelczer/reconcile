@@ -5,38 +5,56 @@ snapshot_kind: text
 ---
 OperationSequence {
     operations: [
-        Insert {
-            index: 0,
-            text: "Hello, my friend! ",
-        },
-        Delete {
-            index: 18,
-            deleted_character_count: 13,
-            deleted_text: Some(
-                "hello world! ",
-            ),
-        },
-        Delete {
-            index: 26,
-            deleted_character_count: 5,
-            deleted_text: Some(
-                "you? ",
-            ),
-        },
-        Delete {
-            index: 26,
-            deleted_character_count: 5,
-            deleted_text: Some(
-                " Adam",
-            ),
-        },
-        Insert {
-            index: 26,
-            text: "you ",
-        },
-        Insert {
-            index: 30,
-            text: "doing? Albert",
-        },
+        (
+            0,
+            Insert {
+                index: 0,
+                text: "Hello, my friend! ",
+            },
+        ),
+        (
+            0,
+            Delete {
+                index: 18,
+                deleted_character_count: 13,
+                deleted_text: Some(
+                    "hello world! ",
+                ),
+            },
+        ),
+        (
+            21,
+            Delete {
+                index: 26,
+                deleted_character_count: 5,
+                deleted_text: Some(
+                    "you? ",
+                ),
+            },
+        ),
+        (
+            26,
+            Delete {
+                index: 26,
+                deleted_character_count: 5,
+                deleted_text: Some(
+                    " Adam",
+                ),
+            },
+        ),
+        (
+            31,
+            Insert {
+                index: 26,
+                text: "you ",
+            },
+        ),
+        (
+            31,
+            Insert {
+                index: 30,
+                text: "doing? Albert",
+            },
+        ),
     ],
 }
