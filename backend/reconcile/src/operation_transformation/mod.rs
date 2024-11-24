@@ -17,10 +17,10 @@ pub fn reconcile(original: &str, left: &str, right: &str) -> Result<String, Sync
 
 #[cfg(test)]
 mod test {
-    use std::{env, fs, ops::Range, path::Path};
+    use std::{fs, ops::Range, path::Path};
 
     use pretty_assertions::assert_eq;
-    use ropey::Rope;
+
     use test_case::test_matrix;
 
     use super::*;
@@ -140,8 +140,8 @@ mod test {
         range_2: Range<usize>,
         range_3: Range<usize>,
     ) {
-        let files = vec![file_name_1, file_name_2, file_name_3];
-        let permutations = vec![range_1, range_2, range_3];
+        let files = [file_name_1, file_name_2, file_name_3];
+        let permutations = [range_1, range_2, range_3];
 
         let root = Path::new("test/resources/");
 

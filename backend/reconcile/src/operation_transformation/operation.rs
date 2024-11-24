@@ -149,12 +149,6 @@ impl Operation {
         }
     }
 
-    /// The operation cannot be empty.
-    pub fn is_empty(&self) -> bool {
-        debug_assert!(self.len() > 0, "Operation cannot be empty");
-        false
-    }
-
     /// Clones the operation while updating the index.
     pub fn with_index(self, index: usize) -> Self {
         match self {

@@ -15,13 +15,10 @@
 //! At present this implementation of Myers' does not implement any more advanced
 //! heuristics that would solve some pathological cases.  For instance passing two
 //! large and completely distinct sequences to the algorithm will make it spin
-//! without making reasonable progress.  Currently the only protection in the
-//! library against this is to pass a deadline to the diffing algorithm.
-//!
+//! without making reasonable progress.
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
 use std::ops::{Index, IndexMut, Range};
-use std::time::Instant;
 use std::vec;
 
 use crate::tokenizer::token::Token;
@@ -30,20 +27,13 @@ use crate::utils::common_suffix_len::common_suffix_len;
 
 use super::raw_operation::RawOperation;
 
-/// Myers' diff algorithm.
-///
-/// Diff `old`, between indices `old_range` and `new` between indices `new_range`.
-pub fn diff(old: &[Token], new: &[Token]) -> Vec<RawOperation> {
-    diff_deadline(old, new, None)
-}
-
 /// Myers' diff algorithm with deadline.
 ///
 /// Diff `old`, between indices `old_range` and `new` between indices `new_range`.
 ///
 /// This diff is done with an optional deadline that defines the maximal
 /// execution time permitted before it bails and falls back to an approximation.
-pub fn diff_deadline(old: &[Token], new: &[Token], deadline: Option<Instant>) -> Vec<RawOperation> {
+pub fn diff(old: &[Token], new: &[Token]) -> Vec<RawOperation> {
     let max_d = max_d(old.len(), new.len());
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
@@ -56,7 +46,6 @@ pub fn diff_deadline(old: &[Token], new: &[Token], deadline: Option<Instant>) ->
         &mut vf,
         &mut vb,
         &mut result,
-        deadline,
     );
     result
 }
@@ -136,7 +125,6 @@ fn find_middle_snake(
     new_range: Range<usize>,
     vf: &mut V,
     vb: &mut V,
-    deadline: Option<Instant>,
 ) -> Option<(usize, usize)> {
     let n = old_range.len();
     let m = new_range.len();
@@ -157,13 +145,6 @@ fn find_middle_snake(
     assert!(vb.len() >= d_max);
 
     for d in 0..d_max as isize {
-        // are we running for too long?
-        if let Some(deadline) = deadline {
-            if Instant::now() > deadline {
-                break;
-            }
-        }
-
         // Forward path
         for k in (-d..=d).rev().step_by(2) {
             let mut x = if k == -d || (k != d && vf[k - 1] < vf[k + 1]) {
@@ -238,7 +219,6 @@ fn find_middle_snake(
         // TODO: Maybe there's an opportunity to optimize and bail early?
     }
 
-    // deadline reached
     None
 }
 
@@ -250,7 +230,6 @@ fn conquer(
     vf: &mut V,
     vb: &mut V,
     result: &mut Vec<RawOperation>,
-    deadline: Option<Instant>,
 ) {
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
@@ -281,19 +260,13 @@ fn conquer(
         result.push(RawOperation::Insert(
             new[new_range.start..new_range.start + new_range.len()].to_vec(),
         ));
-    } else if let Some((x_start, y_start)) = find_middle_snake(
-        old,
-        old_range.clone(),
-        new,
-        new_range.clone(),
-        vf,
-        vb,
-        deadline,
-    ) {
+    } else if let Some((x_start, y_start)) =
+        find_middle_snake(old, old_range.clone(), new, new_range.clone(), vf, vb)
+    {
         let (old_a, old_b) = split_at(old_range, x_start);
         let (new_a, new_b) = split_at(new_range, y_start);
-        conquer(old, old_a, new, new_a, vf, vb, result, deadline);
-        conquer(old, old_b, new, new_b, vf, vb, result, deadline);
+        conquer(old, old_a, new, new_a, vf, vb, result);
+        conquer(old, old_b, new, new_b, vf, vb, result);
     } else {
         result.push(RawOperation::Delete(
             old[old_range.start..old_range.end].to_vec(),

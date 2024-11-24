@@ -1,4 +1,4 @@
-use crate::operation_transformation::{operation, Operation};
+use crate::operation_transformation::Operation;
 
 #[derive(Debug, Clone, Default)]
 pub struct MergeContext {

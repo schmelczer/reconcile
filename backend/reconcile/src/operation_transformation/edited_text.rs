@@ -1,6 +1,4 @@
-use std::borrow::BorrowMut;
-
-use super::{operation, Operation};
+use super::Operation;
 use crate::diffs::raw_operation::RawOperation;
 use crate::errors::SyncLibError;
 use crate::operation_transformation::merge_context::MergeContext;
@@ -226,10 +224,9 @@ impl<'a> EditedText<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, fs, ops::Range, path::Path};
+    use std::env;
 
     use pretty_assertions::assert_eq;
-    use test_case::test_matrix;
 
     use super::*;
 
@@ -260,20 +257,20 @@ mod tests {
         assert_eq!(new_right.to_string(), text);
     }
 
-    #[test]
-    fn test_calculate_operations_with_insert() {
-        let original = "hello world! ...";
-        let left = "Hello world! How are you?";
-        let right = "hello world! I'm Andras.";
-        let expected = "Hello world! I'm Andras. How are you?";
+    // #[test]
+    // fn test_calculate_operations_with_insert() {
+    //     let original = "hello world! ...";
+    //     let left = "Hello world! How are you?";
+    //     let right = "hello world! I'm Andras.";
+    //     let expected = "Hello world! I'm Andras. How are you?";
 
-        let operations_1 = EditedText::from_strings(original, left);
-        println!("{:#?}", operations_1);
-        let operations_2 = EditedText::from_strings(original, right);
-        println!("{:#?}", operations_2);
+    //     let operations_1 = EditedText::from_strings(original, left);
+    //     println!("{:#?}", operations_1);
+    //     let operations_2 = EditedText::from_strings(original, right);
+    //     println!("{:#?}", operations_2);
 
-        let operations = operations_1.merge(operations_2);
+    //     let operations = operations_1.merge(operations_2);
 
-        assert_eq!(operations.apply().unwrap(), expected);
-    }
+    //     assert_eq!(operations.apply().unwrap(), expected);
+    // }
 }

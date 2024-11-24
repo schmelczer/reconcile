@@ -27,19 +27,9 @@ EditedText {
             order: 21,
             operation: Delete {
                 index: 26,
-                deleted_character_count: 5,
+                deleted_character_count: 10,
                 deleted_text: Some(
-                    "you? ",
-                ),
-            },
-        },
-        OrderedOperation {
-            order: 26,
-            operation: Delete {
-                index: 26,
-                deleted_character_count: 5,
-                deleted_text: Some(
-                    " Adam",
+                    "you?  Adam",
                 ),
             },
         },
@@ -47,14 +37,7 @@ EditedText {
             order: 31,
             operation: Insert {
                 index: 26,
-                text: "you ",
-            },
-        },
-        OrderedOperation {
-            order: 31,
-            operation: Insert {
-                index: 30,
-                text: "doing? Albert",
+                text: "you doing? Albert",
             },
         },
     ],
