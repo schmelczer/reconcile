@@ -5,7 +5,7 @@ pub struct MergeContext<T>
 where
     T: PartialEq + Clone,
 {
-    pub last_delete: Option<Operation<T>>,
+    last_operation: Option<Operation<T>>,
     pub shift: i64,
 }
 
@@ -15,7 +15,7 @@ where
 {
     fn default() -> Self {
         MergeContext {
-            last_delete: None,
+            last_operation: None,
             shift: 0,
         }
     }
@@ -25,28 +25,49 @@ impl<T> MergeContext<T>
 where
     T: PartialEq + Clone,
 {
-    /// Replace the last delete operation (if there was one) with a new one while
-    /// applying it to the shift.
-    pub fn replace_delete(&mut self, delete: Option<Operation<T>>) {
-        if let Some(produced_last_delete) = self.last_delete.take() {
-            self.shift -= produced_last_delete.len() as i64;
-        }
-
-        self.last_delete = delete;
+    pub fn last_operation(&self) -> Option<&Operation<T>> {
+        self.last_operation.as_ref()
     }
 
-    /// Remove the last delete operation (if there was one) in case it is behind the
-    /// threshold operation.
-    pub fn consume_delete_if_behind_operation(&mut self, threshold_operation: &Operation<T>) {
-        match self.last_delete.as_ref() {
-            Some(last_delete)
-                if threshold_operation.start_index() as i64 + self.shift
-                    > last_delete.end_index() as i64 =>
+    /// Replace the last delete operation (if there was one) with a new one while
+    /// applying it to the shift.
+    pub fn consume_and_replace_last_operation(&mut self, operation: Option<Operation<T>>) {
+        if let Some(Operation::Delete {
+            deleted_character_count,
+            ..
+        }) = self.last_operation.take()
+        {
+            self.shift -= deleted_character_count as i64;
+        }
+
+        self.last_operation = operation;
+    }
+
+    pub fn replace_last_operation(&mut self, operation: Option<Operation<T>>) {
+        self.last_operation = operation;
+    }
+
+    /// Remove the last operation (if there was one) in case it is behind the
+    /// threshold operation. This changes the shift in case the last operation was
+    /// a delete.
+    pub fn consume_last_operation_if_it_is_too_behind(
+        &mut self,
+        threshold_operation: &Operation<T>,
+    ) {
+        if let Some(last_operation) = self.last_operation.as_ref() {
+            if threshold_operation.start_index() as i64 + self.shift
+                > last_operation.end_index() as i64
             {
-                self.shift -= last_delete.len() as i64;
-                self.last_delete = None;
+                if let Operation::Delete {
+                    deleted_character_count,
+                    ..
+                } = last_operation
+                {
+                    self.shift -= *deleted_character_count as i64;
+                }
+
+                self.last_operation = None;
             }
-            _ => {}
         }
     }
 }

@@ -204,22 +204,31 @@ where
         affecting_context: &mut MergeContext<T>,
         produced_context: &mut MergeContext<T>,
     ) -> Option<Operation<T>> {
-        affecting_context.consume_delete_if_behind_operation(&self);
+        affecting_context.consume_last_operation_if_it_is_too_behind(&self);
 
         let operation = self.with_shifted_index(affecting_context.shift);
 
-        match (operation, affecting_context.last_delete.clone()) {
+        match (operation, affecting_context.last_operation().clone()) {
             (operation @ Operation::Insert { .. }, None) => {
                 produced_context.shift += operation.len() as i64;
                 Some(operation)
             }
 
-            (operation @ Operation::Delete { .. }, None) => {
-                produced_context.replace_delete(Some(operation.clone()));
+            (operation, Some(last_insert @ Operation::Insert { .. })) => {
+                produced_context.shift += operation.len() as i64;
                 Some(operation)
             }
 
-            (operation @ Operation::Insert { .. }, Some(last_delete)) => {
+            // We can never delete inside an insert
+            (operation @ Operation::Delete { .. }, None) => {
+                produced_context.consume_and_replace_last_operation(Some(operation.clone()));
+                Some(operation)
+            }
+
+            (
+                operation @ Operation::Insert { .. },
+                Some(last_delete @ Operation::Delete { .. }),
+            ) => {
                 produced_context.shift += operation.len() as i64;
 
                 debug_assert!(
@@ -231,16 +240,19 @@ where
 
                 let moved_operation = operation.with_index(last_delete.start_index());
 
-                affecting_context.last_delete = Operation::create_delete(
+                affecting_context.replace_last_operation(Operation::create_delete(
                     moved_operation.end_index() + 1,
                     (last_delete.len() as i64 - difference) as usize,
-                );
+                ));
                 affecting_context.shift -= difference;
 
                 Some(moved_operation)
             }
 
-            (operation @ Operation::Delete { .. }, Some(last_delete)) => {
+            (
+                operation @ Operation::Delete { .. },
+                Some(last_delete @ Operation::Delete { .. }),
+            ) => {
                 debug_assert!(
                         last_delete.range().contains(&operation.start_index()),
                         "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
@@ -253,13 +265,13 @@ where
                     0.max(operation.end_index() as i64 - last_delete.end_index() as i64) as usize,
                 );
 
-                affecting_context.shift -= difference;
-                affecting_context.last_delete = Operation::create_delete(
+                affecting_context.replace_last_operation(Operation::create_delete(
                     last_delete.start_index(),
                     0.max(last_delete.end_index() as i64 - operation.end_index() as i64) as usize,
-                );
+                ));
+                affecting_context.shift -= difference;
 
-                produced_context.replace_delete(updated_delete.clone());
+                produced_context.consume_and_replace_last_operation(updated_delete.clone());
 
                 updated_delete
             }
