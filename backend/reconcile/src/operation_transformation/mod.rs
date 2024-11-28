@@ -4,9 +4,8 @@ mod operation;
 
 pub use edited_text::EditedText;
 pub use operation::Operation;
-use std::hash::Hash;
 
-use crate::{errors::SyncLibError, tokenizer::token::Token};
+use crate::{errors::SyncLibError, tokenizer::Tokenizer};
 
 pub fn reconcile(original: &str, left: &str, right: &str) -> Result<String, SyncLibError> {
     let left_operations = EditedText::from_strings(original, left);
@@ -20,11 +19,10 @@ pub fn reconcile_with_tokenizer<F, T>(
     original: &str,
     left: &str,
     right: &str,
-    tokenizer: &F,
+    tokenizer: &Tokenizer<T>,
 ) -> Result<String, SyncLibError>
 where
-    F: Fn(&str) -> Vec<Token<T>>,
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     let left_operations = EditedText::from_strings_with_tokenizer(original, left, tokenizer);
     let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);

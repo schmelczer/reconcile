@@ -1,7 +1,7 @@
 use ropey::Rope;
 use std::fmt::Display;
 
-use crate::errors::SyncLibError;
+use crate::{errors::SyncLibError, Token};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -12,11 +12,14 @@ use super::merge_context::MergeContext;
 /// Operation is tied to a ropey::Rope and is mainly expected to be
 /// created by EditedText.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Operation {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Operation<T>
+where
+    T: PartialEq + Clone,
+{
     Insert {
         index: usize,
-        text: String,
+        text: Vec<Token<T>>,
     },
 
     Delete {
@@ -28,10 +31,13 @@ pub enum Operation {
     },
 }
 
-impl Operation {
+impl<T> Operation<T>
+where
+    T: PartialEq + Clone,
+{
     /// Creates an insert operation with the given index and text.
     /// If the text is empty (meaning that the operation would be a no-op), returns None.
-    pub fn create_insert(index: usize, text: String) -> Option<Self> {
+    pub fn create_insert(index: usize, text: Vec<Token<T>>) -> Option<Self> {
         if text.is_empty() {
             return None;
         }
@@ -82,7 +88,13 @@ impl Operation {
     pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
         match self {
             Operation::Insert { text, .. } => rope_text
-                .try_insert(self.start_index(), text)
+                .try_insert(
+                    self.start_index(),
+                    &text
+                        .iter()
+                        .map(|token| token.original())
+                        .collect::<String>(),
+                )
                 .map_err(|err| {
                     SyncLibError::OperationApplicationError(format!(
                         "Failed to insert text: {}",
@@ -141,7 +153,9 @@ impl Operation {
     /// Returns the number of affected characters. It is always greater than 0 because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
-            Operation::Insert { text, .. } => text.chars().count(),
+            Operation::Insert { text, .. } => {
+                text.iter().map(|token| token.get_original_length()).sum()
+            }
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -187,9 +201,9 @@ impl Operation {
     /// The contexts are updated in-place.
     pub fn merge_operations_with_context(
         self,
-        affecting_context: &mut MergeContext,
-        produced_context: &mut MergeContext,
-    ) -> Option<Operation> {
+        affecting_context: &mut MergeContext<T>,
+        produced_context: &mut MergeContext<T>,
+    ) -> Option<Operation<T>> {
         affecting_context.consume_delete_if_behind_operation(&self);
 
         let operation = self.with_shifted_index(affecting_context.shift);
@@ -253,11 +267,21 @@ impl Operation {
     }
 }
 
-impl Display for Operation {
+impl<T> Display for Operation<T>
+where
+    T: PartialEq + Clone,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Operation::Insert { index, text } => {
-                write!(f, "<insert '{}' from index {}>", text, index)
+                write!(
+                    f,
+                    "<insert '{}' from index {}>",
+                    text.iter()
+                        .map(|token| token.original())
+                        .collect::<String>(),
+                    index
+                )
             }
             Operation::Delete {
                 index,
@@ -293,7 +317,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_shifting_error() {
-        insta::assert_debug_snapshot!(Operation::create_insert(1, "hi".to_string())
+        insta::assert_debug_snapshot!(Operation::create_insert(1, vec!["hi".into()])
             .unwrap()
             .with_shifted_index(-2));
     }
@@ -301,7 +325,7 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() -> Result<(), SyncLibError> {
         let mut rope = Rope::from_str("hello world");
-        let operation = Operation::create_delete_with_text(5, " world".to_string()).unwrap();
+        let operation = Operation::<()>::create_delete_with_text(5, " world".to_string()).unwrap();
 
         operation.apply(&mut rope)?;
 
@@ -313,7 +337,7 @@ mod tests {
     #[test]
     fn test_apply_insert() -> Result<(), SyncLibError> {
         let mut rope = Rope::from_str("hello");
-        let operation = Operation::create_insert(5, " my friend".to_string()).unwrap();
+        let operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
 
         operation.apply(&mut rope)?;
 

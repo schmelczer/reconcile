@@ -1,17 +1,24 @@
-use std::hash::Hash;
-
 #[derive(Debug, Clone)]
 pub struct Token<T>
 where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     normalised: T,
     original: String,
 }
 
+impl From<&str> for Token<String> {
+    fn from(s: &str) -> Self {
+        Token {
+            normalised: s.to_string(),
+            original: s.to_string(),
+        }
+    }
+}
+
 impl<T> Token<T>
 where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     pub fn new(normalised: T, original: String) -> Self {
         Token {
@@ -35,18 +42,9 @@ where
 
 impl<T> PartialEq for Token<T>
 where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     fn eq(&self, other: &Self) -> bool {
         self.normalised == other.normalised
-    }
-}
-
-impl<T> Hash for Token<T>
-where
-    T: PartialEq + Hash + Clone,
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.normalised.hash(state);
     }
 }

@@ -2,13 +2,12 @@ use super::Operation;
 use crate::diffs::raw_operation::RawOperation;
 use crate::errors::SyncLibError;
 use crate::operation_transformation::merge_context::MergeContext;
-use crate::tokenizer::token::Token;
 use crate::tokenizer::word_tokenizer::word_tokenizer;
+use crate::tokenizer::Tokenizer;
 use crate::utils::ordered_operation::OrderedOperation;
 use crate::utils::side::Side;
 use crate::{diffs::myers::diff, utils::merge_iters::MergeSorted};
 use ropey::Rope;
-use std::hash::Hash;
 use std::iter;
 
 #[cfg(feature = "serde")]
@@ -22,13 +21,16 @@ use serde::{Deserialize, Serialize};
 /// EditedText derived from the same original text and then applied to the original text
 /// to get the reconciled text of concurrent edits.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
-pub struct EditedText<'a> {
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct EditedText<'a, T>
+where
+    T: PartialEq + Clone,
+{
     text: &'a str,
-    operations: Vec<OrderedOperation>,
+    operations: Vec<OrderedOperation<T>>,
 }
 
-impl<'a> EditedText<'a> {
+impl<'a> EditedText<'a, String> {
     /// Create an EditedText from the given original (old) and updated (new) strings.
     /// The returned EditedText represents the changes from the original to the updated text.
     /// When the return value is applied to the original text, it will result in the updated text.
@@ -36,20 +38,21 @@ impl<'a> EditedText<'a> {
     pub fn from_strings(original: &'a str, updated: &str) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
     }
+}
 
+impl<'a, T> EditedText<'a, T>
+where
+    T: PartialEq + Clone,
+{
     /// Create an EditedText from the given original (old) and updated (new) strings.
     /// The returned EditedText represents the changes from the original to the updated text.
     /// When the return value is applied to the original text, it will result in the updated text.
     /// The tokenizer function is used to tokenize the text.
-    pub fn from_strings_with_tokenizer<F, T>(
+    pub fn from_strings_with_tokenizer(
         original: &'a str,
         updated: &str,
-        tokenizer: &F,
-    ) -> Self
-    where
-        F: Fn(&str) -> Vec<Token<T>>,
-        T: PartialEq + Hash + Clone,
-    {
+        tokenizer: &Tokenizer<T>,
+    ) -> Self {
         let original_tokens = (tokenizer)(original);
         let updated_tokens = (tokenizer)(updated);
 
@@ -63,10 +66,9 @@ impl<'a> EditedText<'a> {
     }
 
     // Turn raw operations into ordered operations while keeping track of old & new indexes.
-    fn cook_operations<I, T>(raw_operations: I) -> impl Iterator<Item = OrderedOperation>
+    fn cook_operations<I>(raw_operations: I) -> impl Iterator<Item = OrderedOperation<T>>
     where
         I: IntoIterator<Item = RawOperation<T>>,
-        T: PartialEq + Hash + Clone,
     {
         let mut new_index = 0; // this is the start index of the operation on the new text
         let mut order = 0; // this is the start index of the operation on the original text
@@ -81,8 +83,8 @@ impl<'a> EditedText<'a> {
 
                     None
                 }
-                RawOperation::Insert(..) => {
-                    let op = Operation::create_insert(new_index, raw_operation.get_original_text())
+                RawOperation::Insert(tokens) => {
+                    let op = Operation::create_insert(new_index, tokens)
                         .map(|operation| OrderedOperation { order, operation });
 
                     new_index += length;
@@ -110,10 +112,9 @@ impl<'a> EditedText<'a> {
         })
     }
 
-    fn elongate_operations<I, T>(raw_operations: I) -> Vec<RawOperation<T>>
+    fn elongate_operations<I>(raw_operations: I) -> Vec<RawOperation<T>>
     where
         I: IntoIterator<Item = RawOperation<T>>,
-        T: PartialEq + Hash + Clone,
     {
         let mut maybe_previous_insert: Option<RawOperation<T>> = None;
         let mut maybe_previous_delete: Option<RawOperation<T>> = None;
@@ -164,7 +165,7 @@ impl<'a> EditedText<'a> {
     /// Create a new EditedText with the given operations.
     /// The operations must be in the order in which they are meant to be applied.
     /// The operations must not overlap.
-    fn new(text: &'a str, operations: Vec<OrderedOperation>) -> Self {
+    fn new(text: &'a str, operations: Vec<OrderedOperation<T>>) -> Self {
         operations
             .iter()
             .zip(operations.iter().skip(1))
@@ -271,7 +272,7 @@ mod tests {
     #[test]
     fn test_calculate_operations_with_insert() {
         let original = "hello world! ...";
-        let left = "hello world! I'm Andras.";
+        let left = "Hello world! I'm Andras.";
         let right = "Hello world! How are you?";
         let expected = "Hello world! I'm Andras.How are you?";
 

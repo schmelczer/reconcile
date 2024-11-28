@@ -10,7 +10,20 @@ EditedText {
             order: 0,
             operation: Insert {
                 index: 0,
-                text: "Hello, my friend! ",
+                text: [
+                    Token {
+                        normalised: "Hello, ",
+                        original: "Hello, ",
+                    },
+                    Token {
+                        normalised: "my ",
+                        original: "my ",
+                    },
+                    Token {
+                        normalised: "friend! ",
+                        original: "friend! ",
+                    },
+                ],
             },
         },
         OrderedOperation {
@@ -27,7 +40,20 @@ EditedText {
             order: 21,
             operation: Insert {
                 index: 26,
-                text: "you doing? Albert",
+                text: [
+                    Token {
+                        normalised: "you ",
+                        original: "you ",
+                    },
+                    Token {
+                        normalised: "doing? ",
+                        original: "doing? ",
+                    },
+                    Token {
+                        normalised: "Albert",
+                        original: "Albert",
+                    },
+                ],
             },
         },
         OrderedOperation {

@@ -18,7 +18,6 @@
 //! without making reasonable progress.
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
-use std::hash::Hash;
 use std::ops::{Index, IndexMut, Range};
 use std::vec;
 
@@ -36,7 +35,7 @@ use super::raw_operation::RawOperation;
 /// execution time permitted before it bails and falls back to an approximation.
 pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     let max_d = max_d(old.len(), new.len());
     let mut vb = V::new(max_d);
@@ -131,7 +130,7 @@ fn find_middle_snake<T>(
     vb: &mut V,
 ) -> Option<(usize, usize)>
 where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     let n = old_range.len();
     let m = new_range.len();
@@ -238,7 +237,7 @@ fn conquer<T>(
     vb: &mut V,
     result: &mut Vec<RawOperation<T>>,
 ) where
-    T: PartialEq + Hash + Clone,
+    T: PartialEq + Clone,
 {
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
