@@ -1,5 +1,5 @@
 use crate::utils::find_common_overlap::find_common_overlap;
-use crate::{errors::SyncLibError, Token};
+use crate::Token;
 use ropey::Rope;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -86,22 +86,15 @@ where
     ///
     /// When compiled in debug mode, panics if a delete operation is attempted on a range
     /// of text that does not match the text to be deleted.
-    pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> Result<&'a mut Rope, SyncLibError> {
+    pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> &'a mut Rope {
         match self {
-            Operation::Insert { text, .. } => rope_text
-                .try_insert(
-                    self.start_index(),
-                    &text
-                        .iter()
-                        .map(|token| token.original())
-                        .collect::<String>(),
-                )
-                .map_err(|err| {
-                    SyncLibError::OperationApplicationError(format!(
-                        "Failed to insert text: {}",
-                        err
-                    ))
-                }),
+            Operation::Insert { text, .. } => rope_text.insert(
+                self.start_index(),
+                &text
+                    .iter()
+                    .map(|token| token.original())
+                    .collect::<String>(),
+            ),
             Operation::Delete {
                 #[cfg(debug_assertions)]
                 deleted_text,
@@ -120,16 +113,11 @@ where
                     );
                 }
 
-                rope_text.try_remove(self.range()).map_err(|err| {
-                    SyncLibError::OperationApplicationError(format!(
-                        "Failed to remove text: {}",
-                        err
-                    ))
-                })
+                rope_text.remove(self.range());
             }
-        }?;
+        };
 
-        Ok(rope_text)
+        rope_text
     }
 
     /// Returns the index of the first character that the operation affects.
@@ -368,26 +356,22 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_delete_with_create() -> Result<(), SyncLibError> {
+    fn test_apply_delete_with_create() {
         let mut rope = Rope::from_str("hello world");
         let operation = Operation::<()>::create_delete_with_text(5, " world".to_string()).unwrap();
 
-        operation.apply(&mut rope)?;
+        operation.apply(&mut rope);
 
         assert_eq!(rope.to_string(), "hello");
-
-        Ok(())
     }
 
     #[test]
-    fn test_apply_insert() -> Result<(), SyncLibError> {
+    fn test_apply_insert() {
         let mut rope = Rope::from_str("hello");
         let operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
 
-        operation.apply(&mut rope)?;
+        operation.apply(&mut rope);
 
         assert_eq!(rope.to_string(), "hello my friend");
-
-        Ok(())
     }
 }

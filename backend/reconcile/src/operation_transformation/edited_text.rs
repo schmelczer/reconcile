@@ -1,6 +1,5 @@
 use super::Operation;
 use crate::diffs::raw_operation::RawOperation;
-use crate::errors::SyncLibError;
 use crate::operation_transformation::merge_context::MergeContext;
 use crate::tokenizer::word_tokenizer::word_tokenizer;
 use crate::tokenizer::Tokenizer;
@@ -229,15 +228,15 @@ where
     /// # Errors
     ///
     /// Returns an SyncLibError::OperationError if the operations cannot be applied to the text.
-    pub fn apply(&self) -> Result<String, SyncLibError> {
+    pub fn apply(&self) -> String {
         let mut text = Rope::from_str(self.text);
         self.operations
             .iter()
-            .try_fold(
+            .fold(
                 &mut text,
                 |rope_text, OrderedOperation { operation, .. }| operation.apply(rope_text),
             )
-            .map(|rope| rope.to_string())
+            .to_string()
     }
 }
 
@@ -258,7 +257,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(operations);
 
-        let new_right = operations.apply().unwrap();
+        let new_right = operations.apply();
 
         assert_eq!(new_right.to_string(), right);
     }
@@ -271,7 +270,7 @@ mod tests {
 
         assert_eq!(operations.operations.len(), 0);
 
-        let new_right = operations.apply().unwrap();
+        let new_right = operations.apply();
 
         assert_eq!(new_right.to_string(), text);
     }
@@ -289,6 +288,6 @@ mod tests {
         println!("{:#?}", operations_2);
 
         let operations = operations_1.merge(operations_2);
-        assert_eq!(operations.apply().unwrap(), expected);
+        assert_eq!(operations.apply(), expected);
     }
 }

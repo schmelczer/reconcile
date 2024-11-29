@@ -5,9 +5,9 @@ mod operation;
 pub use edited_text::EditedText;
 pub use operation::Operation;
 
-use crate::{errors::SyncLibError, tokenizer::Tokenizer};
+use crate::tokenizer::Tokenizer;
 
-pub fn reconcile(original: &str, left: &str, right: &str) -> Result<String, SyncLibError> {
+pub fn reconcile(original: &str, left: &str, right: &str) -> String {
     let left_operations = EditedText::from_strings(original, left);
     let right_operations = EditedText::from_strings(original, right);
 
@@ -20,7 +20,7 @@ pub fn reconcile_with_tokenizer<F, T>(
     left: &str,
     right: &str,
     tokenizer: &Tokenizer<T>,
-) -> Result<String, SyncLibError>
+) -> String
 where
     T: PartialEq + Clone,
 {
@@ -175,11 +175,11 @@ mod test {
             })
             .collect::<Vec<_>>();
 
-        reconcile(&contents[0], &contents[1], &contents[2]).unwrap();
+        reconcile(&contents[0], &contents[1], &contents[2]);
     }
 
     fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {
-        assert_eq!(reconcile(original, edit_1, edit_2).unwrap(), expected);
-        assert_eq!(reconcile(original, edit_2, edit_1).unwrap(), expected);
+        assert_eq!(reconcile(original, edit_1, edit_2), expected);
+        assert_eq!(reconcile(original, edit_2, edit_1), expected);
     }
 }

@@ -5,8 +5,6 @@ edition = "2021"
 
 [dependencies]
 ropey = { version = "1.6.1", default-features = false, features = ["simd"]  }
-thiserror = {workspace = true}
-log = {workspace = true}
 
 # optional dependencies
 serde = { version = "1.0.215", optional = true }
