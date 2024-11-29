@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use crate::operation_transformation::Operation;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MergeContext<T>
 where
     T: PartialEq + Clone,
@@ -18,6 +20,18 @@ where
             last_operation: None,
             shift: 0,
         }
+    }
+}
+
+impl<T> Debug for MergeContext<T>
+where
+    T: PartialEq + Clone,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MergeContext")
+            .field("last_operation", &self.last_operation)
+            .field("shift", &self.shift)
+            .finish()
     }
 }
 
@@ -55,18 +69,24 @@ where
         threshold_operation: &Operation<T>,
     ) {
         if let Some(last_operation) = self.last_operation.as_ref() {
-            if threshold_operation.start_index() as i64 + self.shift
-                > last_operation.end_index() as i64
+            if let Operation::Delete {
+                deleted_character_count,
+                ..
+            } = last_operation
             {
-                if let Operation::Delete {
-                    deleted_character_count,
-                    ..
-                } = last_operation
+                if threshold_operation.start_index() as i64 + self.shift
+                    > last_operation.end_index() as i64
                 {
                     self.shift -= *deleted_character_count as i64;
+                    self.last_operation = None;
                 }
-
-                self.last_operation = None;
+            } else if let Operation::Insert { .. } = last_operation {
+                if threshold_operation.start_index() as i64 + self.shift
+                    - last_operation.len() as i64
+                    > last_operation.end_index() as i64
+                {
+                    self.last_operation = None;
+                }
             }
         }
     }

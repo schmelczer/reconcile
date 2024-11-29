@@ -56,7 +56,7 @@ mod test {
             "original_1 original_2 original_3",
             "original_1 edit_1 original_3",
             "original_1 edit_1 original_3",
-            "original_1 edit_1 edit_1 original_3",
+            "original_1 edit_1 original_3",
         );
 
         // One deleted a large range, the other deleted subranges and inserted as well
@@ -120,7 +120,7 @@ mod test {
             "both delete the same word but one a bit more",
             "both the same word",
             "both same word",
-            "both same wordword",
+            "both same word",
         );
 
         test_merge_both_ways(

@@ -1,7 +1,8 @@
-use ropey::Rope;
-use std::fmt::Display;
-
+use crate::utils::find_common_overlap::find_common_overlap;
 use crate::{errors::SyncLibError, Token};
+use ropey::Rope;
+use std::fmt::Debug;
+use std::fmt::Display;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use super::merge_context::MergeContext;
 /// Operation is tied to a ropey::Rope and is mainly expected to be
 /// created by EditedText.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Operation<T>
 where
     T: PartialEq + Clone,
@@ -205,22 +206,43 @@ where
         produced_context: &mut MergeContext<T>,
     ) -> Option<Operation<T>> {
         affecting_context.consume_last_operation_if_it_is_too_behind(&self);
-
         let operation = self.with_shifted_index(affecting_context.shift);
 
-        match (operation, affecting_context.last_operation().clone()) {
+        match (operation, affecting_context.last_operation()) {
             (operation @ Operation::Insert { .. }, None) => {
                 produced_context.shift += operation.len() as i64;
+                produced_context.consume_and_replace_last_operation(Some(operation.clone()));
                 Some(operation)
             }
 
-            (operation, Some(last_insert @ Operation::Insert { .. })) => {
-                produced_context.shift += operation.len() as i64;
-                Some(operation)
+            (
+                Operation::Insert { text, index },
+                Some(Operation::Insert {
+                    text: previous_inserted_text,
+                    ..
+                }),
+            ) => {
+                let offset_in_tokens = find_common_overlap(previous_inserted_text, &text);
+                let trimmed_length_in_tokens = previous_inserted_text.len() - offset_in_tokens;
+                let trimmed_length = previous_inserted_text
+                    .iter()
+                    .skip(offset_in_tokens)
+                    .map(|token| token.get_original_length())
+                    .sum::<usize>();
+                let trimmed_operation =
+                    Operation::create_insert(index, text[trimmed_length_in_tokens..].to_vec());
+
+                affecting_context.shift -= trimmed_length as i64;
+                produced_context.shift += trimmed_operation
+                    .as_ref()
+                    .map(|op| op.len())
+                    .unwrap_or_default() as i64;
+                produced_context.consume_and_replace_last_operation(trimmed_operation.clone());
+
+                trimmed_operation
             }
 
-            // We can never delete inside an insert
-            (operation @ Operation::Delete { .. }, None) => {
+            (operation @ Operation::Delete { .. }, None | Some(Operation::Insert { .. })) => {
                 produced_context.consume_and_replace_last_operation(Some(operation.clone()));
                 Some(operation)
             }
@@ -245,6 +267,8 @@ where
                     (last_delete.len() as i64 - difference) as usize,
                 ));
                 affecting_context.shift -= difference;
+
+                produced_context.consume_and_replace_last_operation(Some(moved_operation.clone()));
 
                 Some(moved_operation)
             }
@@ -318,6 +342,15 @@ where
                 }
             }
         }
+    }
+}
+
+impl<T> Debug for Operation<T>
+where
+    T: PartialEq + Clone,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

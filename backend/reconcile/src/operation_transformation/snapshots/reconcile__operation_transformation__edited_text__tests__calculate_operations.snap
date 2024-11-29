@@ -8,63 +8,19 @@ EditedText {
     operations: [
         OrderedOperation {
             order: 0,
-            operation: Insert {
-                index: 0,
-                text: [
-                    Token {
-                        normalised: "Hello, ",
-                        original: "Hello, ",
-                    },
-                    Token {
-                        normalised: "my ",
-                        original: "my ",
-                    },
-                    Token {
-                        normalised: "friend! ",
-                        original: "friend! ",
-                    },
-                ],
-            },
+            operation: <insert 'Hello, my friend! ' from index 0>,
         },
         OrderedOperation {
             order: 0,
-            operation: Delete {
-                index: 18,
-                deleted_character_count: 13,
-                deleted_text: Some(
-                    "hello world! ",
-                ),
-            },
+            operation: <delete 'hello world! ' from index 18>,
         },
         OrderedOperation {
             order: 21,
-            operation: Insert {
-                index: 26,
-                text: [
-                    Token {
-                        normalised: "you ",
-                        original: "you ",
-                    },
-                    Token {
-                        normalised: "doing? ",
-                        original: "doing? ",
-                    },
-                    Token {
-                        normalised: "Albert",
-                        original: "Albert",
-                    },
-                ],
-            },
+            operation: <insert 'you doing? Albert' from index 26>,
         },
         OrderedOperation {
             order: 21,
-            operation: Delete {
-                index: 43,
-                deleted_character_count: 10,
-                deleted_text: Some(
-                    "you?  Adam",
-                ),
-            },
+            operation: <delete 'you?  Adam' from index 43>,
         },
     ],
 }

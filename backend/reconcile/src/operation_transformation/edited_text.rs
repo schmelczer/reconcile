@@ -197,7 +197,14 @@ where
                 .map(|op| (op, Side::Left))
                 .merge_sorted_by_key(
                     other.operations.into_iter().map(|op| (op, Side::Right)),
-                    |(operation, _)| operation.order,
+                    |(operation, _)| {
+                        (
+                            operation.order,
+                            // Operations on left and right must come in the same order so that
+                            // inserts can be merged with other inserts and deletes with deletes.
+                            matches!(operation.operation, Operation::Delete { .. }) as usize,
+                        )
+                    },
                 )
                 .flat_map(|(OrderedOperation { order, operation }, side)| {
                     match side {
@@ -272,7 +279,7 @@ mod tests {
     #[test]
     fn test_calculate_operations_with_insert() {
         let original = "hello world! ...";
-        let left = "hello world! I'm Andras.";
+        let left = "Hello world! I'm Andras.";
         let right = "Hello world! How are you?";
         let expected = "Hello world! I'm Andras.How are you?";
 
@@ -282,7 +289,6 @@ mod tests {
         println!("{:#?}", operations_2);
 
         let operations = operations_1.merge(operations_2);
-
         assert_eq!(operations.apply().unwrap(), expected);
     }
 }
