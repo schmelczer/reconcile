@@ -5,8 +5,8 @@ use crate::tokenizer::word_tokenizer::word_tokenizer;
 use crate::tokenizer::Tokenizer;
 use crate::utils::ordered_operation::OrderedOperation;
 use crate::utils::side::Side;
+use crate::utils::string_builder::StringBuilder;
 use crate::{diffs::myers::diff, utils::merge_iters::MergeSorted};
-use ropey::Rope;
 use std::iter;
 
 #[cfg(feature = "serde")]
@@ -229,14 +229,13 @@ where
     ///
     /// Returns an SyncLibError::OperationError if the operations cannot be applied to the text.
     pub fn apply(&self) -> String {
-        let mut text = Rope::from_str(self.text);
-        self.operations
-            .iter()
-            .fold(
-                &mut text,
-                |rope_text, OrderedOperation { operation, .. }| operation.apply(rope_text),
-            )
-            .to_string()
+        let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
+
+        for OrderedOperation { operation, .. } in &self.operations {
+            builder = operation.apply(builder);
+        }
+
+        builder.build()
     }
 }
 
@@ -258,7 +257,6 @@ mod tests {
         insta::assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-
         assert_eq!(new_right.to_string(), right);
     }
 
@@ -283,9 +281,7 @@ mod tests {
         let expected = "Hello world! I'm Andras.How are you?";
 
         let operations_1 = EditedText::from_strings(original, left);
-        println!("{:#?}", operations_1);
         let operations_2 = EditedText::from_strings(original, right);
-        println!("{:#?}", operations_2);
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply(), expected);

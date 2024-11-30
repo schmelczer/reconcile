@@ -4,3 +4,4 @@ pub mod find_common_overlap;
 pub mod merge_iters;
 pub mod ordered_operation;
 pub mod side;
+pub mod string_builder;

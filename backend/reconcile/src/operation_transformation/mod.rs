@@ -33,13 +33,10 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{fs, ops::Range, path::Path};
-
-    use pretty_assertions::assert_eq;
-
-    use test_case::test_matrix;
-
     use super::*;
+    use pretty_assertions::assert_eq;
+    use std::{fs, ops::Range, path::Path};
+    use test_case::test_matrix;
 
     #[test]
     fn test_merges() {

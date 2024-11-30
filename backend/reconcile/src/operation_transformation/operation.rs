@@ -1,8 +1,9 @@
 use crate::utils::find_common_overlap::find_common_overlap;
+use crate::utils::string_builder::StringBuilder;
 use crate::Token;
-use ropey::Rope;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::ops::Range;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -86,9 +87,9 @@ where
     ///
     /// When compiled in debug mode, panics if a delete operation is attempted on a range
     /// of text that does not match the text to be deleted.
-    pub fn apply<'a>(&self, rope_text: &'a mut Rope) -> &'a mut Rope {
+    pub fn apply<'a>(&self, mut builder: StringBuilder<'a>) -> StringBuilder<'a> {
         match self {
-            Operation::Insert { text, .. } => rope_text.insert(
+            Operation::Insert { text, .. } => builder.insert(
                 self.start_index(),
                 &text
                     .iter()
@@ -100,24 +101,19 @@ where
                 deleted_text,
                 ..
             } => {
-                debug_assert!(
-                    rope_text.get_slice(self.range()).is_some(),
-                    "Failed to get slice of text to delete"
-                );
-
                 if let Some(text) = deleted_text {
                     debug_assert_eq!(
-                        rope_text.get_slice(self.range()).unwrap().to_string(),
+                        builder.get_slice(self.range()),
                         *text,
                         "Text to delete does not match the text in the rope"
                     );
                 }
 
-                rope_text.remove(self.range());
+                builder.delete(self.range());
             }
         };
 
-        rope_text
+        builder
     }
 
     /// Returns the index of the first character that the operation affects.
@@ -130,13 +126,16 @@ where
 
     /// Returns the index of the last character that the operation affects.
     pub fn end_index(&self) -> usize {
-        // len() must be greater than 0 because operations must be non-empty
+        debug_assert!(
+            self.len() > 0,
+            " len() must be greater than 0 because operations must be non-empty"
+        );
         self.start_index() + self.len() - 1
     }
 
-    /// Returns the range of indices of characters that the operation affects, inclusive.
-    pub fn range(&self) -> std::ops::RangeInclusive<usize> {
-        self.start_index()..=self.end_index()
+    /// Returns the range of indices of characters that the operation affects.
+    pub fn range(&self) -> Range<usize> {
+        self.start_index()..self.end_index() + 1
     }
 
     /// Returns the number of affected characters. It is always greater than 0 because empty operations cannot be created.
@@ -152,7 +151,7 @@ where
         }
     }
 
-    /// Clones the operation while updating the index.
+    /// Creates a new operation with the same type and text but with the given index.
     pub fn with_index(self, index: usize) -> Self {
         match self {
             Operation::Insert { text, .. } => Operation::Insert { index, text },
@@ -172,7 +171,7 @@ where
         }
     }
 
-    /// Clones the operation while shifting the index by the given offset.
+    /// Creates a new operation with the same type and text but with the index shifted by the given offset.
     /// The offset can be negative but the resulting index must be non-negative.
     ///
     /// # Panics
@@ -357,21 +356,17 @@ mod tests {
 
     #[test]
     fn test_apply_delete_with_create() {
-        let mut rope = Rope::from_str("hello world");
+        let builder = StringBuilder::new("hello world");
         let operation = Operation::<()>::create_delete_with_text(5, " world".to_string()).unwrap();
 
-        operation.apply(&mut rope);
-
-        assert_eq!(rope.to_string(), "hello");
+        assert_eq!(operation.apply(builder).build(), "hello");
     }
 
     #[test]
     fn test_apply_insert() {
-        let mut rope = Rope::from_str("hello");
+        let builder = StringBuilder::new("hello");
         let operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
 
-        operation.apply(&mut rope);
-
-        assert_eq!(rope.to_string(), "hello my friend");
+        assert_eq!(operation.apply(builder).build(), "hello my friend");
     }
 }
