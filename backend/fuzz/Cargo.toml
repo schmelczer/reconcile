@@ -1,0 +1,19 @@
+[package]
+name = "reconcile-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+reconcile = { path = "../reconcile" }
+
+[[bin]]
+name = "reconcile"
+path = "fuzz_targets/reconcile.rs"
+test = false
+doc = false
+bench = false
