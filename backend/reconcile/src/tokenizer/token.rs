@@ -1,3 +1,9 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+/// A token is a string that has been normalised in some way.
+/// The normalised form is used for comparison, while the original form is used for applying Operations.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Token<T>
 where

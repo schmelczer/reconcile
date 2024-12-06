@@ -63,7 +63,6 @@ impl StringBuilder<'_> {
         self.buffer
     }
 
-    #[cfg(debug_assertions)]
     pub fn get_slice(&self, range: Range<usize>) -> String {
         let result = self
             .buffer

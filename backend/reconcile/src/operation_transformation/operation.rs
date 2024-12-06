@@ -101,13 +101,14 @@ where
                 deleted_text,
                 ..
             } => {
-                if let Some(text) = deleted_text {
-                    debug_assert_eq!(
-                        builder.get_slice(self.range()),
-                        *text,
-                        "Text to delete does not match the text in the rope"
-                    );
-                }
+                #[cfg(debug_assertions)]
+                debug_assert!(
+                    deleted_text
+                        .as_ref()
+                        .map(|text| builder.get_slice(self.range()) == *text)
+                        .unwrap_or(true),
+                    "Text to delete does not match the text in the rope"
+                );
 
                 builder.delete(self.range());
             }
@@ -313,20 +314,24 @@ where
                 #[cfg(debug_assertions)]
                 deleted_text,
             } => {
-                if cfg!(debug_assertions) && deleted_text.is_some() {
-                    write!(
-                        f,
-                        "<delete '{}' from index {}>",
-                        deleted_text.as_ref().unwrap_or(&"<unknown>".to_string()),
-                        index
-                    )
-                } else {
-                    write!(
-                        f,
-                        "<delete {} characters () from index {}>",
-                        deleted_character_count, index
-                    )
-                }
+                #[cfg(debug_assertions)]
+                write!(
+                    f,
+                    "<delete {} from index {}>",
+                    deleted_text
+                        .as_ref()
+                        .map(|text| format!("'{text}'"))
+                        .unwrap_or(format!("{deleted_character_count} characters")),
+                    index
+                )?;
+
+                #[cfg(not(debug_assertions))]
+                write!(
+                    f,
+                    "<delete {deleted_character_count} characters from index {index}>",
+                )?;
+
+                Ok(())
             }
         }
     }
