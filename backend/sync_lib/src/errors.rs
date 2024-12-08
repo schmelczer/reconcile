@@ -1,5 +1,6 @@
 use base64::DecodeError;
 use thiserror::Error;
+use wasm_bindgen::JsValue;
 
 #[derive(Error, Debug)]
 pub enum SyncLibError {
@@ -21,4 +22,8 @@ impl From<std::string::FromUtf8Error> for SyncLibError {
             reason: e.to_string(),
         }
     }
+}
+
+impl From<SyncLibError> for JsValue {
+    fn from(val: SyncLibError) -> Self { JsValue::from_str(&val.to_string()) }
 }

@@ -108,7 +108,7 @@ const context = await esbuild.context({
 		wasmPlugin,
 		wasmPack({
 			target: "web",
-			path: "../backend/sync_wasm",
+			path: "../backend/sync_lib",
 		}),
 		{
 			name: "post-compile",
