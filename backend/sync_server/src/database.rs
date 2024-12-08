@@ -1,10 +1,13 @@
+use std::str::FromStr;
+
 use anyhow::{Context, Result};
 use models::{
     DocumentId, DocumentVersionId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
 };
+use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::types::chrono::Utc;
 pub mod models;
-use sqlx::{sqlite::SqlitePoolOptions, Executor, Pool, Sqlite};
+use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
 
 use crate::config::database_config::DatabaseConfig;
 
@@ -17,10 +20,13 @@ pub type Transaction<'a> = sqlx::Transaction<'a, Sqlite>;
 
 impl Database {
     pub async fn try_new(config: &DatabaseConfig) -> Result<Self> {
+        let connection_options =
+            SqliteConnectOptions::from_str(&config.sqlite_url)?.create_if_missing(true);
+
         let pool = SqlitePoolOptions::new()
             .max_connections(config.max_connections)
             .test_before_acquire(true)
-            .connect(&config.sqlite_url)
+            .connect_with(connection_options)
             .await
             .with_context(|| {
                 format!(
