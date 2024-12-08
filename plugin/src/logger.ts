@@ -1,4 +1,5 @@
 enum LogLevel {
+	DEBUG,
 	INFO,
 	WARNING,
 	ERROR,
@@ -13,6 +14,8 @@ class LogLine {
 
 	private formatLevel(): string {
 		switch (this.level) {
+			case LogLevel.DEBUG:
+				return "DEBUG";
 			case LogLevel.INFO:
 				return "INFO";
 			case LogLevel.WARNING:
@@ -38,6 +41,11 @@ export class Logger {
 			Logger.instance = new Logger();
 		}
 		return Logger.instance;
+	}
+
+	public debug(message: string): void {
+		this.pushMessage(message, LogLevel.DEBUG);
+		console.debug(message);
 	}
 
 	public info(message: string): void {
