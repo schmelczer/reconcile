@@ -94,3 +94,10 @@ If you have multiple URLs, you can also do:
 ## API Documentation
 
 See https://github.com/obsidianmd/obsidian-api
+
+
+
+
+
+npm install -g openapi-typescript
+openapi-typescript http://localhost:3000/api.json --output ./types.ts
