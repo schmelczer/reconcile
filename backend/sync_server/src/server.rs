@@ -9,10 +9,12 @@ use aide::{
 use anyhow::{Context, Result};
 use axum::{
     extract::{DefaultBodyLimit, WebSocketUpgrade},
+    http::{self, HeaderValue, Method},
     response::{IntoResponse, Response},
     Extension, Json,
 };
 use log::info;
+use tower_http::cors::CorsLayer;
 
 use crate::app_state::AppState;
 mod auth;
@@ -64,6 +66,12 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         .layer(DefaultBodyLimit::max(
             app_state.config.server.max_body_size_mb * 1024 * 1024,
         ))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("*".parse::<HeaderValue>().unwrap())
+                .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
+        )
         .with_state(app_state)
         .finish_api(&mut api)
         .layer(Extension(api))
