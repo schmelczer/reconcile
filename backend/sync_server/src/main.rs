@@ -9,7 +9,6 @@ use anyhow::{Context, Result};
 use app_state::AppState;
 use errors::{init_error, SyncServerError};
 use server::create_server;
-use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), SyncServerError> {

@@ -1,0 +1,21 @@
+[package]
+name = "sync_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reconcile = { path = "../reconcile" }
+sync_lib = { path = "../sync_lib" }
+
+serde = {workspace = true}
+thiserror = {workspace = true}
+anyhow = {workspace = true}
+log = {workspace = true}
+uuid = {workspace = true}
+
+axum = { version = "0.7.9", features = ["ws", "macros"]}
+tokio = { version = "1.42.0", features = ["full"]}
+tracing-subscriber = "0.3.19"
+serde_yaml = "0.9.34"
+sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
+chrono = { version = "0.4.38", features = ["serde"] }
