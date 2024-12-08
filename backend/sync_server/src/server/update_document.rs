@@ -1,6 +1,5 @@
 use crate::app_state::AppState;
 use crate::database::models::DocumentId;
-use crate::database::models::DocumentVersionId;
 use crate::database::models::DocumentVersionWithoutContent;
 use crate::database::models::StoredDocumentVersion;
 use crate::database::models::VaultId;
@@ -16,28 +15,24 @@ use axum::Json;
 use sync_lib::base64_to_bytes;
 use sync_lib::base64_to_string;
 
-use super::requests::CreateDocumentVersion;
+use super::requests::UpdateDocumentVersion;
 
 #[axum::debug_handler]
 pub async fn update_document(
-    Path((vault_id, document_id, parent_version_id)): Path<(
-        VaultId,
-        DocumentId,
-        DocumentVersionId,
-    )>,
+    Path((vault_id, document_id)): Path<(VaultId, DocumentId)>,
     State(state): State<AppState>,
-    Json(request): Json<CreateDocumentVersion>,
+    Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     let parent = state
         .database
-        .get_document_version(&vault_id, &document_id, &parent_version_id, None)
+        .get_document_version(&vault_id, &document_id, &request.parent_version_id, None)
         .await
         .map_err(server_error)?
         .map(Ok)
         .unwrap_or_else(|| {
             Err(not_found_error(anyhow!(
                 "Parent version with id `{}` not found",
-                parent_version_id
+                &request.parent_version_id
             )))
         })?;
 

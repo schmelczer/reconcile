@@ -1,7 +1,7 @@
 use crate::app_state::AppState;
 use aide::{
     axum::{
-        routing::{delete, get, put},
+        routing::{delete, get, post, put},
         ApiRouter,
     },
     openapi::{Info, OpenApi},
@@ -13,6 +13,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{extract::DefaultBodyLimit, Extension};
 use axum::{extract::WebSocketUpgrade, Json};
 use log::info;
+mod create_document;
 mod delete_document;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
@@ -35,20 +36,24 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
 
     let app = ApiRouter::new()
         .api_route(
-            "/vaults/:vault_id/documents/latest",
+            "/vaults/:vault_id/documents",
             get(fetch_latest_documents::fetch_latest_documents),
         )
         .api_route(
-            "/vaults/:vault_id/documents/:document_id/versions/:parent_version_id",
+            "/vaults/:vault_id/documents",
+            post(create_document::create_document),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/:document_id",
+            get(fetch_latest_document_version::fetch_latest_document_version),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/:document_id",
             put(update_document::update_document),
         )
         .api_route(
             "/vaults/:vault_id/documents/:document_id",
             delete(delete_document::delete_document),
-        )
-        .api_route(
-            "/vaults/:vault_id/documents/:document_id/versions/latest",
-            get(fetch_latest_document_version::fetch_latest_document_version),
         )
         .api_route("/ws", get(handler))
         .route("/", Scalar::new("/api.json").axum_route())
