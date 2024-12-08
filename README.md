@@ -35,3 +35,9 @@
 - add clap
 - add auth middleware
 - add request logs
+- CI for:
+    - publish reconcile
+    - cross-platform build server
+    - run load test on server
+    - build and publish plugin with openapi types
+    - build docker image

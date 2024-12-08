@@ -12,3 +12,6 @@ backend/target
 
 # Obsidian plugin build folder
 plugin/build
+
+backend/db.sqlite3
+backend/config.yaml
