@@ -21,3 +21,12 @@ fn default_max_connections() -> u32 {
     debug!("Using default max connections: {}", DEFAULT_MAX_CONNECTIONS);
     DEFAULT_MAX_CONNECTIONS
 }
+
+impl Default for DatabaseConfig {
+    fn default() -> Self {
+        Self {
+            sqlite_url: default_sqlite_url(),
+            max_connections: default_max_connections(),
+        }
+    }
+}

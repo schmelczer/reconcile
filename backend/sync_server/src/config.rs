@@ -2,6 +2,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use database_config::DatabaseConfig;
+use log::warn;
 use serde::{Deserialize, Serialize};
 use server_config::ServerConfig;
 use tokio::fs;
@@ -11,24 +12,33 @@ pub mod database_config;
 pub mod server_config;
 pub mod user_config;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Config {
+    #[serde(default)]
     pub database: DatabaseConfig,
+    #[serde(default)]
     pub server: ServerConfig,
+    #[serde(default)]
     pub users: UserConfig,
 }
 
 impl Config {
     pub async fn read(path: &Path) -> Result<Self> {
-        Self::load_from_file(path)
-            .await
-            .with_context(|| format!("Cannot load configuration from disk from ({path:?})"))
+        if path.exists() {
+            Self::load_from_file(path).await
+        } else {
+            warn!("Configuration file not found, writing default configuration to {path:?}");
+
+            let config = Config::default();
+            config.write(path).await?;
+            Ok(config)
+        }
     }
 
     pub async fn load_from_file(path: &Path) -> Result<Self> {
         let contents = fs::read_to_string(path)
             .await
-            .context("Failed to read configuration file")?;
+            .with_context(|| format!("Cannot load configuration from disk from ({path:?})"))?;
 
         let config = serde_yaml::from_str(&contents).context("Failed to parse configuration")?;
 

@@ -31,3 +31,13 @@ fn default_max_body_size_mb() -> usize {
     );
     DEFAULT_MAX_BODY_SIZE_MB
 }
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            host: default_host(),
+            port: default_port(),
+            max_body_size_mb: default_max_body_size_mb(),
+        }
+    }
+}
