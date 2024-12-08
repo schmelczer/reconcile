@@ -7,6 +7,8 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use schemars::JsonSchema;
+use serde::Deserialize;
 use sync_lib::{base64_to_bytes, base64_to_string};
 
 use super::{auth::auth, requests::UpdateDocumentVersion};
@@ -16,10 +18,20 @@ use crate::{
     errors::{client_error, not_found_error, server_error, SyncServerError},
 };
 
+// This is required for aide to infer the path parameter types and names
+#[derive(Deserialize, JsonSchema)]
+pub struct PathParams {
+    vault_id: VaultId,
+    document_id: DocumentId,
+}
+
 #[axum::debug_handler]
 pub async fn update_document(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
-    Path((vault_id, document_id)): Path<(VaultId, DocumentId)>,
+    Path(PathParams {
+        vault_id,
+        document_id,
+    }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
