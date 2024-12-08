@@ -19,10 +19,7 @@ export class SettingsContainer {
 
 	private onChangeHandlers: Array<(settings: SyncSettings) => void> = [];
 
-	public constructor(
-		private plugin: SyncPlugin,
-		private loadedSettings: any
-	) {
+	public constructor(private plugin: SyncPlugin, loadedSettings: any) {
 		this._settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
 	}
 
