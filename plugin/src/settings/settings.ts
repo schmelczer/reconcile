@@ -1,3 +1,4 @@
+import { Logger } from "src/logger";
 import SyncPlugin from "src/plugin";
 
 export interface SyncSettings {
@@ -20,6 +21,9 @@ export class SettingsContainer {
 	private onChangeHandlers: Array<(settings: SyncSettings) => void> = [];
 
 	public constructor(private plugin: SyncPlugin, loadedSettings: any) {
+		Logger.getInstance().debug(
+			"Loaded settings " + JSON.stringify(loadedSettings, null, 2)
+		);
 		this._settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
 	}
 
@@ -42,7 +46,12 @@ export class SettingsContainer {
 		value: SyncSettings[T]
 	): Promise<void> {
 		this._settings[key] = value;
-		await this.plugin.saveData(value);
+		Logger.getInstance().debug(
+			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
+				this._settings
+			)}`
+		);
+		await this.plugin.saveData(this._settings);
 		this.onChangeHandlers.forEach((handler) => handler(this._settings));
 	}
 }
