@@ -1,21 +1,27 @@
-import { TAbstractFile } from "obsidian";
+import { TAbstractFile, TFile } from "obsidian";
 import { FileEventHandler } from "./file-event-handler";
 import { Logger } from "src/logger";
+import { Syncer } from "src/syncer/syncer";
 
 export class SyncEventHandler implements FileEventHandler {
-	onCreate(path: TAbstractFile) {
-		Logger.getInstance().info(`File created: ${path}`);
+	constructor(private syncer: Syncer) {}
+
+	async onCreate(file: TAbstractFile) {
+		if (file instanceof TFile) {
+			Logger.getInstance().info(`File created: ${file}`);
+			this.syncer.onCreate(file.path, await file.vault.read(file));
+		}
 	}
 
-	onDelete(path: TAbstractFile) {
-		Logger.getInstance().info(`File deleted: ${path}`);
+	onDelete(file: TAbstractFile) {
+		Logger.getInstance().info(`File deleted: ${file}`);
 	}
 
-	onRename(path: TAbstractFile, oldPath: string) {
-		Logger.getInstance().info(`File renamed: ${oldPath} -> ${path}`);
+	onRename(file: TAbstractFile, oldPath: string) {
+		Logger.getInstance().info(`File renamed: ${oldPath} -> ${file}`);
 	}
 
-	onModify(path: TAbstractFile) {
-		Logger.getInstance().info(`File modified: ${path}`);
+	onModify(file: TAbstractFile) {
+		Logger.getInstance().info(`File modified: ${file}`);
 	}
 }
