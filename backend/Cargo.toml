@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "reconcile",
     "fuzz",
-    "sync_wasm",
     "sync_server", 
     "sync_lib"
 ]
