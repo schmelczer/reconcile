@@ -9,16 +9,23 @@ use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::Json;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use axum_extra::TypedHeader;
 use sync_lib::base64_to_bytes;
 
+use super::auth::auth;
 use super::requests::CreateDocumentVersion;
 
 #[axum::debug_handler]
 pub async fn create_document(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(vault_id): Path<VaultId>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
+    auth(&state, auth_header.token())?;
+
     let new_version = StoredDocumentVersion {
         vault_id,
         document_id: uuid::Uuid::new_v4(),

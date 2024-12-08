@@ -12,17 +12,24 @@ use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::Json;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use axum_extra::TypedHeader;
 use sync_lib::base64_to_bytes;
 use sync_lib::base64_to_string;
 
+use super::auth::auth;
 use super::requests::UpdateDocumentVersion;
 
 #[axum::debug_handler]
 pub async fn update_document(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path((vault_id, document_id)): Path<(VaultId, DocumentId)>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
+    auth(&state, auth_header.token())?;
+
     let parent = state
         .database
         .get_document_version(&vault_id, &document_id, &request.parent_version_id, None)

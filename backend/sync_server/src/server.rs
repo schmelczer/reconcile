@@ -13,6 +13,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{extract::DefaultBodyLimit, Extension};
 use axum::{extract::WebSocketUpgrade, Json};
 use log::info;
+mod auth;
 mod create_document;
 mod delete_document;
 mod fetch_latest_document_version;

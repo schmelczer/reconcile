@@ -10,15 +10,22 @@ use anyhow::Context;
 use axum::extract::Path;
 use axum::extract::State;
 use axum::Json;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::headers::Authorization;
+use axum_extra::TypedHeader;
 
+use super::auth::auth;
 use super::requests::DeleteDocumentVersion;
 
 #[axum::debug_handler]
 pub async fn delete_document(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path((vault_id, document_id)): Path<(VaultId, DocumentId)>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<(), SyncServerError> {
+    auth(&state, auth_header.token())?;
+
     let mut transaction = state
         .database
         .create_transaction()

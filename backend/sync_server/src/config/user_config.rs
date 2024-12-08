@@ -1,11 +1,19 @@
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UserConfig {
     #[serde(default = "default_users")]
     pub user_tokens: Vec<User>,
 }
+
+impl UserConfig {
+    pub fn get_user(&self, token: &str) -> Option<&User> {
+        self.user_tokens.iter().find(|u| u.token == token)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct User {
     pub name: String,
