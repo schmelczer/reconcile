@@ -172,15 +172,17 @@ impl Database {
     ) -> Result<()> {
         let query = sqlx::query!(
             r#"
-            insert into documents (vault_id, document_id, created_date, updated_date, relative_path, content, is_deleted)
-            values (?, ?, ?, ?, ?, ?, ?)
+            insert into documents (vault_id, document_id, version_id, created_date, updated_date, relative_path, content, is_binary, is_deleted)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_id,
             version.document_id,
+            version.version_id,
             version.created_date,
             version.updated_date,
             version.relative_path,
             version.content,
+            version.is_binary,
             version.is_deleted
         );
 
