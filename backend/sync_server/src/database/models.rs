@@ -25,6 +25,7 @@ impl StoredDocumentVersion {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentVersionWithoutContent {
     pub vault_id: VaultId,
     pub document_id: DocumentId,
@@ -52,6 +53,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentVersion {
     pub vault_id: VaultId,
     pub document_id: DocumentId,
