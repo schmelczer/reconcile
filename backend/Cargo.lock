@@ -1959,6 +1959,7 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom",
  "reconcile",
+ "sync_lib",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]
@@ -1980,6 +1981,7 @@ dependencies = [
  "axum",
  "chrono",
  "log",
+ "rand",
  "reconcile",
  "schemars",
  "serde",
