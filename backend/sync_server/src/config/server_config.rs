@@ -1,14 +1,7 @@
-use std::path::Path;
-
-use anyhow::{Context, Result};
 use log::debug;
 use serde::{Deserialize, Serialize};
-use tokio::fs;
 
-use crate::{
-    consts::{DEFAULT_HOST, DEFAULT_MAX_BODY_SIZE_MB, DEFAULT_PORT, DEFAULT_SQLITE_URL},
-    errors::SyncServerError,
-};
+use crate::consts::{DEFAULT_HOST, DEFAULT_MAX_BODY_SIZE_MB, DEFAULT_PORT};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ServerConfig {
     #[serde(default = "default_host")]
