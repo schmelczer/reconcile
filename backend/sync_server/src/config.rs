@@ -23,14 +23,20 @@ pub struct Config {
 }
 
 impl Config {
-    pub async fn read(path: &Path) -> Result<Self> {
+    pub async fn read_or_create(path: &Path) -> Result<Self> {
         if path.exists() {
-            info!("Loading configuration from {path:?}");
+            info!(
+                "Loading configuration from {:?}",
+                path.canonicalize().unwrap()
+            );
             Self::load_from_file(path).await
         } else {
-            warn!("Configuration file not found, writing default configuration to {path:?}");
             let config = Config::default();
             config.write(path).await?;
+            warn!(
+                "Configuration file not found, wrote default configuration to {:?}",
+                path.canonicalize().unwrap()
+            );
             Ok(config)
         }
     }

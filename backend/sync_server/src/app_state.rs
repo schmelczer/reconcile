@@ -9,9 +9,9 @@ pub struct AppState {
 
 impl AppState {
     pub async fn try_new() -> Result<Self> {
-        let path = std::path::Path::new(CONFIG_PATH).canonicalize()?;
+        let path = std::path::Path::new(CONFIG_PATH);
 
-        let config = Config::read(&path).await?;
+        let config = Config::read_or_create(path).await?;
         let database = Database::try_new(&config.database).await?;
 
         Ok(Self { config, database })
