@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
+use serde::Serialize;
 use sync_lib::bytes_to_base64;
 
 pub type VaultId = String;
 pub type DocumentId = uuid::Uuid;
 pub type DocumentVersionId = i64;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct StoredDocumentVersion {
     pub vault_id: VaultId,
     pub document_id: DocumentId,
@@ -25,7 +26,7 @@ impl StoredDocumentVersion {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct DocumentVersionWithoutContent {
     pub vault_id: VaultId,
     pub document_id: DocumentId,
@@ -52,7 +53,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct DocumentVersion {
     pub vault_id: VaultId,
     pub document_id: DocumentId,

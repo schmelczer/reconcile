@@ -1,13 +1,18 @@
 use crate::app_state::AppState;
+use aide::{
+    axum::{
+        routing::{delete, get, put},
+        ApiRouter,
+    },
+    openapi::{Info, OpenApi},
+    scalar::Scalar,
+};
 use anyhow::Context;
 use anyhow::Result;
-use axum::extract::DefaultBodyLimit;
-use axum::extract::WebSocketUpgrade;
-use axum::response::Response;
-use axum::routing::delete;
-use axum::{routing::get, routing::put, Router};
+use axum::response::{IntoResponse, Response};
+use axum::{extract::DefaultBodyLimit, Extension};
+use axum::{extract::WebSocketUpgrade, Json};
 use log::info;
-
 mod delete_document;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
@@ -20,35 +25,48 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         &app_state.config.server.host, &app_state.config.server.port
     );
 
-    let app = Router::new()
-        .route(
+    let mut api = OpenApi {
+        info: Info {
+            description: Some("an example API".to_string()),
+            ..Info::default()
+        },
+        ..OpenApi::default()
+    };
+
+    let app = ApiRouter::new()
+        .api_route(
             "/vaults/:vault_id/documents/latest",
             get(fetch_latest_documents::fetch_latest_documents),
         )
-        .route(
+        .api_route(
             "/vaults/:vault_id/documents/:document_id/versions/:parent_version_id",
             put(update_document::update_document),
         )
-        .route(
+        .api_route(
             "/vaults/:vault_id/documents/:document_id",
             delete(delete_document::delete_document),
         )
-        .route(
+        .api_route(
             "/vaults/:vault_id/documents/:document_id/versions/latest",
             get(fetch_latest_document_version::fetch_latest_document_version),
         )
-        .route("/ws", get(handler))
+        .api_route("/ws", get(handler))
+        .route("/", Scalar::new("/api.json").axum_route())
+        .route("/api.json", axum::routing::get(serve_api))
         .layer(DefaultBodyLimit::max(
             app_state.config.server.max_body_size_mb * 1024 * 1024,
         ))
-        .with_state(app_state);
+        .with_state(app_state)
+        .finish_api(&mut api)
+        .layer(Extension(api))
+        .into_make_service();
 
     let listener = tokio::net::TcpListener::bind(address.clone())
         .await
         .with_context(|| format!("Failed to bind to address: {}", address))?;
 
     info!(
-        "Listening on {}",
+        "Listening on http://{}",
         listener
             .local_addr()
             .context("Failed to get local address")?
@@ -64,4 +82,8 @@ async fn handler(ws: WebSocketUpgrade) -> Response {
         .on_upgrade(|socket| async {
             // ...
         })
+}
+
+async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse {
+    Json(api)
 }

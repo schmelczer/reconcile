@@ -1,3 +1,4 @@
+use aide::OperationOutput;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -34,6 +35,10 @@ impl IntoResponse for SyncServerError {
             Self::PermissionDeniedError(_) => (StatusCode::FORBIDDEN, body).into_response(),
         }
     }
+}
+
+impl OperationOutput for SyncServerError {
+    type Inner = Self;
 }
 
 pub fn init_error(error: anyhow::Error) -> SyncServerError {
