@@ -1,24 +1,26 @@
-use super::Operation;
-use crate::diffs::raw_operation::RawOperation;
-use crate::operation_transformation::merge_context::MergeContext;
-use crate::tokenizer::word_tokenizer::word_tokenizer;
-use crate::tokenizer::Tokenizer;
-use crate::utils::ordered_operation::OrderedOperation;
-use crate::utils::side::Side;
-use crate::utils::string_builder::StringBuilder;
-use crate::{diffs::myers::diff, utils::merge_iters::MergeSorted};
 use std::iter;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use super::Operation;
+use crate::{
+    diffs::{myers::diff, raw_operation::RawOperation},
+    operation_transformation::merge_context::MergeContext,
+    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
+    utils::{
+        merge_iters::MergeSorted, ordered_operation::OrderedOperation, side::Side,
+        string_builder::StringBuilder,
+    },
+};
+
 /// A sequence of operations that can be applied to a text document.
 /// EditedText supports merging two sequences of operations using the
 /// principle of Operational Transformation.
 ///
-/// It's mainly created through the from_strings method, then merged with another
-/// EditedText derived from the same original text and then applied to the original text
-/// to get the reconciled text of concurrent edits.
+/// It's mainly created through the from_strings method, then merged with
+/// another EditedText derived from the same original text and then applied to
+/// the original text to get the reconciled text of concurrent edits.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
@@ -30,10 +32,12 @@ where
 }
 
 impl<'a> EditedText<'a, String> {
-    /// Create an EditedText from the given original (old) and updated (new) strings.
-    /// The returned EditedText represents the changes from the original to the updated text.
-    /// When the return value is applied to the original text, it will result in the updated text.
-    /// The default word tokenizer is used to tokenize the text which splits the text on whitespaces.
+    /// Create an EditedText from the given original (old) and updated (new)
+    /// strings. The returned EditedText represents the changes from the
+    /// original to the updated text. When the return value is applied to
+    /// the original text, it will result in the updated text. The default
+    /// word tokenizer is used to tokenize the text which splits the text on
+    /// whitespaces.
     pub fn from_strings(original: &'a str, updated: &str) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
     }
@@ -43,10 +47,11 @@ impl<'a, T> EditedText<'a, T>
 where
     T: PartialEq + Clone,
 {
-    /// Create an EditedText from the given original (old) and updated (new) strings.
-    /// The returned EditedText represents the changes from the original to the updated text.
-    /// When the return value is applied to the original text, it will result in the updated text.
-    /// The tokenizer function is used to tokenize the text.
+    /// Create an EditedText from the given original (old) and updated (new)
+    /// strings. The returned EditedText represents the changes from the
+    /// original to the updated text. When the return value is applied to
+    /// the original text, it will result in the updated text. The tokenizer
+    /// function is used to tokenize the text.
     pub fn from_strings_with_tokenizer(
         original: &'a str,
         updated: &str,
@@ -64,7 +69,8 @@ where
         )
     }
 
-    // Turn raw operations into ordered operations while keeping track of old & new indexes.
+    // Turn raw operations into ordered operations while keeping track of old & new
+    // indexes.
     fn cook_operations<I>(raw_operations: I) -> impl Iterator<Item = OrderedOperation<T>>
     where
         I: IntoIterator<Item = RawOperation<T>>,
@@ -162,8 +168,8 @@ where
     }
 
     /// Create a new EditedText with the given operations.
-    /// The operations must be in the order in which they are meant to be applied.
-    /// The operations must not overlap.
+    /// The operations must be in the order in which they are meant to be
+    /// applied. The operations must not overlap.
     fn new(text: &'a str, operations: Vec<OrderedOperation<T>>) -> Self {
         operations
             .iter()
@@ -227,7 +233,8 @@ where
     ///
     /// # Errors
     ///
-    /// Returns an SyncLibError::OperationError if the operations cannot be applied to the text.
+    /// Returns an SyncLibError::OperationError if the operations cannot be
+    /// applied to the text.
     pub fn apply(&self) -> String {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 

@@ -1,7 +1,8 @@
 use std::ops::Range;
 
-/// A helper for building a string in order based on an original string and a series of insertions and deletions applied to it.
-/// It is safe to use with UTF-8 strings as all operations are based on character indices.
+/// A helper for building a string in order based on an original string and a
+/// series of insertions and deletions applied to it. It is safe to use with
+/// UTF-8 strings as all operations are based on character indices.
 #[derive(Debug, Clone)]
 pub struct StringBuilder<'a> {
     original: &'a str,
@@ -18,13 +19,15 @@ impl StringBuilder<'_> {
         }
     }
 
-    /// Insert a string at the given index after copying the original string up to that index from the last insertion or deletion.
+    /// Insert a string at the given index after copying the original string up
+    /// to that index from the last insertion or deletion.
     pub fn insert(&mut self, from: usize, text: &str) {
         self.copy_until(from);
         self.buffer.push_str(text);
     }
 
-    /// Delete a string at the given index after copying the original string up to that index from the last insertion or deletion.
+    /// Delete a string at the given index after copying the original string up
+    /// to that index from the last insertion or deletion.
     pub fn delete(&mut self, range: std::ops::Range<usize>) {
         self.copy_until(range.start);
         self.last_old_char_index += range.len();
@@ -50,7 +53,8 @@ impl StringBuilder<'_> {
         self.last_old_char_index += jump;
     }
 
-    /// Finish building the string after copying the remaining original string since the last insertion or deletion.
+    /// Finish building the string after copying the remaining original string
+    /// since the last insertion or deletion.
     pub fn build(mut self) -> String {
         self.buffer.push_str(
             &self

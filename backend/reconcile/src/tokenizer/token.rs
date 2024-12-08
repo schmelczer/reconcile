@@ -2,7 +2,8 @@
 use serde::{Deserialize, Serialize};
 
 /// A token is a string that has been normalised in some way.
-/// The normalised form is used for comparison, while the original form is used for applying Operations.
+/// The normalised form is used for comparison, while the original form is used
+/// for applying Operations.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Token<T>
@@ -33,24 +34,16 @@ where
         }
     }
 
-    pub fn original(&self) -> &str {
-        &self.original
-    }
+    pub fn original(&self) -> &str { &self.original }
 
-    pub fn normalised(&self) -> &T {
-        &self.normalised
-    }
+    pub fn normalised(&self) -> &T { &self.normalised }
 
-    pub fn get_original_length(&self) -> usize {
-        self.original.chars().count()
-    }
+    pub fn get_original_length(&self) -> usize { self.original.chars().count() }
 }
 
 impl<T> PartialEq for Token<T>
 where
     T: PartialEq + Clone,
 {
-    fn eq(&self, other: &Self) -> bool {
-        self.normalised == other.normalised
-    }
+    fn eq(&self, other: &Self) -> bool { self.normalised == other.normalised }
 }

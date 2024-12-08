@@ -1,9 +1,12 @@
 use crate::Token;
 
-/// Given two lists of tokens, returns the offset in the first (old) list from which the two lists have the same tokens until the end of the first list.
-/// Thus, the suffix of the old list from the offset to the end is equal to a prefix of the new list.
+/// Given two lists of tokens, returns the offset in the first (old) list from
+/// which the two lists have the same tokens until the end of the first list.
+/// Thus, the suffix of the old list from the offset to the end is equal to a
+/// prefix of the new list.
 ///
-/// If there is no overlap, the function returns the maxmium offset, the length of the old list.
+/// If there is no overlap, the function returns the maxmium offset, the length
+/// of the old list.
 ///
 /// ## Example
 /// ```
@@ -27,8 +30,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     #[test]
     fn test_common_overlap() {

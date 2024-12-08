@@ -1,4 +1,3 @@
-use crate::app_state::AppState;
 use aide::{
     axum::{
         routing::{delete, get, post, put},
@@ -7,12 +6,15 @@ use aide::{
     openapi::{Info, OpenApi},
     scalar::Scalar,
 };
-use anyhow::Context;
-use anyhow::Result;
-use axum::response::{IntoResponse, Response};
-use axum::{extract::DefaultBodyLimit, Extension};
-use axum::{extract::WebSocketUpgrade, Json};
+use anyhow::{Context, Result};
+use axum::{
+    extract::{DefaultBodyLimit, WebSocketUpgrade},
+    response::{IntoResponse, Response},
+    Extension, Json,
+};
 use log::info;
+
+use crate::app_state::AppState;
 mod auth;
 mod create_document;
 mod delete_document;
@@ -90,6 +92,4 @@ async fn handler(ws: WebSocketUpgrade) -> Response {
         })
 }
 
-async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse {
-    Json(api)
-}
+async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse { Json(api) }

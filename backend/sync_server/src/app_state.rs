@@ -1,5 +1,6 @@
-use crate::{config::Config, consts::CONFIG_PATH, database::Database};
 use anyhow::Result;
+
+use crate::{config::Config, consts::CONFIG_PATH, database::Database};
 
 #[derive(Clone, Debug)]
 pub struct AppState {

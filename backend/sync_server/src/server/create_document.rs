@@ -1,21 +1,20 @@
-use crate::app_state::AppState;
-use crate::database::models::DocumentVersionWithoutContent;
-use crate::database::models::StoredDocumentVersion;
-use crate::database::models::VaultId;
-use crate::errors::client_error;
-use crate::errors::server_error;
-use crate::errors::SyncServerError;
 use anyhow::Context;
-use axum::extract::Path;
-use axum::extract::State;
-use axum::Json;
-use axum_extra::headers::authorization::Bearer;
-use axum_extra::headers::Authorization;
-use axum_extra::TypedHeader;
+use axum::{
+    extract::{Path, State},
+    Json,
+};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use sync_lib::base64_to_bytes;
 
-use super::auth::auth;
-use super::requests::CreateDocumentVersion;
+use super::{auth::auth, requests::CreateDocumentVersion};
+use crate::{
+    app_state::AppState,
+    database::models::{DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
+    errors::{client_error, server_error, SyncServerError},
+};
 
 #[axum::debug_handler]
 pub async fn create_document(

@@ -1,16 +1,18 @@
-use crate::app_state::AppState;
-use crate::database::models::DocumentVersionWithoutContent;
-use crate::database::models::VaultId;
-use crate::errors::server_error;
-use crate::errors::SyncServerError;
-use axum::extract::Path;
-use axum::extract::State;
-use axum::Json;
-use axum_extra::headers::authorization::Bearer;
-use axum_extra::headers::Authorization;
-use axum_extra::TypedHeader;
+use axum::{
+    extract::{Path, State},
+    Json,
+};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 
 use super::auth::auth;
+use crate::{
+    app_state::AppState,
+    database::models::{DocumentVersionWithoutContent, VaultId},
+    errors::{server_error, SyncServerError},
+};
 
 #[axum::debug_handler]
 pub async fn fetch_latest_documents(

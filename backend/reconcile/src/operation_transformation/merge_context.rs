@@ -39,12 +39,10 @@ impl<T> MergeContext<T>
 where
     T: PartialEq + Clone,
 {
-    pub fn last_operation(&self) -> Option<&Operation<T>> {
-        self.last_operation.as_ref()
-    }
+    pub fn last_operation(&self) -> Option<&Operation<T>> { self.last_operation.as_ref() }
 
-    /// Replace the last delete operation (if there was one) with a new one while
-    /// applying it to the shift.
+    /// Replace the last delete operation (if there was one) with a new one
+    /// while applying it to the shift.
     pub fn consume_and_replace_last_operation(&mut self, operation: Option<Operation<T>>) {
         if let Some(Operation::Delete {
             deleted_character_count,
@@ -62,8 +60,8 @@ where
     }
 
     /// Remove the last operation (if there was one) in case it is behind the
-    /// threshold operation. This changes the shift in case the last operation was
-    /// a delete.
+    /// threshold operation. This changes the shift in case the last operation
+    /// was a delete.
     pub fn consume_last_operation_if_it_is_too_behind(
         &mut self,
         threshold_operation: &Operation<T>,

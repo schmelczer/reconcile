@@ -1,5 +1,4 @@
-use std::cmp::Ordering;
-use std::iter::Peekable;
+use std::{cmp::Ordering, iter::Peekable};
 
 pub struct MergeAscending<L, R, F, O>
 where
@@ -70,8 +69,9 @@ impl<T: ?Sized> MergeSorted for T where T: Iterator {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     #[test]
     fn test_merge_sorted_by_key() {

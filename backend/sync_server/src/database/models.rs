@@ -21,9 +21,7 @@ pub struct StoredDocumentVersion {
 }
 
 impl StoredDocumentVersion {
-    pub fn content_as_string(&self) -> String {
-        String::from_utf8_lossy(&self.content).to_string()
-    }
+    pub fn content_as_string(&self) -> String { String::from_utf8_lossy(&self.content).to_string() }
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]

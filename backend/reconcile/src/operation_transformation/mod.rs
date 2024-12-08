@@ -33,10 +33,12 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use pretty_assertions::assert_eq;
     use std::{fs, ops::Range, path::Path};
+
+    use pretty_assertions::assert_eq;
     use test_case::test_matrix;
+
+    use super::*;
 
     #[test]
     fn test_merges() {
@@ -64,7 +66,8 @@ mod test {
             "original_1 edit_1 edit_2 original_5",
         );
 
-        // One deleted a large range, the other inserted and deleted a partially overlapping range
+        // One deleted a large range, the other inserted and deleted a partially
+        // overlapping range
         test_merge_both_ways(
             "original_1 original_2 original_3 original_4 original_5",
             "original_1 original_5",
@@ -102,7 +105,8 @@ mod test {
             "hi, my friend!",
         );
 
-        // test_merge_both_ways("hello world", "world !", "hi hello world", "hi world !");
+        // test_merge_both_ways("hello world", "world !", "hi hello world", "hi world
+        // !");
 
         test_merge_both_ways(
             "both delete the same word",

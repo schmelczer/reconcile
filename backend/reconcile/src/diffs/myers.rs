@@ -12,24 +12,27 @@
 //!
 //! # Heuristics
 //!
-//! At present this implementation of Myers' does not implement any more advanced
-//! heuristics that would solve some pathological cases.  For instance passing two
-//! large and completely distinct sequences to the algorithm will make it spin
-//! without making reasonable progress.
+//! At present this implementation of Myers' does not implement any more
+//! advanced heuristics that would solve some pathological cases.  For instance
+//! passing two large and completely distinct sequences to the algorithm will
+//! make it spin without making reasonable progress.
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
-use std::ops::{Index, IndexMut, Range};
-use std::vec;
-
-use crate::tokenizer::token::Token;
-use crate::utils::common_prefix_len::common_prefix_len;
-use crate::utils::common_suffix_len::common_suffix_len;
+use std::{
+    ops::{Index, IndexMut, Range},
+    vec,
+};
 
 use super::raw_operation::RawOperation;
+use crate::{
+    tokenizer::token::Token,
+    utils::{common_prefix_len::common_prefix_len, common_suffix_len::common_suffix_len},
+};
 
 /// Myers' diff algorithm with deadline.
 ///
-/// Diff `old`, between indices `old_range` and `new` between indices `new_range`.
+/// Diff `old`, between indices `old_range` and `new` between indices
+/// `new_range`.
 ///
 /// This diff is done with an optional deadline that defines the maximal
 /// execution time permitted before it bails and falls back to an approximation.
@@ -58,15 +61,15 @@ where
 // and then a possibly empty sequence of diagonal edges called a snake.
 
 /// `V` contains the endpoints of the furthest reaching `D-paths`. For each
-/// recorded endpoint `(x,y)` in diagonal `k`, we only need to retain `x` because
-/// `y` can be computed from `x - k`. In other words, `V` is an array of integers
-/// where `V[k]` contains the row index of the endpoint of the furthest reaching
-/// path in diagonal `k`.
+/// recorded endpoint `(x,y)` in diagonal `k`, we only need to retain `x`
+/// because `y` can be computed from `x - k`. In other words, `V` is an array of
+/// integers where `V[k]` contains the row index of the endpoint of the furthest
+/// reaching path in diagonal `k`.
 ///
 /// We can't use a traditional Vec to represent `V` since we use `k` as an index
 /// and it can take on negative values. So instead `V` is represented as a
-/// light-weight wrapper around a Vec plus an `offset` which is the maximum value
-/// `k` can take on in order to map negative `k`'s back to a value >= 0.
+/// light-weight wrapper around a Vec plus an `offset` which is the maximum
+/// value `k` can take on in order to map negative `k`'s back to a value >= 0.
 #[derive(Debug)]
 struct V {
     offset: isize,
@@ -81,17 +84,13 @@ impl V {
         }
     }
 
-    fn len(&self) -> usize {
-        self.v.len()
-    }
+    fn len(&self) -> usize { self.v.len() }
 }
 
 impl Index<isize> for V {
     type Output = usize;
 
-    fn index(&self, index: isize) -> &Self::Output {
-        &self.v[(index + self.offset) as usize]
-    }
+    fn index(&self, index: isize) -> &Self::Output { &self.v[(index + self.offset) as usize] }
 }
 
 impl IndexMut<isize> for V {

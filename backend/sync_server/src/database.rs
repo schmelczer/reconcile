@@ -4,8 +4,7 @@ use anyhow::{Context, Result};
 use models::{
     DocumentId, DocumentVersionId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
 };
-use sqlx::sqlite::SqliteConnectOptions;
-use sqlx::types::chrono::Utc;
+use sqlx::{sqlite::SqliteConnectOptions, types::chrono::Utc};
 pub mod models;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
 

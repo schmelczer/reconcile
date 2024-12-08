@@ -30,9 +30,9 @@ where
         self.tokens().iter().map(|t| t.original()).collect()
     }
 
-    /// Extends the operation with another operation if returning the new operation.
-    /// Only operations of the same type can be used to extend. If the operations are of different
-    /// types, returns None.
+    /// Extends the operation with another operation if returning the new
+    /// operation. Only operations of the same type can be used to extend.
+    /// If the operations are of different types, returns None.
     pub fn extend(self, other: RawOperation<T>) -> Option<RawOperation<T>> {
         match (self, other) {
             (RawOperation::Insert(tokens1), RawOperation::Insert(tokens2)) => Some(

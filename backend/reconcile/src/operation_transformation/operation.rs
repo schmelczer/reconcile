@@ -1,14 +1,16 @@
-use crate::utils::find_common_overlap::find_common_overlap;
-use crate::utils::string_builder::StringBuilder;
-use crate::Token;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::ops::Range;
+use std::{
+    fmt::{Debug, Display},
+    ops::Range,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use super::merge_context::MergeContext;
+use crate::{
+    utils::{find_common_overlap::find_common_overlap, string_builder::StringBuilder},
+    Token,
+};
 
 /// Represents a change that can be applied to a text document.
 /// Operation is tied to a ropey::Rope and is mainly expected to be
@@ -38,7 +40,8 @@ where
     T: PartialEq + Clone,
 {
     /// Creates an insert operation with the given index and text.
-    /// If the text is empty (meaning that the operation would be a no-op), returns None.
+    /// If the text is empty (meaning that the operation would be a no-op),
+    /// returns None.
     pub fn create_insert(index: usize, text: Vec<Token<T>>) -> Option<Self> {
         if text.is_empty() {
             return None;
@@ -47,8 +50,9 @@ where
         Some(Operation::Insert { index, text })
     }
 
-    /// Creates a delete operation with the given index and number of to-be-deleted characters.
-    /// If the operation would delete 0 (meaning that the operation would be a no-op), returns None.
+    /// Creates a delete operation with the given index and number of
+    /// to-be-deleted characters. If the operation would delete 0 (meaning
+    /// that the operation would be a no-op), returns None.
     pub fn create_delete(index: usize, deleted_character_count: usize) -> Option<Self> {
         if deleted_character_count == 0 {
             return None;
@@ -77,16 +81,18 @@ where
         })
     }
 
-    /// Tries to apply the operation to the given ropey::Rope text, returning the modified text.
+    /// Tries to apply the operation to the given ropey::Rope text, returning
+    /// the modified text.
     ///
     /// # Errors
     ///
-    /// Returns a SyncLibError::OperationApplicationError if the operation cannot be applied.
+    /// Returns a SyncLibError::OperationApplicationError if the operation
+    /// cannot be applied.
     ///
     /// # Panics
     ///
-    /// When compiled in debug mode, panics if a delete operation is attempted on a range
-    /// of text that does not match the text to be deleted.
+    /// When compiled in debug mode, panics if a delete operation is attempted
+    /// on a range of text that does not match the text to be deleted.
     pub fn apply<'a>(&self, mut builder: StringBuilder<'a>) -> StringBuilder<'a> {
         match self {
             Operation::Insert { text, .. } => builder.insert(
@@ -135,11 +141,10 @@ where
     }
 
     /// Returns the range of indices of characters that the operation affects.
-    pub fn range(&self) -> Range<usize> {
-        self.start_index()..self.end_index() + 1
-    }
+    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() + 1 }
 
-    /// Returns the number of affected characters. It is always greater than 0 because empty operations cannot be created.
+    /// Returns the number of affected characters. It is always greater than 0
+    /// because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
             Operation::Insert { text, .. } => {
@@ -152,7 +157,8 @@ where
         }
     }
 
-    /// Creates a new operation with the same type and text but with the given index.
+    /// Creates a new operation with the same type and text but with the given
+    /// index.
     pub fn with_index(self, index: usize) -> Self {
         match self {
             Operation::Insert { text, .. } => Operation::Insert { index, text },
@@ -172,8 +178,9 @@ where
         }
     }
 
-    /// Creates a new operation with the same type and text but with the index shifted by the given offset.
-    /// The offset can be negative but the resulting index must be non-negative.
+    /// Creates a new operation with the same type and text but with the index
+    /// shifted by the given offset. The offset can be negative but the
+    /// resulting index must be non-negative.
     ///
     /// # Panics
     ///
@@ -185,8 +192,9 @@ where
         self.with_index(index as usize)
     }
 
-    /// Merges the operation with the given context, producing a new operation and updating the context.
-    /// This implements a comples FSM that handles the merging of operations in a way that is consistent with the text.
+    /// Merges the operation with the given context, producing a new operation
+    /// and updating the context. This implements a comples FSM that handles
+    /// the merging of operations in a way that is consistent with the text.
     /// The contexts are updated in-place.
     pub fn merge_operations_with_context(
         self,
@@ -242,9 +250,10 @@ where
                 produced_context.shift += operation.len() as i64;
 
                 debug_assert!(
-                        last_delete.range().contains(&operation.start_index()),
-                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
-                    );
+                    last_delete.range().contains(&operation.start_index()),
+                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
+                     not contained in it"
+                );
 
                 let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
 
@@ -266,9 +275,10 @@ where
                 Some(last_delete @ Operation::Delete { .. }),
             ) => {
                 debug_assert!(
-                        last_delete.range().contains(&operation.start_index()),
-                        "There is a last delete ({last_delete}) but the operation ({operation}) is not contained in it"
-                    );
+                    last_delete.range().contains(&operation.start_index()),
+                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
+                     not contained in it"
+                );
 
                 let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
 
@@ -341,15 +351,14 @@ impl<T> Debug for Operation<T>
 where
     T: PartialEq + Clone,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self) }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     #[test]
     #[should_panic]

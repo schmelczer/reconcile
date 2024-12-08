@@ -1,0 +1,8 @@
+imports_granularity = "crate"
+condense_wildcard_suffixes = true
+fn_single_line = true
+format_strings = true
+reorder_impl_items = true
+group_imports = "StdExternalCrate"
+use_field_init_shorthand = true
+wrap_comments=true
