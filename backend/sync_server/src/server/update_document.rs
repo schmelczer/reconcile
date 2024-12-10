@@ -14,7 +14,7 @@ use sync_lib::{base64_to_bytes, base64_to_string};
 use super::{auth::auth, requests::UpdateDocumentVersion};
 use crate::{
     app_state::AppState,
-    database::models::{DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
+    database::models::{DocumentId, DocumentVersion, StoredDocumentVersion, VaultId},
     errors::{client_error, not_found_error, server_error, SyncServerError},
 };
 
@@ -34,7 +34,7 @@ pub async fn update_document(
     }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
-) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
+) -> Result<Json<DocumentVersion>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
     let parent = state
