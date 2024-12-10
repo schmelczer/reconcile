@@ -54,6 +54,12 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct PingResponse {
+    pub server_version: String,
+}
+
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentVersion {
     pub vault_id: VaultId,
     pub document_id: DocumentId,

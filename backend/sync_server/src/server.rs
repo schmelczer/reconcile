@@ -22,6 +22,7 @@ mod create_document;
 mod delete_document;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
+mod ping;
 mod requests;
 mod update_document;
 
@@ -40,6 +41,7 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
     };
 
     let app = ApiRouter::new()
+        .api_route("/ping", get(ping::ping))
         .api_route(
             "/vaults/:vault_id/documents",
             get(fetch_latest_documents::fetch_latest_documents),
