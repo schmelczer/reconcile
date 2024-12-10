@@ -18,7 +18,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    vault_id: string;
+                    vaultId: string;
                 };
                 cookie?: never;
             };
@@ -42,7 +42,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    vault_id: string;
+                    vaultId: string;
                 };
                 cookie?: never;
             };
@@ -82,8 +82,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    document_id: string;
-                    vault_id: string;
+                    documentId: string;
+                    vaultId: string;
                 };
                 cookie?: never;
             };
@@ -106,8 +106,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    document_id: string;
-                    vault_id: string;
+                    documentId: string;
+                    vaultId: string;
                 };
                 cookie?: never;
             };
@@ -135,8 +135,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    document_id: string;
-                    vault_id: string;
+                    documentId: string;
+                    vaultId: string;
                 };
                 cookie?: never;
             };
@@ -242,25 +242,25 @@ export interface components {
             versionId: number;
         };
         PathParams: {
-            vault_id: string;
+            vaultId: string;
         };
         PathParams2: {
-            vault_id: string;
+            vaultId: string;
         };
         PathParams3: {
             /** Format: uuid */
-            document_id: string;
-            vault_id: string;
+            documentId: string;
+            vaultId: string;
         };
         PathParams4: {
             /** Format: uuid */
-            document_id: string;
-            vault_id: string;
+            documentId: string;
+            vaultId: string;
         };
         PathParams5: {
             /** Format: uuid */
-            document_id: string;
-            vault_id: string;
+            documentId: string;
+            vaultId: string;
         };
         UpdateDocumentVersion: {
             contentBase64: string;
