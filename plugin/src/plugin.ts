@@ -12,17 +12,13 @@ import {
 
 import * as plugin from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
-import { getSystemErrorName } from "util";
-import { SyncSettingsTab } from "./settings/settings-tab.js";
+import { SyncSettingsTab } from "./views/settings-tab.js";
 import { SyncView } from "./views/sync-view.js";
-import {
-	DEFAULT_SETTINGS,
-	SettingsContainer,
-	SyncSettings,
-} from "./settings/settings.js";
+
 import { Logger } from "./logger.js";
 import { SyncEventHandler } from "./events/sync-event-handler.js";
-import { Syncer } from "./syncer/syncer.js";
+import { SyncServer } from "./services/sync_service.js";
+import { Database } from "./database/database.js";
 
 export default class SyncPlugin extends Plugin {
 	async onload() {
@@ -30,7 +26,6 @@ export default class SyncPlugin extends Plugin {
 
 		await plugin.default(Promise.resolve((wasmBin as any).default));
 
-		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
 			id: "sample-editor-command",
 			name: "Sample editor command",
@@ -40,16 +35,18 @@ export default class SyncPlugin extends Plugin {
 			},
 		});
 
-		const settingsContainer = new SettingsContainer(
-			this,
-			await this.loadData()
-		);
-		this.addSettingTab(
-			new SyncSettingsTab(this.app, this, settingsContainer)
+		const database = new Database(
+			await this.loadData(),
+			this.saveData.bind(this)
 		);
 
-		const syncer = new Syncer(settingsContainer);
-		const eventHandler = new SyncEventHandler(syncer);
+		const syncServer = new SyncServer(database);
+
+		this.addSettingTab(
+			new SyncSettingsTab(this.app, this, database, syncServer)
+		);
+
+		const eventHandler = new SyncEventHandler(database, syncServer);
 
 		[
 			this.app.vault.on(
@@ -70,7 +67,6 @@ export default class SyncPlugin extends Plugin {
 			),
 		].forEach((event) => this.registerEvent(event));
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(
 			window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
 		);
@@ -79,11 +75,7 @@ export default class SyncPlugin extends Plugin {
 		const ribbonIconEl = this.addRibbonIcon(
 			"dice",
 			"Sample Plugin",
-			(evt: MouseEvent) => {
-				this.activateView();
-
-				new Notice("This is a notice!");
-			}
+			(_: MouseEvent) => this.activateView()
 		);
 		ribbonIconEl.addClass("my-plugin-ribbon-class");
 	}
