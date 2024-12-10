@@ -129,6 +129,42 @@ impl Database {
         .context("Cannot fetch latest document version")
     }
 
+    pub async fn get_latest_document_version_by_path(
+        &self,
+        vault: &VaultId,
+        relative_path: &str,
+        transaction: Option<&mut Transaction<'_>>,
+    ) -> Result<Option<StoredDocumentVersion>> {
+        let query = sqlx::query_as!(
+            StoredDocumentVersion,
+            r#"
+            select 
+                vault_id,
+                document_id as "document_id: uuid::Uuid", 
+                version_id, 
+                created_date as "created_date: chrono::DateTime<Utc>",
+                updated_date as "updated_date: chrono::DateTime<Utc>",
+                relative_path,
+                content,
+                is_binary,
+                is_deleted
+            from documents
+            where vault_id = ? and relative_path = ? and is_deleted = false
+            ORDER BY version_id DESC
+            LIMIT 1
+            "#,
+            vault,
+            relative_path
+        );
+
+        if let Some(transaction) = transaction {
+            query.fetch_optional(&mut **transaction).await
+        } else {
+            query.fetch_optional(&self.connection_pool).await
+        }
+        .context("Cannot fetch latest document version by path")
+    }
+
     pub async fn get_document_version(
         &self,
         vault: &VaultId,

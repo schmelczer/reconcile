@@ -35,6 +35,7 @@
 - add clap
 - add auth middleware
 - add request logs
+- the is deleted logic is bad and we'll always read the previous  version instead of the deleted
 - CI for:
     - publish reconcile
     - cross-platform build server

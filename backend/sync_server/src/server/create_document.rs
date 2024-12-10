@@ -9,12 +9,12 @@ use axum_extra::{
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::base64_to_bytes;
+use sync_lib::{base64_to_bytes, base64_to_string};
 
 use super::{auth::auth, requests::CreateDocumentVersion};
 use crate::{
     app_state::AppState,
-    database::models::{DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
+    database::models::{DocumentVersion, StoredDocumentVersion, VaultId},
     errors::{client_error, server_error, SyncServerError},
 };
 
@@ -24,33 +24,87 @@ pub struct PathParams {
     vault_id: VaultId,
 }
 
+/// Create a new document in case a document with the same doesn't exist
+/// already. If a document with the same path exists, a new version is created
+/// with their content merged.
 #[axum::debug_handler]
 pub async fn create_document(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams { vault_id }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
-) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
+) -> Result<Json<DocumentVersion>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
-    let new_version = StoredDocumentVersion {
-        vault_id,
-        document_id: uuid::Uuid::new_v4(),
-        version_id: 0,
-        content: base64_to_bytes(&request.content_base64)
-            .context("Cannot convert base64 encoded content to bytes")
-            .map_err(client_error)?,
-        created_date: request.created_date,
-        relative_path: request.relative_path,
-        updated_date: chrono::Utc::now(),
-        is_binary: request.is_binary,
-        is_deleted: false,
+    let mut transaction = state
+        .database
+        .create_transaction()
+        .await
+        .map_err(server_error)?;
+
+    let maybe_existing_version = state
+        .database
+        .get_latest_document_version_by_path(
+            &vault_id,
+            &request.relative_path,
+            Some(&mut transaction),
+        )
+        .await
+        .map_err(server_error)?;
+
+    let new_version = if let Some(existing_version) = maybe_existing_version {
+        let merged_content = if request.is_binary {
+            base64_to_bytes(&request.content_base64)
+                .context("Failed to decode base64 content in request")
+                .map_err(client_error)?
+        } else {
+            reconcile::reconcile(
+                "", // the empty string is the first common parent of the two documents
+                &existing_version.content_as_string(),
+                &base64_to_string(&request.content_base64)
+                    .context("Failed to decode base64 content in request")
+                    .map_err(client_error)?,
+            )
+            .into_bytes()
+        };
+
+        StoredDocumentVersion {
+            vault_id,
+            document_id: existing_version.document_id,
+            version_id: existing_version.version_id + 1,
+            content: merged_content,
+            created_date: request.created_date,
+            relative_path: request.relative_path,
+            updated_date: chrono::Utc::now(),
+            is_binary: request.is_binary,
+            is_deleted: false,
+        }
+    } else {
+        StoredDocumentVersion {
+            vault_id,
+            document_id: uuid::Uuid::new_v4(),
+            version_id: 0,
+            content: base64_to_bytes(&request.content_base64)
+                .context("Cannot convert base64 encoded content to bytes")
+                .map_err(client_error)?,
+            created_date: request.created_date,
+            relative_path: request.relative_path,
+            updated_date: chrono::Utc::now(),
+            is_binary: request.is_binary,
+            is_deleted: false,
+        }
     };
 
     state
         .database
-        .insert_document_version(&new_version, None)
+        .insert_document_version(&new_version, Some(&mut transaction))
         .await
+        .map_err(server_error)?;
+
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit successful transaction")
         .map_err(server_error)?;
 
     Ok(Json(new_version.into()))
