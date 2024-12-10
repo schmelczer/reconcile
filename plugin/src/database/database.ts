@@ -1,27 +1,11 @@
 import { Logger } from "src/logger";
-
-export type DocumentId = string;
-export type DocumentVersionId = number;
-export type RelativePath = string;
-
-export interface SyncSettings {
-	remoteUri: string;
-	token: string;
-	fullScanIntervalInSeconds: number;
-	fullScanEnabled: boolean;
-}
-
-export const DEFAULT_SETTINGS: SyncSettings = {
-	remoteUri: "",
-	token: "",
-	fullScanIntervalInSeconds: 60,
-	fullScanEnabled: true,
-};
-
-export interface DocumentMetadata {
-	documentId: DocumentId;
-	parentVersionId: DocumentVersionId;
-}
+import { DEFAULT_SETTINGS, SyncSettings } from "./sync-settings";
+import {
+	RelativePath,
+	DocumentMetadata,
+	DocumentId,
+	DocumentVersionId,
+} from "./document-metadata";
 
 interface StoredDatabase {
 	documents: Map<RelativePath, DocumentMetadata>;
@@ -67,6 +51,10 @@ export class Database {
 		Logger.getInstance().debug(
 			`Loaded settings ${JSON.stringify(this._settings, null, 2)}`
 		);
+	}
+
+	public getDocuments(): Map<RelativePath, DocumentMetadata> {
+		return this._documents;
 	}
 
 	public getSettings(): SyncSettings {

@@ -91,7 +91,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["DocumentVersionWithoutContent"];
+                        "application/json": components["schemas"]["DocumentVersion"];
                     };
                 };
             };
@@ -156,7 +156,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["DocumentVersionWithoutContent"];
+                        "application/json": components["schemas"]["DocumentVersion"];
                     };
                 };
             };

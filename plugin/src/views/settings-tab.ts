@@ -9,7 +9,7 @@ import {
 	Setting,
 } from "obsidian";
 
-import SyncPlugin from "src/plugin.js";
+import SyncPlugin from "src/plugin";
 import { Database } from "src/database/database";
 import { SyncServer } from "src/services/sync_service";
 
