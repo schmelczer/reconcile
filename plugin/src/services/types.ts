@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PingResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vaults/{vault_id}/documents": {
         parameters: {
             query?: never;
@@ -18,7 +52,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    vaultId: string;
+                    vault_id: string;
                 };
                 cookie?: never;
             };
@@ -42,7 +76,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    vaultId: string;
+                    vault_id: string;
                 };
                 cookie?: never;
             };
@@ -82,8 +116,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    documentId: string;
-                    vaultId: string;
+                    document_id: string;
+                    vault_id: string;
                 };
                 cookie?: never;
             };
@@ -106,8 +140,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    documentId: string;
-                    vaultId: string;
+                    document_id: string;
+                    vault_id: string;
                 };
                 cookie?: never;
             };
@@ -135,8 +169,8 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    documentId: string;
-                    vaultId: string;
+                    document_id: string;
+                    vault_id: string;
                 };
                 cookie?: never;
             };
@@ -242,25 +276,28 @@ export interface components {
             versionId: number;
         };
         PathParams: {
-            vaultId: string;
+            vault_id: string;
         };
         PathParams2: {
-            vaultId: string;
+            vault_id: string;
         };
         PathParams3: {
             /** Format: uuid */
-            documentId: string;
-            vaultId: string;
+            document_id: string;
+            vault_id: string;
         };
         PathParams4: {
             /** Format: uuid */
-            documentId: string;
-            vaultId: string;
+            document_id: string;
+            vault_id: string;
         };
         PathParams5: {
             /** Format: uuid */
-            documentId: string;
-            vaultId: string;
+            document_id: string;
+            vault_id: string;
+        };
+        PingResponse: {
+            serverVersion: string;
         };
         UpdateDocumentVersion: {
             contentBase64: string;
