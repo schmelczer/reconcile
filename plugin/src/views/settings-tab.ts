@@ -10,18 +10,17 @@ import {
 } from "obsidian";
 
 import SyncPlugin from "src/plugin.js";
-import { SettingsContainer } from "./settings";
+import { Database } from "src/database/database";
+import { SyncServer } from "src/services/sync_service";
 
 export class SyncSettingsTab extends PluginSettingTab {
-	plugin: SyncPlugin;
-
 	constructor(
 		app: App,
 		plugin: SyncPlugin,
-		private settingsContainer: SettingsContainer
+		private database: Database,
+		private syncServer: SyncServer
 	) {
 		super(app, plugin);
-		this.plugin = plugin;
 	}
 
 	display(): void {
@@ -38,25 +37,36 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:8080/obsidian")
-					.setValue(this.settingsContainer.getSettings().remoteUri)
+					.setValue(this.database.getSettings().remoteUri)
 					.onChange((value) =>
-						this.settingsContainer.setSetting("remoteUri", value)
+						this.database.setSetting("remoteUri", value)
 					)
 			)
-			.addButton((button) => button.setButtonText("Test Connection"));
+			.addButton((button) =>
+				button.setButtonText("Test Connection").onClick(async () => {
+					try {
+						const result = await this.syncServer.ping();
+						new Notice(
+							`Successfully connected to server! (server version: ${result.serverVersion})`
+						);
+					} catch (e) {
+						new Notice("Failed to connect to server: " + e);
+					}
+				})
+			);
 
 		new Setting(containerEl)
 			.setName("Access token")
 			.setDesc(
 				"Set the access token for the server that you can get from the server"
 			)
-			.setTooltip("todo, links to docs")
+			.setTooltip("todo, links to dcocs")
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("ey...")
-					.setValue(this.settingsContainer.getSettings().token)
+					.setValue(this.database.getSettings().token)
 					.onChange((value) =>
-						this.settingsContainer.setSetting("token", value)
+						this.database.setSetting("token", value)
 					)
 			);
 
@@ -68,14 +78,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.setTooltip("todo, links to docs")
 			.addToggle((toggle) =>
 				toggle
-					.setValue(
-						this.settingsContainer.getSettings().fullScanEnabled
-					)
+					.setValue(this.database.getSettings().fullScanEnabled)
 					.onChange((value) =>
-						this.settingsContainer.setSetting(
-							"fullScanEnabled",
-							value
-						)
+						this.database.setSetting("fullScanEnabled", value)
 					)
 			)
 			.addSlider((text) =>
@@ -83,11 +88,10 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 3600, 1)
 					.setDynamicTooltip()
 					.setValue(
-						this.settingsContainer.getSettings()
-							.fullScanIntervalInSeconds
+						this.database.getSettings().fullScanIntervalInSeconds
 					)
 					.onChange((value) =>
-						this.settingsContainer.setSetting(
+						this.database.setSetting(
 							"fullScanIntervalInSeconds",
 							value
 						)

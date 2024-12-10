@@ -1,0 +1,153 @@
+import { Logger } from "src/logger";
+
+export type DocumentId = string;
+export type DocumentVersionId = number;
+export type RelativePath = string;
+
+export interface SyncSettings {
+	remoteUri: string;
+	token: string;
+	fullScanIntervalInSeconds: number;
+	fullScanEnabled: boolean;
+}
+
+export const DEFAULT_SETTINGS: SyncSettings = {
+	remoteUri: "",
+	token: "",
+	fullScanIntervalInSeconds: 60,
+	fullScanEnabled: true,
+};
+
+export interface DocumentMetadata {
+	documentId: DocumentId;
+	parentVersionId: DocumentVersionId;
+}
+
+interface StoredDatabase {
+	documents: Map<RelativePath, DocumentMetadata>;
+	settings: SyncSettings;
+}
+
+export class Database {
+	private _documents: Map<RelativePath, DocumentMetadata> = new Map();
+	private _settings: SyncSettings;
+	private onSettingsChangeHandlers: Array<(settings: SyncSettings) => void> =
+		[];
+
+	public constructor(
+		initialState: Partial<StoredDatabase> | undefined,
+		private saveData: (data: any) => Promise<void>
+	) {
+		initialState = initialState || {};
+		if (
+			Object.prototype.hasOwnProperty.call(initialState, "documents") &&
+			initialState.documents
+		) {
+			for (const [relativePath, metadata] of Object.entries(
+				initialState.documents
+			)) {
+				this._documents.set(relativePath, metadata as DocumentMetadata);
+			}
+		}
+
+		Logger.getInstance().debug(
+			`Loaded documents ${JSON.stringify(
+				Object.fromEntries(this._documents.entries()),
+				null,
+				2
+			)}`
+		);
+
+		this._settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			initialState.settings || {}
+		);
+
+		Logger.getInstance().debug(
+			`Loaded settings ${JSON.stringify(this._settings, null, 2)}`
+		);
+	}
+
+	public getSettings(): SyncSettings {
+		return this._settings;
+	}
+
+	public async setSettings(value: SyncSettings): Promise<void> {
+		this._settings = value;
+		this.onSettingsChangeHandlers.forEach((handler) => handler(value));
+		await this.save();
+	}
+
+	public addOnSettingsChangeHandlers(
+		handler: (settings: SyncSettings) => void
+	) {
+		this.onSettingsChangeHandlers.push(handler);
+	}
+
+	public async setSetting<T extends keyof SyncSettings>(
+		key: T,
+		value: SyncSettings[T]
+	): Promise<void> {
+		this._settings[key] = value;
+		Logger.getInstance().debug(
+			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
+				this._settings
+			)}`
+		);
+		await this.setSettings(this._settings);
+	}
+
+	public async setDocument({
+		relativePath,
+		documentId,
+		parentVersionId,
+	}: {
+		relativePath: RelativePath;
+		documentId: DocumentId;
+		parentVersionId: DocumentVersionId;
+	}): Promise<void> {
+		this._documents.set(relativePath, {
+			documentId,
+			parentVersionId,
+		});
+		await this.save();
+	}
+
+	public async moveDocument({
+		oldRelativePath,
+		relativePath,
+		documentId,
+		parentVersionId,
+	}: {
+		oldRelativePath: RelativePath;
+		relativePath: RelativePath;
+		documentId: DocumentId;
+		parentVersionId: DocumentVersionId;
+	}): Promise<void> {
+		this._documents.delete(oldRelativePath);
+		this._documents.set(relativePath, {
+			documentId,
+			parentVersionId,
+		});
+		await this.save();
+	}
+
+	public async removeDocument(relativePath: RelativePath): Promise<void> {
+		this._documents.delete(relativePath);
+		await this.save();
+	}
+
+	public getDocument(
+		relativePath: RelativePath
+	): DocumentMetadata | undefined {
+		return this._documents.get(relativePath);
+	}
+
+	private async save(): Promise<void> {
+		await this.saveData({
+			documents: Object.fromEntries(this._documents.entries()),
+			settings: this._settings,
+		});
+	}
+}
