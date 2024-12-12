@@ -90,14 +90,17 @@ export class Database {
 		relativePath,
 		documentId,
 		parentVersionId,
+		hash,
 	}: {
 		relativePath: RelativePath;
 		documentId: DocumentId;
 		parentVersionId: DocumentVersionId;
+		hash: string;
 	}): Promise<void> {
 		this._documents.set(relativePath, {
 			documentId,
 			parentVersionId,
+			hash,
 		});
 		await this.save();
 	}
@@ -107,16 +110,19 @@ export class Database {
 		relativePath,
 		documentId,
 		parentVersionId,
+		hash,
 	}: {
 		oldRelativePath: RelativePath;
 		relativePath: RelativePath;
 		documentId: DocumentId;
 		parentVersionId: DocumentVersionId;
+		hash: string;
 	}): Promise<void> {
 		this._documents.delete(oldRelativePath);
 		this._documents.set(relativePath, {
 			documentId,
 			parentVersionId,
+			hash,
 		});
 		await this.save();
 	}

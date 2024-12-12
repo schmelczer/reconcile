@@ -1,4 +1,3 @@
-import { TFile } from "obsidian";
 import { Database } from "src/database/database";
 import { RelativePath } from "src/database/document-metadata";
 import { SyncServer } from "src/services/sync_service";
@@ -15,7 +14,8 @@ export async function syncLocallyDeletedFile(
 
 	await syncServer.delete({
 		documentId: metadata.documentId,
-		createdDate: new Date(), // We got the event now, so it must have been deleted now
+		// We got the event now, so it must have been deleted just now
+		createdDate: new Date(),
 	});
 
 	await database.removeDocument(path);

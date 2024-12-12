@@ -5,4 +5,5 @@ export type RelativePath = string;
 export interface DocumentMetadata {
 	documentId: DocumentId;
 	parentVersionId: DocumentVersionId;
+	hash: string;
 }
