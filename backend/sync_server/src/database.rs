@@ -64,23 +64,16 @@ impl Database {
             DocumentVersionWithoutContent,
             r#"
             select 
-                d.vault_id,
-                d.document_id as "document_id: uuid::Uuid", 
-                d.version_id, 
+                vault_id,
+                document_id as "document_id: uuid::Uuid", 
+                version_id, 
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                d.relative_path,
-                d.is_binary,
-                d.is_deleted
-            from documents d
-            where d.vault_id = ? 
-                and d.is_deleted = false 
-                and d.version_id = (
-                    SELECT MAX(sub.version_id)
-                    FROM documents sub
-                    WHERE sub.vault_id = d.vault_id
-                        AND sub.document_id = d.document_id
-                )
+                relative_path,
+                is_binary,
+                is_deleted
+            from latest_documents
+            where is_deleted = false and vault_id = ?
             "#,
             vault,
         );
@@ -112,10 +105,8 @@ impl Database {
                 content,
                 is_binary,
                 is_deleted
-            from documents
+            from latest_documents
             where vault_id = ? and document_id = ?
-            ORDER BY version_id DESC
-            LIMIT 1
             "#,
             vault,
             document
@@ -148,10 +139,8 @@ impl Database {
                 content,
                 is_binary,
                 is_deleted
-            from documents
+            from latest_documents
             where vault_id = ? and relative_path = ? and is_deleted = false
-            ORDER BY version_id DESC
-            LIMIT 1
             "#,
             vault,
             relative_path
@@ -207,7 +196,17 @@ impl Database {
     ) -> Result<()> {
         let query = sqlx::query!(
             r#"
-            insert into documents (vault_id, document_id, version_id, created_date, updated_date, relative_path, content, is_binary, is_deleted)
+            insert into documents (
+            vault_id,
+                document_id,
+                version_id,
+                created_date,
+                updated_date,
+                relative_path,
+                content,
+                is_binary,
+                is_deleted
+            )
             values (?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_id,
