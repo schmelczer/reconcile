@@ -9,7 +9,7 @@ use axum_extra::{
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::{base64_to_bytes, base64_to_string};
+use sync_lib::{base64_to_bytes, merge};
 
 use super::{auth::auth, requests::CreateDocumentVersion};
 use crate::{
@@ -53,20 +53,17 @@ pub async fn create_document(
         .map_err(server_error)?;
 
     let new_version = if let Some(existing_version) = maybe_existing_version {
-        let merged_content = if request.is_binary {
-            base64_to_bytes(&request.content_base64)
-                .context("Failed to decode base64 content in request")
-                .map_err(client_error)?
-        } else {
-            reconcile::reconcile(
-                "", // the empty string is the first common parent of the two documents
-                &existing_version.content_as_string(),
-                &base64_to_string(&request.content_base64)
-                    .context("Failed to decode base64 content in request")
-                    .map_err(client_error)?,
-            )
-            .into_bytes()
-        };
+        let content_bytes = base64_to_bytes(&request.content_base64)
+            .context("Failed to decode base64 content in request")
+            .map_err(client_error)?;
+
+        let merged_content = merge(
+            &[], // the empty string is the first common parent of the two documents,
+            &existing_version.content,
+            &content_bytes,
+        )
+        .context("Failed to decode bytes as UTF-8")
+        .map_err(client_error)?;
 
         StoredDocumentVersion {
             vault_id,
@@ -76,7 +73,6 @@ pub async fn create_document(
             created_date: request.created_date,
             relative_path: request.relative_path,
             updated_date: chrono::Utc::now(),
-            is_binary: request.is_binary,
             is_deleted: false,
         }
     } else {
@@ -90,7 +86,6 @@ pub async fn create_document(
             created_date: request.created_date,
             relative_path: request.relative_path,
             updated_date: chrono::Utc::now(),
-            is_binary: request.is_binary,
             is_deleted: false,
         }
     };

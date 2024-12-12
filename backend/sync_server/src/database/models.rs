@@ -16,12 +16,7 @@ pub struct StoredDocumentVersion {
     pub updated_date: DateTime<Utc>,
     pub relative_path: String,
     pub content: Vec<u8>,
-    pub is_binary: bool,
     pub is_deleted: bool,
-}
-
-impl StoredDocumentVersion {
-    pub fn content_as_string(&self) -> String { String::from_utf8_lossy(&self.content).to_string() }
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
@@ -33,7 +28,6 @@ pub struct DocumentVersionWithoutContent {
     pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
     pub relative_path: String,
-    pub is_binary: bool,
     pub is_deleted: bool,
 }
 
@@ -46,7 +40,6 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
             created_date: value.created_date,
             updated_date: value.updated_date,
             relative_path: value.relative_path,
-            is_binary: value.is_binary,
             is_deleted: value.is_deleted,
         }
     }
@@ -69,7 +62,6 @@ pub struct DocumentVersion {
     pub updated_date: DateTime<Utc>,
     pub relative_path: String,
     pub content_base64: String,
-    pub is_binary: bool,
     pub is_deleted: bool,
 }
 
@@ -83,7 +75,6 @@ impl From<StoredDocumentVersion> for DocumentVersion {
             updated_date: value.updated_date,
             relative_path: value.relative_path,
             content_base64: bytes_to_base64(&value.content),
-            is_binary: value.is_binary,
             is_deleted: value.is_deleted,
         }
     }

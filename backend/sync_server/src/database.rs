@@ -70,7 +70,6 @@ impl Database {
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 relative_path,
-                is_binary,
                 is_deleted
             from latest_documents
             where is_deleted = false and vault_id = ?
@@ -103,7 +102,6 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 relative_path,
                 content,
-                is_binary,
                 is_deleted
             from latest_documents
             where vault_id = ? and document_id = ?
@@ -137,7 +135,6 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 relative_path,
                 content,
-                is_binary,
                 is_deleted
             from latest_documents
             where vault_id = ? and relative_path = ? and is_deleted = false
@@ -172,7 +169,6 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 relative_path,
                 content,
-                is_binary,
                 is_deleted
             from documents
             where vault_id = ? and document_id = ? and version_id = ?"#,
@@ -204,10 +200,9 @@ impl Database {
                 updated_date,
                 relative_path,
                 content,
-                is_binary,
                 is_deleted
             )
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_id,
             version.document_id,
@@ -216,7 +211,6 @@ impl Database {
             version.updated_date,
             version.relative_path,
             version.content,
-            version.is_binary,
             version.is_deleted
         );
 

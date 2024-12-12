@@ -9,7 +9,7 @@ use axum_extra::{
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::{base64_to_bytes, base64_to_string};
+use sync_lib::{base64_to_bytes, merge};
 
 use super::{auth::auth, requests::UpdateDocumentVersion};
 use crate::{
@@ -76,20 +76,13 @@ pub async fn update_document(
         )));
     }
 
-    let merged_content = if request.is_binary {
-        base64_to_bytes(&request.content_base64)
-            .context("Failed to decode base64 content in request")
-            .map_err(client_error)?
-    } else {
-        reconcile::reconcile(
-            &parent.content_as_string(),
-            &latest_version.content_as_string(),
-            &base64_to_string(&request.content_base64)
-                .context("Failed to decode base64 content in request")
-                .map_err(client_error)?,
-        )
-        .into_bytes()
-    };
+    let content_bytes = base64_to_bytes(&request.content_base64)
+        .context("Failed to decode base64 content in request")
+        .map_err(client_error)?;
+
+    let merged_content = merge(&parent.content, &latest_version.content, &content_bytes)
+        .context("Failed to decode bytes as UTF-8")
+        .map_err(client_error)?;
 
     let new_version = StoredDocumentVersion {
         vault_id,
@@ -99,7 +92,6 @@ pub async fn update_document(
         created_date: request.created_date,
         relative_path: request.relative_path,
         updated_date: chrono::Utc::now(),
-        is_binary: request.is_binary,
         is_deleted: false,
     };
 

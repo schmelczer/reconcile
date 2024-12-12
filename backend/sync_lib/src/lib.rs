@@ -1,3 +1,5 @@
+use core::str;
+
 use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
 use errors::SyncLibError;
 use wasm_bindgen::prelude::*;
@@ -25,6 +27,20 @@ pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
 pub fn base64_to_string(input: &str) -> Result<String, SyncLibError> {
     let bytes = base64_to_bytes(input)?;
     String::from_utf8(bytes).map_err(SyncLibError::from)
+}
+
+#[wasm_bindgen]
+pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Result<Vec<u8>, SyncLibError> {
+    Ok(if is_binary(right) {
+        right.to_vec()
+    } else {
+        reconcile::reconcile(
+            str::from_utf8(parent).map_err(SyncLibError::from)?,
+            str::from_utf8(left).map_err(SyncLibError::from)?,
+            str::from_utf8(right).map_err(SyncLibError::from)?,
+        )
+        .into_bytes()
+    })
 }
 
 #[wasm_bindgen]

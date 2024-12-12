@@ -10,7 +10,6 @@ pub struct CreateDocumentVersion {
     pub created_date: DateTime<Utc>,
     pub relative_path: String,
     pub content_base64: String,
-    pub is_binary: bool,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -20,7 +19,6 @@ pub struct UpdateDocumentVersion {
     pub created_date: DateTime<Utc>,
     pub relative_path: String,
     pub content_base64: String,
-    pub is_binary: bool,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]

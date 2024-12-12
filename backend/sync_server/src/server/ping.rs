@@ -4,7 +4,7 @@ use axum_extra::{
     TypedHeader,
 };
 
-use super::auth::{self, auth};
+use super::auth::auth;
 use crate::{app_state::AppState, database::models::PingResponse, errors::SyncServerError};
 
 #[axum::debug_handler]

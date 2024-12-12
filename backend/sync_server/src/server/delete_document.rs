@@ -63,7 +63,6 @@ pub async fn delete_document(
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
         relative_path: latest_version.relative_path,
-        is_binary: latest_version.is_binary,
         is_deleted: true,
     };
 
