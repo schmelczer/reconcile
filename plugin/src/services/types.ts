@@ -14,7 +14,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    authorization?: string;
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -239,7 +241,6 @@ export interface components {
             contentBase64: string;
             /** Format: date-time */
             createdDate: string;
-            isBinary: boolean;
             relativePath: string;
         };
         DeleteDocumentVersion: {
@@ -252,7 +253,6 @@ export interface components {
             createdDate: string;
             /** Format: uuid */
             documentId: string;
-            isBinary: boolean;
             isDeleted: boolean;
             relativePath: string;
             /** Format: date-time */
@@ -266,7 +266,6 @@ export interface components {
             createdDate: string;
             /** Format: uuid */
             documentId: string;
-            isBinary: boolean;
             isDeleted: boolean;
             relativePath: string;
             /** Format: date-time */
@@ -297,13 +296,13 @@ export interface components {
             vault_id: string;
         };
         PingResponse: {
+            isAuthenticated: boolean;
             serverVersion: string;
         };
         UpdateDocumentVersion: {
             contentBase64: string;
             /** Format: date-time */
             createdDate: string;
-            isBinary: boolean;
             /** Format: int64 */
             parentVersionId: number;
             relativePath: string;
