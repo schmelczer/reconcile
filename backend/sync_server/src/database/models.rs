@@ -56,6 +56,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
 #[serde(rename_all = "camelCase")]
 pub struct PingResponse {
     pub server_version: String,
+    pub is_authenticated: bool,
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]

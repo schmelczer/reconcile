@@ -1,10 +1,23 @@
-use axum::Json;
+use axum::{extract::State, Json};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 
-use crate::{database::models::PingResponse, errors::SyncServerError};
+use super::auth::{self, auth};
+use crate::{app_state::AppState, database::models::PingResponse, errors::SyncServerError};
 
 #[axum::debug_handler]
-pub async fn ping() -> Result<Json<PingResponse>, SyncServerError> {
+pub async fn ping(
+    maybe_auth_header: Option<TypedHeader<Authorization<Bearer>>>,
+    State(state): State<AppState>,
+) -> Result<Json<PingResponse>, SyncServerError> {
+    let is_authenticated = maybe_auth_header
+        .map(|auth_header| auth(&state, auth_header.token()).is_ok())
+        .unwrap_or(false);
+
     Ok(Json(PingResponse {
         server_version: env!("CARGO_PKG_VERSION").to_string(),
+        is_authenticated,
     }))
 }

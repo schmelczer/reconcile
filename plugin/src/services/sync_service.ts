@@ -26,7 +26,14 @@ export class SyncServer {
 	}
 
 	public async ping(): Promise<components["schemas"]["PingResponse"]> {
-		const response = await this.client.GET("/ping");
+		const response = await this.client.GET("/ping", {
+			params: {
+				header: {
+					authorization:
+						"Bearer " + this.database.getSettings().token,
+				},
+			},
+		});
 
 		Logger.getInstance().info(
 			"Ping response: " + JSON.stringify(response.data)

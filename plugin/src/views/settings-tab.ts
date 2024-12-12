@@ -46,9 +46,15 @@ export class SyncSettingsTab extends PluginSettingTab {
 				button.setButtonText("Test Connection").onClick(async () => {
 					try {
 						const result = await this.syncServer.ping();
-						new Notice(
-							`Successfully connected to server! (server version: ${result.serverVersion})`
-						);
+						if (result.isAuthenticated) {
+							new Notice(
+								`Successfully authenticated with the server (version: ${result.serverVersion})!`
+							);
+						} else {
+							new Notice(
+								`Successfully connected to server (version: ${result.serverVersion}) but failed to authenticate.`
+							);
+						}
 					} catch (e) {
 						new Notice("Failed to connect to server: " + e);
 					}
