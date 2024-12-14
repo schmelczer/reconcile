@@ -3,7 +3,6 @@ import { DEFAULT_SETTINGS, SyncSettings } from "./sync-settings";
 import {
 	RelativePath,
 	DocumentMetadata,
-	DocumentId,
 	DocumentVersionId,
 } from "./document-metadata";
 
@@ -88,17 +87,14 @@ export class Database {
 
 	public async setDocument({
 		relativePath,
-		documentId,
 		parentVersionId,
 		hash,
 	}: {
 		relativePath: RelativePath;
-		documentId: DocumentId;
 		parentVersionId: DocumentVersionId;
 		hash: string;
 	}): Promise<void> {
 		this._documents.set(relativePath, {
-			documentId,
 			parentVersionId,
 			hash,
 		});
@@ -108,19 +104,16 @@ export class Database {
 	public async moveDocument({
 		oldRelativePath,
 		relativePath,
-		documentId,
 		parentVersionId,
 		hash,
 	}: {
 		oldRelativePath: RelativePath;
 		relativePath: RelativePath;
-		documentId: DocumentId;
 		parentVersionId: DocumentVersionId;
 		hash: string;
 	}): Promise<void> {
 		this._documents.delete(oldRelativePath);
 		this._documents.set(relativePath, {
-			documentId,
 			parentVersionId,
 			hash,
 		});

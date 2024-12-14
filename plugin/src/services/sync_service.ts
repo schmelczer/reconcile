@@ -6,8 +6,8 @@ import { Logger } from "src/logger";
 import { Database } from "src/database/database";
 import { SyncSettings } from "src/database/sync-settings";
 import {
-	DocumentId,
 	DocumentVersionId,
+	RelativePath,
 } from "src/database/document-metadata.js";
 
 export class SyncServer {
@@ -46,61 +46,24 @@ export class SyncServer {
 		return response.data;
 	}
 
-	public async create({
+	public async put({
 		relativePath,
-		contentBytes,
-		createdDate,
-	}: {
-		contentBytes: Uint8Array;
-		relativePath: string;
-		createdDate: Date;
-	}): Promise<components["schemas"]["DocumentVersion"]> {
-		let response = await this.client.POST("/vaults/{vault_id}/documents", {
-			params: {
-				path: { vault_id: SyncServer.VAULT_ID },
-				header: {
-					authorization:
-						"Bearer " + this.database.getSettings().token,
-				},
-			},
-			body: {
-				contentBase64: lib.bytes_to_base64(contentBytes),
-				createdDate: createdDate.toISOString(),
-				relativePath,
-			},
-		});
-
-		if (!response.data) {
-			throw new Error(`Failed to create document: ${response.error}`);
-		}
-
-		Logger.getInstance().info(
-			"Created document " + JSON.stringify(response.data)
-		);
-
-		return response.data;
-	}
-
-	public async update({
-		documentId,
 		parentVersionId,
-		relativePath,
 		contentBytes,
 		createdDate,
 	}: {
-		documentId: DocumentId;
-		parentVersionId: DocumentVersionId;
-		relativePath: string;
+		relativePath: RelativePath;
+		parentVersionId: DocumentVersionId | undefined;
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
 		let response = await this.client.PUT(
-			"/vaults/{vault_id}/documents/{document_id}",
+			"/vaults/{vault_id}/documents/{relative_path}",
 			{
 				params: {
 					path: {
 						vault_id: SyncServer.VAULT_ID,
-						document_id: documentId,
+						relative_path: encodeURIComponent(relativePath),
 					},
 					header: {
 						authorization:
@@ -128,19 +91,19 @@ export class SyncServer {
 	}
 
 	public async delete({
-		documentId,
+		relativePath,
 		createdDate,
 	}: {
-		documentId: DocumentId;
+		relativePath: RelativePath;
 		createdDate: Date;
 	}): Promise<void> {
 		const response = await this.client.DELETE(
-			"/vaults/{vault_id}/documents/{document_id}",
+			"/vaults/{vault_id}/documents/{relative_path}",
 			{
 				params: {
 					path: {
 						vault_id: SyncServer.VAULT_ID,
-						document_id: documentId,
+						relative_path: encodeURIComponent(relativePath),
 					},
 					header: {
 						authorization:
@@ -166,17 +129,17 @@ export class SyncServer {
 	}
 
 	public async get({
-		documentId,
+		relativePath,
 	}: {
-		documentId: DocumentId;
+		relativePath: RelativePath;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
 		const response = await this.client.GET(
-			"/vaults/{vault_id}/documents/{document_id}",
+			"/vaults/{vault_id}/documents/{relative_path}",
 			{
 				params: {
 					path: {
 						vault_id: SyncServer.VAULT_ID,
-						document_id: documentId,
+						relative_path: encodeURIComponent(relativePath),
 					},
 					header: {
 						authorization:
