@@ -6,18 +6,9 @@ use crate::database::models::DocumentVersionId;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateDocumentVersion {
-    pub created_date: DateTime<Utc>,
-    pub relative_path: String,
-    pub content_base64: String,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdateDocumentVersion {
-    pub parent_version_id: DocumentVersionId,
+    pub parent_version_id: Option<DocumentVersionId>,
     pub created_date: DateTime<Utc>,
-    pub relative_path: String,
     pub content_base64: String,
 }
 

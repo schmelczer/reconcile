@@ -1,9 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::{Context, Result};
-use models::{
-    DocumentId, DocumentVersionId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
-};
+use models::{DocumentVersionId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId};
 use sqlx::{sqlite::SqliteConnectOptions, types::chrono::Utc};
 pub mod models;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
@@ -19,8 +17,9 @@ pub type Transaction<'a> = sqlx::Transaction<'a, Sqlite>;
 
 impl Database {
     pub async fn try_new(config: &DatabaseConfig) -> Result<Self> {
-        let connection_options =
-            SqliteConnectOptions::from_str(&config.sqlite_url)?.create_if_missing(true);
+        let connection_options = SqliteConnectOptions::from_str(&config.sqlite_url)?
+            .create_if_missing(true)
+            .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
         let pool = SqlitePoolOptions::new()
             .max_connections(config.max_connections)
@@ -65,13 +64,12 @@ impl Database {
             r#"
             select 
                 vault_id,
-                document_id as "document_id: uuid::Uuid", 
+                relative_path,
                 version_id, 
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                relative_path,
                 is_deleted
-            from latest_documents
+            from latest_document_versions
             where is_deleted = false and vault_id = ?
             "#,
             vault,
@@ -85,40 +83,7 @@ impl Database {
         .context("Cannot fetch latest documents")
     }
 
-    pub async fn get_latest_document_version(
-        &self,
-        vault: &VaultId,
-        document: &DocumentId,
-        transaction: Option<&mut Transaction<'_>>,
-    ) -> Result<Option<StoredDocumentVersion>> {
-        let query = sqlx::query_as!(
-            StoredDocumentVersion,
-            r#"
-            select 
-                vault_id,
-                document_id as "document_id: uuid::Uuid", 
-                version_id, 
-                created_date as "created_date: chrono::DateTime<Utc>",
-                updated_date as "updated_date: chrono::DateTime<Utc>",
-                relative_path,
-                content,
-                is_deleted
-            from latest_documents
-            where vault_id = ? and document_id = ?
-            "#,
-            vault,
-            document
-        );
-
-        if let Some(transaction) = transaction {
-            query.fetch_optional(&mut **transaction).await
-        } else {
-            query.fetch_optional(&self.connection_pool).await
-        }
-        .context("Cannot fetch latest document version")
-    }
-
-    pub async fn get_latest_document_version_by_path(
+    pub async fn get_latest_document(
         &self,
         vault: &VaultId,
         relative_path: &str,
@@ -129,15 +94,14 @@ impl Database {
             r#"
             select 
                 vault_id,
-                document_id as "document_id: uuid::Uuid", 
+                relative_path,
                 version_id, 
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                relative_path,
                 content,
                 is_deleted
-            from latest_documents
-            where vault_id = ? and relative_path = ? and is_deleted = false
+            from latest_document_versions
+            where vault_id = ? and relative_path = ?
             "#,
             vault,
             relative_path
@@ -148,13 +112,13 @@ impl Database {
         } else {
             query.fetch_optional(&self.connection_pool).await
         }
-        .context("Cannot fetch latest document version by path")
+        .context("Cannot fetch latest document version")
     }
 
     pub async fn get_document_version(
         &self,
         vault: &VaultId,
-        document: &DocumentId,
+        relative_path: &str,
         version: &DocumentVersionId,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<Option<StoredDocumentVersion>> {
@@ -163,17 +127,16 @@ impl Database {
             r#"
             select 
                 vault_id,
-                document_id as "document_id: uuid::Uuid", 
+                relative_path,
                 version_id, 
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                relative_path,
                 content,
                 is_deleted
             from documents
-            where vault_id = ? and document_id = ? and version_id = ?"#,
+            where vault_id = ? and relative_path = ? and version_id = ?"#,
             vault,
-            document,
+            relative_path,
             version
         );
 
@@ -193,23 +156,21 @@ impl Database {
         let query = sqlx::query!(
             r#"
             insert into documents (
-            vault_id,
-                document_id,
+                vault_id,
+                relative_path,
                 version_id,
                 created_date,
                 updated_date,
-                relative_path,
                 content,
                 is_deleted
             )
-            values (?, ?, ?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_id,
-            version.document_id,
+            version.relative_path,
             version.version_id,
             version.created_date,
             version.updated_date,
-            version.relative_path,
             version.content,
             version.is_deleted
         );

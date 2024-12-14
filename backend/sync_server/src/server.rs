@@ -1,6 +1,6 @@
 use aide::{
     axum::{
-        routing::{delete, get, post, put},
+        routing::{delete, get, put},
         ApiRouter,
     },
     openapi::{Info, OpenApi},
@@ -18,7 +18,6 @@ use tower_http::cors::CorsLayer;
 
 use crate::app_state::AppState;
 mod auth;
-mod create_document;
 mod delete_document;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
@@ -47,19 +46,15 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
             get(fetch_latest_documents::fetch_latest_documents),
         )
         .api_route(
-            "/vaults/:vault_id/documents",
-            post(create_document::create_document),
-        )
-        .api_route(
-            "/vaults/:vault_id/documents/:document_id",
+            "/vaults/:vault_id/documents/:relative_path",
             get(fetch_latest_document_version::fetch_latest_document_version),
         )
         .api_route(
-            "/vaults/:vault_id/documents/:document_id",
+            "/vaults/:vault_id/documents/:relative_path",
             put(update_document::update_document),
         )
         .api_route(
-            "/vaults/:vault_id/documents/:document_id",
+            "/vaults/:vault_id/documents/:relative_path",
             delete(delete_document::delete_document),
         )
         .api_route("/ws", get(handler))

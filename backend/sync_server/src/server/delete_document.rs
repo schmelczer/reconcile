@@ -13,7 +13,7 @@ use serde::Deserialize;
 use super::{auth::auth, requests::DeleteDocumentVersion};
 use crate::{
     app_state::AppState,
-    database::models::{DocumentId, StoredDocumentVersion, VaultId},
+    database::models::{StoredDocumentVersion, VaultId},
     errors::{not_found_error, server_error, SyncServerError},
 };
 
@@ -21,7 +21,7 @@ use crate::{
 #[derive(Deserialize, JsonSchema)]
 pub struct PathParams {
     vault_id: VaultId,
-    document_id: DocumentId,
+    relative_path: String,
 }
 
 #[axum::debug_handler]
@@ -29,7 +29,7 @@ pub async fn delete_document(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams {
         vault_id,
-        document_id,
+        relative_path,
     }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
@@ -44,25 +44,24 @@ pub async fn delete_document(
 
     let latest_version = state
         .database
-        .get_latest_document_version(&vault_id, &document_id, Some(&mut transaction))
+        .get_latest_document(&vault_id, &relative_path, Some(&mut transaction))
         .await
         .map_err(server_error)?
         .map(Ok)
         .unwrap_or_else(|| {
             Err(not_found_error(anyhow!(
                 "Latest document version of document `{}` not found",
-                document_id
+                relative_path
             )))
         })?;
 
     let new_version = StoredDocumentVersion {
         vault_id,
-        document_id,
+        relative_path,
         version_id: latest_version.version_id + 1,
         content: vec![],
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
-        relative_path: latest_version.relative_path,
         is_deleted: true,
     };
 
