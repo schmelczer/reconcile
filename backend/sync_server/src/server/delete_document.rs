@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use axum::{
     extract::{Path, State},
     Json,
@@ -14,7 +14,7 @@ use super::{auth::auth, requests::DeleteDocumentVersion};
 use crate::{
     app_state::AppState,
     database::models::{StoredDocumentVersion, VaultId},
-    errors::{not_found_error, server_error, SyncServerError},
+    errors::{server_error, SyncServerError},
 };
 
 // This is required for aide to infer the path parameter types and names
@@ -42,23 +42,16 @@ pub async fn delete_document(
         .await
         .map_err(server_error)?;
 
-    let latest_version = state
+    let last_update_id = state
         .database
-        .get_latest_document(&vault_id, &relative_path, Some(&mut transaction))
+        .get_max_update_id_in_vault(&vault_id, Some(&mut transaction))
         .await
-        .map_err(server_error)?
-        .map(Ok)
-        .unwrap_or_else(|| {
-            Err(not_found_error(anyhow!(
-                "Latest document version of document `{}` not found",
-                relative_path
-            )))
-        })?;
+        .map_err(server_error)?;
 
     let new_version = StoredDocumentVersion {
         vault_id,
+        vault_update_id: last_update_id + 1,
         relative_path,
-        version_id: latest_version.version_id + 1,
         content: vec![],
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),

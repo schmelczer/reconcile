@@ -7,6 +7,7 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
@@ -36,10 +37,11 @@ pub async fn update_document(
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentVersion>, SyncServerError> {
     auth(&state, auth_header.token())?;
+
     let parent_content = if let Some(parent_version_id) = request.parent_version_id {
         state
             .database
-            .get_document_version(&vault_id, &relative_path, &parent_version_id, None)
+            .get_document_version(&vault_id, parent_version_id, None)
             .await
             .map_err(server_error)?
             .map(Ok)
@@ -55,9 +57,19 @@ pub async fn update_document(
         Ok(Vec::default())
     }?;
 
+    let content_bytes = base64_to_bytes(&request.content_base64)
+        .context("Failed to decode base64 content in request")
+        .map_err(client_error)?;
+
     let mut transaction = state
         .database
         .create_transaction()
+        .await
+        .map_err(server_error)?;
+
+    let mut last_update_id = state
+        .database
+        .get_max_update_id_in_vault(&vault_id, Some(&mut transaction))
         .await
         .map_err(server_error)?;
 
@@ -67,14 +79,37 @@ pub async fn update_document(
         .await
         .map_err(server_error)?;
 
-    let content_bytes = base64_to_bytes(&request.content_base64)
-        .context("Failed to decode base64 content in request")
-        .map_err(client_error)?;
+    if let Some(latest) = latest_version.as_ref() {
+        if content_bytes == latest.content && relative_path == latest.relative_path {
+            info!("Document content is the same as the latest version, skipping update");
+            transaction
+                .rollback()
+                .await
+                .context("Failed to rollback transaction")
+                .map_err(server_error)?;
 
-    let next_version = latest_version
-        .as_ref()
-        .map(|v| v.version_id + 1)
-        .unwrap_or(0);
+            return Ok(Json(latest.clone().into()));
+        } else if relative_path != latest.relative_path {
+            let delete_at_previous_path = StoredDocumentVersion {
+                vault_id: vault_id.clone(),
+                vault_update_id: last_update_id + 1,
+                relative_path: latest.relative_path.clone(),
+                content: vec![],
+                created_date: request.created_date,
+                updated_date: chrono::Utc::now(),
+                is_deleted: true,
+            };
+
+            last_update_id += 1;
+
+            state
+                .database
+                .insert_document_version(&delete_at_previous_path, Some(&mut transaction))
+                .await
+                .map_err(server_error)?;
+        }
+    }
+
     let latest_version_content = latest_version
         .map(|v| v.content)
         .unwrap_or_else(Vec::default);
@@ -85,8 +120,8 @@ pub async fn update_document(
 
     let new_version = StoredDocumentVersion {
         vault_id,
+        vault_update_id: last_update_id + 1,
         relative_path,
-        version_id: next_version,
         content: merged_content,
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
