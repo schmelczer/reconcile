@@ -3,7 +3,8 @@ import { TFile } from "obsidian";
 import { Database } from "src/database/database";
 import { Logger } from "src/logger";
 import { SyncServer } from "src/services/sync_service";
-import { hash, isEqualBytes } from "src/utils";
+import { hash } from "src/utils/hash.js";
+import { isEqualBytes } from "src/utils/is-equal-bytes.js";
 
 export async function syncLocallyUpdatedFile({
 	database,
@@ -43,7 +44,7 @@ export async function syncLocallyUpdatedFile({
 	const localDbUpdatePromise = database.moveDocument({
 		oldRelativePath: oldPath || file.path,
 		relativePath: file.path,
-		parentVersionId: response.versionId,
+		parentVersionId: response.vaultUpdateId,
 		hash: contentHash,
 	});
 

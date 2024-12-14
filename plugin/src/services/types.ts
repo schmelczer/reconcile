@@ -49,7 +49,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    since_update_id?: number | null;
+                };
                 header: {
                     authorization: string;
                 };
@@ -65,7 +67,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["DocumentVersionWithoutContent"][];
+                        "application/json": components["schemas"]["FetchLatestDocumentsResponse"];
                     };
                 };
             };
@@ -225,7 +227,7 @@ export interface components {
             updatedDate: string;
             vaultId: string;
             /** Format: int64 */
-            versionId: number;
+            vaultUpdateId: number;
         };
         DocumentVersionWithoutContent: {
             /** Format: date-time */
@@ -236,7 +238,12 @@ export interface components {
             updatedDate: string;
             vaultId: string;
             /** Format: int64 */
-            versionId: number;
+            vaultUpdateId: number;
+        };
+        FetchLatestDocumentsResponse: {
+            /** Format: int64 */
+            lastUpdateId: number;
+            latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
         };
         PathParams: {
             vault_id: string;
@@ -256,6 +263,10 @@ export interface components {
         PingResponse: {
             isAuthenticated: boolean;
             serverVersion: string;
+        };
+        QueryParams: {
+            /** Format: int64 */
+            since_update_id?: number | null;
         };
         UpdateDocumentVersion: {
             contentBase64: string;

@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS, SyncSettings } from "./sync-settings";
 import {
 	RelativePath,
 	DocumentMetadata,
-	DocumentVersionId,
+	VaultUpdateId,
 } from "./document-metadata";
 
 interface StoredDatabase {
@@ -91,7 +91,7 @@ export class Database {
 		hash,
 	}: {
 		relativePath: RelativePath;
-		parentVersionId: DocumentVersionId;
+		parentVersionId: VaultUpdateId;
 		hash: string;
 	}): Promise<void> {
 		this._documents.set(relativePath, {
@@ -109,7 +109,7 @@ export class Database {
 	}: {
 		oldRelativePath: RelativePath;
 		relativePath: RelativePath;
-		parentVersionId: DocumentVersionId;
+		parentVersionId: VaultUpdateId;
 		hash: string;
 	}): Promise<void> {
 		this._documents.delete(oldRelativePath);

@@ -1,7 +1,7 @@
-export type DocumentVersionId = number;
+export type VaultUpdateId = number;
 export type RelativePath = string;
 
 export interface DocumentMetadata {
-	parentVersionId: DocumentVersionId;
+	parentVersionId: VaultUpdateId;
 	hash: string;
 }
