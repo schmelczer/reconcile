@@ -5,5 +5,5 @@ export function hash(content: Uint8Array): string {
 		hash = (hash << 5) - hash + content[i];
 		hash |= 0; // convert to 32bit integer
 	}
-	return hash.toString(64);
+	return hash.toString(16);
 }
