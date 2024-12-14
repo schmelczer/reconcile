@@ -1,22 +1,27 @@
 import { Database } from "src/database/database";
 import { RelativePath } from "src/database/document-metadata";
+import { Logger } from "src/logger";
 import { SyncServer } from "src/services/sync_service";
 
 export async function syncLocallyDeletedFile(
 	database: Database,
 	syncServer: SyncServer,
-	path: RelativePath
+	relativePath: RelativePath
 ) {
-	const metadata = database.getDocument(path);
+	const metadata = database.getDocument(relativePath);
 	if (!metadata) {
-		throw `Document metadata not found for ${path}`;
+		Logger.getInstance().warn(
+			`Document metadata not found for ${relativePath}`
+		);
 	}
 
 	await syncServer.delete({
-		documentId: metadata.documentId,
+		relativePath,
 		// We got the event now, so it must have been deleted just now
 		createdDate: new Date(),
 	});
 
-	await database.removeDocument(path);
+	if (metadata) {
+		await database.removeDocument(relativePath);
+	}
 }
