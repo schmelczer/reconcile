@@ -23,6 +23,7 @@ mod fetch_latest_document_version;
 mod fetch_latest_documents;
 mod ping;
 mod requests;
+mod responses;
 mod update_document;
 
 pub async fn create_server(app_state: AppState) -> Result<()> {
