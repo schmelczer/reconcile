@@ -10,7 +10,7 @@ import {
 	WorkspaceLeaf,
 } from "obsidian";
 
-import * as plugin from "../../backend/sync_lib/pkg/sync_lib.js";
+import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import { SyncSettingsTab } from "./views/settings-tab.js";
 import { SyncView } from "./views/sync-view.js";
@@ -24,7 +24,7 @@ export default class SyncPlugin extends Plugin {
 	async onload() {
 		Logger.getInstance().info('Starting plugin "Sample Plugin"');
 
-		await plugin.default(Promise.resolve((wasmBin as any).default));
+		await lib.default(Promise.resolve((wasmBin as any).default));
 
 		this.addCommand({
 			id: "sample-editor-command",

@@ -100,4 +100,4 @@ See https://github.com/obsidianmd/obsidian-api
 
 
 npm install -g openapi-typescript
-openapi-typescript http://localhost:3000/api.json --output ./types.ts
+openapi-typescript http://localhost:3000/api.json --output plugin/src/services/types.ts
