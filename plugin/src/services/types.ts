@@ -73,14 +73,40 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    authorization: string;
+                };
+                path: {
+                    vault_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateDocumentVersion"];
+                };
+            };
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DocumentVersion"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/vaults/{vault_id}/documents/{relative_path}": {
+    "/vaults/{vault_id}/documents/{document_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -94,7 +120,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    relative_path: string;
+                    document_id: string;
                     vault_id: string;
                 };
                 cookie?: never;
@@ -118,7 +144,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    relative_path: string;
+                    document_id: string;
                     vault_id: string;
                 };
                 cookie?: never;
@@ -147,7 +173,7 @@ export interface paths {
                     authorization: string;
                 };
                 path: {
-                    relative_path: string;
+                    document_id: string;
                     vault_id: string;
                 };
                 cookie?: never;
@@ -213,14 +239,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CreateDocumentVersion: {
+            contentBase64: string;
+            /** Format: date-time */
+            createdDate: string;
+            relativePath: string;
+        };
         DeleteDocumentVersion: {
             /** Format: date-time */
             createdDate: string;
+            relativePath: string;
         };
         DocumentVersion: {
             contentBase64: string;
             /** Format: date-time */
             createdDate: string;
+            /** Format: uuid */
+            documentId: string;
             isDeleted: boolean;
             relativePath: string;
             /** Format: date-time */
@@ -232,6 +267,8 @@ export interface components {
         DocumentVersionWithoutContent: {
             /** Format: date-time */
             createdDate: string;
+            /** Format: uuid */
+            documentId: string;
             isDeleted: boolean;
             relativePath: string;
             /** Format: date-time */
@@ -249,15 +286,21 @@ export interface components {
             vault_id: string;
         };
         PathParams2: {
-            relative_path: string;
             vault_id: string;
         };
         PathParams3: {
-            relative_path: string;
+            /** Format: uuid */
+            document_id: string;
             vault_id: string;
         };
         PathParams4: {
-            relative_path: string;
+            /** Format: uuid */
+            document_id: string;
+            vault_id: string;
+        };
+        PathParams5: {
+            /** Format: uuid */
+            document_id: string;
             vault_id: string;
         };
         PingResponse: {
@@ -273,7 +316,8 @@ export interface components {
             /** Format: date-time */
             createdDate: string;
             /** Format: int64 */
-            parentVersionId?: number | null;
+            parentVersionId: number;
+            relativePath: string;
         };
     };
     responses: never;
