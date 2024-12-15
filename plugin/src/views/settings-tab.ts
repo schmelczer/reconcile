@@ -1,20 +1,11 @@
-import {
-	App,
-	Editor,
-	MarkdownView,
-	Modal,
-	Notice,
-	Plugin,
-	PluginSettingTab,
-	Setting,
-} from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 
 import SyncPlugin from "src/plugin";
 import { Database } from "src/database/database";
 import { SyncServer } from "src/services/sync_service";
 
 export class SyncSettingsTab extends PluginSettingTab {
-	constructor(
+	public constructor(
 		app: App,
 		plugin: SyncPlugin,
 		private database: Database,
@@ -59,6 +50,14 @@ export class SyncSettingsTab extends PluginSettingTab {
 						new Notice("Failed to connect to server: " + e);
 					}
 				})
+			)
+			.addButton((button) =>
+				button.setButtonText("Reset sync state").onClick(async () => {
+					await this.database.resetSyncState();
+					new Notice(
+						"Sync state has been reset, you will need to resync"
+					);
+				})
 			);
 
 		new Setting(containerEl)
@@ -84,9 +83,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.setTooltip("todo, links to docs")
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.database.getSettings().fullScanEnabled)
+					.setValue(this.database.getSettings().isSyncEnabled)
 					.onChange((value) =>
-						this.database.setSetting("fullScanEnabled", value)
+						this.database.setSetting("isSyncEnabled", value)
 					)
 			)
 			.addSlider((text) =>
@@ -94,11 +93,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 3600, 1)
 					.setDynamicTooltip()
 					.setValue(
-						this.database.getSettings().fullScanIntervalInSeconds
+						this.database.getSettings().fetchChangesUpdateInterval
 					)
 					.onChange((value) =>
 						this.database.setSetting(
-							"fullScanIntervalInSeconds",
+							"fetchChangesUpdateInterval",
 							value
 						)
 					)

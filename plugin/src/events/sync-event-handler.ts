@@ -7,12 +7,23 @@ import { syncLocallyDeletedFile } from "src/sync-functions/sync-locally-deleted-
 import { syncLocallyUpdatedFile } from "src/sync-functions/sync-locally-updated-file";
 
 export class SyncEventHandler implements FileEventHandler {
-	constructor(private database: Database, private syncServer: SyncServer) {}
+	public constructor(
+		private database: Database,
+		private syncServer: SyncServer
+	) {}
 
 	async onCreate(file: TAbstractFile): Promise<void> {
 		if (file instanceof TFile) {
 			Logger.getInstance().info(`File created: ${file.path}`);
-			syncLocallyUpdatedFile({
+
+			if (!this.database.getSettings().isSyncEnabled) {
+				Logger.getInstance().info(
+					`Sync is disabled, not syncing ${file.path}`
+				);
+				return;
+			}
+
+			await syncLocallyUpdatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
 				file,
@@ -25,17 +36,38 @@ export class SyncEventHandler implements FileEventHandler {
 	async onDelete(file: TAbstractFile): Promise<void> {
 		if (file instanceof TFile) {
 			Logger.getInstance().info(`File deleted: ${file.path}`);
-			syncLocallyDeletedFile(this.database, this.syncServer, file.path);
+
+			if (!this.database.getSettings().isSyncEnabled) {
+				Logger.getInstance().info(
+					`Sync is disabled, not syncing ${file.path}`
+				);
+				return;
+			}
+
+			await syncLocallyDeletedFile(
+				this.database,
+				this.syncServer,
+				file.path
+			);
 		} else {
 			Logger.getInstance().info(`Folder deleted: ${file.path}, ignored`);
 		}
 	}
 
 	async onRename(file: TAbstractFile, oldPath: string): Promise<void> {
-		Logger.getInstance().info(`File renamed: ${oldPath} -> ${file.path}`);
-
 		if (file instanceof TFile) {
-			syncLocallyUpdatedFile({
+			Logger.getInstance().info(
+				`File renamed: ${oldPath} -> ${file.path}`
+			);
+
+			if (!this.database.getSettings().isSyncEnabled) {
+				Logger.getInstance().info(
+					`Sync is disabled, not syncing ${file.path}`
+				);
+				return;
+			}
+
+			await syncLocallyUpdatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
 				file,
@@ -49,10 +81,17 @@ export class SyncEventHandler implements FileEventHandler {
 	}
 
 	async onModify(file: TAbstractFile): Promise<void> {
-		Logger.getInstance().info(`File modified: ${file.path}`);
-
 		if (file instanceof TFile) {
-			syncLocallyUpdatedFile({
+			Logger.getInstance().info(`File modified: ${file.path}`);
+
+			if (!this.database.getSettings().isSyncEnabled) {
+				Logger.getInstance().info(
+					`Sync is disabled, not syncing ${file.path}`
+				);
+				return;
+			}
+
+			await syncLocallyUpdatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
 				file,
