@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
 use anyhow::{Context, Result};
-use models::{DocumentVersionWithoutContent, StoredDocumentVersion, VaultId, VaultUpdateId};
+use models::{
+    DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId, VaultUpdateId,
+};
 use sqlx::{sqlite::SqliteConnectOptions, types::chrono::Utc};
 pub mod models;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
@@ -54,6 +56,7 @@ impl Database {
             .context("Cannot create transaction")
     }
 
+    /// Return the latest state of all non-deleted documents in the vault
     pub async fn get_latest_documents(
         &self,
         vault: &VaultId,
@@ -65,6 +68,7 @@ impl Database {
             select 
                 vault_id,
                 vault_update_id,
+                document_id as "document_id: uuid::Uuid", 
                 relative_path,
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
@@ -81,6 +85,42 @@ impl Database {
             query.fetch_all(&self.connection_pool).await
         }
         .context("Cannot fetch latest documents")
+    }
+
+    /// Return the latest state of all documents (including deleted) in the
+    /// vault which have changed since the given update id
+    pub async fn get_latest_documents_since(
+        &self,
+        vault: &VaultId,
+        vault_update_id: VaultUpdateId,
+        transaction: Option<&mut Transaction<'_>>,
+    ) -> Result<Vec<DocumentVersionWithoutContent>> {
+        let query = sqlx::query_as!(
+            DocumentVersionWithoutContent,
+            r#"
+            select
+                vault_id,
+                vault_update_id,
+                document_id as "document_id: uuid::Uuid",
+                relative_path,
+                created_date as "created_date: chrono::DateTime<Utc>",
+                updated_date as "updated_date: chrono::DateTime<Utc>",
+                is_deleted
+            from latest_document_versions
+            where vault_id = ? and vault_update_id > ?
+            "#,
+            vault,
+            vault_update_id
+        );
+
+        if let Some(transaction) = transaction {
+            query.fetch_all(&mut **transaction).await
+        } else {
+            query.fetch_all(&self.connection_pool).await
+        }
+        .with_context(|| {
+            format!("Cannot fetch latest documents since vault_update_id {vault_update_id}")
+        })
     }
 
     pub async fn get_max_update_id_in_vault(
@@ -106,40 +146,7 @@ impl Database {
         .context("Cannot fetch max update id in vault")
     }
 
-    pub async fn get_latest_documents_since(
-        &self,
-        vault: &VaultId,
-        vault_update_id: VaultUpdateId,
-        transaction: Option<&mut Transaction<'_>>,
-    ) -> Result<Vec<DocumentVersionWithoutContent>> {
-        let query = sqlx::query_as!(
-            DocumentVersionWithoutContent,
-            r#"
-            select
-                vault_id,
-                vault_update_id,
-                relative_path,
-                created_date as "created_date: chrono::DateTime<Utc>",
-                updated_date as "updated_date: chrono::DateTime<Utc>",
-                is_deleted
-            from latest_document_versions
-            where vault_id = ? and vault_update_id > ?
-            "#,
-            vault,
-            vault_update_id
-        );
-
-        if let Some(transaction) = transaction {
-            query.fetch_all(&mut **transaction).await
-        } else {
-            query.fetch_all(&self.connection_pool).await
-        }
-        .with_context(|| {
-            format!("Cannot fetch latest documents since vault_update_id {vault_update_id}")
-        })
-    }
-
-    pub async fn get_latest_document(
+    pub async fn get_latest_document_by_path(
         &self,
         vault: &VaultId,
         relative_path: &str,
@@ -151,6 +158,7 @@ impl Database {
             select 
                 vault_id,
                 vault_update_id,
+                document_id as "document_id: uuid::Uuid", 
                 relative_path,
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
@@ -161,6 +169,39 @@ impl Database {
             "#,
             vault,
             relative_path
+        );
+
+        if let Some(transaction) = transaction {
+            query.fetch_optional(&mut **transaction).await
+        } else {
+            query.fetch_optional(&self.connection_pool).await
+        }
+        .context("Cannot fetch latest document version")
+    }
+
+    pub async fn get_latest_document(
+        &self,
+        vault: &VaultId,
+        document_id: &DocumentId,
+        transaction: Option<&mut Transaction<'_>>,
+    ) -> Result<Option<StoredDocumentVersion>> {
+        let query = sqlx::query_as!(
+            StoredDocumentVersion,
+            r#"
+            select 
+                vault_id,
+                vault_update_id,
+                document_id as "document_id: uuid::Uuid", 
+                relative_path,
+                created_date as "created_date: chrono::DateTime<Utc>",
+                updated_date as "updated_date: chrono::DateTime<Utc>",
+                content,
+                is_deleted
+            from latest_document_versions
+            where vault_id = ? and document_id = ?
+            "#,
+            vault,
+            document_id
         );
 
         if let Some(transaction) = transaction {
@@ -183,6 +224,7 @@ impl Database {
             select 
                 vault_id,
                 vault_update_id,
+                document_id as "document_id: uuid::Uuid", 
                 relative_path,
                 created_date as "created_date: chrono::DateTime<Utc>",
                 updated_date as "updated_date: chrono::DateTime<Utc>",
@@ -212,16 +254,18 @@ impl Database {
             insert into documents (
                 vault_id,
                 vault_update_id,
+                document_id, 
                 relative_path,
                 created_date,
                 updated_date,
                 content,
                 is_deleted
             )
-            values (?, ?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_id,
             version.vault_update_id,
+            version.document_id,
             version.relative_path,
             version.created_date,
             version.updated_date,

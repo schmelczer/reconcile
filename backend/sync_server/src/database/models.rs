@@ -5,11 +5,13 @@ use sync_lib::bytes_to_base64;
 
 pub type VaultId = String;
 pub type VaultUpdateId = i64;
+pub type DocumentId = uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct StoredDocumentVersion {
     pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
+    pub document_id: DocumentId,
     pub relative_path: String,
     pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
@@ -17,11 +19,18 @@ pub struct StoredDocumentVersion {
     pub is_deleted: bool,
 }
 
+impl PartialEq<StoredDocumentVersion> for StoredDocumentVersion {
+    fn eq(&self, other: &Self) -> bool {
+        self.vault_id == other.vault_id && self.vault_update_id == other.vault_update_id
+    }
+}
+
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentVersionWithoutContent {
     pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
+    pub document_id: DocumentId,
     pub relative_path: String,
     pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
@@ -33,6 +42,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
         Self {
             vault_id: value.vault_id,
             vault_update_id: value.vault_update_id,
+            document_id: value.document_id,
             relative_path: value.relative_path,
             created_date: value.created_date,
             updated_date: value.updated_date,
@@ -46,6 +56,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
 pub struct DocumentVersion {
     pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
+    pub document_id: DocumentId,
     pub relative_path: String,
     pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
@@ -58,6 +69,7 @@ impl From<StoredDocumentVersion> for DocumentVersion {
         Self {
             vault_id: value.vault_id,
             vault_update_id: value.vault_update_id,
+            document_id: value.document_id,
             relative_path: value.relative_path,
             created_date: value.created_date,
             updated_date: value.updated_date,

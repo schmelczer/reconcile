@@ -13,7 +13,7 @@ use serde::Deserialize;
 use super::{auth::auth, requests::DeleteDocumentVersion};
 use crate::{
     app_state::AppState,
-    database::models::{StoredDocumentVersion, VaultId},
+    database::models::{DocumentId, StoredDocumentVersion, VaultId},
     errors::{server_error, SyncServerError},
 };
 
@@ -21,7 +21,7 @@ use crate::{
 #[derive(Deserialize, JsonSchema)]
 pub struct PathParams {
     vault_id: VaultId,
-    relative_path: String,
+    document_id: DocumentId,
 }
 
 #[axum::debug_handler]
@@ -29,7 +29,7 @@ pub async fn delete_document(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams {
         vault_id,
-        relative_path,
+        document_id,
     }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
@@ -51,7 +51,8 @@ pub async fn delete_document(
     let new_version = StoredDocumentVersion {
         vault_id,
         vault_update_id: last_update_id + 1,
-        relative_path,
+        document_id,
+        relative_path: request.relative_path,
         content: vec![],
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
