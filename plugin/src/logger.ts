@@ -1,3 +1,5 @@
+import { Notice } from "obsidian";
+
 enum LogLevel {
 	DEBUG,
 	INFO,
@@ -6,7 +8,7 @@ enum LogLevel {
 }
 
 class LogLine {
-	constructor(public level: LogLevel, public message: string) {}
+	public constructor(public level: LogLevel, public message: string) {}
 
 	public toString(): string {
 		return `${this.formatLevel()}: ${this.message}`;
@@ -61,6 +63,7 @@ export class Logger {
 	public error(message: string): void {
 		this.pushMessage(message, LogLevel.ERROR);
 		console.error(message);
+		new Notice(message);
 	}
 
 	public getMessages(): LogLine[] {
