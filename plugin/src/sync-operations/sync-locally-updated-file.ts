@@ -1,10 +1,8 @@
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
-import { TFile } from "obsidian";
 import { Database } from "src/database/database";
 import { Logger } from "src/logger";
 import { SyncServer } from "src/services/sync_service";
 import { hash } from "src/utils/hash";
-import { isEqualBytes } from "src/utils/is-equal-bytes";
 import { unlockDocument, waitForDocumentLock } from "./locks.js";
 import { FileOperations } from "src/file-operations/file-operations.js";
 import { RelativePath } from "src/database/document-metadata.js";

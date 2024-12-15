@@ -1,14 +1,4 @@
-import {
-	App,
-	Editor,
-	MarkdownView,
-	Modal,
-	Notice,
-	Plugin,
-	PluginSettingTab,
-	Setting,
-	WorkspaceLeaf,
-} from "obsidian";
+import { Editor, MarkdownView, Plugin, WorkspaceLeaf } from "obsidian";
 
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
@@ -29,12 +19,16 @@ export default class SyncPlugin extends Plugin {
 	async onload() {
 		Logger.getInstance().info('Starting plugin "Sample Plugin"');
 
-		await lib.default(Promise.resolve((wasmBin as any).default));
+		await lib.default(
+			Promise.resolve(
+				(wasmBin as any).default // eslint-disable-line @typescript-eslint/no-explicit-any
+			)
+		);
 
 		this.addCommand({
 			id: "sample-editor-command",
 			name: "Sample editor command",
-			editorCallback: (editor: Editor, view: MarkdownView) => {
+			editorCallback: (editor: Editor, _view: MarkdownView) => {
 				console.log(editor.getSelection());
 				editor.replaceSelection("Sample Editor Command");
 			},

@@ -1,4 +1,3 @@
-import { Vault } from "obsidian";
 import { Database } from "src/database/database";
 import { unlockDocument, waitForDocumentLock } from "./locks";
 import { SyncServer } from "src/services/sync_service";

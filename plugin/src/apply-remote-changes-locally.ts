@@ -1,4 +1,3 @@
-import { Vault } from "obsidian";
 import { Database } from "./database/database";
 import { SyncServer } from "./services/sync_service";
 import { syncRemotelyUpdatedFile } from "./sync-operations/sync-remotely-updated-file";

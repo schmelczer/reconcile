@@ -56,7 +56,7 @@ export class SyncServer {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		let response = await this.client.POST("/vaults/{vault_id}/documents", {
+		const response = await this.client.POST("/vaults/{vault_id}/documents", {
 			params: {
 				path: {
 					vault_id: SyncServer.VAULT_ID,
@@ -97,7 +97,7 @@ export class SyncServer {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		let response = await this.client.PUT(
+		const response = await this.client.PUT(
 			"/vaults/{vault_id}/documents/{document_id}",
 			{
 				params: {

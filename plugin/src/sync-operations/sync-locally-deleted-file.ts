@@ -2,7 +2,7 @@ import { Database } from "src/database/database";
 import { RelativePath } from "src/database/document-metadata";
 import { Logger } from "src/logger";
 import { SyncServer } from "src/services/sync_service";
-import { tryLockDocument, unlockDocument, waitForDocumentLock } from "./locks";
+import { unlockDocument, waitForDocumentLock } from "./locks";
 
 export async function syncLocallyDeletedFile(
 	database: Database,

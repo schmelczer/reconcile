@@ -23,7 +23,7 @@ export class Database {
 
 	public constructor(
 		initialState: Partial<StoredDatabase> | undefined,
-		private saveData: (data: any) => Promise<void>
+		private saveData: (data: unknown) => Promise<void>
 	) {
 		initialState = initialState || {};
 		if (
