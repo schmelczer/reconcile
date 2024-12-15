@@ -118,7 +118,7 @@ pub async fn update_document(
         content: merged_content,
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
-        is_deleted: parent_document.is_deleted,
+        is_deleted: latest_version.is_deleted,
     };
 
     state
