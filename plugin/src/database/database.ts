@@ -4,6 +4,7 @@ import {
 	RelativePath,
 	DocumentMetadata,
 	VaultUpdateId,
+	DocumentId,
 } from "./document-metadata";
 
 interface StoredDatabase {
@@ -112,15 +113,18 @@ export class Database {
 	}
 
 	public async setDocument({
+		documentId,
 		relativePath,
 		parentVersionId,
 		hash,
 	}: {
+		documentId: DocumentId;
 		relativePath: RelativePath;
 		parentVersionId: VaultUpdateId;
 		hash: string;
 	}): Promise<void> {
 		this._documents.set(relativePath, {
+			documentId,
 			parentVersionId,
 			hash,
 		});
@@ -128,11 +132,13 @@ export class Database {
 	}
 
 	public async moveDocument({
+		documentId,
 		oldRelativePath,
 		relativePath,
 		parentVersionId,
 		hash,
 	}: {
+		documentId: DocumentId;
 		oldRelativePath: RelativePath;
 		relativePath: RelativePath;
 		parentVersionId: VaultUpdateId;
@@ -140,6 +146,7 @@ export class Database {
 	}): Promise<void> {
 		this._documents.delete(oldRelativePath);
 		this._documents.set(relativePath, {
+			documentId,
 			parentVersionId,
 			hash,
 		});
