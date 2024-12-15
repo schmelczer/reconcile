@@ -9,11 +9,14 @@ import {
 interface StoredDatabase {
 	documents: Map<RelativePath, DocumentMetadata>;
 	settings: SyncSettings;
+	lastSeenUpdateId: VaultUpdateId | undefined;
 }
 
 export class Database {
 	private _documents: Map<RelativePath, DocumentMetadata> = new Map();
 	private _settings: SyncSettings;
+	private _lastSeenUpdateId: VaultUpdateId | undefined;
+
 	private onSettingsChangeHandlers: Array<(settings: SyncSettings) => void> =
 		[];
 
@@ -34,7 +37,7 @@ export class Database {
 		}
 
 		Logger.getInstance().debug(
-			`Loaded documents ${JSON.stringify(
+			`Loaded documents: ${JSON.stringify(
 				Object.fromEntries(this._documents.entries()),
 				null,
 				2
@@ -48,7 +51,13 @@ export class Database {
 		);
 
 		Logger.getInstance().debug(
-			`Loaded settings ${JSON.stringify(this._settings, null, 2)}`
+			`Loaded settings: ${JSON.stringify(this._settings, null, 2)}`
+		);
+
+		this._lastSeenUpdateId = initialState.lastSeenUpdateId;
+
+		Logger.getInstance().debug(
+			`Loaded last seen update id: ${this._lastSeenUpdateId}`
 		);
 	}
 
@@ -83,6 +92,23 @@ export class Database {
 			)}`
 		);
 		await this.setSettings(this._settings);
+	}
+
+	public getLastSeenUpdateId(): VaultUpdateId | undefined {
+		return this._lastSeenUpdateId;
+	}
+
+	public async setLastSeenUpdateId(
+		value: VaultUpdateId | undefined
+	): Promise<void> {
+		this._lastSeenUpdateId = value;
+		await this.save();
+	}
+
+	public async resetSyncState(): Promise<void> {
+		this._documents = new Map();
+		this._lastSeenUpdateId = 0;
+		await this.save();
 	}
 
 	public async setDocument({
@@ -135,6 +161,7 @@ export class Database {
 		await this.saveData({
 			documents: Object.fromEntries(this._documents.entries()),
 			settings: this._settings,
+			lastSeenUpdateId: this._lastSeenUpdateId,
 		});
 	}
 }
