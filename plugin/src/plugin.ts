@@ -19,8 +19,11 @@ import { Logger } from "./logger.js";
 import { SyncEventHandler } from "./events/sync-event-handler.js";
 import { SyncServer } from "./services/sync_service.js";
 import { Database } from "./database/database.js";
+import { applyRemoteChangesLocally } from "./apply-remote-changes-locally.js";
 
 export default class SyncPlugin extends Plugin {
+	private remoteListenerIntervalId: number | null = null;
+
 	async onload() {
 		Logger.getInstance().info('Starting plugin "Sample Plugin"');
 
@@ -67,9 +70,19 @@ export default class SyncPlugin extends Plugin {
 			),
 		].forEach((event) => this.registerEvent(event));
 
-		this.registerInterval(
-			window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
+		this.registerRemoteEventListener(
+			database,
+			syncServer,
+			database.getSettings().fetchChangesUpdateInterval
 		);
+		database.addOnSettingsChangeHandlers((settings) => {
+			this.registerRemoteEventListener(
+				database,
+				syncServer,
+				settings.fetchChangesUpdateInterval
+			);
+		});
+
 		this.registerView(SyncView.TYPE, (leaf) => new SyncView(leaf));
 
 		const ribbonIconEl = this.addRibbonIcon(
@@ -100,5 +113,27 @@ export default class SyncPlugin extends Plugin {
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
 		workspace.revealLeaf(leaf!);
+	}
+
+	unload(): void {
+		if (this.remoteListenerIntervalId) {
+			window.clearInterval(this.remoteListenerIntervalId);
+		}
+	}
+
+	private registerRemoteEventListener(
+		database: Database,
+		syncServer: SyncServer,
+		intervalMs: number
+	) {
+		if (this.remoteListenerIntervalId) {
+			window.clearInterval(this.remoteListenerIntervalId);
+		}
+
+		this.remoteListenerIntervalId = window.setInterval(
+			() =>
+				applyRemoteChangesLocally(database, syncServer, this.app.vault),
+			intervalMs
+		);
 	}
 }
