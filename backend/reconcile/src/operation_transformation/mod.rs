@@ -12,6 +12,14 @@ pub fn reconcile(original: &str, left: &str, right: &str) -> String {
         return left.to_string();
     }
 
+    if original == left {
+        return right.to_string();
+    }
+
+    if original == right {
+        return left.to_string();
+    }
+
     let left_operations = EditedText::from_strings(original, left);
     let right_operations = EditedText::from_strings(original, right);
 
