@@ -73,13 +73,13 @@ export default class SyncPlugin extends Plugin {
 		this.registerRemoteEventListener(
 			database,
 			syncServer,
-			database.getSettings().fetchChangesUpdateInterval
+			database.getSettings().fetchChangesUpdateIntervalMs
 		);
 		database.addOnSettingsChangeHandlers((settings) => {
 			this.registerRemoteEventListener(
 				database,
 				syncServer,
-				settings.fetchChangesUpdateInterval
+				settings.fetchChangesUpdateIntervalMs
 			);
 		});
 

@@ -93,7 +93,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 3600, 1)
 					.setDynamicTooltip()
 					.setValue(
-						this.database.getSettings().fetchChangesUpdateInterval
+						this.database.getSettings().fetchChangesUpdateIntervalMs
 					)
 					.onChange((value) =>
 						this.database.setSetting(
