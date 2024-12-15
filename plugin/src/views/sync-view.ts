@@ -4,7 +4,7 @@ import { Logger } from "src/logger";
 export class SyncView extends ItemView {
 	public static TYPE = "example-view";
 
-	constructor(leaf: WorkspaceLeaf) {
+	public constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
 	}
 
