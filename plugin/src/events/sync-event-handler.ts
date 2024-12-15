@@ -3,13 +3,16 @@ import { FileEventHandler } from "./file-event-handler";
 import { Logger } from "src/logger";
 import { SyncServer } from "src/services/sync_service";
 import { Database } from "src/database/database";
-import { syncLocallyDeletedFile } from "src/sync-functions/sync-locally-deleted-file";
-import { syncLocallyUpdatedFile } from "src/sync-functions/sync-locally-updated-file";
+import { syncLocallyDeletedFile } from "src/sync-operations/sync-locally-deleted-file";
+import { syncLocallyUpdatedFile } from "src/sync-operations/sync-locally-updated-file";
+import { FileOperations } from "src/file-operations/file-operations";
+import { syncLocallyCreatedFile } from "src/sync-operations/sync-locally-created-file";
 
 export class SyncEventHandler implements FileEventHandler {
 	public constructor(
 		private database: Database,
-		private syncServer: SyncServer
+		private syncServer: SyncServer,
+		private operations: FileOperations
 	) {}
 
 	async onCreate(file: TAbstractFile): Promise<void> {
@@ -23,10 +26,12 @@ export class SyncEventHandler implements FileEventHandler {
 				return;
 			}
 
-			await syncLocallyUpdatedFile({
+			await syncLocallyCreatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
-				file,
+				operations: this.operations,
+				updateTime: new Date(file.stat.ctime),
+				filePath: file.path,
 			});
 		} else {
 			Logger.getInstance().info(`Folder created: ${file.path}, ignored`);
@@ -70,7 +75,9 @@ export class SyncEventHandler implements FileEventHandler {
 			await syncLocallyUpdatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
-				file,
+				operations: this.operations,
+				updateTime: new Date(file.stat.ctime),
+				filePath: file.path,
 				oldPath,
 			});
 		} else {
@@ -94,7 +101,9 @@ export class SyncEventHandler implements FileEventHandler {
 			await syncLocallyUpdatedFile({
 				database: this.database,
 				syncServer: this.syncServer,
-				file,
+				operations: this.operations,
+				updateTime: new Date(file.stat.ctime),
+				filePath: file.path,
 			});
 		} else {
 			Logger.getInstance().info(`Folder modified: ${file.path}, ignored`);

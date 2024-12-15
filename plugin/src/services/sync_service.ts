@@ -36,7 +36,7 @@ export class SyncServer {
 			},
 		});
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Ping response: " + JSON.stringify(response.data)
 		);
 
@@ -77,7 +77,7 @@ export class SyncServer {
 			throw new Error(`Failed to create document: ${response.error}`);
 		}
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Created document " + JSON.stringify(response.data)
 		);
 
@@ -123,7 +123,7 @@ export class SyncServer {
 			throw new Error(`Failed to update document: ${response.error}`);
 		}
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Updated document " + JSON.stringify(response.data)
 		);
 
@@ -163,7 +163,7 @@ export class SyncServer {
 			throw new Error(`Failed to delete document`);
 		}
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Updated document " + JSON.stringify(response.data)
 		);
 
@@ -195,7 +195,7 @@ export class SyncServer {
 			throw new Error(`Failed to get document: ${response.error}`);
 		}
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Get document " + JSON.stringify(response.data)
 		);
 
@@ -224,7 +224,7 @@ export class SyncServer {
 			throw new Error(`Failed to get documents: ${response.error}`);
 		}
 
-		Logger.getInstance().info(
+		Logger.getInstance().debug(
 			"Get document " + JSON.stringify(response.data)
 		);
 

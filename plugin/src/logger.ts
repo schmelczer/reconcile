@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 
-enum LogLevel {
+export enum LogLevel {
 	DEBUG,
 	INFO,
 	WARNING,
@@ -66,8 +66,10 @@ export class Logger {
 		new Notice(message);
 	}
 
-	public getMessages(): LogLine[] {
-		return this.messages;
+	public getMessages(mininumSeverity: LogLevel): LogLine[] {
+		return this.messages.filter(
+			(message) => message.level >= mininumSeverity
+		);
 	}
 
 	private pushMessage(message: string, level: LogLevel): void {

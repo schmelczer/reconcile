@@ -20,9 +20,11 @@ import { SyncEventHandler } from "./events/sync-event-handler.js";
 import { SyncServer } from "./services/sync_service.js";
 import { Database } from "./database/database.js";
 import { applyRemoteChangesLocally } from "./apply-remote-changes-locally.js";
+import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations.js";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
+	private operations = new ObsidianFileOperations(this.app.vault);
 
 	async onload() {
 		Logger.getInstance().info('Starting plugin "Sample Plugin"');
@@ -49,26 +51,32 @@ export default class SyncPlugin extends Plugin {
 			new SyncSettingsTab(this.app, this, database, syncServer)
 		);
 
-		const eventHandler = new SyncEventHandler(database, syncServer);
+		const eventHandler = new SyncEventHandler(
+			database,
+			syncServer,
+			this.operations
+		);
 
-		[
-			this.app.vault.on(
-				"create",
-				eventHandler.onCreate.bind(eventHandler)
-			),
-			this.app.vault.on(
-				"modify",
-				eventHandler.onModify.bind(eventHandler)
-			),
-			this.app.vault.on(
-				"delete",
-				eventHandler.onDelete.bind(eventHandler)
-			),
-			this.app.vault.on(
-				"rename",
-				eventHandler.onRename.bind(eventHandler)
-			),
-		].forEach((event) => this.registerEvent(event));
+		this.app.workspace.onLayoutReady(() =>
+			[
+				this.app.vault.on(
+					"create",
+					eventHandler.onCreate.bind(eventHandler)
+				),
+				this.app.vault.on(
+					"modify",
+					eventHandler.onModify.bind(eventHandler)
+				),
+				this.app.vault.on(
+					"delete",
+					eventHandler.onDelete.bind(eventHandler)
+				),
+				this.app.vault.on(
+					"rename",
+					eventHandler.onRename.bind(eventHandler)
+				),
+			].forEach((event) => this.registerEvent(event))
+		);
 
 		this.registerRemoteEventListener(
 			database,
@@ -93,8 +101,6 @@ export default class SyncPlugin extends Plugin {
 		ribbonIconEl.addClass("my-plugin-ribbon-class");
 	}
 
-	onunload() {}
-
 	async activateView() {
 		const { workspace } = this.app;
 
@@ -115,7 +121,7 @@ export default class SyncPlugin extends Plugin {
 		workspace.revealLeaf(leaf!);
 	}
 
-	unload(): void {
+	onunload(): void {
 		if (this.remoteListenerIntervalId) {
 			window.clearInterval(this.remoteListenerIntervalId);
 		}
@@ -132,7 +138,11 @@ export default class SyncPlugin extends Plugin {
 
 		this.remoteListenerIntervalId = window.setInterval(
 			() =>
-				applyRemoteChangesLocally(database, syncServer, this.app.vault),
+				applyRemoteChangesLocally(
+					database,
+					syncServer,
+					this.operations
+				),
 			intervalMs
 		);
 	}

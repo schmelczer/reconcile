@@ -112,6 +112,14 @@ export class Database {
 		await this.save();
 	}
 
+	public getDocumentByDocumentId(
+		documentId: DocumentId
+	): [RelativePath, DocumentMetadata] | undefined {
+		return [...this._documents.entries()].find(
+			([_, metadata]) => metadata.documentId === documentId
+		);
+	}
+
 	public async setDocument({
 		documentId,
 		relativePath,

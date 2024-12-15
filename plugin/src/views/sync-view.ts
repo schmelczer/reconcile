@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
-import { Logger } from "src/logger";
+import { Logger, LogLevel } from "src/logger";
 
 export class SyncView extends ItemView {
 	public static TYPE = "example-view";
@@ -29,7 +29,7 @@ export class SyncView extends ItemView {
 		container.empty();
 
 		const messages = Logger.getInstance()
-			.getMessages()
+			.getMessages(LogLevel.INFO)
 			.map((message) => message.toString())
 			.join("\n");
 
