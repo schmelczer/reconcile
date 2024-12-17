@@ -1,6 +1,7 @@
 export interface SyncSettings {
 	remoteUri: string;
 	token: string;
+	vaultName: string;
 	fetchChangesUpdateIntervalMs: number;
 	isSyncEnabled: boolean;
 }
@@ -8,6 +9,7 @@ export interface SyncSettings {
 export const DEFAULT_SETTINGS: SyncSettings = {
 	remoteUri: "",
 	token: "",
+	vaultName: "default",
 	fetchChangesUpdateIntervalMs: 1000,
 	isSyncEnabled: true,
 };

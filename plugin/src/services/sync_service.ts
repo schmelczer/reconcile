@@ -12,7 +12,6 @@ import {
 } from "src/database/document-metadata.js";
 
 export class SyncServer {
-	private static VAULT_ID = "default";
 	private client: Client<paths>;
 
 	public constructor(private database: Database) {
@@ -56,22 +55,25 @@ export class SyncServer {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const response = await this.client.POST("/vaults/{vault_id}/documents", {
-			params: {
-				path: {
-					vault_id: SyncServer.VAULT_ID,
+		const response = await this.client.POST(
+			"/vaults/{vault_id}/documents",
+			{
+				params: {
+					path: {
+						vault_id: this.database.getSettings().vaultName,
+					},
+					header: {
+						authorization:
+							"Bearer " + this.database.getSettings().token,
+					},
 				},
-				header: {
-					authorization:
-						"Bearer " + this.database.getSettings().token,
+				body: {
+					contentBase64: lib.bytes_to_base64(contentBytes),
+					createdDate: createdDate.toISOString(),
+					relativePath,
 				},
-			},
-			body: {
-				contentBase64: lib.bytes_to_base64(contentBytes),
-				createdDate: createdDate.toISOString(),
-				relativePath,
-			},
-		});
+			}
+		);
 
 		if (!response.data) {
 			throw new Error(`Failed to create document: ${response.error}`);
@@ -102,7 +104,7 @@ export class SyncServer {
 			{
 				params: {
 					path: {
-						vault_id: SyncServer.VAULT_ID,
+						vault_id: this.database.getSettings().vaultName,
 						document_id: documentId,
 					},
 					header: {
@@ -144,7 +146,7 @@ export class SyncServer {
 			{
 				params: {
 					path: {
-						vault_id: SyncServer.VAULT_ID,
+						vault_id: this.database.getSettings().vaultName,
 						document_id: documentId,
 					},
 					header: {
@@ -180,7 +182,7 @@ export class SyncServer {
 			{
 				params: {
 					path: {
-						vault_id: SyncServer.VAULT_ID,
+						vault_id: this.database.getSettings().vaultName,
 						document_id: documentId,
 					},
 					header: {
@@ -208,7 +210,7 @@ export class SyncServer {
 		const response = await this.client.GET("/vaults/{vault_id}/documents", {
 			params: {
 				path: {
-					vault_id: SyncServer.VAULT_ID,
+					vault_id: this.database.getSettings().vaultName,
 				},
 				header: {
 					authorization:

@@ -5,6 +5,8 @@ import { Database } from "src/database/database";
 import { SyncServer } from "src/services/sync_service";
 
 export class SyncSettingsTab extends PluginSettingTab {
+	private editedVaultName: string;
+
 	public constructor(
 		app: App,
 		plugin: SyncPlugin,
@@ -12,6 +14,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 		private syncServer: SyncServer
 	) {
 		super(app, plugin);
+		this.editedVaultName = this.database.getSettings().vaultName;
+		this.database.addOnSettingsChangeHandlers((s) => {
+			this.editedVaultName = s.vaultName;
+			this.display();
+		});
 	}
 
 	display(): void {
@@ -53,6 +60,34 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset sync state").onClick(async () => {
+					await this.database.resetSyncState();
+					new Notice(
+						"Sync state has been reset, you will need to resync"
+					);
+				})
+			);
+
+		new Setting(containerEl)
+			.setName("Vault name")
+			.setDesc(
+				"Set the name of the remote vault that you want to sync with"
+			)
+			.setTooltip("todo, links to dcocs")
+			.addText((text) =>
+				text
+					.setPlaceholder("My Obsidian Vault")
+					.setValue(this.database.getSettings().vaultName)
+					.onChange((value) => (this.editedVaultName = value))
+			)
+			.addButton((button) =>
+				button.setButtonText("Apply").onClick(async () => {
+					if (
+						this.editedVaultName ===
+						this.database.getSettings().vaultName
+					) {
+						return;
+					}
+					this.database.setSetting("vaultName", this.editedVaultName);
 					await this.database.resetSyncState();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
