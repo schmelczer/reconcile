@@ -17,10 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup
+        run: |
+          cargo install sqlx-cli
+          sqlx database create --database-url sqlite://db.sqlite3
+          sqlx migrate run --source sync_server/src/database/migrations --database-url sqlite://db.sqlite3
+
       - name: Lint
         run: |
           cd backend
-          cargo clippy --all-targets --all --all-features
+          cargo clippy --all-targets --all-features
           cargo fmt --all -- --check
 
       - name: Build
