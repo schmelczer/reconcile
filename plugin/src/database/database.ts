@@ -18,8 +18,9 @@ export class Database {
 	private _settings: SyncSettings;
 	private _lastSeenUpdateId: VaultUpdateId | undefined;
 
-	private onSettingsChangeHandlers: Array<(settings: SyncSettings) => void> =
-		[];
+	private onSettingsChangeHandlers: Array<
+		(newSettings: SyncSettings, oldSettings: SyncSettings) => void
+	> = [];
 
 	public constructor(
 		initialState: Partial<StoredDatabase> | undefined,
@@ -71,13 +72,16 @@ export class Database {
 	}
 
 	public async setSettings(value: SyncSettings): Promise<void> {
+		const oldSettings = this._settings;
 		this._settings = value;
-		this.onSettingsChangeHandlers.forEach((handler) => handler(value));
+		this.onSettingsChangeHandlers.forEach((handler) =>
+			handler(value, oldSettings)
+		);
 		await this.save();
 	}
 
 	public addOnSettingsChangeHandlers(
-		handler: (settings: SyncSettings) => void
+		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	) {
 		this.onSettingsChangeHandlers.push(handler);
 	}
@@ -86,13 +90,12 @@ export class Database {
 		key: T,
 		value: SyncSettings[T]
 	): Promise<void> {
-		this._settings[key] = value;
 		Logger.getInstance().debug(
 			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
 				this._settings
 			)}`
 		);
-		await this.setSettings(this._settings);
+		await this.setSettings({ ...this._settings, [key]: value });
 	}
 
 	public getLastSeenUpdateId(): VaultUpdateId | undefined {
