@@ -1,18 +1,18 @@
-import { Database } from "./database/database";
-import { SyncServer } from "./services/sync_service";
-import { syncRemotelyUpdatedFile } from "./sync-operations/sync-remotely-updated-file";
-import { Logger } from "./logger";
-import { FileOperations } from "./file-operations/file-operations";
+import { Database } from "src/database/database";
+import { FileOperations } from "src/file-operations/file-operations";
+import { Logger } from "src/logger";
+import { SyncService } from "src/services/sync_service";
+import { syncRemotelyUpdatedFile } from "./sync-remotely-updated-file";
 
 let isRunning = false;
 
 export async function applyRemoteChangesLocally(
 	database: Database,
-	syncServer: SyncServer,
+	syncServer: SyncService,
 	operations: FileOperations
 ) {
 	if (isRunning) {
-		Logger.getInstance().info("Sync already in progress, skipping");
+		Logger.getInstance().info("Pull sync already in progress, skipping");
 		return;
 	}
 

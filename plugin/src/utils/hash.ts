@@ -7,3 +7,5 @@ export function hash(content: Uint8Array): string {
 	}
 	return hash.toString(16);
 }
+
+export const EMPTY_HASH = hash(new Uint8Array(0));
