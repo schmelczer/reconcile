@@ -35,9 +35,24 @@
 - add clap
 - add auth middleware
 - add request logs
+
 - CI for:
     - publish reconcile
     - cross-platform build server
     - run load test on server
     - build and publish plugin with openapi types
     - build docker image
+
+todo: enable
+[workspace.lints.clippy]
+single_call_fn = { level = "allow", priority = 1 }
+absolute_paths = { level = "allow", priority = 1 }
+arithmetic_side_effects = { level = "allow", priority = 1 }
+similar_names = { level = "allow", priority = 1 }
+self_named_module_files = { level = "allow", priority = 1 }
+single_char_lifetime_names = { level = "allow", priority = 1 }
+missing_docs_in_private_items = { level = "allow", priority = 1 }
+question_mark_used =  { level = "allow", priority = 1 }
+implicit_return = { level = "allow", priority = 1 }
+pedantic = { level = "warn", priority = 0 }
+cargo = { level = "warn", priority = 0 }
