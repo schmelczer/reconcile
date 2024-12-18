@@ -8,9 +8,9 @@ use aide::{
 };
 use anyhow::{Context, Result};
 use axum::{
-    extract::{DefaultBodyLimit, WebSocketUpgrade},
+    extract::DefaultBodyLimit,
     http::{self, HeaderValue, Method},
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     Extension, Json,
 };
 use log::info;
@@ -63,7 +63,6 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
             "/vaults/:vault_id/documents/:document_id",
             delete(delete_document::delete_document),
         )
-        .api_route("/ws", get(handler))
         .route("/", Scalar::new("/api.json").axum_route())
         .route("/api.json", axum::routing::get(serve_api))
         .layer(DefaultBodyLimit::max(
@@ -94,13 +93,6 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
     axum::serve(listener, app)
         .await
         .context("Failed to start server")
-}
-
-async fn handler(ws: WebSocketUpgrade) -> Response {
-    ws.protocols(["graphql-ws", "graphql-transport-ws"])
-        .on_upgrade(|socket| async {
-            // ...
-        })
 }
 
 async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse { Json(api) }

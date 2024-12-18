@@ -24,3 +24,6 @@ schemars = { version = "0.8.21", features = ["chrono", "uuid1"] }
 rand = "0.8.5"
 axum-extra = { version = "0.9.6", features = ["typed-header"] }
 tower-http = { version = "0.6.1", features = ["cors"] }
+
+[lints]
+workspace = true

@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
 # optional dependencies
 serde = { version = "1.0.215", optional = true }
 
@@ -15,3 +14,6 @@ serde = [ "dep:serde" ]
 insta = "1.41.1"
 pretty_assertions = "1.4.1"
 test-case = "3.3.1"
+
+[lints]
+workspace = true

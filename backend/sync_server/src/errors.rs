@@ -26,6 +26,7 @@ pub enum SyncServerError {
     #[error("Unauthorized: {0}")]
     Unauthorized(#[source] anyhow::Error),
 
+    #[allow(dead_code)]
     #[error("Permission denied error: {0}")]
     PermissionDeniedError(#[source] anyhow::Error),
 }
@@ -82,7 +83,9 @@ impl OperationOutput for SyncServerError {
     type Inner = Self;
 }
 
-pub const fn init_error(error: anyhow::Error) -> SyncServerError { SyncServerError::InitError(error) }
+pub const fn init_error(error: anyhow::Error) -> SyncServerError {
+    SyncServerError::InitError(error)
+}
 
 pub fn server_error(error: anyhow::Error) -> SyncServerError {
     warn!("Server error: {:?}", error);

@@ -25,3 +25,7 @@ wasm-bindgen-test = "0.3.34"
 
 [features]
 default = ["console_error_panic_hook"]
+wee_alloc = []
+
+[lints]
+workspace = true

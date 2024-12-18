@@ -1,5 +1,3 @@
-#![warn(clippy::all, clippy::restriction, clippy::pedantic, clippy::cargo)]
-
 mod app_state;
 mod config;
 mod consts;
