@@ -7,9 +7,20 @@ import { RelativePath } from "src/database/document-metadata";
 export class ObsidianFileOperations implements FileOperations {
 	public constructor(private vault: Vault) {}
 
+	async listAllFiles(): Promise<RelativePath[]> {
+		const files = this.vault.getFiles();
+		return files.map((file) => file.path);
+	}
+
 	async read(path: RelativePath): Promise<Uint8Array> {
 		return new Uint8Array(
 			await this.vault.adapter.readBinary(normalizePath(path))
+		);
+	}
+
+	async getModificationTime(path: RelativePath): Promise<Date> {
+		return new Date(
+			(await this.vault.adapter.stat(normalizePath(path)))!.mtime
 		);
 	}
 

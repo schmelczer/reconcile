@@ -1,7 +1,11 @@
 import { RelativePath } from "src/database/document-metadata";
 
 export interface FileOperations {
+	listAllFiles(): Promise<RelativePath[]>;
+
 	read(path: RelativePath): Promise<Uint8Array>;
+
+	getModificationTime(path: RelativePath): Promise<Date>;
 
 	create(path: RelativePath, newContent: Uint8Array): Promise<void>;
 
