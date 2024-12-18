@@ -1,7 +1,7 @@
 import { TAbstractFile, TFile } from "obsidian";
 import { FileEventHandler } from "./file-event-handler";
 import { Logger } from "src/logger";
-import { SyncServer } from "src/services/sync_service";
+import { SyncService } from "src/services/sync_service";
 import { Database } from "src/database/database";
 import { syncLocallyDeletedFile } from "src/sync-operations/sync-locally-deleted-file";
 import { syncLocallyUpdatedFile } from "src/sync-operations/sync-locally-updated-file";
@@ -11,7 +11,7 @@ import { syncLocallyCreatedFile } from "src/sync-operations/sync-locally-created
 export class SyncEventHandler implements FileEventHandler {
 	public constructor(
 		private database: Database,
-		private syncServer: SyncServer,
+		private syncServer: SyncService,
 		private operations: FileOperations
 	) {}
 
@@ -49,11 +49,11 @@ export class SyncEventHandler implements FileEventHandler {
 				return;
 			}
 
-			await syncLocallyDeletedFile(
-				this.database,
-				this.syncServer,
-				file.path
-			);
+			await syncLocallyDeletedFile({
+				database: this.database,
+				syncServer: this.syncServer,
+				relativePath: file.path,
+			});
 		} else {
 			Logger.getInstance().info(`Folder deleted: ${file.path}, ignored`);
 		}

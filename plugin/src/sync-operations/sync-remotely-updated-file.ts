@@ -1,6 +1,6 @@
 import { Database } from "src/database/database";
 import { unlockDocument, waitForDocumentLock } from "./locks";
-import { SyncServer } from "src/services/sync_service";
+import { SyncService } from "src/services/sync_service";
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import { hash } from "src/utils/hash";
 import { Logger } from "src/logger";
@@ -14,7 +14,7 @@ export async function syncRemotelyUpdatedFile({
 	remoteVersion,
 }: {
 	database: Database;
-	syncServer: SyncServer;
+	syncServer: SyncService;
 	operations: FileOperations;
 	remoteVersion: components["schemas"]["DocumentVersionWithoutContent"];
 }): Promise<void> {

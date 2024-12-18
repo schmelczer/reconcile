@@ -1,14 +1,18 @@
 import { Database } from "src/database/database";
 import { RelativePath } from "src/database/document-metadata";
 import { Logger } from "src/logger";
-import { SyncServer } from "src/services/sync_service";
+import { SyncService } from "src/services/sync_service";
 import { unlockDocument, waitForDocumentLock } from "./locks";
 
-export async function syncLocallyDeletedFile(
-	database: Database,
-	syncServer: SyncServer,
-	relativePath: RelativePath
-): Promise<void> {
+export async function syncLocallyDeletedFile({
+	database,
+	syncServer,
+	relativePath,
+}: {
+	database: Database;
+	syncServer: SyncService;
+	relativePath: RelativePath;
+}): Promise<void> {
 	await waitForDocumentLock(relativePath);
 
 	try {

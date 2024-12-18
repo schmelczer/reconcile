@@ -1,7 +1,7 @@
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import { Database } from "src/database/database";
 import { Logger } from "src/logger";
-import { SyncServer } from "src/services/sync_service";
+import { SyncService } from "src/services/sync_service";
 import { hash } from "src/utils/hash";
 import { unlockDocument, waitForDocumentLock } from "./locks.js";
 import { FileOperations } from "src/file-operations/file-operations.js";
@@ -17,7 +17,7 @@ export async function syncLocallyUpdatedFile({
 	oldPath,
 }: {
 	database: Database;
-	syncServer: SyncServer;
+	syncServer: SyncService;
 	operations: FileOperations;
 	updateTime: Date;
 	filePath: RelativePath;

@@ -10,13 +10,22 @@ import {
 	RelativePath,
 	DocumentId,
 } from "src/database/document-metadata.js";
+import PQueue from "p-queue";
 
-export class SyncServer {
+export class SyncService {
+	private promiseQueue: PQueue;
 	private client: Client<paths>;
 
 	public constructor(private database: Database) {
 		this.createClient(database.getSettings());
-		database.addOnSettingsChangeHandlers((s) => this.createClient(s));
+		this.promiseQueue = new PQueue({
+			concurrency: database.getSettings().uploadConcurrency,
+		});
+
+		database.addOnSettingsChangeHandlers((s) => {
+			this.createClient(s);
+			this.promiseQueue.concurrency = s.uploadConcurrency;
+		});
 	}
 
 	private createClient(settings: SyncSettings) {
@@ -25,15 +34,21 @@ export class SyncServer {
 		});
 	}
 
+	private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+		return this.promiseQueue.add(fn) as Promise<T>;
+	}
+
 	public async ping(): Promise<components["schemas"]["PingResponse"]> {
-		const response = await this.client.GET("/ping", {
-			params: {
-				header: {
-					authorization:
-						"Bearer " + this.database.getSettings().token,
+		const response = await this.enqueue(() =>
+			this.client.GET("/ping", {
+				params: {
+					header: {
+						authorization:
+							"Bearer " + this.database.getSettings().token,
+					},
 				},
-			},
-		});
+			})
+		);
 
 		Logger.getInstance().debug(
 			"Ping response: " + JSON.stringify(response.data)
@@ -55,9 +70,8 @@ export class SyncServer {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const response = await this.client.POST(
-			"/vaults/{vault_id}/documents",
-			{
+		const response = await this.enqueue(() =>
+			this.client.POST("/vaults/{vault_id}/documents", {
 				params: {
 					path: {
 						vault_id: this.database.getSettings().vaultName,
@@ -72,7 +86,7 @@ export class SyncServer {
 					createdDate: createdDate.toISOString(),
 					relativePath,
 				},
-			}
+			})
 		);
 
 		if (!response.data) {
@@ -99,9 +113,8 @@ export class SyncServer {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const response = await this.client.PUT(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
+		const response = await this.enqueue(() =>
+			this.client.PUT("/vaults/{vault_id}/documents/{document_id}", {
 				params: {
 					path: {
 						vault_id: this.database.getSettings().vaultName,
@@ -118,7 +131,7 @@ export class SyncServer {
 					createdDate: createdDate.toISOString(),
 					relativePath,
 				},
-			}
+			})
 		);
 
 		if (!response.data) {
@@ -141,9 +154,8 @@ export class SyncServer {
 		relativePath: RelativePath;
 		createdDate: Date;
 	}): Promise<void> {
-		const response = await this.client.DELETE(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
+		const response = await this.enqueue(() =>
+			this.client.DELETE("/vaults/{vault_id}/documents/{document_id}", {
 				params: {
 					path: {
 						vault_id: this.database.getSettings().vaultName,
@@ -158,7 +170,7 @@ export class SyncServer {
 					createdDate: createdDate.toISOString(),
 					relativePath,
 				},
-			}
+			})
 		);
 
 		if (response.error) {
@@ -177,9 +189,8 @@ export class SyncServer {
 	}: {
 		documentId: DocumentId;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const response = await this.client.GET(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
+		const response = await this.enqueue(() =>
+			this.client.GET("/vaults/{vault_id}/documents/{document_id}", {
 				params: {
 					path: {
 						vault_id: this.database.getSettings().vaultName,
@@ -190,7 +201,7 @@ export class SyncServer {
 							"Bearer " + this.database.getSettings().token,
 					},
 				},
-			}
+			})
 		);
 
 		if (!response.data) {
@@ -207,20 +218,22 @@ export class SyncServer {
 	public async getAll(
 		since?: VaultUpdateId
 	): Promise<components["schemas"]["FetchLatestDocumentsResponse"]> {
-		const response = await this.client.GET("/vaults/{vault_id}/documents", {
-			params: {
-				path: {
-					vault_id: this.database.getSettings().vaultName,
+		const response = await this.enqueue(() =>
+			this.client.GET("/vaults/{vault_id}/documents", {
+				params: {
+					path: {
+						vault_id: this.database.getSettings().vaultName,
+					},
+					header: {
+						authorization:
+							"Bearer " + this.database.getSettings().token,
+					},
+					query: {
+						since_update_id: since,
+					},
 				},
-				header: {
-					authorization:
-						"Bearer " + this.database.getSettings().token,
-				},
-				query: {
-					since_update_id: since,
-				},
-			},
-		});
+			})
+		);
 
 		if (!response.data) {
 			throw new Error(`Failed to get documents: ${response.error}`);

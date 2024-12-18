@@ -3,6 +3,7 @@ export interface SyncSettings {
 	token: string;
 	vaultName: string;
 	fetchChangesUpdateIntervalMs: number;
+	uploadConcurrency: number;
 	isSyncEnabled: boolean;
 }
 
@@ -11,5 +12,6 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	token: "",
 	vaultName: "default",
 	fetchChangesUpdateIntervalMs: 1000,
+	uploadConcurrency: 10,
 	isSyncEnabled: true,
 };
