@@ -1,4 +1,4 @@
-use std::{str::FromStr, time::Duration};
+use core::{str::FromStr, time::Duration};
 
 use anyhow::{Context, Result};
 use models::{

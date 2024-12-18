@@ -14,7 +14,7 @@ pub struct DatabaseConfig {
 
 fn default_sqlite_url() -> String {
     debug!("Using default sqlite url: {}", DEFAULT_SQLITE_URL);
-    DEFAULT_SQLITE_URL.to_string()
+    DEFAULT_SQLITE_URL.to_owned()
 }
 
 fn default_max_connections() -> u32 {

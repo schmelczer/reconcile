@@ -31,7 +31,7 @@ impl Config {
             );
             Self::load_from_file(path).await
         } else {
-            let config = Config::default();
+            let config = Self::default();
             config.write(path).await?;
             warn!(
                 "Configuration file not found, wrote default configuration to {:?}",

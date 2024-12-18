@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::restriction, clippy::pedantic, clippy::cargo)]
+
 use core::str;
 
 use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};

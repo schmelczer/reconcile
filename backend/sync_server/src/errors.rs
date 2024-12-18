@@ -82,7 +82,7 @@ impl OperationOutput for SyncServerError {
     type Inner = Self;
 }
 
-pub fn init_error(error: anyhow::Error) -> SyncServerError { SyncServerError::InitError(error) }
+pub const fn init_error(error: anyhow::Error) -> SyncServerError { SyncServerError::InitError(error) }
 
 pub fn server_error(error: anyhow::Error) -> SyncServerError {
     warn!("Server error: {:?}", error);

@@ -35,7 +35,7 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
 
     let mut api = OpenApi {
         info: Info {
-            description: Some("an example API".to_string()),
+            description: Some("an example API".to_owned()),
             ..Info::default()
         },
         ..OpenApi::default()
@@ -82,7 +82,7 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
 
     let listener = tokio::net::TcpListener::bind(address.clone())
         .await
-        .with_context(|| format!("Failed to bind to address: {}", address))?;
+        .with_context(|| format!("Failed to bind to address: {address}"))?;
 
     info!(
         "Listening on http://{}",

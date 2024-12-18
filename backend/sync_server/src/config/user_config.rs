@@ -21,7 +21,7 @@ pub struct User {
 
 impl Default for UserConfig {
     fn default() -> Self {
-        UserConfig {
+        Self {
             user_tokens: default_users(),
         }
     }
@@ -29,7 +29,7 @@ impl Default for UserConfig {
 
 fn default_users() -> Vec<User> {
     vec![User {
-        name: "admin".to_string(),
+        name: "admin".to_owned(),
         token: get_random_token(),
     }]
 }

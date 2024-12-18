@@ -19,7 +19,7 @@ pub struct StoredDocumentVersion {
     pub is_deleted: bool,
 }
 
-impl PartialEq<StoredDocumentVersion> for StoredDocumentVersion {
+impl PartialEq<Self> for StoredDocumentVersion {
     fn eq(&self, other: &Self) -> bool {
         self.vault_id == other.vault_id && self.vault_update_id == other.vault_update_id
     }

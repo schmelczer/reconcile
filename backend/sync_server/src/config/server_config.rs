@@ -16,7 +16,7 @@ pub struct ServerConfig {
 
 fn default_host() -> String {
     debug!("Using default server host: {}", DEFAULT_HOST);
-    DEFAULT_HOST.to_string()
+    DEFAULT_HOST.to_owned()
 }
 
 fn default_port() -> u16 {

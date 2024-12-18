@@ -13,8 +13,7 @@ pub async fn ping(
     State(state): State<AppState>,
 ) -> Result<Json<PingResponse>, SyncServerError> {
     let is_authenticated = maybe_auth_header
-        .map(|auth_header| auth(&state, auth_header.token()).is_ok())
-        .unwrap_or(false);
+        .is_some_and(|auth_header| auth(&state, auth_header.token()).is_ok());
 
     Ok(Json(PingResponse {
         server_version: env!("CARGO_PKG_VERSION").to_string(),
