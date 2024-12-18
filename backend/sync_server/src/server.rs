@@ -6,7 +6,7 @@ use aide::{
     openapi::{Info, OpenApi},
     scalar::Scalar,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use axum::{
     extract::DefaultBodyLimit,
     http::{self, HeaderValue, Method},

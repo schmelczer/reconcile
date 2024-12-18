@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::operation_transformation::Operation;
 
@@ -27,7 +27,7 @@ impl<T> Debug for MergeContext<T>
 where
     T: PartialEq + Clone,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MergeContext")
             .field("last_operation", &self.last_operation)
             .field("shift", &self.shift)

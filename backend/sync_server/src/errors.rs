@@ -26,7 +26,7 @@ pub enum SyncServerError {
     #[error("Unauthorized: {0}")]
     Unauthorized(#[source] anyhow::Error),
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[error("Permission denied error: {0}")]
     PermissionDeniedError(#[source] anyhow::Error),
 }

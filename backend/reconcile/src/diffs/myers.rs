@@ -1,4 +1,4 @@
-//! Taken from https://github.com/mitsuhiko/similar/blob/7e15c44de11a1cd61e1149189929e189ef977fd8/src/algorithms/myers.rs
+//! Taken from <https://github.com/mitsuhiko/similar/blob/7e15c44de11a1cd61e1149189929e189ef977fd8/src/algorithms/myers.rs>
 //! Myers' diff algorithm.
 //!
 //! * time: `O((N+M)D)`

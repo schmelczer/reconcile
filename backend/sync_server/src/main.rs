@@ -5,7 +5,7 @@ mod database;
 mod errors;
 mod server;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use app_state::AppState;
 use errors::{init_error, SyncServerError};
 use server::create_server;

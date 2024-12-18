@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, iter::Peekable};
+use core::{cmp::Ordering, iter::Peekable};
 
 pub struct MergeAscending<L, R, F, O>
 where

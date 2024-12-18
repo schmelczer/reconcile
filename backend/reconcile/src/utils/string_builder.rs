@@ -1,4 +1,4 @@
-use std::ops::Range;
+use core::ops::Range;
 
 /// A helper for building a string in order based on an original string and a
 /// series of insertions and deletions applied to it. It is safe to use with
@@ -28,7 +28,7 @@ impl StringBuilder<'_> {
 
     /// Delete a string at the given index after copying the original string up
     /// to that index from the last insertion or deletion.
-    pub fn delete(&mut self, range: std::ops::Range<usize>) {
+    pub fn delete(&mut self, range: core::ops::Range<usize>) {
         self.copy_until(range.start);
         self.last_old_char_index += range.len();
     }

@@ -1,6 +1,6 @@
-use core::{str::FromStr, time::Duration};
+use core::{str::FromStr as _, time::Duration};
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use models::{
     DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId, VaultUpdateId,
 };

@@ -1,4 +1,4 @@
-use std::{
+use core::{
     fmt::{Debug, Display},
     ops::Range,
 };
@@ -13,8 +13,8 @@ use crate::{
 };
 
 /// Represents a change that can be applied to a text document.
-/// Operation is tied to a ropey::Rope and is mainly expected to be
-/// created by EditedText.
+/// Operation is tied to a `ropey::Rope` and is mainly expected to be
+/// created by `EditedText`.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq)]
 pub enum Operation<T>
@@ -81,12 +81,12 @@ where
         })
     }
 
-    /// Tries to apply the operation to the given ropey::Rope text, returning
+    /// Tries to apply the operation to the given `ropey::Rope` text, returning
     /// the modified text.
     ///
     /// # Errors
     ///
-    /// Returns a SyncLibError::OperationApplicationError if the operation
+    /// Returns a `SyncLibError::OperationApplicationError` if the operation
     /// cannot be applied.
     ///
     /// # Panics
@@ -99,7 +99,7 @@ where
                 self.start_index(),
                 &text
                     .iter()
-                    .map(|token| token.original())
+                    .map(super::super::tokenizer::token::Token::original)
                     .collect::<String>(),
             ),
             Operation::Delete {
@@ -111,8 +111,7 @@ where
                 debug_assert!(
                     deleted_text
                         .as_ref()
-                        .map(|text| builder.get_slice(self.range()) == *text)
-                        .unwrap_or(true),
+                        .map_or(true, |text| builder.get_slice(self.range()) == *text),
                     "Text to delete does not match the text in the rope"
                 );
 
@@ -141,15 +140,16 @@ where
     }
 
     /// Returns the range of indices of characters that the operation affects.
-    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() + 1 }
+    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() - 1 }
 
     /// Returns the number of affected characters. It is always greater than 0
     /// because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
-            Operation::Insert { text, .. } => {
-                text.iter().map(|token| token.get_original_length()).sum()
-            }
+            Operation::Insert { text, .. } => text
+                .iter()
+                .map(super::super::tokenizer::token::Token::get_original_length)
+                .sum(),
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -223,7 +223,7 @@ where
                 let trimmed_length = previous_inserted_text
                     .iter()
                     .skip(offset_in_tokens)
-                    .map(|token| token.get_original_length())
+                    .map(super::super::tokenizer::token::Token::get_original_length)
                     .sum::<usize>();
                 let trimmed_operation =
                     Operation::create_insert(index, text[trimmed_length_in_tokens..].to_vec());
@@ -231,7 +231,7 @@ where
                 affecting_context.shift -= trimmed_length as i64;
                 produced_context.shift += trimmed_operation
                     .as_ref()
-                    .map(|op| op.len())
+                    .map(Operation::len)
                     .unwrap_or_default() as i64;
                 produced_context.consume_and_replace_last_operation(trimmed_operation.clone());
 
@@ -305,14 +305,14 @@ impl<T> Display for Operation<T>
 where
     T: PartialEq + Clone,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Operation::Insert { index, text } => {
                 write!(
                     f,
                     "<insert '{}' from index {}>",
                     text.iter()
-                        .map(|token| token.original())
+                        .map(super::super::tokenizer::token::Token::original)
                         .collect::<String>(),
                     index
                 )
@@ -351,7 +351,7 @@ impl<T> Debug for Operation<T>
 where
     T: PartialEq + Clone,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self) }
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { write!(f, "{self}") }
 }
 
 #[cfg(test)]

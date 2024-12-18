@@ -7,17 +7,17 @@ pub use operation::Operation;
 
 use crate::tokenizer::Tokenizer;
 
-pub fn reconcile(original: &str, left: &str, right: &str) -> String {
+#[must_use] pub fn reconcile(original: &str, left: &str, right: &str) -> String {
     if left == right {
-        return left.to_string();
+        return left.to_owned();
     }
 
     if original == left {
-        return right.to_string();
+        return right.to_owned();
     }
 
     if original == right {
-        return left.to_string();
+        return left.to_owned();
     }
 
     let left_operations = EditedText::from_strings(original, left);

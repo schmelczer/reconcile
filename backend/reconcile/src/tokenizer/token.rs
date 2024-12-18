@@ -17,8 +17,8 @@ where
 impl From<&str> for Token<String> {
     fn from(s: &str) -> Self {
         Token {
-            normalised: s.to_string(),
-            original: s.to_string(),
+            normalised: s.to_owned(),
+            original: s.to_owned(),
         }
     }
 }

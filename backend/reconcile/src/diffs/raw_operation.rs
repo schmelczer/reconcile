@@ -23,12 +23,10 @@ where
     }
 
     pub fn original_text_length(&self) -> usize {
-        self.tokens().iter().map(|t| t.get_original_length()).sum()
+        self.tokens().iter().map(Token::get_original_length).sum()
     }
 
-    pub fn get_original_text(self) -> String {
-        self.tokens().iter().map(|t| t.original()).collect()
-    }
+    pub fn get_original_text(self) -> String { self.tokens().iter().map(Token::original).collect() }
 
     /// Extends the operation with another operation if returning the new
     /// operation. Only operations of the same type can be used to extend.

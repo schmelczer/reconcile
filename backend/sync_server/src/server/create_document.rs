@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::Context as _;
 use axum::{
     extract::{Path, State},
     Json,

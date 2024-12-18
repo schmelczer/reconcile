@@ -1,7 +1,7 @@
-use std::ops::{Index, Range};
+use core::ops::{Index, Range};
 
 /// Given two lookups and ranges calculates the length of the common prefix.
-/// Copied from https://github.com/mitsuhiko/similar/blob/7e15c44de11a1cd61e1149189929e189ef977fd8/src/algorithms/utils.rs
+/// Copied from <https://github.com/mitsuhiko/similar/blob/7e15c44de11a1cd61e1149189929e189ef977fd8/src/algorithms/utils.rs>
 pub fn common_prefix_len<Old, New>(
     old: &Old,
     old_range: Range<usize>,

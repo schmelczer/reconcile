@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use database_config::DatabaseConfig;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
