@@ -2,7 +2,7 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 
 import SyncPlugin from "src/plugin";
 import { Database } from "src/database/database";
-import { SyncServer } from "src/services/sync_service";
+import { SyncService } from "src/services/sync_service";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
@@ -11,7 +11,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 		app: App,
 		plugin: SyncPlugin,
 		private database: Database,
-		private syncServer: SyncServer
+		private syncServer: SyncService
 	) {
 		super(app, plugin);
 		this.editedVaultName = this.database.getSettings().vaultName;
@@ -57,6 +57,17 @@ export class SyncSettingsTab extends PluginSettingTab {
 						new Notice("Failed to connect to server: " + e);
 					}
 				})
+			)
+			.addSlider((text) =>
+				text
+					.setLimits(1, 3600, 1)
+					.setValue(5)
+					.setDynamicTooltip()
+					.setInstant(false)
+					.setValue(this.database.getSettings().uploadConcurrency)
+					.onChange((value) =>
+						this.database.setSetting("uploadConcurrency", value)
+					)
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset sync state").onClick(async () => {
@@ -127,12 +138,13 @@ export class SyncSettingsTab extends PluginSettingTab {
 				text
 					.setLimits(1, 3600, 1)
 					.setDynamicTooltip()
+					.setInstant(false)
 					.setValue(
 						this.database.getSettings().fetchChangesUpdateIntervalMs
 					)
 					.onChange((value) =>
 						this.database.setSetting(
-							"fetchChangesUpdateInterval",
+							"fetchChangesUpdateIntervalMs",
 							value
 						)
 					)
