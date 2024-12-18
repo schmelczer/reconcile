@@ -20,6 +20,7 @@ jobs:
       - name: Setup
         run: |
           cargo install sqlx-cli
+          cd backend
           sqlx database create --database-url sqlite://db.sqlite3
           sqlx migrate run --source sync_server/src/database/migrations --database-url sqlite://db.sqlite3
 
@@ -29,8 +30,7 @@ jobs:
           cargo clippy --all-targets --all-features
           cargo fmt --all -- --check
 
-      - name: Build
-        run: cargo build --verbose
-
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Test
+        run: |
+          cd backend
+          cargo test --verbose
