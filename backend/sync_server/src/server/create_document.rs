@@ -38,7 +38,7 @@ pub async fn create_document(
 
     let mut transaction = state
         .database
-        .create_transaction()
+        .create_write_transaction()
         .await
         .map_err(server_error)?;
 

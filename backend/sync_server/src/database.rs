@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
 use anyhow::{Context, Result};
 use models::{
@@ -21,6 +21,7 @@ impl Database {
     pub async fn try_new(config: &DatabaseConfig) -> Result<Self> {
         let connection_options = SqliteConnectOptions::from_str(&config.sqlite_url)?
             .create_if_missing(true)
+            .busy_timeout(Duration::from_secs(3600))
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
         let pool = SqlitePoolOptions::new()
@@ -49,11 +50,24 @@ impl Database {
             .context("Cannot check for pending migrations")
     }
 
-    pub async fn create_transaction(&self) -> Result<Transaction<'_>> {
+    /// Attempting to write from this transaction might result in a
+    /// database locked error. Use this transaction for read-only operations.
+    pub async fn create_readonly_transaction(&self) -> Result<Transaction<'_>> {
         self.connection_pool
             .begin()
             .await
             .context("Cannot create transaction")
+    }
+
+    pub async fn create_write_transaction(&self) -> Result<Transaction<'_>> {
+        let mut transaction = self.create_readonly_transaction().await?;
+
+        // sqlx doesn't support immediate transactions for sqlite: https://github.com/launchbadge/sqlx/issues/481
+        sqlx::query!("END; BEGIN IMMEDIATE;")
+            .execute(&mut *transaction)
+            .await?;
+
+        Ok(transaction)
     }
 
     /// Return the latest state of all non-deleted documents in the vault
