@@ -14,6 +14,7 @@ use axum::{
     Extension, Json,
 };
 use log::info;
+use tokio::signal;
 use tower_http::cors::CorsLayer;
 
 use crate::app_state::AppState;
@@ -91,8 +92,34 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
     );
 
     axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .tcp_nodelay(true)
         .await
         .context("Failed to start server")
 }
 
 async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse { Json(api) }
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+}

@@ -38,7 +38,8 @@ impl<'a> EditedText<'a, String> {
     /// the original text, it will result in the updated text. The default
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
-    #[must_use] pub fn from_strings(original: &'a str, updated: &str) -> Self {
+    #[must_use]
+    pub fn from_strings(original: &'a str, updated: &str) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
     }
 }
@@ -186,7 +187,8 @@ where
         Self { text, operations }
     }
 
-    #[must_use] pub fn merge(self, other: Self) -> Self {
+    #[must_use]
+    pub fn merge(self, other: Self) -> Self {
         debug_assert_eq!(
             self.text, other.text,
             "EditedTexts must be derived from the same text to be mergable"
@@ -235,7 +237,8 @@ where
     ///
     /// Returns an `SyncLibError::OperationError` if the operations cannot be
     /// applied to the text.
-    #[must_use] pub fn apply(&self) -> String {
+    #[must_use]
+    pub fn apply(&self) -> String {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         for OrderedOperation { operation, .. } in &self.operations {

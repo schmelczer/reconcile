@@ -110,7 +110,8 @@ where
                 #[cfg(debug_assertions)]
                 debug_assert!(
                     deleted_text
-                        .as_ref().is_none_or(|text| builder.get_slice(self.range()) == *text),
+                        .as_ref()
+                        .is_none_or(|text| builder.get_slice(self.range()) == *text),
                     "Text to delete does not match the text in the rope"
                 );
 
