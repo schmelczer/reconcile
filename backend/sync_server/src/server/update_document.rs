@@ -44,13 +44,15 @@ pub async fn update_document(
         .get_document_version(&vault_id, request.parent_version_id, None)
         .await
         .map_err(server_error)?
-        .map(Ok)
-        .unwrap_or_else(|| {
-            Err(not_found_error(anyhow!(
-                "Parent version with id `{}` not found",
-                request.parent_version_id
-            )))
-        })?;
+        .map_or_else(
+            || {
+                Err(not_found_error(anyhow!(
+                    "Parent version with id `{}` not found",
+                    request.parent_version_id
+                )))
+            },
+            Ok,
+        )?;
 
     let mut transaction = state
         .database
@@ -69,12 +71,14 @@ pub async fn update_document(
         .get_latest_document(&vault_id, &document_id, Some(&mut transaction))
         .await
         .map_err(server_error)?
-        .map(Ok)
-        .unwrap_or_else(|| {
-            Err(not_found_error(anyhow!(
-                "Document with id `{document_id}` not found",
-            )))
-        })?;
+        .map_or_else(
+            || {
+                Err(not_found_error(anyhow!(
+                    "Document with id `{document_id}` not found",
+                )))
+            },
+            Ok,
+        )?;
 
     let content_bytes = base64_to_bytes(&request.content_base64)
         .context("Failed to decode base64 content in request")

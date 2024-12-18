@@ -7,7 +7,8 @@ pub use operation::Operation;
 
 use crate::tokenizer::Tokenizer;
 
-#[must_use] pub fn reconcile(original: &str, left: &str, right: &str) -> String {
+#[must_use]
+pub fn reconcile(original: &str, left: &str, right: &str) -> String {
     if left == right {
         return left.to_owned();
     }
@@ -188,7 +189,7 @@ mod test {
             })
             .collect::<Vec<_>>();
 
-        reconcile(&contents[0], &contents[1], &contents[2]);
+        let _ = reconcile(&contents[0], &contents[1], &contents[2]);
     }
 
     fn test_merge_both_ways(original: &str, edit_1: &str, edit_2: &str, expected: &str) {

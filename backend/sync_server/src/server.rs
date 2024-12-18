@@ -70,7 +70,7 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         ))
         .layer(
             CorsLayer::new()
-                .allow_origin("*".parse::<HeaderValue>().unwrap())
+                .allow_origin("*".parse::<HeaderValue>().expect("Failed to parse origin"))
                 .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
         )

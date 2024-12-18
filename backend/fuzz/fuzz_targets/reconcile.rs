@@ -5,5 +5,5 @@ extern crate reconcile;
 
 fuzz_target!(|texts: (String, String, String)| {
     let (original, left, right) = texts;
-    reconcile::reconcile(&original, &left, &right);
+    let _ = reconcile::reconcile(&original, &left, &right);
 });
