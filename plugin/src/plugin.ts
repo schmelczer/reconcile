@@ -7,10 +7,11 @@ import { SyncView } from "./views/sync-view.js";
 
 import { Logger } from "./logger.js";
 import { SyncEventHandler } from "./events/sync-event-handler.js";
-import { SyncServer } from "./services/sync_service.js";
+import { SyncService } from "./services/sync_service.js";
 import { Database } from "./database/database.js";
-import { applyRemoteChangesLocally } from "./apply-remote-changes-locally.js";
+import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally.js";
 import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations.js";
+import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely.js";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
@@ -39,7 +40,7 @@ export default class SyncPlugin extends Plugin {
 			this.saveData.bind(this)
 		);
 
-		const syncServer = new SyncServer(database);
+		const syncServer = new SyncService(database);
 
 		this.addSettingTab(
 			new SyncSettingsTab(this.app, this, database, syncServer)
@@ -51,7 +52,7 @@ export default class SyncPlugin extends Plugin {
 			this.operations
 		);
 
-		this.app.workspace.onLayoutReady(() =>
+		this.app.workspace.onLayoutReady(() => {
 			[
 				this.app.vault.on(
 					"create",
@@ -69,20 +70,30 @@ export default class SyncPlugin extends Plugin {
 					"rename",
 					eventHandler.onRename.bind(eventHandler)
 				),
-			].forEach((event) => this.registerEvent(event))
-		);
+			].forEach((event) => this.registerEvent(event));
+
+			applyLocalChangesRemotely(database, syncServer, this.operations);
+		});
 
 		this.registerRemoteEventListener(
 			database,
 			syncServer,
 			database.getSettings().fetchChangesUpdateIntervalMs
 		);
-		database.addOnSettingsChangeHandlers((settings) => {
+		database.addOnSettingsChangeHandlers((settings, oldSettings) => {
 			this.registerRemoteEventListener(
 				database,
 				syncServer,
 				settings.fetchChangesUpdateIntervalMs
 			);
+
+			if (!oldSettings.isSyncEnabled && settings.isSyncEnabled) {
+				applyLocalChangesRemotely(
+					database,
+					syncServer,
+					this.operations
+				);
+			}
 		});
 
 		this.registerView(SyncView.TYPE, (leaf) => new SyncView(leaf));
@@ -123,7 +134,7 @@ export default class SyncPlugin extends Plugin {
 
 	private registerRemoteEventListener(
 		database: Database,
-		syncServer: SyncServer,
+		syncServer: SyncService,
 		intervalMs: number
 	) {
 		if (this.remoteListenerIntervalId) {
