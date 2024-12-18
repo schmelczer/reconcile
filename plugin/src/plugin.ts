@@ -2,16 +2,16 @@ import { Editor, MarkdownView, Plugin, WorkspaceLeaf } from "obsidian";
 
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
-import { SyncSettingsTab } from "./views/settings-tab.js";
-import { SyncView } from "./views/sync-view.js";
+import { SyncSettingsTab } from "./views/settings-tab";
+import { SyncView } from "./views/sync-view";
 
-import { Logger } from "./logger.js";
-import { SyncEventHandler } from "./events/sync-event-handler.js";
-import { SyncService } from "./services/sync_service.js";
-import { Database } from "./database/database.js";
-import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally.js";
-import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations.js";
-import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely.js";
+import { Logger } from "./logger";
+import { SyncEventHandler } from "./events/sync-event-handler";
+import { SyncService } from "./services/sync_service";
+import { Database } from "./database/database";
+import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
+import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
+import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;

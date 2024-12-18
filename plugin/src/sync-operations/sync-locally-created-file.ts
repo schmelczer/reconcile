@@ -3,9 +3,9 @@ import { Database } from "src/database/database";
 import { Logger } from "src/logger";
 import { SyncService } from "src/services/sync_service";
 import { hash } from "src/utils/hash";
-import { unlockDocument, waitForDocumentLock } from "./locks.js";
-import { FileOperations } from "src/file-operations/file-operations.js";
-import { RelativePath } from "src/database/document-metadata.js";
+import { unlockDocument, waitForDocumentLock } from "./locks";
+import { FileOperations } from "src/file-operations/file-operations";
+import { RelativePath } from "src/database/document-metadata";
 
 /// This can be used when updating a files content and/or path.
 export async function syncLocallyCreatedFile({

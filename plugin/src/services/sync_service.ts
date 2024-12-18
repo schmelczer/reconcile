@@ -9,7 +9,7 @@ import {
 	VaultUpdateId,
 	RelativePath,
 	DocumentId,
-} from "src/database/document-metadata.js";
+} from "src/database/document-metadata";
 import PQueue from "p-queue";
 
 export class SyncService {
