@@ -5,6 +5,9 @@ on:
     tags:
       - "*"
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   build-plugin:
     runs-on: ubuntu-latest
@@ -17,9 +20,15 @@ jobs:
         with:
           node-version: "18.x"
 
+      - name: Build wasm
+        run: |
+          cd backend
+          cargo install wasm-pack
+          wasm-pack build sync_lib --features wee_alloc
+
       - name: Build plugin
         run: |
-          cd plugin
+          cd ../plugin
           npm install
           npm run build
 
