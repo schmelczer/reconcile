@@ -9,7 +9,8 @@ use crate::Token;
 /// of the old list.
 ///
 /// ## Example
-/// ```
+///
+/// ```no_run
 /// old: [0, 1, 9, 0, 2, 5]
 /// new:       [9, 0, 2, 5, 1]
 /// ```
