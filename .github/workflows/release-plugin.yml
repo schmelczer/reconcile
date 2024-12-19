@@ -44,6 +44,8 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
+          cd plugin
+
           gh release create "$tag" \
             --title="$tag" \
             --draft \
