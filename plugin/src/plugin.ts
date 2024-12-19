@@ -9,11 +9,12 @@ import { SyncView } from "./views/sync-view";
 
 import { Logger } from "./logger";
 import { SyncEventHandler } from "./events/sync-event-handler";
-import { SyncService } from "./services/sync_service";
+import { SyncService } from "./services/sync-service";
 import { Database } from "./database/database";
 import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
 import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
 import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely";
+import { StatusBar } from "./views/status-bar";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
@@ -43,6 +44,8 @@ export default class SyncPlugin extends Plugin {
 		);
 
 		const syncServer = new SyncService(database);
+
+		new StatusBar(this, syncServer);
 
 		this.addSettingTab(
 			new SyncSettingsTab(this.app, this, database, syncServer)

@@ -1,5 +1,5 @@
 import { Database } from "../database/database";
-import { SyncService } from "../services/sync_service";
+import { SyncService } from "../services/sync-service";
 import { Logger } from "../logger";
 import { FileOperations } from "../file-operations/file-operations";
 import { syncLocallyCreatedFile } from "./sync-locally-created-file";

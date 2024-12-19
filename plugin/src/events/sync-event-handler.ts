@@ -1,7 +1,7 @@
 import { TAbstractFile, TFile } from "obsidian";
 import { FileEventHandler } from "./file-event-handler";
 import { Logger } from "src/logger";
-import { SyncService } from "src/services/sync_service";
+import { SyncService } from "src/services/sync-service";
 import { Database } from "src/database/database";
 import { syncLocallyDeletedFile } from "src/sync-operations/sync-locally-deleted-file";
 import { syncLocallyUpdatedFile } from "src/sync-operations/sync-locally-updated-file";

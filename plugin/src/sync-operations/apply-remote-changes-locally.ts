@@ -1,7 +1,7 @@
 import { Database } from "src/database/database";
 import { FileOperations } from "src/file-operations/file-operations";
 import { Logger } from "src/logger";
-import { SyncService } from "src/services/sync_service";
+import { SyncService } from "src/services/sync-service";
 import { syncRemotelyUpdatedFile } from "./sync-remotely-updated-file";
 
 let isRunning = false;
@@ -14,6 +14,8 @@ export async function applyRemoteChangesLocally(
 	if (isRunning) {
 		Logger.getInstance().info("Pull sync already in progress, skipping");
 		return;
+	} else {
+		Logger.getInstance().info("Starting pull sync");
 	}
 
 	isRunning = true;

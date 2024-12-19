@@ -2,7 +2,7 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 
 import SyncPlugin from "src/plugin";
 import { Database } from "src/database/database";
-import { SyncService } from "src/services/sync_service";
+import { SyncService } from "src/services/sync-service";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
