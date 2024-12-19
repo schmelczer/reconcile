@@ -112,7 +112,7 @@ where
                     deleted_text
                         .as_ref()
                         .is_none_or(|text| builder.get_slice(self.range()) == *text),
-                    "Text to delete does not match the text in the rope"
+                    "Text to delete does not match the text in the range"
                 );
 
                 builder.delete(self.range());
