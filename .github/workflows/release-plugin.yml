@@ -28,7 +28,7 @@ jobs:
         run: |
           cd backend
           cargo install wasm-pack
-          wasm-pack build sync_lib --features wee_alloc
+          wasm-pack build --target web sync_lib --features wee_alloc
 
       - name: Build plugin
         run: |

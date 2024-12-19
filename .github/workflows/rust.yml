@@ -21,7 +21,7 @@ jobs:
         run: |
           rustup install nightly
           rustup default nightly
-          rustup component add clippy
+          rustup component add clippy rustfmt
           cargo install sqlx-cli
           cd backend
           sqlx database create --database-url sqlite://db.sqlite3
