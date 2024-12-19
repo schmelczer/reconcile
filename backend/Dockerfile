@@ -3,6 +3,7 @@ FROM rust:1.83 AS builder
 WORKDIR /usr/src/backend
 
 RUN apt update && apt install -y musl-tools
+RUN rustup install nightly && rustup default nightly
 RUN rustup target add x86_64-unknown-linux-musl
 RUN cargo install sqlx-cli
 
