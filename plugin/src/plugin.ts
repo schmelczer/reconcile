@@ -1,7 +1,5 @@
 import { Editor, MarkdownView, Plugin, WorkspaceLeaf } from "obsidian";
 
-import "./styles.css";
-
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import { SyncSettingsTab } from "./views/settings-tab";

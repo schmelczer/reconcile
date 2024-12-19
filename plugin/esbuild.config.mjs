@@ -69,7 +69,52 @@ let wasmPlugin = {
 		);
 	},
 };
-const context = await esbuild.context({
+
+const copyBundle = {
+	name: "post-compile",
+	setup(build) {
+		build.onEnd(async (result) => {
+			if (prod) {
+				await fs.promises.copyFile(
+					"manifest.json",
+					"build/manifest.json"
+				);
+				return;
+			}
+
+			if (result.errors.length === 0) {
+				await copyFiles(
+					["manifest.json", ".hotreload"],
+					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
+				);
+
+				await copyFiles(
+					"build",
+					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
+				);
+
+				await copyFiles(
+					["manifest.json", ".hotreload"],
+					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
+				);
+
+				await copyFiles(
+					"build",
+					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
+				);
+			}
+		});
+	},
+};
+
+const cssContext = await esbuild.context({
+	entryPoints: ["src/styles.css"],
+	bundle: true,
+	outfile: "build/styles.css",
+	plugins: [copyBundle],
+});
+
+const jsContext = await esbuild.context({
 	entryPoints: ["src/plugin.ts"],
 	bundle: true,
 	external: [
@@ -91,6 +136,7 @@ const context = await esbuild.context({
 	format: "cjs",
 	target: "es2020",
 	logLevel: "info",
+	resolveExtensions: [".ts"],
 	sourcemap: prod ? false : "inline",
 	treeShaking: false,
 	outfile: "build/main.js",
@@ -103,47 +149,13 @@ const context = await esbuild.context({
 					target: "web",
 					path: "../backend/sync_lib",
 			  }),
-		{
-			name: "post-compile",
-			setup(build) {
-				build.onEnd(async (result) => {
-					if (prod) {
-						await fs.promises.copyFile(
-							"manifest.json",
-							"build/manifest.json"
-						);
-					}
-
-					if (result.errors.length === 0) {
-						await copyFiles(
-							["manifest.json", "versions.json", ".hotreload"],
-							"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
-						);
-
-						await copyFiles(
-							"build",
-							"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
-						);
-
-						await copyFiles(
-							["manifest.json", "versions.json", ".hotreload"],
-							"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
-						);
-
-						await copyFiles(
-							"build",
-							"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
-						);
-					}
-				});
-			},
-		},
+		copyBundle,
 	].filter(Boolean),
 });
 
 if (prod) {
-	await context.rebuild();
+	await Promise.all([cssContext.rebuild(), jsContext.rebuild()]);
 	process.exit(0);
 } else {
-	await context.watch();
+	await Promise.all([cssContext.watch(), jsContext.watch()]);
 }

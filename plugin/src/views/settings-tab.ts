@@ -108,6 +108,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Access token")
+			.setClass("sync-settings-access-token")
 			.setDesc(
 				"Set the access token for the server that you can get from the server"
 			)
