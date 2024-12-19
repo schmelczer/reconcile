@@ -97,10 +97,7 @@ where
         match self {
             Operation::Insert { text, .. } => builder.insert(
                 self.start_index(),
-                &text
-                    .iter()
-                    .map(super::super::tokenizer::token::Token::original)
-                    .collect::<String>(),
+                &text.iter().map(Token::original).collect::<String>(),
             ),
             Operation::Delete {
                 #[cfg(debug_assertions)]
@@ -140,16 +137,13 @@ where
     }
 
     /// Returns the range of indices of characters that the operation affects.
-    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() - 1 }
+    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() + 1 }
 
     /// Returns the number of affected characters. It is always greater than 0
     /// because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
-            Operation::Insert { text, .. } => text
-                .iter()
-                .map(super::super::tokenizer::token::Token::get_original_length)
-                .sum(),
+            Operation::Insert { text, .. } => text.iter().map(Token::get_original_length).sum(),
             Operation::Delete {
                 deleted_character_count,
                 ..
@@ -223,7 +217,7 @@ where
                 let trimmed_length = previous_inserted_text
                     .iter()
                     .skip(offset_in_tokens)
-                    .map(super::super::tokenizer::token::Token::get_original_length)
+                    .map(Token::get_original_length)
                     .sum::<usize>();
                 let trimmed_operation =
                     Operation::create_insert(index, text[trimmed_length_in_tokens..].to_vec());
@@ -311,9 +305,7 @@ where
                 write!(
                     f,
                     "<insert '{}' from index {}>",
-                    text.iter()
-                        .map(super::super::tokenizer::token::Token::original)
-                        .collect::<String>(),
+                    text.iter().map(Token::original).collect::<String>(),
                     index
                 )
             }

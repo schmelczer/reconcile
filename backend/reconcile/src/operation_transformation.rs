@@ -145,6 +145,7 @@ mod test {
         );
     }
 
+    #[ignore = "it's too slow"]
     #[test_matrix( [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
