@@ -18,4 +18,6 @@ FROM alpine:3.21.0
 
 COPY --from=builder /usr/src/backend/target/x86_64-unknown-linux-musl/release/sync_server /app/sync_server
 
+WORKDIR /data
+
 ENTRYPOINT ["/app/sync_server"]
