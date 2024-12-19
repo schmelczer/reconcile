@@ -106,28 +106,31 @@ const context = await esbuild.context({
 		{
 			name: "post-compile",
 			setup(build) {
-				build.onEnd((result) => {
+				build.onEnd(async (result) => {
 					if (prod) {
-						return;
+						await fs.promises.copyFile(
+							"manifest.json",
+							"build/manifest.json"
+						);
 					}
 
 					if (result.errors.length === 0) {
-						copyFiles(
+						await copyFiles(
 							["manifest.json", "versions.json", ".hotreload"],
 							"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
 						);
 
-						copyFiles(
+						await copyFiles(
 							"build",
 							"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
 						);
 
-						copyFiles(
+						await copyFiles(
 							["manifest.json", "versions.json", ".hotreload"],
 							"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
 						);
 
-						copyFiles(
+						await copyFiles(
 							"build",
 							"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
 						);
