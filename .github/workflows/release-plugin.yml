@@ -28,7 +28,9 @@ jobs:
 
       - name: Build plugin
         run: |
+          pwd
           cd plugin
+          pwd
           npm install
           npm run build
 

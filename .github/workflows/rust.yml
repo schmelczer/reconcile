@@ -19,6 +19,8 @@ jobs:
 
       - name: Setup
         run: |
+          rustup install nightly
+          rustup default nightly
           cargo install sqlx-cli
           cd backend
           sqlx database create --database-url sqlite://db.sqlite3
