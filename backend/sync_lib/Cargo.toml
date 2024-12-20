@@ -12,7 +12,7 @@ base64 = "0.22.1"
 reconcile = { path = "../reconcile" }
 wasm-bindgen = "0.2.84"
 getrandom = { version = "0.2.3", features = ["js"] }
-thiserror = {workspace = true}
+thiserror = { workspace = true }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
