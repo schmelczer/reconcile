@@ -33,6 +33,7 @@ export class ObsidianFileOperations implements FileOperations {
 		newContent: Uint8Array
 	): Promise<Uint8Array> {
 		if (!(await this.vault.adapter.exists(normalizePath(path)))) {
+			// The caller assumed the file exists, but it doesn't, let's not recreate it
 			return new Uint8Array(0);
 		}
 
@@ -62,6 +63,7 @@ export class ObsidianFileOperations implements FileOperations {
 			return;
 		}
 
+		await this.createParentDirectories(normalizePath(path));
 		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
 	}
 
@@ -83,5 +85,18 @@ export class ObsidianFileOperations implements FileOperations {
 			normalizePath(oldPath),
 			normalizePath(newPath)
 		);
+	}
+
+	private async createParentDirectories(path: string): Promise<void> {
+		const components = path.split("/");
+		if (components.length === 1) {
+			return;
+		}
+		for (let i = 1; i < components.length; i++) {
+			const parentDir = components.slice(0, i).join("/");
+			if (!(await this.vault.adapter.exists(parentDir))) {
+				await this.vault.adapter.mkdir(parentDir);
+			}
+		}
 	}
 }

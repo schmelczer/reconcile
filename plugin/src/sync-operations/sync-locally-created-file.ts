@@ -37,18 +37,20 @@ export async function syncLocallyCreatedFile({
 	try {
 		const metadata = database.getDocument(relativePath);
 		if (metadata) {
-			throw new Error(
-				`Document metadata found for ${relativePath}, this is unexpected. Consider resetting the plugin's sync history.`
+			Logger.getInstance().debug(
+				`Document metadata already exists for ${relativePath}, it must have been downloaded from the server`
 			);
 		}
 
-		const contentBytes = await operations.read(relativePath),
-			contentHash = hash(contentBytes),
-			response = await syncServer.create({
-				relativePath,
-				contentBytes,
-				createdDate: updateTime,
-			});
+		const contentBytes = await operations.read(relativePath);
+		const contentHash = hash(contentBytes);
+
+		const response = await syncServer.create({
+			relativePath,
+			contentBytes,
+			createdDate: updateTime,
+		});
+
 		history.addHistoryEntry({
 			status: SyncStatus.SUCCESS,
 			source: SyncSource.PUSH,
@@ -57,8 +59,8 @@ export async function syncLocallyCreatedFile({
 			type: SyncType.CREATE,
 		});
 
-		const responseBytes = lib.base64_to_bytes(response.contentBase64),
-			responseHash = hash(responseBytes);
+		const responseBytes = lib.base64_to_bytes(response.contentBase64);
+		const responseHash = hash(responseBytes);
 
 		if (contentHash !== responseHash) {
 			await operations.write(relativePath, contentBytes, responseBytes);

@@ -45,8 +45,8 @@ export async function syncLocallyUpdatedFile({
 			);
 		}
 
-		const contentBytes = await operations.read(relativePath),
-			contentHash = hash(contentBytes);
+		const contentBytes = await operations.read(relativePath);
+		const contentHash = hash(contentBytes);
 
 		if (metadata.hash === contentHash && oldPath !== undefined) {
 			history.addHistoryEntry({
@@ -91,6 +91,7 @@ export async function syncLocallyUpdatedFile({
 		}
 
 		const responseBytes = lib.base64_to_bytes(response.contentBase64);
+		const responseHash = hash(responseBytes);
 
 		if (response.relativePath != relativePath) {
 			await waitForDocumentLock(response.relativePath);
@@ -116,7 +117,7 @@ export async function syncLocallyUpdatedFile({
 			} finally {
 				unlockDocument(response.relativePath);
 			}
-		} else {
+		} else if (contentHash !== responseHash) {
 			await operations.write(relativePath, contentBytes, responseBytes);
 		}
 
@@ -125,7 +126,7 @@ export async function syncLocallyUpdatedFile({
 			oldRelativePath: oldPath ?? relativePath,
 			relativePath: response.relativePath,
 			parentVersionId: response.vaultUpdateId,
-			hash: contentHash,
+			hash: responseHash,
 		});
 	} catch (e) {
 		history.addHistoryEntry({

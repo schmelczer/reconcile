@@ -26,15 +26,20 @@ export async function syncRemotelyUpdatedFile({
 		`Syncing remotely updated file ${remoteVersion.relativePath}`
 	);
 
+	const content = (
+		await syncServer.get({
+			documentId: remoteVersion.documentId,
+		})
+	).contentBase64;
+	const contentBytes = lib.base64_to_bytes(content);
+	const contentHash = hash(contentBytes);
+
+	await waitForDocumentLock(remoteVersion.relativePath);
+
 	try {
-		const content = (
-				await syncServer.get({
-					documentId: remoteVersion.documentId,
-				})
-			).contentBase64,
-			currentVersion = database.getDocumentByDocumentId(
-				remoteVersion.documentId
-			);
+		const currentVersion = database.getDocumentByDocumentId(
+			remoteVersion.documentId
+		);
 
 		if (!currentVersion) {
 			if (remoteVersion.isDeleted) {
@@ -48,35 +53,27 @@ export async function syncRemotelyUpdatedFile({
 				return;
 			}
 
-			await waitForDocumentLock(remoteVersion.relativePath);
-			try {
-				const contentBytes = lib.base64_to_bytes(content);
-				await operations.create(
-					remoteVersion.relativePath,
-					contentBytes
-				);
-				await database.setDocument({
-					documentId: remoteVersion.documentId,
-					relativePath: remoteVersion.relativePath,
-					parentVersionId: remoteVersion.vaultUpdateId,
-					hash: hash(contentBytes),
-				});
-				history.addHistoryEntry({
-					status: SyncStatus.SUCCESS,
-					source: SyncSource.PULL,
-					relativePath: remoteVersion.relativePath,
-					message: `Successfully downloaded remote file which hasn't existed locally`,
-					type: SyncType.CREATE,
-				});
-			} finally {
-				unlockDocument(remoteVersion.relativePath);
-			}
+			await operations.create(remoteVersion.relativePath, contentBytes);
+			await database.setDocument({
+				documentId: remoteVersion.documentId,
+				relativePath: remoteVersion.relativePath,
+				parentVersionId: remoteVersion.vaultUpdateId,
+				hash: contentHash,
+			});
+			history.addHistoryEntry({
+				status: SyncStatus.SUCCESS,
+				source: SyncSource.PULL,
+				relativePath: remoteVersion.relativePath,
+				message: `Successfully downloaded remote file which hasn't existed locally`,
+				type: SyncType.CREATE,
+			});
 			return;
 		}
 
 		const [relativePath, metadata] = currentVersion;
-		await waitForDocumentLock(relativePath);
-
+		if (relativePath !== remoteVersion.relativePath) {
+			await waitForDocumentLock(relativePath);
+		}
 		try {
 			if (remoteVersion.isDeleted) {
 				await operations.remove(relativePath);
@@ -90,13 +87,14 @@ export async function syncRemotelyUpdatedFile({
 					type: SyncType.DELETE,
 				});
 			} else {
-				const currentContent = await operations.read(relativePath),
-					currentHash = hash(currentContent);
+				const currentContent = await operations.read(relativePath);
+				const currentHash = hash(currentContent);
+
 				if (currentHash !== metadata.hash) {
 					Logger.getInstance().info(
 						`Document ${relativePath} has been updated both remotely and locally, skipping until the event is processed`
 					);
-				} else {
+				} else if (contentHash !== metadata.hash) {
 					if (relativePath !== remoteVersion.relativePath) {
 						await operations.move(
 							relativePath,
@@ -104,7 +102,6 @@ export async function syncRemotelyUpdatedFile({
 						);
 					}
 
-					const contentBytes = lib.base64_to_bytes(content);
 					await operations.write(
 						remoteVersion.relativePath,
 						currentContent,
@@ -115,7 +112,7 @@ export async function syncRemotelyUpdatedFile({
 						oldRelativePath: relativePath,
 						relativePath: remoteVersion.relativePath,
 						parentVersionId: remoteVersion.vaultUpdateId,
-						hash: metadata.hash,
+						hash: contentHash,
 					});
 
 					history.addHistoryEntry({
@@ -126,9 +123,16 @@ export async function syncRemotelyUpdatedFile({
 						type: SyncType.UPDATE,
 					});
 				}
+				{
+					Logger.getInstance().debug(
+						`Document ${relativePath} is already up to date`
+					);
+				}
 			}
 		} finally {
-			unlockDocument(relativePath);
+			if (relativePath !== remoteVersion.relativePath) {
+				unlockDocument(relativePath);
+			}
 		}
 	} catch (e) {
 		history.addHistoryEntry({
@@ -138,5 +142,7 @@ export async function syncRemotelyUpdatedFile({
 			message: `Failed to reconcile remotely updated file: ${e}`,
 		});
 		throw e;
+	} finally {
+		unlockDocument(remoteVersion.relativePath);
 	}
 }

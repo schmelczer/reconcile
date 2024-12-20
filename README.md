@@ -67,7 +67,7 @@ pedantic = { level = "warn", priority = 0 }
 cargo = { level = "warn", priority = 0 }
 
 
-
+update card title max width
 reset should reset counters
 access logs
 retry
