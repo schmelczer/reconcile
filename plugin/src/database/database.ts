@@ -1,11 +1,12 @@
-import { Logger } from "src/logger";
-import { DEFAULT_SETTINGS, SyncSettings } from "./sync-settings";
-import {
-	RelativePath,
-	DocumentMetadata,
-	VaultUpdateId,
+import type { SyncSettings } from "./sync-settings";
+import { DEFAULT_SETTINGS } from "./sync-settings";
+import type {
 	DocumentId,
+	DocumentMetadata,
+	RelativePath,
+	VaultUpdateId,
 } from "./document-metadata";
+import { Logger } from "src/tracing/logger";
 
 interface StoredDatabase {
 	documents: Map<RelativePath, DocumentMetadata>;
@@ -13,27 +14,31 @@ interface StoredDatabase {
 	lastSeenUpdateId: VaultUpdateId | undefined;
 }
 
+// Todo: split it into settings and documents
 export class Database {
-	private _documents: Map<RelativePath, DocumentMetadata> = new Map();
+	private _documents = new Map<RelativePath, DocumentMetadata>();
 	private _settings: SyncSettings;
 	private _lastSeenUpdateId: VaultUpdateId | undefined;
 
-	private onSettingsChangeHandlers: Array<
-		(newSettings: SyncSettings, oldSettings: SyncSettings) => void
-	> = [];
+	private readonly onSettingsChangeHandlers: ((
+		newSettings: SyncSettings,
+		oldSettings: SyncSettings
+	) => void)[] = [];
 
 	public constructor(
 		initialState: Partial<StoredDatabase> | undefined,
-		private saveData: (data: unknown) => Promise<void>
+		private readonly saveData: (data: unknown) => Promise<void>
 	) {
-		initialState = initialState || {};
+		initialState ??= {};
 		if (
+			// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 			Object.prototype.hasOwnProperty.call(initialState, "documents") &&
 			initialState.documents
 		) {
 			for (const [relativePath, metadata] of Object.entries(
 				initialState.documents
 			)) {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				this._documents.set(relativePath, metadata as DocumentMetadata);
 			}
 		}
@@ -46,11 +51,10 @@ export class Database {
 			)}`
 		);
 
-		this._settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			initialState.settings || {}
-		);
+		this._settings = {
+			...DEFAULT_SETTINGS,
+			...(initialState.settings ?? {}),
+		};
 
 		Logger.getInstance().debug(
 			`Loaded settings: ${JSON.stringify(this._settings, null, 2)}`
@@ -74,15 +78,15 @@ export class Database {
 	public async setSettings(value: SyncSettings): Promise<void> {
 		const oldSettings = this._settings;
 		this._settings = value;
-		this.onSettingsChangeHandlers.forEach((handler) =>
-			handler(value, oldSettings)
-		);
+		this.onSettingsChangeHandlers.forEach((handler) => {
+			handler(value, oldSettings);
+		});
 		await this.save();
 	}
 
 	public addOnSettingsChangeHandlers(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
-	) {
+	): void {
 		this.onSettingsChangeHandlers.push(handler);
 	}
 

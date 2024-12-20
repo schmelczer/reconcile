@@ -1,22 +1,22 @@
-import { RelativePath } from "src/database/document-metadata";
+import type { RelativePath } from "src/database/document-metadata";
 
 export interface FileOperations {
-	listAllFiles(): Promise<RelativePath[]>;
+	listAllFiles: () => Promise<RelativePath[]>;
 
-	read(path: RelativePath): Promise<Uint8Array>;
+	read: (path: RelativePath) => Promise<Uint8Array>;
 
-	getModificationTime(path: RelativePath): Promise<Date>;
+	getModificationTime: (path: RelativePath) => Promise<Date>;
 
-	create(path: RelativePath, newContent: Uint8Array): Promise<void>;
+	create: (path: RelativePath, newContent: Uint8Array) => Promise<void>;
 
 	// Writes new content to the file at the given path. If the file's content has changed since the expectedContent was read, the write will merge the changes.
-	write(
+	write: (
 		path: RelativePath,
 		expectedContent: Uint8Array,
 		newContent: Uint8Array
-	): Promise<Uint8Array>;
+	) => Promise<Uint8Array>;
 
-	remove(path: RelativePath): Promise<void>;
+	remove: (path: RelativePath) => Promise<void>;
 
-	move(oldPath: RelativePath, newPath: RelativePath): Promise<void>;
+	move: (oldPath: RelativePath, newPath: RelativePath) => Promise<void>;
 }

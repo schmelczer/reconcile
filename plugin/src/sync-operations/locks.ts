@@ -1,7 +1,7 @@
-import { RelativePath } from "src/database/document-metadata";
+import type { RelativePath } from "src/database/document-metadata";
 
-const locked = new Set<RelativePath>();
-const waiters = new Map<RelativePath, Array<() => void>>();
+const locked = new Set<RelativePath>(),
+	waiters = new Map<RelativePath, (() => void)[]>();
 
 export function tryLockDocument(relativePath: RelativePath): boolean {
 	if (locked.has(relativePath)) {
@@ -12,17 +12,21 @@ export function tryLockDocument(relativePath: RelativePath): boolean {
 	return true;
 }
 
-export function waitForDocumentLock(relativePath: RelativePath): Promise<void> {
+export async function waitForDocumentLock(
+	relativePath: RelativePath
+): Promise<void> {
 	if (tryLockDocument(relativePath)) {
 		return Promise.resolve();
 	}
 
 	return new Promise((resolve) => {
-		if (!waiters.has(relativePath)) {
-			waiters.set(relativePath, []);
+		let waiting = waiters.get(relativePath);
+		if (!waiting) {
+			waiting = [];
+			waiters.set(relativePath, waiting);
 		}
 
-		waiters.get(relativePath)!.push(resolve);
+		waiting.push(resolve);
 	});
 }
 

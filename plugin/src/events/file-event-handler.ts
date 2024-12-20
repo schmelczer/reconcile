@@ -1,4 +1,4 @@
-import { TAbstractFile } from "obsidian";
+import type { TAbstractFile } from "obsidian";
 
 export interface FileEventHandler {
 	onCreate: (path: TAbstractFile) => Promise<void>;

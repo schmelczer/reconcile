@@ -1,30 +1,33 @@
-import { normalizePath, Vault } from "obsidian";
-import { FileOperations } from "./file-operations";
+import type { Vault } from "obsidian";
+import { normalizePath } from "obsidian";
+import type { FileOperations } from "./file-operations";
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import { isEqualBytes } from "src/utils/is-equal-bytes";
-import { RelativePath } from "src/database/document-metadata";
+import type { RelativePath } from "src/database/document-metadata";
 
 export class ObsidianFileOperations implements FileOperations {
-	public constructor(private vault: Vault) {}
+	public constructor(private readonly vault: Vault) {}
 
-	async listAllFiles(): Promise<RelativePath[]> {
+	public async listAllFiles(): Promise<RelativePath[]> {
 		const files = this.vault.getFiles();
 		return files.map((file) => file.path);
 	}
 
-	async read(path: RelativePath): Promise<Uint8Array> {
+	public async read(path: RelativePath): Promise<Uint8Array> {
 		return new Uint8Array(
 			await this.vault.adapter.readBinary(normalizePath(path))
 		);
 	}
 
-	async getModificationTime(path: RelativePath): Promise<Date> {
-		return new Date(
-			(await this.vault.adapter.stat(normalizePath(path)))!.mtime
-		);
+	public async getModificationTime(path: RelativePath): Promise<Date> {
+		const file = await this.vault.adapter.stat(normalizePath(path));
+		if (!file) {
+			throw new Error(`File not found: ${path}`);
+		}
+		return new Date(file.mtime);
 	}
 
-	async write(
+	public async write(
 		path: RelativePath,
 		expectedContent: Uint8Array,
 		newContent: Uint8Array
@@ -44,17 +47,16 @@ export class ObsidianFileOperations implements FileOperations {
 			await this.vault.adapter.writeBinary(normalizePath(path), result);
 
 			return result;
-		} else {
-			await this.vault.adapter.writeBinary(
-				normalizePath(path),
-				newContent
-			);
-
-			return newContent;
 		}
+		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
+
+		return newContent;
 	}
 
-	async create(path: RelativePath, newContent: Uint8Array): Promise<void> {
+	public async create(
+		path: RelativePath,
+		newContent: Uint8Array
+	): Promise<void> {
 		if (await this.vault.adapter.exists(normalizePath(path))) {
 			await this.write(path, new Uint8Array(0), newContent);
 			return;
@@ -63,18 +65,21 @@ export class ObsidianFileOperations implements FileOperations {
 		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
 	}
 
-	async remove(path: RelativePath): Promise<void> {
+	public async remove(path: RelativePath): Promise<void> {
 		if (await this.vault.adapter.exists(normalizePath(path))) {
 			return this.vault.adapter.remove(normalizePath(path));
 		}
 	}
 
-	async move(oldPath: RelativePath, newPath: RelativePath): Promise<void> {
+	public async move(
+		oldPath: RelativePath,
+		newPath: RelativePath
+	): Promise<void> {
 		if (oldPath === newPath) {
 			return;
 		}
 
-		this.vault.adapter.rename(
+		await this.vault.adapter.rename(
 			normalizePath(oldPath),
 			normalizePath(newPath)
 		);

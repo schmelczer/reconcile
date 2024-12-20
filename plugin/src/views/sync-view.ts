@@ -1,42 +1,40 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
-import { Logger, LogLevel } from "src/logger";
+import type { WorkspaceLeaf } from "obsidian";
+import { ItemView } from "obsidian";
+import { LogLevel, Logger } from "src/tracing/logger";
 
 export class SyncView extends ItemView {
-	public static TYPE = "example-view";
+	public static readonly TYPE = "example-view";
 
 	public constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
 	}
 
-	getViewType() {
+	public getViewType(): string {
 		return SyncView.TYPE;
 	}
 
-	getDisplayText() {
+	public getDisplayText(): string {
 		return "Example view";
 	}
 
-	async onOpen() {
+	public async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.createEl("h4", { text: "Example view" });
 
-		setInterval(() => this.updateView(), 1000);
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		setInterval(async () => this.updateView(), 1000);
 	}
 
-	async updateView() {
+	public async updateView(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.empty();
 
 		const messages = Logger.getInstance()
-			.getMessages(LogLevel.INFO)
+			.getMessages(LogLevel.DEBUG)
 			.map((message) => message.toString())
 			.join("\n");
 
 		container.createEl("pre", { text: messages });
-	}
-
-	async onClose() {
-		// Nothing to clean up.
 	}
 }

@@ -23,9 +23,7 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content: {
                         "application/json": components["schemas"]["PingResponse"];
                     };
@@ -63,9 +61,7 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content: {
                         "application/json": components["schemas"]["FetchLatestDocumentsResponse"];
                     };
@@ -91,9 +87,7 @@ export interface paths {
             };
             responses: {
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
                     };
@@ -128,9 +122,7 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
                     };
@@ -156,9 +148,7 @@ export interface paths {
             };
             responses: {
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
                     };
@@ -186,9 +176,7 @@ export interface paths {
             responses: {
                 /** @description no content */
                 200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
+                    headers: Record<string, unknown>;
                     content?: never;
                 };
             };
