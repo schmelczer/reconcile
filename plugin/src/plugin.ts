@@ -1,40 +1,35 @@
-import { Editor, MarkdownView, Plugin, WorkspaceLeaf } from "obsidian";
+import type { WorkspaceLeaf } from "obsidian";
+import { Plugin } from "obsidian";
 
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import { SyncSettingsTab } from "./views/settings-tab";
 import { SyncView } from "./views/sync-view";
 
-import { Logger } from "./logger";
-import { SyncEventHandler } from "./events/sync-event-handler";
+import { ObsidianFileEventHandler } from "./events/obisidan-event-handler.js";
 import { SyncService } from "./services/sync-service";
 import { Database } from "./database/database";
 import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
 import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
 import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely";
 import { StatusBar } from "./views/status-bar";
+import { Logger } from "./tracing/logger.js";
+import { SyncHistory } from "./tracing/sync-history.js";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
-	private operations = new ObsidianFileOperations(this.app.vault);
+	private readonly operations = new ObsidianFileOperations(this.app.vault);
+	private readonly history = new SyncHistory();
 
-	async onload() {
-		Logger.getInstance().info('Starting plugin "Sample Plugin"');
+	public async onload(): Promise<void> {
+		Logger.getInstance().info("Starting plugin");
 
 		await lib.default(
 			Promise.resolve(
-				(wasmBin as any).default // eslint-disable-line @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line
+				(wasmBin as any).default
 			)
 		);
-
-		this.addCommand({
-			id: "sample-editor-command",
-			name: "Sample editor command",
-			editorCallback: (editor: Editor, _view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection("Sample Editor Command");
-			},
-		});
 
 		const database = new Database(
 			await this.loadData(),
@@ -43,19 +38,28 @@ export default class SyncPlugin extends Plugin {
 
 		const syncServer = new SyncService(database);
 
-		new StatusBar(this, syncServer);
+		new StatusBar(this, this.history);
 
 		this.addSettingTab(
-			new SyncSettingsTab(this.app, this, database, syncServer)
+			new SyncSettingsTab(
+				this.app,
+				this,
+				database,
+				syncServer,
+				this.history
+			)
 		);
 
-		const eventHandler = new SyncEventHandler(
+		const eventHandler = new ObsidianFileEventHandler(
 			database,
 			syncServer,
-			this.operations
+			this.operations,
+			this.history
 		);
 
-		this.app.workspace.onLayoutReady(() => {
+		this.app.workspace.onLayoutReady(async () => {
+			Logger.getInstance().info("Initialising sync handlers");
+
 			[
 				this.app.vault.on(
 					"create",
@@ -73,9 +77,18 @@ export default class SyncPlugin extends Plugin {
 					"rename",
 					eventHandler.onRename.bind(eventHandler)
 				),
-			].forEach((event) => this.registerEvent(event));
+			].forEach((event) => {
+				this.registerEvent(event);
+			});
 
-			applyLocalChangesRemotely(database, syncServer, this.operations);
+			await applyLocalChangesRemotely({
+				database,
+				syncServer,
+				operations: this.operations,
+				history: this.history,
+			});
+
+			Logger.getInstance().info("Sync handlers initialised");
 		});
 
 		this.registerRemoteEventListener(
@@ -83,7 +96,9 @@ export default class SyncPlugin extends Plugin {
 			syncServer,
 			database.getSettings().fetchChangesUpdateIntervalMs
 		);
-		database.addOnSettingsChangeHandlers((settings, oldSettings) => {
+
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		database.addOnSettingsChangeHandlers(async (settings, oldSettings) => {
 			this.registerRemoteEventListener(
 				database,
 				syncServer,
@@ -91,11 +106,12 @@ export default class SyncPlugin extends Plugin {
 			);
 
 			if (!oldSettings.isSyncEnabled && settings.isSyncEnabled) {
-				applyLocalChangesRemotely(
-					database,
+				await applyLocalChangesRemotely({
+					database: database,
 					syncServer,
-					this.operations
-				);
+					operations: this.operations,
+					history: this.history,
+				});
 			}
 		});
 
@@ -104,12 +120,20 @@ export default class SyncPlugin extends Plugin {
 		const ribbonIconEl = this.addRibbonIcon(
 			"dice",
 			"Sample Plugin",
-			(_: MouseEvent) => this.activateView()
+			async (_: MouseEvent) => this.activateView()
 		);
 		ribbonIconEl.addClass("my-plugin-ribbon-class");
+
+		Logger.getInstance().info("Plugin loaded");
 	}
 
-	async activateView() {
+	public onunload(): void {
+		if (this.remoteListenerIntervalId !== null) {
+			window.clearInterval(this.remoteListenerIntervalId);
+		}
+	}
+
+	private async activateView(): Promise<void> {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -117,21 +141,17 @@ export default class SyncPlugin extends Plugin {
 
 		if (leaves.length > 0) {
 			// A leaf with our view already exists, use that
-			leaf = leaves[0];
+			[leaf] = leaves;
 		} else {
 			// Our view could not be found in the workspace, create a new leaf
-			// in the right sidebar for it
+			// In the right sidebar for it
 			leaf = workspace.getRightLeaf(false);
 			await leaf?.setViewState({ type: SyncView.TYPE, active: true });
 		}
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
-		workspace.revealLeaf(leaf!);
-	}
-
-	onunload(): void {
-		if (this.remoteListenerIntervalId) {
-			window.clearInterval(this.remoteListenerIntervalId);
+		if (leaf) {
+			await workspace.revealLeaf(leaf);
 		}
 	}
 
@@ -139,18 +159,20 @@ export default class SyncPlugin extends Plugin {
 		database: Database,
 		syncServer: SyncService,
 		intervalMs: number
-	) {
-		if (this.remoteListenerIntervalId) {
+	): void {
+		if (this.remoteListenerIntervalId !== null) {
 			window.clearInterval(this.remoteListenerIntervalId);
 		}
 
 		this.remoteListenerIntervalId = window.setInterval(
-			() =>
-				applyRemoteChangesLocally(
+			// eslint-disable-next-line @typescript-eslint/no-misused-promises
+			async () =>
+				applyRemoteChangesLocally({
 					database,
 					syncServer,
-					this.operations
-				),
+					operations: this.operations,
+					history: this.history,
+				}),
 			intervalMs
 		);
 	}

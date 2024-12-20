@@ -23,6 +23,15 @@
 - `cargo install sqlx-cli`
 
 
+## cut new version 
+
+```sh
+cd plugin
+npm version patch
+git tag -a 0.0.2 -m "0.0.2"
+git push origin 0.0.2
+```
+
 
 
 
@@ -34,7 +43,7 @@
 - e2e tests
 - add clap
 - add auth middleware
-- add request logs
+- run eslint in ci
 
 - CI for:
     - publish reconcile
@@ -56,3 +65,10 @@ question_mark_used =  { level = "allow", priority = 1 }
 implicit_return = { level = "allow", priority = 1 }
 pedantic = { level = "warn", priority = 0 }
 cargo = { level = "warn", priority = 0 }
+
+
+
+reset should reset counters
+access logs
+retry
+mem usage

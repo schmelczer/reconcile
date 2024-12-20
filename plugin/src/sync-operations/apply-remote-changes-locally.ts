@@ -1,29 +1,37 @@
-import { Database } from "src/database/database";
-import { FileOperations } from "src/file-operations/file-operations";
-import { Logger } from "src/logger";
-import { SyncService } from "src/services/sync-service";
+import type { Database } from "src/database/database";
+import type { FileOperations } from "src/file-operations/file-operations";
+import type { SyncService } from "src/services/sync-service";
 import { syncRemotelyUpdatedFile } from "./sync-remotely-updated-file";
+import { Logger } from "src/tracing/logger";
+import type { SyncHistory } from "src/tracing/sync-history";
 
 let isRunning = false;
 
-export async function applyRemoteChangesLocally(
-	database: Database,
-	syncServer: SyncService,
-	operations: FileOperations
-) {
-	if (isRunning) {
-		Logger.getInstance().info("Pull sync already in progress, skipping");
+export async function applyRemoteChangesLocally({
+	database,
+	syncServer,
+	operations,
+	history,
+}: {
+	database: Database;
+	syncServer: SyncService;
+	operations: FileOperations;
+	history: SyncHistory;
+}): Promise<void> {
+	if (!database.getSettings().isSyncEnabled) {
+		Logger.getInstance().debug(
+			`Syncing is disabled, not fetching remote changes`
+		);
 		return;
-	} else {
-		Logger.getInstance().info("Starting pull sync");
+	} else if (isRunning) {
+		Logger.getInstance().debug(
+			"Applying remote changes locally is already in progress, skipping invocation"
+		);
+		return;
 	}
 
 	isRunning = true;
 	try {
-		if (!database.getSettings().isSyncEnabled) {
-			return;
-		}
-
 		const remote = await syncServer.getAll(database.getLastSeenUpdateId());
 
 		if (remote.latestDocuments.length === 0) {
@@ -34,11 +42,12 @@ export async function applyRemoteChangesLocally(
 		Logger.getInstance().info("Applying remote changes locally");
 
 		await Promise.all(
-			remote.latestDocuments.map((remoteDocument) =>
+			remote.latestDocuments.map(async (remoteDocument) =>
 				syncRemotelyUpdatedFile({
 					database,
 					syncServer,
-					operations: operations,
+					history,
+					operations,
 					remoteVersion: remoteDocument,
 				})
 			)

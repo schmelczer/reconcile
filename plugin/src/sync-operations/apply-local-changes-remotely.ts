@@ -1,131 +1,130 @@
-import { Database } from "../database/database";
-import { SyncService } from "../services/sync-service";
-import { Logger } from "../logger";
-import { FileOperations } from "../file-operations/file-operations";
+import type { Database } from "../database/database";
+import type { SyncService } from "../services/sync-service";
+import type { FileOperations } from "../file-operations/file-operations";
 import { syncLocallyCreatedFile } from "./sync-locally-created-file";
 import { EMPTY_HASH, hash } from "src/utils/hash";
 import { syncLocallyUpdatedFile } from "./sync-locally-updated-file";
 import { syncLocallyDeletedFile } from "./sync-locally-deleted-file";
-import { Notice } from "obsidian";
-import PQueue from "p-queue";
+import { Logger } from "src/tracing/logger";
+import type { SyncHistory } from "src/tracing/sync-history";
 
 let isRunning = false;
 
-export interface Progress {
-	processedFiles: number;
-	totalFiles: number;
-}
-
-export async function applyLocalChangesRemotely(
-	database: Database,
-	syncServer: SyncService,
-	operations: FileOperations
-) {
-	console.log("applyLocalChangesRemotely");
+export async function applyLocalChangesRemotely({
+	database,
+	syncServer,
+	operations,
+	history,
+}: {
+	database: Database;
+	syncServer: SyncService;
+	operations: FileOperations;
+	history: SyncHistory;
+}): Promise<void> {
 	if (isRunning) {
-		Logger.getInstance().info("Push sync already in progress, skipping");
+		Logger.getInstance().debug(
+			"Uploading local changes is already in progress, skipping"
+		);
 		return;
 	}
 
-	let tasks: Promise<void>[] = [];
+	isRunning = true;
+	try {
+		const tasks: Promise<void>[] = [];
 
-	const allLocalFiles = await operations.listAllFiles();
-	console.log(allLocalFiles);
-	const deletedFiles = [...database.getDocuments().entries()].filter(
-		([path, _]) => !allLocalFiles.includes(path)
-	);
+		const allLocalFiles = await operations.listAllFiles();
+		const locallyDeletedFiles = [
+			...database.getDocuments().entries(),
+		].filter(([path, _]) => !allLocalFiles.includes(path));
 
-	console.log(deletedFiles);
-
-	const promiseQueue = new PQueue({
-		concurrency: 1,
-	});
-
-	await Promise.all(
-		allLocalFiles.map((path) =>
-			promiseQueue.add(async () => {
-				const syncedState = database.getDocument(path);
-				if (!syncedState) {
-					Logger.getInstance().info(
-						`Document ${path} not found in database`
-					);
+		await Promise.all(
+			allLocalFiles.map(async (path) => {
+				const metadata = database.getDocument(path);
+				if (!metadata) {
 					const contentHash = hash(await operations.read(path));
-					if (contentHash != EMPTY_HASH) {
-						const match = deletedFiles.find(
-							([path, doc]) => doc.hash === contentHash
+					const match = locallyDeletedFiles.find(
+						([_, document]) => document.hash === contentHash
+					);
+
+					if (contentHash != EMPTY_HASH && match) {
+						locallyDeletedFiles.remove(match);
+
+						Logger.getInstance().debug(
+							`Document ${path} not found in database but found under a different path ${match[0]}, scheduling sync to update it`
 						);
-						if (match) {
-							const oldPath = match[0];
-							Logger.getInstance().info(
-								`Document ${path} found remotely under a different path (${oldPath}), moving`
-							);
-							tasks.push(
-								syncLocallyUpdatedFile({
-									database,
-									syncServer,
-									operations,
-									oldPath,
-									filePath: path,
-									updateTime:
-										await operations.getModificationTime(
-											path
-										),
-								})
-							);
-							deletedFiles.remove(match);
-							return;
-						}
-					}
-					tasks.push(
-						syncLocallyCreatedFile({
+						return syncLocallyUpdatedFile({
 							database,
 							syncServer,
 							operations,
+							history,
+							oldPath: match[0],
+							relativePath: path,
 							updateTime: await operations.getModificationTime(
 								path
 							),
-							filePath: path,
-						})
+						});
+					}
+
+					Logger.getInstance().debug(
+						`Document ${path} not found in database, scheduling sync to create it`
 					);
-					return;
+					return syncLocallyCreatedFile({
+						database,
+						syncServer,
+						operations,
+						history,
+						updateTime: await operations.getModificationTime(path),
+						relativePath: path,
+					});
 				}
 
 				const content = await operations.read(path);
-				if (syncedState.hash !== hash(content)) {
-					Logger.getInstance().info(
-						`Document ${path} has local changes, updating`
+				if (metadata.hash !== hash(content)) {
+					Logger.getInstance().debug(
+						`Document ${path} has been updated locally, scheduling sync to update it`
 					);
-					tasks.push(
-						syncLocallyUpdatedFile({
-							database,
-							syncServer,
-							operations,
-							filePath: path,
-							updateTime: await operations.getModificationTime(
-								path
-							),
-						})
-					);
-					return;
+					return syncLocallyUpdatedFile({
+						database,
+						syncServer,
+						operations,
+						history,
+						relativePath: path,
+						updateTime: await operations.getModificationTime(path),
+					});
 				}
-			})
-		)
-	);
 
-	deletedFiles.forEach(([relativePath, _]) => {
-		Logger.getInstance().info(
-			`Document ${relativePath} deleted locally, deleting`
+				return Promise.resolve();
+			})
 		);
+
 		tasks.push(
-			syncLocallyDeletedFile({
-				database,
-				syncServer,
-				relativePath,
+			...locallyDeletedFiles.map(async ([relativePath, _]) => {
+				Logger.getInstance().debug(
+					`Document ${relativePath} has been deleted locally, scheduling sync to delete it`
+				);
+
+				return syncLocallyDeletedFile({
+					database,
+					syncServer,
+					history,
+					relativePath,
+				});
 			})
 		);
-	});
 
-	await Promise.all(tasks);
-
-	new Notice("Local changes synced remotely");
+		try {
+			await Promise.all(tasks);
+			Logger.getInstance().info(
+				`All local changes have been applied remotely`
+			);
+			return;
+		} catch {
+			await Promise.allSettled(tasks);
+			Logger.getInstance().error(
+				`Not all local changes have been applied remotely`
+			);
+		}
+	} finally {
+		isRunning = false;
+	}
 }

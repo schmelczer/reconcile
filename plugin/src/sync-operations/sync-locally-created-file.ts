@@ -1,57 +1,91 @@
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
-import { Database } from "src/database/database";
-import { Logger } from "src/logger";
-import { SyncService } from "src/services/sync-service";
+import type { Database } from "src/database/database";
+import type { SyncService } from "src/services/sync-service";
 import { hash } from "src/utils/hash";
 import { unlockDocument, waitForDocumentLock } from "./locks";
-import { FileOperations } from "src/file-operations/file-operations";
-import { RelativePath } from "src/database/document-metadata";
+import type { FileOperations } from "src/file-operations/file-operations";
+import type { RelativePath } from "src/database/document-metadata";
+import type { SyncHistory } from "src/tracing/sync-history.js";
+import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history.js";
+import { Logger } from "src/tracing/logger.js";
 
-/// This can be used when updating a files content and/or path.
 export async function syncLocallyCreatedFile({
 	database,
 	syncServer,
 	operations,
+	history,
 	updateTime,
-	filePath,
+	relativePath,
 }: {
 	database: Database;
 	syncServer: SyncService;
 	operations: FileOperations;
+	history: SyncHistory;
 	updateTime: Date;
-	filePath: RelativePath;
+	relativePath: RelativePath;
 }): Promise<void> {
-	await waitForDocumentLock(filePath);
+	if (!database.getSettings().isSyncEnabled) {
+		Logger.getInstance().info(
+			`Syncing is disabled, not syncing ${relativePath}`
+		);
+		return;
+	}
+	Logger.getInstance().debug(`Syncing ${relativePath}`);
+
+	await waitForDocumentLock(relativePath);
 
 	try {
-		const metadata = database.getDocument(filePath);
+		const metadata = database.getDocument(relativePath);
 		if (metadata) {
 			throw new Error(
-				`Document metadata found for ${filePath}, this is unexpected`
+				`Document metadata found for ${relativePath}, this is unexpected. Consider resetting the plugin's sync history.`
 			);
 		}
 
-		const contentBytes = await operations.read(filePath);
-
-		const response = await syncServer.create({
-			relativePath: filePath,
-			contentBytes,
-			createdDate: updateTime,
+		const contentBytes = await operations.read(relativePath),
+			contentHash = hash(contentBytes),
+			response = await syncServer.create({
+				relativePath,
+				contentBytes,
+				createdDate: updateTime,
+			});
+		history.addHistoryEntry({
+			status: SyncStatus.SUCCESS,
+			source: SyncSource.PUSH,
+			relativePath,
+			message: `Successfully uploaded locally created file`,
+			type: SyncType.CREATE,
 		});
 
-		const responseBytes = lib.base64_to_bytes(response.contentBase64);
-		await operations.write(filePath, contentBytes, responseBytes);
+		const responseBytes = lib.base64_to_bytes(response.contentBase64),
+			responseHash = hash(responseBytes);
+
+		if (contentHash !== responseHash) {
+			await operations.write(relativePath, contentBytes, responseBytes);
+			history.addHistoryEntry({
+				status: SyncStatus.SUCCESS,
+				source: SyncSource.PULL,
+				relativePath,
+				message: `The file we created locally has already existed remotely, so we have merged them`,
+				type: SyncType.UPDATE,
+			});
+		}
+
 		await database.setDocument({
 			documentId: response.documentId,
 			relativePath: response.relativePath,
 			parentVersionId: response.vaultUpdateId,
-			hash: hash(responseBytes),
+			hash: responseHash,
 		});
 	} catch (e) {
-		Logger.getInstance().error(
-			`Failed to sync locally updated file ${filePath}: ${e}`
-		);
+		history.addHistoryEntry({
+			status: SyncStatus.ERROR,
+			relativePath,
+			message: `Failed to reconcile locally created file: ${e}`,
+			type: SyncType.CREATE,
+		});
+		throw e;
 	} finally {
-		unlockDocument(filePath);
+		unlockDocument(relativePath);
 	}
 }

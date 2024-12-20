@@ -1,110 +1,142 @@
-import { Database } from "src/database/database";
+import type { Database } from "src/database/database";
 import { unlockDocument, waitForDocumentLock } from "./locks";
-import { SyncService } from "src/services/sync-service";
+import type { SyncService } from "src/services/sync-service";
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import { hash } from "src/utils/hash";
-import { Logger } from "src/logger";
-import { components } from "src/services/types";
-import { FileOperations } from "src/file-operations/file-operations";
+import type { components } from "src/services/types";
+import type { FileOperations } from "src/file-operations/file-operations";
+import { Logger } from "src/tracing/logger";
+import type { SyncHistory } from "src/tracing/sync-history";
+import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history";
 
 export async function syncRemotelyUpdatedFile({
 	database,
 	syncServer,
 	operations,
+	history,
 	remoteVersion,
 }: {
 	database: Database;
 	syncServer: SyncService;
 	operations: FileOperations;
+	history: SyncHistory;
 	remoteVersion: components["schemas"]["DocumentVersionWithoutContent"];
 }): Promise<void> {
-	Logger.getInstance().info(
+	Logger.getInstance().debug(
 		`Syncing remotely updated file ${remoteVersion.relativePath}`
 	);
-	const content = (
-		await syncServer.get({
-			documentId: remoteVersion.documentId,
-		})
-	).contentBase64;
 
-	const currentVersion = database.getDocumentByDocumentId(
-		remoteVersion.documentId
-	);
+	try {
+		const content = (
+				await syncServer.get({
+					documentId: remoteVersion.documentId,
+				})
+			).contentBase64,
+			currentVersion = database.getDocumentByDocumentId(
+				remoteVersion.documentId
+			);
 
-	if (!currentVersion) {
-		if (remoteVersion.isDeleted) {
+		if (!currentVersion) {
+			if (remoteVersion.isDeleted) {
+				history.addHistoryEntry({
+					status: SyncStatus.NO_OP,
+					source: SyncSource.PULL,
+					relativePath: remoteVersion.relativePath,
+					message: `Remotely deleted file hasn't been synced yet, so there's no need to delete it locally`,
+					type: SyncType.DELETE,
+				});
+				return;
+			}
+
+			await waitForDocumentLock(remoteVersion.relativePath);
+			try {
+				const contentBytes = lib.base64_to_bytes(content);
+				await operations.create(
+					remoteVersion.relativePath,
+					contentBytes
+				);
+				await database.setDocument({
+					documentId: remoteVersion.documentId,
+					relativePath: remoteVersion.relativePath,
+					parentVersionId: remoteVersion.vaultUpdateId,
+					hash: hash(contentBytes),
+				});
+				history.addHistoryEntry({
+					status: SyncStatus.SUCCESS,
+					source: SyncSource.PULL,
+					relativePath: remoteVersion.relativePath,
+					message: `Successfully downloaded remote file which hasn't existed locally`,
+					type: SyncType.CREATE,
+				});
+			} finally {
+				unlockDocument(remoteVersion.relativePath);
+			}
 			return;
 		}
 
-		Logger.getInstance().info(
-			`Document metadata not found for ${remoteVersion.relativePath}, it must be new`
-		);
+		const [relativePath, metadata] = currentVersion;
+		await waitForDocumentLock(relativePath);
 
-		await waitForDocumentLock(remoteVersion.relativePath);
 		try {
-			const contentBytes = lib.base64_to_bytes(content);
-			operations.create(remoteVersion.relativePath, contentBytes);
-			await database.setDocument({
-				documentId: remoteVersion.documentId,
-				relativePath: remoteVersion.relativePath,
-				parentVersionId: remoteVersion.vaultUpdateId,
-				hash: hash(contentBytes),
-			});
-		} finally {
-			unlockDocument(remoteVersion.relativePath);
-		}
-		return;
-	}
-
-	const [relativePath, metadata] = currentVersion;
-	await waitForDocumentLock(relativePath);
-
-	try {
-		if (remoteVersion.isDeleted) {
-			Logger.getInstance().info(
-				`Document ${relativePath} has been deleted remotely`
-			);
-			await operations.remove(relativePath);
-
-			if (metadata) {
+			if (remoteVersion.isDeleted) {
+				await operations.remove(relativePath);
 				await database.removeDocument(relativePath);
-			}
-		} else {
-			const currentContent = await operations.read(relativePath);
-			const currentHash = hash(currentContent);
-			if (currentHash !== metadata.hash) {
-				Logger.getInstance().info(
-					`Document ${relativePath} has been updated both remotely and locally, skipping`
-				);
-				return;
-			} else {
-				if (relativePath !== remoteVersion.relativePath) {
-					await operations.move(
-						relativePath,
-						remoteVersion.relativePath
-					);
-				}
 
-				const contentBytes = lib.base64_to_bytes(content);
-				await operations.write(
-					remoteVersion.relativePath,
-					currentContent,
-					contentBytes
-				);
-				await database.moveDocument({
-					documentId: remoteVersion.documentId,
-					oldRelativePath: relativePath,
+				history.addHistoryEntry({
+					status: SyncStatus.SUCCESS,
+					source: SyncSource.PULL,
 					relativePath: remoteVersion.relativePath,
-					parentVersionId: remoteVersion.vaultUpdateId,
-					hash: metadata.hash,
+					message: `Successfully deleted remotely deleted file locally`,
+					type: SyncType.DELETE,
 				});
+			} else {
+				const currentContent = await operations.read(relativePath),
+					currentHash = hash(currentContent);
+				if (currentHash !== metadata.hash) {
+					Logger.getInstance().info(
+						`Document ${relativePath} has been updated both remotely and locally, skipping until the event is processed`
+					);
+				} else {
+					if (relativePath !== remoteVersion.relativePath) {
+						await operations.move(
+							relativePath,
+							remoteVersion.relativePath
+						);
+					}
+
+					const contentBytes = lib.base64_to_bytes(content);
+					await operations.write(
+						remoteVersion.relativePath,
+						currentContent,
+						contentBytes
+					);
+					await database.moveDocument({
+						documentId: remoteVersion.documentId,
+						oldRelativePath: relativePath,
+						relativePath: remoteVersion.relativePath,
+						parentVersionId: remoteVersion.vaultUpdateId,
+						hash: metadata.hash,
+					});
+
+					history.addHistoryEntry({
+						status: SyncStatus.SUCCESS,
+						source: SyncSource.PULL,
+						relativePath: remoteVersion.relativePath,
+						message: `Successfully updated remotely updated file locally`,
+						type: SyncType.UPDATE,
+					});
+				}
 			}
+		} finally {
+			unlockDocument(relativePath);
 		}
 	} catch (e) {
-		Logger.getInstance().error(
-			`Failed to sync remotely updated file ${remoteVersion.relativePath}: ${e}`
-		);
-	} finally {
-		unlockDocument(relativePath);
+		history.addHistoryEntry({
+			status: SyncStatus.ERROR,
+			source: SyncSource.PULL,
+			relativePath: remoteVersion.relativePath,
+			message: `Failed to reconcile remotely updated file: ${e}`,
+		});
+		throw e;
 	}
 }
