@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import { sassPlugin } from "esbuild-sass-plugin";
 import path from "node:path";
 import fs from "node:fs";
 import { wasmPack } from "esbuild-plugin-wasm-pack";
@@ -70,48 +71,45 @@ let wasmPlugin = {
 	},
 };
 
-const copyBundle = {
+const copyBundle = () => ({
 	name: "post-compile",
 	setup(build) {
-		build.onEnd(async (result) => {
+		build.onEnd((result) => {
 			if (prod) {
-				await fs.promises.copyFile(
-					"manifest.json",
-					"build/manifest.json"
-				);
+				fs.promises.copyFile("manifest.json", "build/manifest.json");
 				return;
 			}
 
 			if (result.errors.length === 0) {
-				await copyFiles(
+				copyFiles(
 					["manifest.json", ".hotreload"],
 					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
 				);
 
-				await copyFiles(
+				copyFiles(
 					"build",
 					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
 				);
 
-				await copyFiles(
+				copyFiles(
 					["manifest.json", ".hotreload"],
 					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
 				);
 
-				await copyFiles(
+				copyFiles(
 					"build",
 					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
 				);
 			}
 		});
 	},
-};
+});
 
 const cssContext = await esbuild.context({
-	entryPoints: ["src/styles.css"],
+	entryPoints: ["src/styles.scss"],
 	bundle: true,
 	outfile: "build/styles.css",
-	plugins: [copyBundle],
+	plugins: [sassPlugin(), copyBundle()],
 });
 
 const jsContext = await esbuild.context({
@@ -143,13 +141,13 @@ const jsContext = await esbuild.context({
 	minify: prod,
 	plugins: [
 		wasmPlugin,
-		prod
+		true
 			? null
 			: wasmPack({
 					target: "web",
 					path: "../backend/sync_lib",
 			  }),
-		copyBundle,
+		copyBundle(),
 	].filter(Boolean),
 });
 
