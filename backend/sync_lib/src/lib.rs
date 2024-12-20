@@ -10,7 +10,7 @@ pub mod errors;
 // allocator.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD_NO_PAD.encode(input) }
