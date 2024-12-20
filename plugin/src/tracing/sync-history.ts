@@ -37,15 +37,16 @@ export class SyncHistory {
 	private static readonly MAX_ENTRIES = 1000;
 
 	private entries: HistoryEntry[] = [];
-	private readonly requestCountListeners: ((status: HistoryStats) => void)[] =
-		[];
+	private readonly syncHistoryUpdateListeners: ((
+		status: HistoryStats
+	) => void)[] = [];
 	private status: HistoryStats = {
 		success: 0,
 		error: 0,
 	};
 
-	public getMessages(): HistoryEntry[] {
-		return this.entries;
+	public getEntries(): HistoryEntry[] {
+		return [...this.entries];
 	}
 
 	public reset(): void {
@@ -54,15 +55,15 @@ export class SyncHistory {
 			success: 0,
 			error: 0,
 		};
-		this.requestCountListeners.forEach((listener) => {
+		this.syncHistoryUpdateListeners.forEach((listener) => {
 			listener(this.status);
 		});
 	}
 
-	public addSyncHistoryStatsChangeListener(
-		listener: (status: HistoryStats) => void
+	public addSyncHistoryUpdateListener(
+		listener: (stats: HistoryStats) => void
 	): void {
-		this.requestCountListeners.push(listener);
+		this.syncHistoryUpdateListeners.push(listener);
 		listener({ ...this.status });
 	}
 
@@ -75,15 +76,21 @@ export class SyncHistory {
 
 		if (entry.status === SyncStatus.SUCCESS) {
 			this.status.success++;
-			Logger.getInstance().info(`Synced file: ${entry.relativePath}`);
+			Logger.getInstance().info(
+				`History entry: ${entry.relativePath} - ${entry.message}`
+			);
 		} else if (entry.status === SyncStatus.ERROR) {
 			this.status.error++;
 			Logger.getInstance().error(
 				`Error syncing file: ${entry.relativePath} - ${entry.message}`
 			);
+		} else {
+			Logger.getInstance().debug(
+				`No-op syncing file: ${entry.relativePath} - ${entry.message}`
+			);
 		}
 
-		this.requestCountListeners.forEach((listener) => {
+		this.syncHistoryUpdateListeners.forEach((listener) => {
 			listener(this.status);
 		});
 

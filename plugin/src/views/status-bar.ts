@@ -6,9 +6,9 @@ export class StatusBar {
 
 	public constructor(plugin: Plugin, history: SyncHistory) {
 		this.statusBarItem = plugin.addStatusBarItem();
-		history.addSyncHistoryStatsChangeListener((status) =>
-			{ this.updateStatus(status); }
-		);
+		history.addSyncHistoryUpdateListener((status) => {
+			this.updateStatus(status);
+		});
 	}
 
 	private updateStatus({ success, error }: HistoryStats): void {

@@ -4,7 +4,7 @@ import { Plugin } from "obsidian";
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import { SyncSettingsTab } from "./views/settings-tab";
-import { SyncView } from "./views/sync-view";
+import { HistoryView } from "./views/history-view.js";
 
 import { ObsidianFileEventHandler } from "./events/obisidan-event-handler.js";
 import { SyncService } from "./services/sync-service";
@@ -15,6 +15,7 @@ import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes
 import { StatusBar } from "./views/status-bar";
 import { Logger } from "./tracing/logger.js";
 import { SyncHistory } from "./tracing/sync-history.js";
+import { LogsView } from "./views/logs-view.js";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
@@ -115,14 +116,22 @@ export default class SyncPlugin extends Plugin {
 			}
 		});
 
-		this.registerView(SyncView.TYPE, (leaf) => new SyncView(leaf));
-
-		const ribbonIconEl = this.addRibbonIcon(
-			"dice",
-			"Sample Plugin",
-			async (_: MouseEvent) => this.activateView()
+		this.registerView(
+			HistoryView.TYPE,
+			(leaf) => new HistoryView(leaf, this.history)
 		);
-		ribbonIconEl.addClass("my-plugin-ribbon-class");
+		this.registerView(LogsView.TYPE, (leaf) => new LogsView(leaf));
+
+		this.addRibbonIcon(
+			HistoryView.ICON,
+			"Open VaultLink events",
+			async (_: MouseEvent) => this.activateView(HistoryView.TYPE)
+		);
+		this.addRibbonIcon(
+			LogsView.ICON,
+			"Open VaultLink logs",
+			async (_: MouseEvent) => this.activateView(LogsView.TYPE)
+		);
 
 		Logger.getInstance().info("Plugin loaded");
 	}
@@ -133,23 +142,19 @@ export default class SyncPlugin extends Plugin {
 		}
 	}
 
-	private async activateView(): Promise<void> {
+	private async activateView(type: string): Promise<void> {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
-		const leaves = workspace.getLeavesOfType(SyncView.TYPE);
+		const leaves = workspace.getLeavesOfType(type);
 
 		if (leaves.length > 0) {
-			// A leaf with our view already exists, use that
 			[leaf] = leaves;
 		} else {
-			// Our view could not be found in the workspace, create a new leaf
-			// In the right sidebar for it
 			leaf = workspace.getRightLeaf(false);
-			await leaf?.setViewState({ type: SyncView.TYPE, active: true });
+			await leaf?.setViewState({ type: type, active: true });
 		}
 
-		// "Reveal" the leaf in case it is in a collapsed sidebar
 		if (leaf) {
 			await workspace.revealLeaf(leaf);
 		}

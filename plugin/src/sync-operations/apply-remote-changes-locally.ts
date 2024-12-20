@@ -31,6 +31,7 @@ export async function applyRemoteChangesLocally({
 	}
 
 	isRunning = true;
+
 	try {
 		const remote = await syncServer.getAll(database.getLastSeenUpdateId());
 
