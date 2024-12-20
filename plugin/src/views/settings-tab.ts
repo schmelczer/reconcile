@@ -1,8 +1,10 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import type { App } from "obsidian";
+import { Notice, PluginSettingTab, Setting } from "obsidian";
 
-import SyncPlugin from "src/plugin";
-import { Database } from "src/database/database";
-import { SyncService } from "src/services/sync-service";
+import type SyncPlugin from "src/plugin";
+import type { Database } from "src/database/database";
+import type { SyncService } from "src/services/sync-service";
+import type { SyncHistory } from "src/tracing/sync-history";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
@@ -10,18 +12,23 @@ export class SyncSettingsTab extends PluginSettingTab {
 	public constructor(
 		app: App,
 		plugin: SyncPlugin,
-		private database: Database,
-		private syncServer: SyncService
+		private readonly database: Database,
+		private readonly syncServer: SyncService,
+		private readonly history: SyncHistory
 	) {
 		super(app, plugin);
 		this.editedVaultName = this.database.getSettings().vaultName;
-		this.database.addOnSettingsChangeHandlers((s) => {
-			this.editedVaultName = s.vaultName;
-			this.display();
-		});
+		this.database.addOnSettingsChangeHandlers(
+			(newSettings, oldSettings) => {
+				if (newSettings.vaultName !== oldSettings.vaultName) {
+					this.editedVaultName = newSettings.vaultName;
+					this.display();
+				}
+			}
+		);
 	}
 
-	display(): void {
+	public display(): void {
 		const { containerEl } = this;
 
 		containerEl.empty();
@@ -34,9 +41,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder("https://example.com:8080/obsidian")
+					.setPlaceholder("https://example.com:3030")
 					.setValue(this.database.getSettings().remoteUri)
-					.onChange((value) =>
+					.onChange(async (value) =>
 						this.database.setSetting("remoteUri", value)
 					)
 			)
@@ -54,7 +61,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 							);
 						}
 					} catch (e) {
-						new Notice("Failed to connect to server: " + e);
+						new Notice(`Failed to connect to server: ${e}`);
 					}
 				})
 			)
@@ -65,13 +72,14 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.setInstant(false)
 					.setValue(this.database.getSettings().uploadConcurrency)
-					.onChange((value) =>
+					.onChange(async (value) =>
 						this.database.setSetting("uploadConcurrency", value)
 					)
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset sync state").onClick(async () => {
 					await this.database.resetSyncState();
+					this.history.reset();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
 					);
@@ -98,8 +106,12 @@ export class SyncSettingsTab extends PluginSettingTab {
 					) {
 						return;
 					}
-					this.database.setSetting("vaultName", this.editedVaultName);
+					await this.database.setSetting(
+						"vaultName",
+						this.editedVaultName
+					);
 					await this.database.resetSyncState();
+					this.history.reset();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
 					);
@@ -117,7 +129,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 				text
 					.setPlaceholder("ey...")
 					.setValue(this.database.getSettings().token)
-					.onChange((value) =>
+					.onChange(async (value) =>
 						this.database.setSetting("token", value)
 					)
 			);
@@ -131,7 +143,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.database.getSettings().isSyncEnabled)
-					.onChange((value) =>
+					.onChange(async (value) =>
 						this.database.setSetting("isSyncEnabled", value)
 					)
 			)
@@ -143,7 +155,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setValue(
 						this.database.getSettings().fetchChangesUpdateIntervalMs
 					)
-					.onChange((value) =>
+					.onChange(async (value) =>
 						this.database.setSetting(
 							"fetchChangesUpdateIntervalMs",
 							value
