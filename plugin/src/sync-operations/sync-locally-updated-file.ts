@@ -78,6 +78,10 @@ export async function syncLocallyUpdatedFile({
 			await operations.remove(oldPath ?? relativePath);
 			await database.removeDocument(oldPath ?? relativePath);
 
+			if (database.getLastSeenUpdateId() === response.vaultUpdateId - 1) {
+				await database.setLastSeenUpdateId(response.vaultUpdateId);
+			}
+
 			history.addHistoryEntry({
 				status: SyncStatus.SUCCESS,
 				source: SyncSource.PULL,
@@ -128,6 +132,10 @@ export async function syncLocallyUpdatedFile({
 			parentVersionId: response.vaultUpdateId,
 			hash: responseHash,
 		});
+
+		if (database.getLastSeenUpdateId() === response.vaultUpdateId - 1) {
+			await database.setLastSeenUpdateId(response.vaultUpdateId);
+		}
 	} catch (e) {
 		history.addHistoryEntry({
 			status: SyncStatus.ERROR,

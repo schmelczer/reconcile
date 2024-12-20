@@ -43,13 +43,7 @@ export class Database {
 			}
 		}
 
-		Logger.getInstance().debug(
-			`Loaded documents: ${JSON.stringify(
-				Object.fromEntries(this._documents.entries()),
-				null,
-				2
-			)}`
-		);
+		Logger.getInstance().debug(`Loaded ${this._documents.size} documents`);
 
 		this._settings = {
 			...DEFAULT_SETTINGS,

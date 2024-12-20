@@ -72,6 +72,7 @@ export class Logger {
 	}
 
 	private pushMessage(message: string, level: LogLevel): void {
+		console.log(`[${level}] ${message}`);
 		this.messages.push(new LogLine(level, message));
 		if (this.messages.length > Logger.MAX_MESSAGES) {
 			this.messages.shift();

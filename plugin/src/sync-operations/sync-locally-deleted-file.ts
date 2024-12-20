@@ -46,8 +46,6 @@ export async function syncLocallyDeletedFile({
 			createdDate: new Date(),
 		});
 
-		await database.removeDocument(relativePath);
-
 		history.addHistoryEntry({
 			status: SyncStatus.SUCCESS,
 			source: SyncSource.PUSH,
@@ -55,6 +53,8 @@ export async function syncLocallyDeletedFile({
 			message: `Successfully deleted locally deleted file on the remote server`,
 			type: SyncType.DELETE,
 		});
+
+		await database.removeDocument(relativePath);
 	} catch (e) {
 		history.addHistoryEntry({
 			status: SyncStatus.ERROR,

@@ -79,6 +79,10 @@ export async function syncLocallyCreatedFile({
 			parentVersionId: response.vaultUpdateId,
 			hash: responseHash,
 		});
+
+		if (database.getLastSeenUpdateId() === response.vaultUpdateId - 1) {
+			await database.setLastSeenUpdateId(response.vaultUpdateId);
+		}
 	} catch (e) {
 		history.addHistoryEntry({
 			status: SyncStatus.ERROR,

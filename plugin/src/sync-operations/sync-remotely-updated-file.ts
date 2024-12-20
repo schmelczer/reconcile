@@ -26,14 +26,6 @@ export async function syncRemotelyUpdatedFile({
 		`Syncing remotely updated file ${remoteVersion.relativePath}`
 	);
 
-	const content = (
-		await syncServer.get({
-			documentId: remoteVersion.documentId,
-		})
-	).contentBase64;
-	const contentBytes = lib.base64_to_bytes(content);
-	const contentHash = hash(contentBytes);
-
 	await waitForDocumentLock(remoteVersion.relativePath);
 
 	try {
@@ -53,6 +45,14 @@ export async function syncRemotelyUpdatedFile({
 				return;
 			}
 
+			const content = (
+				await syncServer.get({
+					documentId: remoteVersion.documentId,
+				})
+			).contentBase64;
+			const contentBytes = lib.base64_to_bytes(content);
+			const contentHash = hash(contentBytes);
+
 			await operations.create(remoteVersion.relativePath, contentBytes);
 			await database.setDocument({
 				documentId: remoteVersion.documentId,
@@ -71,9 +71,17 @@ export async function syncRemotelyUpdatedFile({
 		}
 
 		const [relativePath, metadata] = currentVersion;
+		if (metadata.parentVersionId === remoteVersion.vaultUpdateId) {
+			Logger.getInstance().debug(
+				`Document ${relativePath} is already up to date`
+			);
+			return;
+		}
+
 		if (relativePath !== remoteVersion.relativePath) {
 			await waitForDocumentLock(relativePath);
 		}
+
 		try {
 			if (remoteVersion.isDeleted) {
 				await operations.remove(relativePath);
@@ -94,40 +102,44 @@ export async function syncRemotelyUpdatedFile({
 					Logger.getInstance().info(
 						`Document ${relativePath} has been updated both remotely and locally, skipping until the event is processed`
 					);
-				} else if (contentHash !== metadata.hash) {
-					if (relativePath !== remoteVersion.relativePath) {
-						await operations.move(
-							relativePath,
-							remoteVersion.relativePath
-						);
-					}
+					return;
+				}
 
-					await operations.write(
-						remoteVersion.relativePath,
-						currentContent,
-						contentBytes
-					);
-					await database.moveDocument({
+				const content = (
+					await syncServer.get({
 						documentId: remoteVersion.documentId,
-						oldRelativePath: relativePath,
-						relativePath: remoteVersion.relativePath,
-						parentVersionId: remoteVersion.vaultUpdateId,
-						hash: contentHash,
-					});
+					})
+				).contentBase64;
+				const contentBytes = lib.base64_to_bytes(content);
+				const contentHash = hash(contentBytes);
 
-					history.addHistoryEntry({
-						status: SyncStatus.SUCCESS,
-						source: SyncSource.PULL,
-						relativePath: remoteVersion.relativePath,
-						message: `Successfully updated remotely updated file locally`,
-						type: SyncType.UPDATE,
-					});
-				}
-				{
-					Logger.getInstance().debug(
-						`Document ${relativePath} is already up to date`
+				if (relativePath !== remoteVersion.relativePath) {
+					await operations.move(
+						relativePath,
+						remoteVersion.relativePath
 					);
 				}
+
+				await operations.write(
+					remoteVersion.relativePath,
+					currentContent,
+					contentBytes
+				);
+				await database.moveDocument({
+					documentId: remoteVersion.documentId,
+					oldRelativePath: relativePath,
+					relativePath: remoteVersion.relativePath,
+					parentVersionId: remoteVersion.vaultUpdateId,
+					hash: contentHash,
+				});
+
+				history.addHistoryEntry({
+					status: SyncStatus.SUCCESS,
+					source: SyncSource.PULL,
+					relativePath: remoteVersion.relativePath,
+					message: `Successfully updated remotely updated file locally`,
+					type: SyncType.UPDATE,
+				});
 			}
 		} finally {
 			if (relativePath !== remoteVersion.relativePath) {
