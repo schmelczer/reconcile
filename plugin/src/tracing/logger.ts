@@ -8,22 +8,25 @@ export enum LogLevel {
 }
 
 class LogLine {
+	public timestamp = new Date();
 	public constructor(public level: LogLevel, public message: string) {}
 
 	public toString(): string {
-		return `${this.formatLevel()}: ${this.message}`;
+		return `| ${this.formatLevel()} | ${this.timestamp.getHours()}:${this.timestamp.getMinutes()}:${this.timestamp.getSeconds()} | ${
+			this.message
+		}`;
 	}
 
 	private formatLevel(): string {
 		switch (this.level) {
 			case LogLevel.DEBUG:
-				return "DEBUG";
+				return "  DEBUG";
 			case LogLevel.INFO:
-				return "INFO";
+				return "   INFO";
 			case LogLevel.WARNING:
 				return "WARNING";
 			case LogLevel.ERROR:
-				return "ERROR";
+				return "  ERROR";
 			default:
 				return "UNKNOWN";
 		}
