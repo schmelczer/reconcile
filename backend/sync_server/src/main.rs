@@ -9,10 +9,24 @@ use anyhow::{Context as _, Result};
 use app_state::AppState;
 use errors::{init_error, SyncServerError};
 use server::create_server;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), SyncServerError> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                format!(
+                    "{}=debug,tower_http=debug,axum::rejection=trace",
+                    env!("CARGO_CRATE_NAME")
+                )
+                .into()
+            }),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .try_init()
+        .context("Failed to initialise tracing")
+        .map_err(init_error)?;
 
     let app_state = AppState::try_new()
         .await

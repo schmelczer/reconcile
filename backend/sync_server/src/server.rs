@@ -8,14 +8,22 @@ use aide::{
 };
 use anyhow::{Context as _, Result};
 use axum::{
-    extract::DefaultBodyLimit,
-    http::{self, HeaderValue, Method},
+    extract::{DefaultBodyLimit, Request},
+    http::{self, HeaderValue, Method, StatusCode},
     response::IntoResponse,
     Extension, Json,
 };
 use log::info;
 use tokio::signal;
-use tower_http::cors::CorsLayer;
+use tower_http::{
+    cors::CorsLayer,
+    trace::{
+        DefaultOnBodyChunk, DefaultOnEos, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse,
+        TraceLayer,
+    },
+    LatencyUnit,
+};
+use tracing::{info_span, Level};
 
 use crate::app_state::AppState;
 mod auth;
@@ -66,6 +74,25 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         )
         .route("/", Scalar::new("/api.json").axum_route())
         .route("/api.json", axum::routing::get(serve_api))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<_>| {
+                    info_span!(
+                        "http_request",
+                        method = ?request.method(),
+                        uri = ?request.uri(),
+                    )
+                })
+                .on_request(DefaultOnRequest::new().level(Level::INFO))
+                .on_response(
+                    DefaultOnResponse::new()
+                        .level(Level::INFO)
+                        .latency_unit(LatencyUnit::Millis),
+                )
+                .on_body_chunk(DefaultOnBodyChunk::new())
+                .on_eos(DefaultOnEos::new())
+                .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
+        )
         .layer(DefaultBodyLimit::max(
             app_state.config.server.max_body_size_mb * 1024 * 1024,
         ))
@@ -78,6 +105,7 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         .with_state(app_state)
         .finish_api(&mut api)
         .layer(Extension(api))
+        .fallback(handler_404)
         .into_make_service();
 
     let listener = tokio::net::TcpListener::bind(address.clone())
@@ -123,3 +151,5 @@ async fn shutdown_signal() {
         _ = terminate => {},
     }
 }
+
+async fn handler_404() -> impl IntoResponse { (StatusCode::NOT_FOUND, "nothing to see here") }
