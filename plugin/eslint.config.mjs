@@ -1,59 +1,46 @@
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import globals from "globals";
-import tsParser from "@typescript-eslint/parser";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 import unusedImports from "eslint-plugin-unused-imports";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-	baseDirectory: __dirname,
-	recommendedConfig: js.configs.recommended,
-	allConfig: js.configs.all,
-});
-
-export default [
-	...compat.extends(
-		"eslint:recommended",
-		"plugin:@typescript-eslint/eslint-recommended",
-		"plugin:@typescript-eslint/recommended"
-	),
-	{
-		plugins: {
-			"@typescript-eslint": typescriptEslint,
-			"unused-imports": unusedImports,
-		},
-
-		languageOptions: {
-			globals: {
-				...globals.node,
+export default tseslint.config({
+	plugins: {
+		"unused-imports": unusedImports,
+	},
+	extends: [eslint.configs.recommended, tseslint.configs.all],
+	ignores: ["**/types.ts"],
+	rules: {
+		"no-unused-vars": "off",
+		"@typescript-eslint/no-unused-vars": "off",
+		"@typescript-eslint/no-floating-promises": "error",
+		"@typescript-eslint/parameter-properties": "off",
+		"@typescript-eslint/require-await": "off",
+		"@typescript-eslint/class-methods-use-this": "off",
+		"@typescript-eslint/consistent-return": "off",
+		"@typescript-eslint/no-unsafe-argument": "off",
+		"@typescript-eslint/max-params": [
+			"error",
+			{
+				max: 5,
 			},
-
-			parser: tsParser,
-			ecmaVersion: 5,
-			sourceType: "module",
-		},
-
-		rules: {
-			"no-unused-vars": "off",
-			"@typescript-eslint/no-unused-vars": "off",
-			"unused-imports/no-unused-imports": "error",
-			"unused-imports/no-unused-vars": [
-				"warn",
-				{
-					vars: "all",
-					varsIgnorePattern: "^_",
-					args: "after-used",
-					argsIgnorePattern: "^_",
-				},
-			],
-
-			"@typescript-eslint/ban-ts-comment": "off",
-			"no-prototype-builtins": "off",
-			"@typescript-eslint/no-empty-function": "off",
+		],
+		"unused-imports/no-unused-imports": "error",
+		"@typescript-eslint/no-magic-numbers": "off",
+		"@typescript-eslint/prefer-readonly-parameter-types": "off",
+		"@typescript-eslint/naming-convention": "off",
+		"unused-imports/no-unused-vars": [
+			"warn",
+			{
+				vars: "all",
+				varsIgnorePattern: "^_",
+				args: "after-used",
+				argsIgnorePattern: "^_",
+			},
+		],
+	},
+	languageOptions: {
+		parserOptions: {
+			projectService: true,
+			tsconfigRootDir: import.meta.dirname,
 		},
 	},
-];
+});
