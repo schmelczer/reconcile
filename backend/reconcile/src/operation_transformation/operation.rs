@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
-        let operation = Operation::<()>::create_delete_with_text(5, " world".to_string()).unwrap();
+        let operation = Operation::<()>::create_delete_with_text(5, " world".to_owned()).unwrap();
 
         assert_eq!(operation.apply(builder).build(), "hello");
     }

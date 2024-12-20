@@ -11,7 +11,7 @@ pub struct StringBuilder<'a> {
 }
 
 impl StringBuilder<'_> {
-    pub fn new(original: &str) -> StringBuilder {
+    pub fn new(original: &str) -> StringBuilder<'_> {
         StringBuilder {
             original,
             last_old_char_index: 0,
