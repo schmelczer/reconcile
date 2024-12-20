@@ -12,6 +12,6 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	token: "",
 	vaultName: "default",
 	fetchChangesUpdateIntervalMs: 1000,
-	uploadConcurrency: 10,
-	isSyncEnabled: true,
+	uploadConcurrency: 4,
+	isSyncEnabled: false,
 };
