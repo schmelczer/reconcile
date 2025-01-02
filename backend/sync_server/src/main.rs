@@ -8,6 +8,7 @@ mod server;
 use anyhow::{Context as _, Result};
 use app_state::AppState;
 use errors::{init_error, SyncServerError};
+use log::info;
 use server::create_server;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -27,6 +28,11 @@ async fn main() -> Result<(), SyncServerError> {
         .try_init()
         .context("Failed to initialise tracing")
         .map_err(init_error)?;
+
+    info!(
+        "Starting VaultLink server version {}",
+        env!("CARGO_PKG_VERSION")
+    );
 
     let app_state = AppState::try_new()
         .await
