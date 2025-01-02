@@ -7,11 +7,11 @@ let isRunning = false;
 
 export async function applyRemoteChangesLocally({
 	database,
-	syncServer,
+	syncService,
 	syncer,
 }: {
 	database: Database;
-	syncServer: SyncService;
+	syncService: SyncService;
 	syncer: Syncer;
 }): Promise<void> {
 	if (!database.getSettings().isSyncEnabled) {
@@ -29,7 +29,7 @@ export async function applyRemoteChangesLocally({
 	isRunning = true;
 
 	try {
-		const remote = await syncServer.getAll(database.getLastSeenUpdateId());
+		const remote = await syncService.getAll(database.getLastSeenUpdateId());
 
 		if (remote.latestDocuments.length === 0) {
 			Logger.getInstance().debug("No remote changes to apply");

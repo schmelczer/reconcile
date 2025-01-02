@@ -13,7 +13,7 @@ import type { components } from "src/services/types.js";
 
 export class Syncer {
 	private readonly database: Database;
-	private readonly syncServer: SyncService;
+	private readonly syncService: SyncService;
 	private readonly operations: FileOperations;
 	private readonly history: SyncHistory;
 
@@ -27,17 +27,17 @@ export class Syncer {
 
 	public constructor({
 		database,
-		syncServer,
+		syncService,
 		operations,
 		history,
 	}: {
 		database: Database;
-		syncServer: SyncService;
+		syncService: SyncService;
 		operations: FileOperations;
 		history: SyncHistory;
 	}) {
 		this.database = database;
-		this.syncServer = syncServer;
+		this.syncService = syncService;
 		this.operations = operations;
 		this.history = history;
 
@@ -87,7 +87,7 @@ export class Syncer {
 				const contentBytes = await this.operations.read(relativePath);
 				const contentHash = hash(contentBytes);
 
-				const response = await this.syncServer.create({
+				const response = await this.syncService.create({
 					relativePath,
 					contentBytes,
 					createdDate: updateTime,
@@ -162,7 +162,7 @@ export class Syncer {
 					return;
 				}
 
-				await this.syncServer.delete({
+				await this.syncService.delete({
 					documentId: metadata.documentId,
 					relativePath,
 					// We got the event now, so it must have been deleted just now
@@ -223,7 +223,7 @@ export class Syncer {
 					return;
 				}
 
-				const response = await this.syncServer.put({
+				const response = await this.syncService.put({
 					documentId: metadata.documentId,
 					parentVersionId: metadata.parentVersionId,
 					relativePath,
@@ -462,7 +462,7 @@ export class Syncer {
 					}
 
 					const content = (
-						await this.syncServer.get({
+						await this.syncService.get({
 							documentId: remoteVersion.documentId,
 						})
 					).contentBase64;
@@ -527,7 +527,7 @@ export class Syncer {
 						}
 
 						const content = (
-							await this.syncServer.get({
+							await this.syncService.get({
 								documentId: remoteVersion.documentId,
 							})
 						).contentBase64;
