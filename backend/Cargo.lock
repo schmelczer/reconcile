@@ -1493,7 +1493,7 @@ dependencies = [
 
 [[package]]
 name = "reconcile"
-version = "0.1.0"
+version = "0.0.7"
 dependencies = [
  "insta",
  "pretty_assertions",
@@ -1503,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "reconcile-fuzz"
-version = "0.0.0"
+version = "0.0.7"
 dependencies = [
  "libfuzzer-sys",
  "reconcile",
@@ -2109,7 +2109,7 @@ dependencies = [
 
 [[package]]
 name = "sync_lib"
-version = "0.1.0"
+version = "0.0.7"
 dependencies = [
  "base64 0.22.1",
  "console_error_panic_hook",
@@ -2123,7 +2123,7 @@ dependencies = [
 
 [[package]]
 name = "sync_server"
-version = "0.0.2"
+version = "0.0.7"
 dependencies = [
  "aide",
  "anyhow",
