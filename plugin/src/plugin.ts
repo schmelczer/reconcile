@@ -21,6 +21,7 @@ export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
 	private readonly operations = new ObsidianFileOperations(this.app.vault);
 	private readonly history = new SyncHistory();
+	private settingsTab: SyncSettingsTab;
 
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
@@ -48,11 +49,16 @@ export default class SyncPlugin extends Plugin {
 			history: this.history,
 		});
 
-		this.addSettingTab(
-			new SyncSettingsTab(this.app, this, database, syncServer, syncer)
+		this.settingsTab = new SyncSettingsTab(
+			this.app,
+			this,
+			database,
+			syncServer,
+			syncer
 		);
+		this.addSettingTab(this.settingsTab);
 
-		new StatusBar(this, this.history, syncer);
+		new StatusBar(database, this, this.history, syncer);
 
 		const eventHandler = new ObsidianFileEventHandler(syncer);
 
@@ -130,6 +136,13 @@ export default class SyncPlugin extends Plugin {
 		if (this.remoteListenerIntervalId !== null) {
 			window.clearInterval(this.remoteListenerIntervalId);
 		}
+	}
+
+	public openSettings() {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(this.app as any).setting.open(); // this is undocumented
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(this.app as any).setting.openTab(this.settingsTab); // this is undocumented
 	}
 
 	private async activateView(type: string): Promise<void> {
