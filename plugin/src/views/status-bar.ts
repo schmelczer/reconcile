@@ -1,4 +1,5 @@
-import type { Plugin } from "obsidian";
+import type { Database } from "src/database/database";
+import type SyncPlugin from "src/plugin";
 import type { Syncer } from "src/sync-operations/syncer";
 import type { HistoryStats, SyncHistory } from "src/tracing/sync-history";
 
@@ -8,7 +9,12 @@ export class StatusBar {
 	private lastHistoryStats: HistoryStats | undefined;
 	private lastRemaining: number | undefined;
 
-	public constructor(plugin: Plugin, history: SyncHistory, syncer: Syncer) {
+	public constructor(
+		private readonly database: Database,
+		private readonly plugin: SyncPlugin,
+		history: SyncHistory,
+		syncer: Syncer
+	) {
 		this.statusBarItem = plugin.addStatusBarItem();
 		history.addSyncHistoryUpdateListener((status) => {
 			this.lastHistoryStats = status;
@@ -19,13 +25,51 @@ export class StatusBar {
 			this.lastRemaining = remainingOperations;
 			this.updateStatus();
 		});
+
+		database.addOnSettingsChangeHandlers(() => {
+			this.updateStatus();
+		});
 	}
 
 	private updateStatus(): void {
-		this.statusBarItem.setText(
-			`${this.lastRemaining ?? 0} ⏳ | ${
-				this.lastHistoryStats?.success ?? 0
-			} ✅ | ${this.lastHistoryStats?.error ?? 0} ❌`
-		);
+		this.statusBarItem.empty();
+		const container = this.statusBarItem.createDiv({
+			cls: ["sync-status"],
+		});
+
+		let hasShownMessage = false;
+
+		if ((this.lastRemaining ?? 0) > 0) {
+			hasShownMessage = true;
+			container.createSpan({ text: `${this.lastRemaining} ⏳` });
+		}
+
+		if ((this.lastHistoryStats?.success ?? 0) > 0) {
+			hasShownMessage = true;
+			container.createSpan({
+				text: `${this.lastHistoryStats?.success ?? 0} ✅`,
+			});
+		}
+
+		if ((this.lastHistoryStats?.error ?? 0) > 0) {
+			hasShownMessage = true;
+			container.createSpan({
+				text: `${this.lastHistoryStats?.error ?? 0} ❌`,
+			});
+		}
+
+		if (!hasShownMessage) {
+			if (this.database.getSettings().isSyncEnabled) {
+				container.createSpan({ text: "VaultLink is idle" });
+			} else {
+				const button = container.createEl("button", {
+					text: "VaultLink is disabled, click to configure",
+					cls: "initialize-button",
+				});
+				button.onclick = (): void => {
+					this.plugin.openSettings();
+				};
+			}
+		}
 	}
 }
