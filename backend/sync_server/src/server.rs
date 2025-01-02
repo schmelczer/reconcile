@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use aide::{
     axum::{
         routing::{delete, get, post, put},
@@ -5,15 +7,16 @@ use aide::{
     },
     openapi::{Info, OpenApi},
     scalar::Scalar,
+    transform::TransformOpenApi,
 };
-use anyhow::{Context as _, Result};
+use anyhow::{anyhow, Context as _, Result};
 use axum::{
     extract::{DefaultBodyLimit, Request},
-    http::{self, HeaderValue, Method, StatusCode},
+    http::{self, HeaderValue, Method},
     response::IntoResponse,
     Extension, Json,
 };
-use log::info;
+use log::{error, info};
 use tokio::signal;
 use tower_http::{
     cors::CorsLayer,
@@ -25,7 +28,10 @@ use tower_http::{
 };
 use tracing::{info_span, Level};
 
-use crate::app_state::AppState;
+use crate::{
+    app_state::AppState,
+    errors::{not_found_error, SerializedError},
+};
 mod auth;
 mod create_document;
 mod delete_document;
@@ -37,6 +43,9 @@ mod responses;
 mod update_document;
 
 pub async fn create_server(app_state: AppState) -> Result<()> {
+    aide::gen::on_error(|err| error!("{err}"));
+    aide::gen::extract_schemas(true);
+
     let address = format!(
         "{}:{}",
         &app_state.config.server.host, &app_state.config.server.port
@@ -44,7 +53,12 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
 
     let mut api = OpenApi {
         info: Info {
-            description: Some("an example API".to_owned()),
+            title: "VaultLink sync server".to_owned(),
+            summary: Some(
+                "Simple API for syncing documents between concurrent clients.".to_owned(),
+            ),
+            description: Some(include_str!("../README.md").to_owned()),
+            version: env!("CARGO_PKG_VERSION").to_owned(),
             ..Info::default()
         },
         ..OpenApi::default()
@@ -103,8 +117,8 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
         )
         .with_state(app_state)
-        .finish_api(&mut api)
-        .layer(Extension(api))
+        .finish_api_with(&mut api, api_docs)
+        .layer(Extension(Arc::new(api))) // https://github.com/tamasfe/aide/blob/507f4a8822bc0c13cbda0f589da1e0f4cbcdb812/examples/example-axum/src/main.rs#L39
         .fallback(handler_404)
         .into_make_service();
 
@@ -126,7 +140,16 @@ pub async fn create_server(app_state: AppState) -> Result<()> {
         .context("Failed to start server")
 }
 
-async fn serve_api(Extension(api): Extension<OpenApi>) -> impl IntoResponse { Json(api) }
+async fn serve_api(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse { Json(api) }
+
+fn api_docs(api: TransformOpenApi<'_>) -> TransformOpenApi<'_> {
+    api.default_response_with::<Json<SerializedError>, _>(|res| {
+        res.example(SerializedError {
+            message: "An error has occurred".to_owned(),
+            causes: vec![],
+        })
+    })
+}
 
 async fn shutdown_signal() {
     let ctrl_c = async {
@@ -152,4 +175,4 @@ async fn shutdown_signal() {
     }
 }
 
-async fn handler_404() -> impl IntoResponse { (StatusCode::NOT_FOUND, "nothing to see here") }
+async fn handler_404() -> impl IntoResponse { not_found_error(anyhow!("Page not found")) }
