@@ -6,11 +6,10 @@ export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
 	public static readonly ICON = "logs";
 
-	private timer: NodeJS.Timer | null = null;
-
 	public constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
 		this.icon = LogsView.ICON;
+		Logger.getInstance().addOnMessageListener(() => this.updateView());
 	}
 
 	public getViewType(): string {
@@ -22,15 +21,7 @@ export class LogsView extends ItemView {
 	}
 
 	public async onOpen(): Promise<void> {
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.timer = setInterval(async () => this.updateView(), 250);
-	}
-
-	public async onClose(): Promise<void> {
-		if (this.timer) {
-			clearInterval(this.timer);
-			this.timer = null;
-		}
+		await this.updateView();
 	}
 
 	private async updateView(): Promise<void> {
@@ -39,11 +30,22 @@ export class LogsView extends ItemView {
 
 		container.createEl("h4", { text: "VaultLink logs" });
 
-		const messages = Logger.getInstance()
+		Logger.getInstance()
 			.getMessages(LogLevel.DEBUG)
-			.map((message) => message.toString())
-			.join("\n");
+			.forEach((message) => {
+				const messageContainer = container.createDiv({
+					cls: ["log-message", message.level],
+				});
+				messageContainer.createEl("span", {
+					text: ` | ${LogsView.formatTimestamp(
+						message.timestamp
+					)} | `,
+				});
+				messageContainer.createEl("span", { text: message.message });
+			});
+	}
 
-		container.createEl("pre", { text: messages });
+	private static formatTimestamp(timestamp: Date): string {
+		return timestamp.toTimeString().split(" ")[0];
 	}
 }

@@ -3,6 +3,26 @@
 	height: 100px;
 }
 
+.log-message {
+	&.DEBUG {
+		color: var(--color-base-50);
+	}
+
+	&.INFO {
+		color: var(--color-base-70);
+	}
+
+	&.WARNING {
+		color: var(--color-yellow-70);
+	}
+
+	&.ERROR {
+		color: var(--color-red-70);
+	}
+
+	font: var(--font-monospace-theme);
+}
+
 .history-card * {
 	margin: 0;
 	padding: 0;

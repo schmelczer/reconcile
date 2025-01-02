@@ -10,27 +10,6 @@ export enum LogLevel {
 class LogLine {
 	public timestamp = new Date();
 	public constructor(public level: LogLevel, public message: string) {}
-
-	public toString(): string {
-		return `| ${this.formatLevel()} | ${this.timestamp.getHours()}:${this.timestamp.getMinutes()}:${this.timestamp.getSeconds()} | ${
-			this.message
-		}`;
-	}
-
-	private formatLevel(): string {
-		switch (this.level) {
-			case LogLevel.DEBUG:
-				return "  DEBUG";
-			case LogLevel.INFO:
-				return "   INFO";
-			case LogLevel.WARNING:
-				return "WARNING";
-			case LogLevel.ERROR:
-				return "  ERROR";
-			default:
-				return "UNKNOWN";
-		}
-	}
 }
 
 export class Logger {
@@ -38,6 +17,10 @@ export class Logger {
 
 	private static instance: Logger | null = null;
 	private readonly messages: LogLine[] = [];
+
+	private readonly onMessageListeners: ((
+		status: LogLine | undefined
+	) => void)[] = [];
 
 	private constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
 
@@ -49,18 +32,33 @@ export class Logger {
 	}
 
 	public debug(message: string): void {
+		if (process.env.NODE_ENV !== "production") {
+			console.debug(`${message}`);
+		}
 		this.pushMessage(message, LogLevel.DEBUG);
 	}
 
 	public info(message: string): void {
+		if (process.env.NODE_ENV !== "production") {
+			console.info(`${message}`);
+		}
+
 		this.pushMessage(message, LogLevel.INFO);
 	}
 
 	public warn(message: string): void {
+		if (process.env.NODE_ENV !== "production") {
+			console.warn(`${message}`);
+		}
+
 		this.pushMessage(message, LogLevel.WARNING);
 	}
 
 	public error(message: string): void {
+		if (process.env.NODE_ENV !== "production") {
+			console.error(`${message}`);
+		}
+
 		this.pushMessage(message, LogLevel.ERROR);
 		new Notice(message, 5000);
 	}
@@ -71,11 +69,25 @@ export class Logger {
 		);
 	}
 
+	public addOnMessageListener(
+		listener: (message: LogLine | undefined) => void
+	): void {
+		this.onMessageListeners.push(listener);
+	}
+
+	public reset(): void {
+		this.messages.length = 0;
+		this.onMessageListeners.forEach((listener) => listener(undefined));
+	}
+
 	private pushMessage(message: string, level: LogLevel): void {
-		console.log(`[${level}] ${message}`);
-		this.messages.push(new LogLine(level, message));
-		if (this.messages.length > Logger.MAX_MESSAGES) {
+		const logLine = new LogLine(level, message);
+		this.messages.push(logLine);
+
+		while (this.messages.length > Logger.MAX_MESSAGES) {
 			this.messages.shift();
 		}
+
+		this.onMessageListeners.forEach((listener) => listener(logLine));
 	}
 }
