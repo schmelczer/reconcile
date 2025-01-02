@@ -32,6 +32,8 @@ export default class SyncPlugin extends Plugin {
 			)
 		);
 
+		lib.setPanicHook();
+
 		const database = new Database(
 			await this.loadData(),
 			this.saveData.bind(this)
@@ -106,7 +108,7 @@ export default class SyncPlugin extends Plugin {
 
 		this.registerView(
 			HistoryView.TYPE,
-			(leaf) => new HistoryView(leaf, this.history)
+			(leaf) => new HistoryView(leaf, database, this.history)
 		);
 		this.registerView(LogsView.TYPE, (leaf) => new LogsView(leaf));
 

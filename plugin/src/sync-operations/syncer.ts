@@ -1,25 +1,21 @@
-import { Database } from "src/database/database";
-import { RelativePath } from "src/database/document-metadata";
-import { FileOperations } from "src/file-operations/file-operations";
+import type { Database } from "src/database/database";
+import type { RelativePath } from "src/database/document-metadata";
+import type { FileOperations } from "src/file-operations/file-operations";
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
-import { SyncService } from "src/services/sync-service";
+import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
-import {
-	SyncHistory,
-	SyncSource,
-	SyncStatus,
-	SyncType,
-} from "src/tracing/sync-history";
+import type { SyncHistory } from "src/tracing/sync-history";
+import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history";
 import { unlockDocument, waitForDocumentLock } from "./document-lock";
 import PQueue from "p-queue";
 import { EMPTY_HASH, hash } from "src/utils/hash";
-import { components } from "src/services/types.js";
+import type { components } from "src/services/types.js";
 
 export class Syncer {
-	private database: Database;
-	private syncServer: SyncService;
-	private operations: FileOperations;
-	private history: SyncHistory;
+	private readonly database: Database;
+	private readonly syncServer: SyncService;
+	private readonly operations: FileOperations;
+	private readonly history: SyncHistory;
 
 	private isRunningOfflineSync = false;
 
@@ -57,16 +53,16 @@ export class Syncer {
 			this.offlineSyncQueue.concurrency = settings.syncConcurrency;
 		});
 
-		this.fileSyncQueue.on("active", () =>
+		this.fileSyncQueue.on("active", () => {
 			this.emitRemainingOperationsChange(
 				this.fileSyncQueue.size + this.offlineSyncQueue.size
-			)
-		);
-		this.offlineSyncQueue.on("active", () =>
+			);
+		});
+		this.offlineSyncQueue.on("active", () => {
 			this.emitRemainingOperationsChange(
 				this.fileSyncQueue.size + this.offlineSyncQueue.size
-			)
-		);
+			);
+		});
 	}
 
 	public addRemainingOperationsListener(
@@ -105,9 +101,7 @@ export class Syncer {
 					type: SyncType.CREATE,
 				});
 
-				const responseBytes = lib.base64_to_bytes(
-					response.contentBase64
-				);
+				const responseBytes = lib.base64ToBytes(response.contentBase64);
 				const responseHash = hash(responseBytes);
 
 				if (contentHash !== responseHash) {
@@ -270,9 +264,7 @@ export class Syncer {
 					return;
 				}
 
-				const responseBytes = lib.base64_to_bytes(
-					response.contentBase64
-				);
+				const responseBytes = lib.base64ToBytes(response.contentBase64);
 				const responseHash = hash(responseBytes);
 
 				if (response.relativePath != relativePath) {
@@ -359,7 +351,7 @@ export class Syncer {
 			].filter(([path, _]) => !allLocalFiles.includes(path));
 
 			await Promise.all(
-				allLocalFiles.map((relativePath) =>
+				allLocalFiles.map(async (relativePath) =>
 					this.offlineSyncQueue.add(async () => {
 						const metadata =
 							this.database.getDocument(relativePath);
@@ -474,7 +466,7 @@ export class Syncer {
 							documentId: remoteVersion.documentId,
 						})
 					).contentBase64;
-					const contentBytes = lib.base64_to_bytes(content);
+					const contentBytes = lib.base64ToBytes(content);
 					const contentHash = hash(contentBytes);
 
 					await this.operations.create(
@@ -539,7 +531,7 @@ export class Syncer {
 								documentId: remoteVersion.documentId,
 							})
 						).contentBase64;
-						const contentBytes = lib.base64_to_bytes(content);
+						const contentBytes = lib.base64ToBytes(content);
 						const contentHash = hash(contentBytes);
 
 						if (relativePath !== remoteVersion.relativePath) {
@@ -592,7 +584,9 @@ export class Syncer {
 		await this.fileSyncQueue.onEmpty();
 		await this.database.resetSyncState();
 		this.history.reset();
-		this.remainingOperationsListeners.forEach((listener) => listener(0));
+		this.remainingOperationsListeners.forEach((listener) => {
+			listener(0);
+		});
 	}
 
 	private async safelySync(

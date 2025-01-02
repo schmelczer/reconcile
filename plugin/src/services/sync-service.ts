@@ -84,7 +84,7 @@ export class SyncService {
 					},
 				},
 				body: {
-					contentBase64: lib.bytes_to_base64(contentBytes),
+					contentBase64: lib.bytesToBase64(contentBytes),
 					createdDate: createdDate.toISOString(),
 					relativePath,
 				},
@@ -137,7 +137,7 @@ export class SyncService {
 				},
 				body: {
 					parentVersionId,
-					contentBase64: lib.bytes_to_base64(contentBytes),
+					contentBase64: lib.bytesToBase64(contentBytes),
 					createdDate: createdDate.toISOString(),
 					relativePath,
 				},
