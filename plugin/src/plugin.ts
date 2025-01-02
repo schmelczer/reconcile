@@ -16,12 +16,13 @@ import { Logger } from "./tracing/logger.js";
 import { SyncHistory } from "./tracing/sync-history.js";
 import { LogsView } from "./views/logs-view.js";
 import { Syncer } from "./sync-operations/syncer.js";
+import { StatusDescription } from "./views/status-description.js";
 
 export default class SyncPlugin extends Plugin {
-	private remoteListenerIntervalId: number | null = null;
 	private readonly operations = new ObsidianFileOperations(this.app.vault);
 	private readonly history = new SyncHistory();
 	private settingsTab: SyncSettingsTab;
+	private remoteListenerIntervalId: number | null = null;
 
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
@@ -40,22 +41,30 @@ export default class SyncPlugin extends Plugin {
 			this.saveData.bind(this)
 		);
 
-		const syncServer = new SyncService(database);
+		const syncService = new SyncService(database);
 
 		const syncer = new Syncer({
 			database,
 			operations: this.operations,
-			syncServer,
+			syncService,
 			history: this.history,
 		});
 
-		this.settingsTab = new SyncSettingsTab(
-			this.app,
-			this,
+		const statusDescription = new StatusDescription(
 			database,
-			syncServer,
+			syncService,
+			this.history,
 			syncer
 		);
+
+		this.settingsTab = new SyncSettingsTab({
+			app: this.app,
+			plugin: this,
+			database,
+			syncService,
+			statusDescription,
+			syncer,
+		});
 		this.addSettingTab(this.settingsTab);
 
 		new StatusBar(database, this, this.history, syncer);
@@ -86,14 +95,14 @@ export default class SyncPlugin extends Plugin {
 				this.registerEvent(event);
 			});
 
-			await syncer.scheduleSyncForOfflineChanges();
-
 			Logger.getInstance().info("Sync handlers initialised");
+
+			void syncer.scheduleSyncForOfflineChanges();
 		});
 
 		this.registerRemoteEventListener(
 			database,
-			syncServer,
+			syncService,
 			syncer,
 			database.getSettings().fetchChangesUpdateIntervalMs
 		);
@@ -102,7 +111,7 @@ export default class SyncPlugin extends Plugin {
 		database.addOnSettingsChangeHandlers(async (settings, oldSettings) => {
 			this.registerRemoteEventListener(
 				database,
-				syncServer,
+				syncService,
 				syncer,
 				settings.fetchChangesUpdateIntervalMs
 			);
@@ -130,6 +139,8 @@ export default class SyncPlugin extends Plugin {
 		);
 
 		Logger.getInstance().info("Plugin loaded");
+
+		this.openSettings();
 	}
 
 	public onunload(): void {
@@ -138,14 +149,19 @@ export default class SyncPlugin extends Plugin {
 		}
 	}
 
-	public openSettings() {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	public openSettings(): void {
+		// eslint-disable-next-line
 		(this.app as any).setting.open(); // this is undocumented
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		// eslint-disable-next-line
 		(this.app as any).setting.openTab(this.settingsTab); // this is undocumented
 	}
 
-	private async activateView(type: string): Promise<void> {
+	public closeSettings(): void {
+		// eslint-disable-next-line
+		(this.app as any).setting.close(); // this is undocumented
+	}
+
+	public async activateView(type: string): Promise<void> {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -165,7 +181,7 @@ export default class SyncPlugin extends Plugin {
 
 	private registerRemoteEventListener(
 		database: Database,
-		syncServer: SyncService,
+		syncService: SyncService,
 		syncer: Syncer,
 		intervalMs: number
 	): void {
@@ -178,7 +194,7 @@ export default class SyncPlugin extends Plugin {
 			async () =>
 				applyRemoteChangesLocally({
 					database,
-					syncServer,
+					syncService,
 					syncer,
 				}),
 			intervalMs
