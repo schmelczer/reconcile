@@ -1,3 +1,8 @@
+## VaultLink self-hosted Obsidian sync plugin
+
+[![Check](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/check.yml/badge.svg)](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/check.yml)
+[![Publish Docker](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/publish-docker.yml)
+[![Publish plugin](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/publish-plugin.yml/badge.svg)](https://github.com/schmelczer/obsidian-shared-sync/actions/workflows/publish-plugin.yml)
 
 
 ## Install [nvm](https://github.com/nvm-sh/nvm)
