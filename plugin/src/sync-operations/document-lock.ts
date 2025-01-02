@@ -1,7 +1,7 @@
 import type { RelativePath } from "src/database/document-metadata";
 
-const locked = new Set<RelativePath>(),
-	waiters = new Map<RelativePath, (() => void)[]>();
+const locked = new Set<RelativePath>();
+const waiters = new Map<RelativePath, (() => void)[]>();
 
 export function tryLockDocument(relativePath: RelativePath): boolean {
 	if (locked.has(relativePath)) {
@@ -32,10 +32,14 @@ export async function waitForDocumentLock(
 
 export function unlockDocument(relativePath: RelativePath): void {
 	if (!locked.has(relativePath)) {
-		throw new Error(`Document ${relativePath} is not locked`);
+		throw new Error(
+			`Document ${relativePath} is not locked, cannot unlock`
+		);
 	}
 
+	// Remove the first element to ensure FIFO unblocking order
 	const nextWaiting = waiters.get(relativePath)?.shift();
+
 	if (nextWaiting) {
 		nextWaiting();
 	} else {
