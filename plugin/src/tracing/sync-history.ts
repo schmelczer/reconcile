@@ -36,10 +36,12 @@ export interface HistoryStats {
 export class SyncHistory {
 	private static readonly MAX_ENTRIES = 1000;
 
-	private entries: HistoryEntry[] = [];
+	private readonly entries: HistoryEntry[] = [];
+
 	private readonly syncHistoryUpdateListeners: ((
 		status: HistoryStats
 	) => void)[] = [];
+
 	private status: HistoryStats = {
 		success: 0,
 		error: 0,
@@ -50,7 +52,7 @@ export class SyncHistory {
 	}
 
 	public reset(): void {
-		this.entries = [];
+		this.entries.length = 0;
 		this.status = {
 			success: 0,
 			error: 0,
