@@ -1,16 +1,18 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type { SyncHistory } from "src/tracing/sync-history";
-import { SyncSource } from "src/tracing/sync-history";
+import { SyncSource, SyncStatus } from "src/tracing/sync-history";
 import { intlFormatDistance } from "date-fns";
+import { Database } from "src/database/database";
 
 export class HistoryView extends ItemView {
-	public static readonly TYPE = "example-view";
+	public static readonly TYPE = "history-view";
 	public static readonly ICON = "square-stack";
 	private timer: NodeJS.Timer | null = null;
 
 	public constructor(
 		leaf: WorkspaceLeaf,
+		private readonly database: Database,
 		private readonly history: SyncHistory
 	) {
 		super(leaf);
@@ -33,22 +35,18 @@ export class HistoryView extends ItemView {
 		}
 	}
 
-	private static formatTime(timestamp: Date): string {
-		return intlFormatDistance(timestamp, new Date());
-	}
-
 	public getViewType(): string {
 		return HistoryView.TYPE;
 	}
 
 	public getDisplayText(): string {
-		return "Example view";
+		return "VaultLink history";
 	}
 
 	public async onOpen(): Promise<void> {
 		await this.updateView();
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.timer = setInterval(async () => this.updateView(), 500);
+		this.timer = setInterval(async () => this.updateView(), 1000);
 	}
 
 	public async onClose(): Promise<void> {
@@ -65,6 +63,11 @@ export class HistoryView extends ItemView {
 		this.history
 			.getEntries()
 			.reverse()
+			.filter(
+				(entry) =>
+					entry.status !== SyncStatus.NO_OP ||
+					this.database.getSettings().displayNoopSyncEvents
+			)
 			.forEach((entry) => {
 				const card = container.createDiv({
 					cls: ["history-card", entry.status.toLocaleLowerCase()],
@@ -77,7 +80,7 @@ export class HistoryView extends ItemView {
 					cls: "history-card-title",
 				});
 				header.createSpan({
-					text: HistoryView.formatTime(entry.timestamp),
+					text: intlFormatDistance(entry.timestamp, new Date()),
 					cls: "history-card-timestamp",
 				});
 				card.createEl("p", {

@@ -5,6 +5,7 @@ export interface SyncSettings {
 	fetchChangesUpdateIntervalMs: number;
 	syncConcurrency: number;
 	isSyncEnabled: boolean;
+	displayNoopSyncEvents: boolean;
 }
 
 export const DEFAULT_SETTINGS: SyncSettings = {
@@ -14,4 +15,5 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	fetchChangesUpdateIntervalMs: 1000,
 	syncConcurrency: 1,
 	isSyncEnabled: false,
+	displayNoopSyncEvents: false,
 };
