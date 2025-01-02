@@ -22,19 +22,21 @@
 - `cargo install cargo-insta sqlx-cli cargo-edit`
 
 
-## cut new version 
+## Publish new version 
 
 ```sh
-cd plugin
-npm version patch
-git tag -a 0.0.2 -m "0.0.2"
-git push origin 0.0.2
+./bump-version.sh patch
 ```
 
+
+## Update HTTP API TS bindings
+
+```sh 
 npm install -g openapi-typescript
 openapi-typescript http://localhost:3030/api.json --output plugin/src/services/types.ts
+```
 
-
+```
 ## Todos
 
 - Add users to vaults
@@ -43,14 +45,14 @@ openapi-typescript http://localhost:3030/api.json --output plugin/src/services/t
 - e2e tests
 - add clap
 - add auth middleware
-- run eslint in ci
-
+- shard db per user
+- update card title max width
+- retry
 - CI for:
     - publish reconcile
     - cross-platform build server
     - run load test on server
     - build and publish plugin with openapi types
-    - build docker image
 
 todo: enable
 [workspace.lints.clippy]
@@ -66,9 +68,4 @@ implicit_return = { level = "allow", priority = 1 }
 pedantic = { level = "warn", priority = 0 }
 cargo = { level = "warn", priority = 0 }
 
-
-update card title max width
-reset should reset counters
-access logs
-retry
-mem usage
+```
