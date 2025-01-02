@@ -23,6 +23,18 @@ export class SyncService {
 		});
 	}
 
+	private static formatError(
+		error: components["schemas"]["SerializedError"]
+	): string {
+		let result = error.message;
+		if (error.causes.length > 0) {
+			const causes = error.causes.join(", ");
+			result += ` caused by: ${causes}`;
+		}
+
+		return result;
+	}
+
 	public async ping(): Promise<components["schemas"]["PingResponse"]> {
 		const response = await this.client.GET("/ping", {
 			params: {
@@ -39,7 +51,11 @@ export class SyncService {
 		);
 
 		if (!response.data) {
-			throw new Error(`Failed to ping server: ${response.error}`);
+			throw new Error(
+				`Failed to ping server: ${SyncService.formatError(
+					response.error
+				)}`
+			);
 		}
 
 		return response.data;
@@ -76,7 +92,11 @@ export class SyncService {
 		);
 
 		if (!response.data) {
-			throw new Error(`Failed to create document: ${response.error}`);
+			throw new Error(
+				`Failed to create document: ${SyncService.formatError(
+					response.error
+				)}`
+			);
 		}
 
 		Logger.getInstance().debug(
@@ -125,7 +145,11 @@ export class SyncService {
 		);
 
 		if (!response.data) {
-			throw new Error(`Failed to update document: ${response.error}`);
+			throw new Error(
+				`Failed to update document: ${SyncService.formatError(
+					response.error
+				)}`
+			);
 		}
 
 		Logger.getInstance().debug(
@@ -199,7 +223,11 @@ export class SyncService {
 		);
 
 		if (!response.data) {
-			throw new Error(`Failed to get document: ${response.error}`);
+			throw new Error(
+				`Failed to get document: ${SyncService.formatError(
+					response.error
+				)}`
+			);
 		}
 
 		Logger.getInstance().debug(
@@ -230,7 +258,11 @@ export class SyncService {
 
 		const { error } = response;
 		if (error) {
-			throw new Error(`Failed to get documents: ${error}`);
+			throw new Error(
+				`Failed to get documents: ${SyncService.formatError(
+					response.error
+				)}`
+			);
 		}
 
 		Logger.getInstance().debug(

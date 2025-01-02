@@ -23,9 +23,19 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: Record<string, unknown>;
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content: {
                         "application/json": components["schemas"]["PingResponse"];
+                    };
+                };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
                     };
                 };
             };
@@ -61,9 +71,19 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: Record<string, unknown>;
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content: {
                         "application/json": components["schemas"]["FetchLatestDocumentsResponse"];
+                    };
+                };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
                     };
                 };
             };
@@ -87,9 +107,19 @@ export interface paths {
             };
             responses: {
                 200: {
-                    headers: Record<string, unknown>;
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
+                    };
+                };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
                     };
                 };
             };
@@ -122,9 +152,19 @@ export interface paths {
             requestBody?: never;
             responses: {
                 200: {
-                    headers: Record<string, unknown>;
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
+                    };
+                };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
                     };
                 };
             };
@@ -148,9 +188,19 @@ export interface paths {
             };
             responses: {
                 200: {
-                    headers: Record<string, unknown>;
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content: {
                         "application/json": components["schemas"]["DocumentVersion"];
+                    };
+                };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
                     };
                 };
             };
@@ -176,48 +226,21 @@ export interface paths {
             responses: {
                 /** @description no content */
                 200: {
-                    headers: Record<string, unknown>;
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ws": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description websocket upgrade */
-                101: {
                     headers: {
-                        connection?: "upgrade";
-                        upgrade?: "websocket";
-                        "sec-websocket-key"?: string;
-                        "sec-websocket-protocol"?: string;
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SerializedError"];
+                    };
+                };
             };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -298,6 +321,10 @@ export interface components {
         QueryParams: {
             /** Format: int64 */
             since_update_id?: number | null;
+        };
+        SerializedError: {
+            causes: string[];
+            message: string;
         };
         UpdateDocumentVersion: {
             contentBase64: string;
