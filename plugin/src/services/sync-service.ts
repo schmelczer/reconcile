@@ -11,7 +11,12 @@ import type {
 	VaultUpdateId,
 } from "src/database/document-metadata";
 import { Logger } from "src/tracing/logger.js";
+import { retriedFetch } from "src/utils/retried-fetch.js";
 
+export interface CheckConnectionResult {
+	isSuccessful: boolean;
+	message: string;
+}
 export class SyncService {
 	private client: Client<paths>;
 
@@ -272,9 +277,32 @@ export class SyncService {
 		return response.data;
 	}
 
+	public async checkConnection(): Promise<CheckConnectionResult> {
+		try {
+			const result = await this.ping();
+			if (result.isAuthenticated) {
+				return {
+					isSuccessful: true,
+					message: `Successfully connected to server (version: ${result.serverVersion}) and authenticated.`,
+				};
+			}
+
+			return {
+				isSuccessful: false,
+				message: `Successfully connected to server (version: ${result.serverVersion}) but failed to authenticate.`,
+			};
+		} catch (e) {
+			return {
+				isSuccessful: false,
+				message: `Failed to connect to server: ${e}`,
+			};
+		}
+	}
+
 	private createClient(settings: SyncSettings): void {
 		this.client = createClient<paths>({
 			baseUrl: settings.remoteUri,
+			fetch: retriedFetch,
 		});
 	}
 }
