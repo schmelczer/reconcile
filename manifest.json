@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sync & Share",
+	"id": "vault-link",
+	"name": "VaultLink",
 	"version": "0.0.7",
 	"minAppVersion": "0.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Self-hosted synchronization and collaboration for your Vault.",
+	"author": "Andras Schmelczer",
+	"authorUrl": "https://schmelczer.dev",
 	"isDesktopOnly": false
 }

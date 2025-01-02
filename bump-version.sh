@@ -27,6 +27,7 @@ cargo set-version --bump patch
 cd ../plugin
 npm version patch
 cd ..
+cp plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
 git add .
 TAG=$(node -p "require('./package.json').version")
 git commit -m "Bump versions to $TAG"
