@@ -12,18 +12,18 @@ pub mod errors;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = bytesToBase64)]
 pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD_NO_PAD.encode(input) }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = stringToBase64)]
 pub fn string_to_base64(input: &str) -> String { bytes_to_base64(input.as_bytes()) }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = base64ToBytes)]
 pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
     STANDARD_NO_PAD.decode(input).map_err(SyncLibError::from)
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = base64ToString)]
 pub fn base64_to_string(input: &str) -> Result<String, SyncLibError> {
     let bytes = base64_to_bytes(input)?;
     String::from_utf8(bytes).map_err(SyncLibError::from)
@@ -43,9 +43,15 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Result<Vec<u8>, SyncLi
     })
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = mergeText)]
+pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
+    reconcile::reconcile(parent, left, right)
+}
+
+#[wasm_bindgen(js_name = isBinary)]
 pub fn is_binary(data: &[u8]) -> bool { data.iter().any(|&b| b == 0) }
 
+#[wasm_bindgen(js_name = setPanicHook)]
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
