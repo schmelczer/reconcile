@@ -11,11 +11,11 @@ import { SyncService } from "./services/sync-service";
 import { Database } from "./database/database";
 import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
 import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
-import { applyLocalChangesRemotely } from "./sync-operations/apply-local-changes-remotely";
 import { StatusBar } from "./views/status-bar";
 import { Logger } from "./tracing/logger.js";
 import { SyncHistory } from "./tracing/sync-history.js";
 import { LogsView } from "./views/logs-view.js";
+import { Syncer } from "./sync-operations/syncer.js";
 
 export default class SyncPlugin extends Plugin {
 	private remoteListenerIntervalId: number | null = null;
@@ -39,24 +39,20 @@ export default class SyncPlugin extends Plugin {
 
 		const syncServer = new SyncService(database);
 
-		new StatusBar(this, this.history);
+		const syncer = new Syncer({
+			database,
+			operations: this.operations,
+			syncServer,
+			history: this.history,
+		});
 
 		this.addSettingTab(
-			new SyncSettingsTab(
-				this.app,
-				this,
-				database,
-				syncServer,
-				this.history
-			)
+			new SyncSettingsTab(this.app, this, database, syncServer, syncer)
 		);
 
-		const eventHandler = new ObsidianFileEventHandler(
-			database,
-			syncServer,
-			this.operations,
-			this.history
-		);
+		new StatusBar(this, this.history, syncer);
+
+		const eventHandler = new ObsidianFileEventHandler(syncer);
 
 		this.app.workspace.onLayoutReady(async () => {
 			Logger.getInstance().info("Initialising sync handlers");
@@ -82,12 +78,7 @@ export default class SyncPlugin extends Plugin {
 				this.registerEvent(event);
 			});
 
-			await applyLocalChangesRemotely({
-				database,
-				syncServer,
-				operations: this.operations,
-				history: this.history,
-			});
+			await syncer.scheduleSyncForOfflineChanges();
 
 			Logger.getInstance().info("Sync handlers initialised");
 		});
@@ -95,6 +86,7 @@ export default class SyncPlugin extends Plugin {
 		this.registerRemoteEventListener(
 			database,
 			syncServer,
+			syncer,
 			database.getSettings().fetchChangesUpdateIntervalMs
 		);
 
@@ -103,16 +95,12 @@ export default class SyncPlugin extends Plugin {
 			this.registerRemoteEventListener(
 				database,
 				syncServer,
+				syncer,
 				settings.fetchChangesUpdateIntervalMs
 			);
 
 			if (!oldSettings.isSyncEnabled && settings.isSyncEnabled) {
-				await applyLocalChangesRemotely({
-					database: database,
-					syncServer,
-					operations: this.operations,
-					history: this.history,
-				});
+				await syncer.scheduleSyncForOfflineChanges();
 			}
 		});
 
@@ -163,6 +151,7 @@ export default class SyncPlugin extends Plugin {
 	private registerRemoteEventListener(
 		database: Database,
 		syncServer: SyncService,
+		syncer: Syncer,
 		intervalMs: number
 	): void {
 		if (this.remoteListenerIntervalId !== null) {
@@ -175,8 +164,7 @@ export default class SyncPlugin extends Plugin {
 				applyRemoteChangesLocally({
 					database,
 					syncServer,
-					operations: this.operations,
-					history: this.history,
+					syncer,
 				}),
 			intervalMs
 		);

@@ -1,22 +1,20 @@
 import type { Database } from "src/database/database";
 import type { FileOperations } from "src/file-operations/file-operations";
 import type { SyncService } from "src/services/sync-service";
-import { syncRemotelyUpdatedFile } from "./sync-remotely-updated-file";
 import { Logger } from "src/tracing/logger";
 import type { SyncHistory } from "src/tracing/sync-history";
+import { Syncer } from "./syncer";
 
 let isRunning = false;
 
 export async function applyRemoteChangesLocally({
 	database,
 	syncServer,
-	operations,
-	history,
+	syncer,
 }: {
 	database: Database;
 	syncServer: SyncService;
-	operations: FileOperations;
-	history: SyncHistory;
+	syncer: Syncer;
 }): Promise<void> {
 	if (!database.getSettings().isSyncEnabled) {
 		Logger.getInstance().debug(
@@ -44,13 +42,7 @@ export async function applyRemoteChangesLocally({
 
 		await Promise.all(
 			remote.latestDocuments.map(async (remoteDocument) =>
-				syncRemotelyUpdatedFile({
-					database,
-					syncServer,
-					history,
-					operations,
-					remoteVersion: remoteDocument,
-				})
+				syncer.syncRemotelyUpdatedFile(remoteDocument)
 			)
 		);
 
