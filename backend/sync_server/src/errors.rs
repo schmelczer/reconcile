@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use log::{info, warn};
+use log::{error, info};
 use schemars::JsonSchema;
 use serde::Serialize;
 use thiserror::Error;
@@ -33,12 +33,12 @@ pub enum SyncServerError {
 impl SyncServerError {
     pub fn serialize(&self) -> SerializedError {
         match self {
-            Self::InitError(error) => format_anyhow_error(error),
-            Self::ClientError(error) => format_anyhow_error(error),
-            Self::ServerError(error) => format_anyhow_error(error),
-            Self::NotFound(error) => format_anyhow_error(error),
-            Self::Unauthorized(error) => format_anyhow_error(error),
-            Self::PermissionDeniedError(error) => format_anyhow_error(error),
+            Self::InitError(error) => error.into(),
+            Self::ClientError(error) => error.into(),
+            Self::ServerError(error) => error.into(),
+            Self::NotFound(error) => error.into(),
+            Self::Unauthorized(error) => error.into(),
+            Self::PermissionDeniedError(error) => error.into(),
         }
     }
 }
@@ -64,17 +64,19 @@ pub struct SerializedError {
     pub causes: Vec<String>,
 }
 
-fn format_anyhow_error(error: &anyhow::Error) -> SerializedError {
-    let mut causes = vec![];
-    let mut current_error = error.source();
-    while let Some(error) = current_error {
-        causes.push(error.to_string());
-        current_error = error.source();
-    }
+impl From<&anyhow::Error> for SerializedError {
+    fn from(error: &anyhow::Error) -> SerializedError {
+        let mut causes = vec![];
+        let mut current_error = error.source();
+        while let Some(error) = current_error {
+            causes.push(error.to_string());
+            current_error = error.source();
+        }
 
-    SerializedError {
-        message: error.to_string(),
-        causes,
+        SerializedError {
+            message: error.to_string(),
+            causes,
+        }
     }
 }
 
@@ -87,7 +89,7 @@ pub const fn init_error(error: anyhow::Error) -> SyncServerError {
 }
 
 pub fn server_error(error: anyhow::Error) -> SyncServerError {
-    warn!("Server error: {:?}", error);
+    error!("Server error: {:?}", error);
     SyncServerError::ServerError(error)
 }
 
