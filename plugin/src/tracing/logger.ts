@@ -33,14 +33,14 @@ export class Logger {
 
 	public debug(message: string): void {
 		if (process.env.NODE_ENV !== "production") {
-			console.debug(`${message}`);
+			console.debug(message);
 		}
 		this.pushMessage(message, LogLevel.DEBUG);
 	}
 
 	public info(message: string): void {
 		if (process.env.NODE_ENV !== "production") {
-			console.info(`${message}`);
+			console.info(message);
 		}
 
 		this.pushMessage(message, LogLevel.INFO);
@@ -48,7 +48,7 @@ export class Logger {
 
 	public warn(message: string): void {
 		if (process.env.NODE_ENV !== "production") {
-			console.warn(`${message}`);
+			console.warn(message);
 		}
 
 		this.pushMessage(message, LogLevel.WARNING);
@@ -56,7 +56,7 @@ export class Logger {
 
 	public error(message: string): void {
 		if (process.env.NODE_ENV !== "production") {
-			console.error(`${message}`);
+			console.error(message);
 		}
 
 		this.pushMessage(message, LogLevel.ERROR);
@@ -77,7 +77,7 @@ export class Logger {
 
 	public reset(): void {
 		this.messages.length = 0;
-		this.onMessageListeners.forEach((listener) => listener(undefined));
+		this.onMessageListeners.forEach((listener) => { listener(undefined); });
 	}
 
 	private pushMessage(message: string, level: LogLevel): void {
@@ -88,6 +88,6 @@ export class Logger {
 			this.messages.shift();
 		}
 
-		this.onMessageListeners.forEach((listener) => listener(logLine));
+		this.onMessageListeners.forEach((listener) => { listener(logLine); });
 	}
 }

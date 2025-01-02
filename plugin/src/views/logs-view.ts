@@ -9,7 +9,13 @@ export class LogsView extends ItemView {
 	public constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
 		this.icon = LogsView.ICON;
-		Logger.getInstance().addOnMessageListener(() => this.updateView());
+		Logger.getInstance().addOnMessageListener(() => {
+			this.updateView();
+		});
+	}
+
+	private static formatTimestamp(timestamp: Date): string {
+		return timestamp.toTimeString().split(" ")[0];
 	}
 
 	public getViewType(): string {
@@ -21,10 +27,10 @@ export class LogsView extends ItemView {
 	}
 
 	public async onOpen(): Promise<void> {
-		await this.updateView();
+		this.updateView();
 	}
 
-	private async updateView(): Promise<void> {
+	private updateView(): void {
 		const container = this.containerEl.children[1];
 		container.empty();
 
@@ -43,9 +49,5 @@ export class LogsView extends ItemView {
 				});
 				messageContainer.createEl("span", { text: message.message });
 			});
-	}
-
-	private static formatTimestamp(timestamp: Date): string {
-		return timestamp.toTimeString().split(" ")[0];
 	}
 }

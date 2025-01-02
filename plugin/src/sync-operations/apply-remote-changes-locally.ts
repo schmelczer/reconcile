@@ -1,9 +1,7 @@
 import type { Database } from "src/database/database";
-import type { FileOperations } from "src/file-operations/file-operations";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
-import type { SyncHistory } from "src/tracing/sync-history";
-import { Syncer } from "./syncer";
+import type { Syncer } from "./syncer";
 
 let isRunning = false;
 

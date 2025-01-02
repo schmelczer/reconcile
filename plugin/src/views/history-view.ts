@@ -3,7 +3,7 @@ import { ItemView } from "obsidian";
 import type { SyncHistory } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus } from "src/tracing/sync-history";
 import { intlFormatDistance } from "date-fns";
-import { Database } from "src/database/database";
+import type { Database } from "src/database/database";
 
 export class HistoryView extends ItemView {
 	public static readonly TYPE = "history-view";
@@ -30,6 +30,7 @@ export class HistoryView extends ItemView {
 				return " ⤴️";
 			case SyncSource.PULL:
 				return " ⤵️";
+			case undefined:
 			default:
 				return "";
 		}

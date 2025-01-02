@@ -1,12 +1,8 @@
 import type { TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 import type { FileEventHandler } from "./file-event-handler";
-import type { SyncService } from "src/services/sync-service";
-import type { Database } from "src/database/database";
-import type { FileOperations } from "src/file-operations/file-operations";
 import { Logger } from "src/tracing/logger";
-import type { SyncHistory } from "src/tracing/sync-history";
-import { Syncer } from "src/sync-operations/syncer";
+import type { Syncer } from "src/sync-operations/syncer";
 
 export class ObsidianFileEventHandler implements FileEventHandler {
 	public constructor(private readonly syncer: Syncer) {}
