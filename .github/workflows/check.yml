@@ -27,6 +27,12 @@ jobs:
           sqlx database create --database-url sqlite://db.sqlite3
           sqlx migrate run --source sync_server/src/database/migrations --database-url sqlite://db.sqlite3
 
+      - name: Build wasm
+        run: |
+          cd backend
+          cargo install wasm-pack
+          wasm-pack build --target web sync_lib --features wee_alloc
+
       - name: Lint backend
         run: |
           cd backend
