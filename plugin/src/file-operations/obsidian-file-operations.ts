@@ -2,7 +2,6 @@ import type { Vault } from "obsidian";
 import { normalizePath } from "obsidian";
 import type { FileOperations } from "./file-operations";
 import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
-import { isEqualBytes } from "src/utils/is-equal-bytes";
 import type { RelativePath } from "src/database/document-metadata";
 
 export class ObsidianFileOperations implements FileOperations {
@@ -27,33 +26,6 @@ export class ObsidianFileOperations implements FileOperations {
 		return new Date(file.mtime);
 	}
 
-	public async write(
-		path: RelativePath,
-		expectedContent: Uint8Array,
-		newContent: Uint8Array
-	): Promise<Uint8Array> {
-		if (!(await this.vault.adapter.exists(normalizePath(path)))) {
-			// The caller assumed the file exists, but it doesn't, let's not recreate it
-			return new Uint8Array(0);
-		}
-
-		const currentContent = await this.read(path);
-		if (!isEqualBytes(currentContent, expectedContent)) {
-			const result = lib.merge(
-				expectedContent,
-				currentContent,
-				newContent
-			);
-
-			await this.vault.adapter.writeBinary(normalizePath(path), result);
-
-			return result;
-		}
-		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
-
-		return newContent;
-	}
-
 	public async create(
 		path: RelativePath,
 		newContent: Uint8Array
@@ -65,6 +37,40 @@ export class ObsidianFileOperations implements FileOperations {
 
 		await this.createParentDirectories(normalizePath(path));
 		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
+	}
+
+	public async write(
+		path: RelativePath,
+		expectedContent: Uint8Array,
+		newContent: Uint8Array
+	): Promise<Uint8Array> {
+		if (!(await this.vault.adapter.exists(normalizePath(path)))) {
+			// The caller assumed the file exists, but it doesn't, let's not recreate it
+			return new Uint8Array(0);
+		}
+
+		if (lib.isBinary(expectedContent)) {
+			await this.vault.adapter.writeBinary(
+				normalizePath(path),
+				newContent
+			);
+			return newContent;
+		}
+
+		const expetedText = new TextDecoder().decode(expectedContent);
+		const newText = new TextDecoder().decode(newContent);
+
+		const resultText = await this.vault.adapter.process(
+			normalizePath(path),
+			(currentText) => {
+				if (currentText !== expetedText) {
+					return lib.mergeText(expetedText, currentText, newText);
+				}
+
+				return newText;
+			}
+		);
+		return new TextEncoder().encode(resultText);
 	}
 
 	public async remove(path: RelativePath): Promise<void> {

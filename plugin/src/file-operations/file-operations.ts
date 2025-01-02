@@ -7,9 +7,13 @@ export interface FileOperations {
 
 	getModificationTime: (path: RelativePath) => Promise<Date>;
 
+	// Create and write the file if it doesn't exist. Otherwise, it has the same behavior as write.
+	// All parent directories are created if they don't exist.
 	create: (path: RelativePath, newContent: Uint8Array) => Promise<void>;
 
-	// Writes new content to the file at the given path. If the file's content has changed since the expectedContent was read, the write will merge the changes.
+	// Update the file at the given path.
+	// If the file's content is different from `expectedContent`, the a 3-way merge is performed before writing.
+	// If the file no longer exists, the file is not recreated and an empty array is returned.
 	write: (
 		path: RelativePath,
 		expectedContent: Uint8Array,
