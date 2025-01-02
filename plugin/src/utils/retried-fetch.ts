@@ -1,5 +1,5 @@
 import * as fetchRetryFactory from "fetch-retry";
-import { RequestInitRetryParams } from "fetch-retry";
+import type { RequestInitRetryParams } from "fetch-retry";
 import { Logger } from "src/tracing/logger";
 
 const fetchWithRetry = fetchRetryFactory.default(fetch);
