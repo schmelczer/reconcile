@@ -19,8 +19,7 @@
 - `rustup component add llvm-tools-preview`
 - `cargo install cargo-generate cargo-fuzz cargo-insta rustfilt cargo-binutils`
 - Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer): `curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh`
-- `cargo install cargo-insta`
-- `cargo install sqlx-cli`
+- `cargo install cargo-insta sqlx-cli cargo-edit`
 
 
 ## cut new version 
@@ -32,7 +31,8 @@ git tag -a 0.0.2 -m "0.0.2"
 git push origin 0.0.2
 ```
 
-
+npm install -g openapi-typescript
+openapi-typescript http://localhost:3030/api.json --output plugin/src/services/types.ts
 
 
 ## Todos
