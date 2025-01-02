@@ -19,6 +19,7 @@ export interface CheckConnectionResult {
 }
 export class SyncService {
 	private client: Client<paths>;
+	private clientWithoutRetries: Client<paths>;
 
 	public constructor(private readonly database: Database) {
 		this.createClient(database.getSettings());
@@ -41,7 +42,7 @@ export class SyncService {
 	}
 
 	public async ping(): Promise<components["schemas"]["PingResponse"]> {
-		const response = await this.client.GET("/ping", {
+		const response = await this.clientWithoutRetries.GET("/ping", {
 			params: {
 				header: {
 					authorization: `Bearer ${
@@ -303,6 +304,10 @@ export class SyncService {
 		this.client = createClient<paths>({
 			baseUrl: settings.remoteUri,
 			fetch: retriedFetch,
+		});
+
+		this.clientWithoutRetries = createClient<paths>({
+			baseUrl: settings.remoteUri,
 		});
 	}
 }
