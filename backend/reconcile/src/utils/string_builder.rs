@@ -67,6 +67,7 @@ impl StringBuilder<'_> {
         self.buffer
     }
 
+    #[allow(dead_code)]
     pub fn get_slice(&self, range: Range<usize>) -> String {
         let result = self
             .buffer
