@@ -93,7 +93,7 @@ pub async fn update_document(
         transaction
             .rollback()
             .await
-            .context("Failed to rollback transaction")
+            .context("Failed to roll back transaction")
             .map_err(server_error)?;
 
         return Ok(Json(latest_version.into()));
