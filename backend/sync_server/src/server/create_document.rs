@@ -61,15 +61,7 @@ pub async fn create_document(
             .context("Failed to decode base64 content in request")
             .map_err(client_error)?;
 
-        let merged_content = merge(
-            &[], // the empty string is the first common parent of the two documents,
-            &existing_version.content,
-            &content_bytes,
-        )
-        .context("Failed to decode bytes as UTF-8")
-        .map_err(client_error)?;
-
-        if merged_content == existing_version.content {
+        if content_bytes == existing_version.content {
             info!(
                 "Content of the new version is the same as the existing version. Not creating a \
                  new version."
@@ -81,6 +73,14 @@ pub async fn create_document(
                 .map_err(server_error)?;
             return Ok(Json(existing_version.into()));
         }
+
+        let merged_content = merge(
+            &[], // the empty string is the first common parent of the two documents,
+            &existing_version.content,
+            &content_bytes,
+        )
+        .context("Failed to decode bytes as UTF-8")
+        .map_err(client_error)?;
 
         StoredDocumentVersion {
             vault_id,
