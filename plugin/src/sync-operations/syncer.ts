@@ -299,6 +299,16 @@ export class Syncer {
 					oldPath ?? relativePath
 				);
 				if (!metadata) {
+					if (this.database.getDocument(relativePath)) {
+						this.history.addHistoryEntry({
+							status: SyncStatus.NO_OP,
+							relativePath,
+							message: `The renaming doesn't require a sync because it must have been pulled from remote`,
+							type: SyncType.UPDATE,
+						});
+						return;
+					}
+
 					throw new Error(
 						`Document metadata not found for ${relativePath}. This implies a corrupt local database. Consider resetting the plugin's sync history.`
 					);
@@ -307,7 +317,7 @@ export class Syncer {
 				const contentBytes = await this.operations.read(relativePath);
 				const contentHash = hash(contentBytes);
 
-				if (metadata.hash === contentHash && oldPath !== undefined) {
+				if (metadata.hash === contentHash && oldPath === undefined) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.NO_OP,
 						relativePath,
@@ -468,7 +478,6 @@ export class Syncer {
 						})
 					).contentBase64;
 					const contentBytes = lib.base64ToBytes(content);
-					const contentHash = hash(contentBytes);
 
 					await this.operations.create(
 						remoteVersion.relativePath,
@@ -478,7 +487,7 @@ export class Syncer {
 						documentId: remoteVersion.documentId,
 						relativePath: remoteVersion.relativePath,
 						parentVersionId: remoteVersion.vaultUpdateId,
-						hash: contentHash,
+						hash: hash(contentBytes),
 					});
 					this.history.addHistoryEntry({
 						status: SyncStatus.SUCCESS,
