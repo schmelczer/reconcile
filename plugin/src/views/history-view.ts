@@ -1,6 +1,7 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
-import { SyncHistory, SyncType } from "src/tracing/sync-history";
+import type { SyncHistory} from "src/tracing/sync-history";
+import { SyncType } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus } from "src/tracing/sync-history";
 import { intlFormatDistance } from "date-fns";
 import type { Database } from "src/database/database";
