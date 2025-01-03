@@ -74,3 +74,8 @@ pedantic = { level = "warn", priority = 0 }
 cargo = { level = "warn", priority = 0 }
 
 ```
+
+apt install flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub md.obsidian.Obsidian
+flatpak run md.obsidian.Obsidian

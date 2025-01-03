@@ -93,12 +93,22 @@ const copyBundle = () => ({
 
 				copyFiles(
 					["manifest.json", ".hotreload"],
-					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
+					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
 				);
 
 				copyFiles(
 					"build",
-					"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin"
+					"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin"
+				);
+
+				copyFiles(
+					["manifest.json", ".hotreload"],
+					"/home/andras/obsidian-test/.obsidian/plugins/my-plugin"
+				);
+
+				copyFiles(
+					"build",
+					"/home/andras/obsidian-test/.obsidian/plugins/my-plugin"
 				);
 			}
 		});
