@@ -1,6 +1,6 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
-import type { SyncHistory } from "src/tracing/sync-history";
+import { SyncHistory, SyncType } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus } from "src/tracing/sync-history";
 import { intlFormatDistance } from "date-fns";
 import type { Database } from "src/database/database";
@@ -22,6 +22,20 @@ export class HistoryView extends ItemView {
 		history.addSyncHistoryUpdateListener(async () => {
 			await this.updateView();
 		});
+	}
+
+	private static formatSyncType(type: SyncType | undefined): string {
+		switch (type) {
+			case SyncType.CREATE:
+				return "👶 ";
+			case SyncType.DELETE:
+				return "🗑️ ";
+			case SyncType.UPDATE:
+				return "✍️ ";
+			case undefined:
+			default:
+				return "";
+		}
 	}
 
 	private static formatSource(source: SyncSource | undefined): string {
@@ -76,6 +90,7 @@ export class HistoryView extends ItemView {
 				const header = card.createDiv({ cls: "history-card-header" });
 				header.createEl("h5", {
 					text:
+						HistoryView.formatSyncType(entry.type) +
 						entry.relativePath +
 						HistoryView.formatSource(entry.source),
 					cls: "history-card-title",
