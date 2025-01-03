@@ -43,12 +43,12 @@ export default class SyncPlugin extends Plugin {
 
 		const syncService = new SyncService(database);
 
-		const syncer = new Syncer({
+		const syncer = new Syncer(
 			database,
-			operations: this.operations,
 			syncService,
-			history: this.history,
-		});
+			this.operations,
+			this.history
+		);
 
 		const statusDescription = new StatusDescription(
 			database,
