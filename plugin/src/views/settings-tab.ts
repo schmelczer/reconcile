@@ -71,6 +71,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 				descriptionContainer
 			);
 		};
+		this.statusDescriptionSubscription();
 		this.statusDescription.addStatusChangeListener(
 			this.statusDescriptionSubscription
 		);
