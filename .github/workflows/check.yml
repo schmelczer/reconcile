@@ -19,6 +19,7 @@ jobs:
 
       - name: Setup
         run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
           rustup install nightly
           rustup default nightly
           rustup component add clippy rustfmt
