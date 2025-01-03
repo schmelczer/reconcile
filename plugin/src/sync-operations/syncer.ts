@@ -350,7 +350,7 @@ export class Syncer {
 						if (!metadata) {
 							// Perhaps the file has been moved. Let's check by looking at the deleted files
 							const originalFile =
-								await findMatchingFileBasedOnHash(
+								await this.findMatchingFileBasedOnHash(
 									relativePath,
 									locallyDeletedFiles
 								);
@@ -614,17 +614,19 @@ export class Syncer {
 			await this.database.setLastSeenUpdateId(responseVaultUpdateId);
 		}
 	}
-}
 
-async function findMatchingFileBasedOnHash(
-	filePath: RelativePath,
-	candidates: [RelativePath, DocumentMetadata][]
-): Promise<[RelativePath, DocumentMetadata] | undefined> {
-	const contentHash = hash(await this.operations.read(filePath));
+	private async findMatchingFileBasedOnHash(
+		filePath: RelativePath,
+		candidates: [RelativePath, DocumentMetadata][]
+	): Promise<[RelativePath, DocumentMetadata] | undefined> {
+		const contentHash = hash(await this.operations.read(filePath));
 
-	if (contentHash != EMPTY_HASH) {
-		return undefined;
+		if (contentHash != EMPTY_HASH) {
+			return undefined;
+		}
+
+		return candidates.find(
+			([_, document]) => document.hash === contentHash
+		);
 	}
-
-	return candidates.find(([_, document]) => document.hash === contentHash);
 }
