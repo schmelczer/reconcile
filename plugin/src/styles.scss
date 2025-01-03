@@ -7,6 +7,7 @@
 		background-color: var(--color-base-30);
 		font-family: var(--font-monospace-default);
 		font-weight: var(--bold-weight);
+		font-size: var(--font-ui-small);
 
 		&.good {
 			background-color: rgba(var(--color-green-rgb), 0.35);
