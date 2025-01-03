@@ -50,3 +50,9 @@ jobs:
           cd plugin
           npm install
           npm run lint
+
+      - name: Test frontend
+        run: |
+          cd plugin
+          npm install
+          npm run test

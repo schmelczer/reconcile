@@ -17,3 +17,5 @@ backend/db.sqlite3*
 backend/config.yaml
 
 *.log
+
+plugin/coverage
