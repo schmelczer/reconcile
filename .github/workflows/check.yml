@@ -43,6 +43,8 @@ jobs:
         run: |
           cd backend
           cargo test --verbose
+          cd sync_lib
+          wasm-pack test --node
 
       - name: Lint frontend
         run: |
