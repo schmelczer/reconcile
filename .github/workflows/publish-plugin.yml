@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-plugin:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
         run: |
           cd backend
           cargo install wasm-pack
-          wasm-pack build --target web sync_lib --features wee_alloc
+          wasm-pack build --target web sync_lib
 
       - name: Build plugin
         run: |
