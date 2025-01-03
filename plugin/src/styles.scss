@@ -5,7 +5,7 @@
 		padding: var(--size-2-1) var(--size-4-1);
 		border-radius: var(--radius-s);
 		background-color: var(--color-base-30);
-		font-family: var(--font-monospace-default);
+		font-family: var(--font-monospace);
 		font-weight: var(--bold-weight);
 		font-size: var(--font-ui-small);
 
@@ -85,7 +85,7 @@
 }
 
 .log-message {
-	font: var(--font-monospace-theme);
+	font: var(--font-monospace);
 
 	&.DEBUG {
 		color: var(--color-base-50);
@@ -105,10 +105,15 @@
 }
 
 .history-card {
-	padding: var(--size-4-4) var(--size-4-6);
+	padding: var(--size-4-4);
 	margin: var(--size-4-2);
 	background-color: var(--color-base-00);
 	border-radius: var(--radius-l);
+	container-type: inline-size;
+
+	&.clickable {
+		cursor: pointer;
+	}
 
 	&.success {
 		background-color: rgba(var(--color-green-rgb), 0.2);
@@ -118,29 +123,36 @@
 		background-color: rgba(var(--color-red-rgb), 0.2);
 	}
 
-	* {
-		margin: 0;
-		padding: 0;
-	}
-
 	.history-card-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: var(--size-4-4);
+		margin-bottom: var(--size-4-2);
+		gap: var(--size-4-2);
+
+		@container (max-width: 300px) {
+			flex-direction: column;
+			align-items: flex-start;
+		}
 
 		.history-card-title {
-			font: var(--font-monospace-theme);
+			font: var(--font-monospace);
+			display: flex;
+			gap: var(--size-4-2);
+			word-break: break-all;
+			margin: 0;
 		}
 
 		.history-card-timestamp {
 			font-size: var(--font-ui-small);
-			color: var(--color-base-70);
+			font-style: italic;
+			color: var(--italic-color);
 		}
 	}
 
 	.history-card-message {
 		font-size: var(--font-ui-medium);
 		color: var(--color-base-70);
+		margin: 0;
 	}
 }

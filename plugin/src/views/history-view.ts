@@ -1,6 +1,6 @@
-import type { WorkspaceLeaf } from "obsidian";
-import { ItemView } from "obsidian";
-import type { SyncHistory} from "src/tracing/sync-history";
+import type { IconName, WorkspaceLeaf } from "obsidian";
+import { ItemView, setIcon } from "obsidian";
+import type { HistoryEntry, SyncHistory } from "src/tracing/sync-history";
 import { SyncType } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus } from "src/tracing/sync-history";
 import { intlFormatDistance } from "date-fns";
@@ -25,29 +25,48 @@ export class HistoryView extends ItemView {
 		});
 	}
 
-	private static formatSyncType(type: SyncType | undefined): string {
+	private static getSyncTypeIcon(type: SyncType | undefined): IconName {
 		switch (type) {
 			case SyncType.CREATE:
-				return "👶 ";
+				return "file-plus";
 			case SyncType.DELETE:
-				return "🗑️ ";
+				return "trash-2";
 			case SyncType.UPDATE:
-				return "✍️ ";
+				return "file-pen-line";
 			case undefined:
 			default:
 				return "";
 		}
 	}
 
-	private static formatSource(source: SyncSource | undefined): string {
+	private static getSyncSourceIcon(source: SyncSource | undefined): IconName {
 		switch (source) {
 			case SyncSource.PUSH:
-				return " ⤴️";
+				return "upload";
 			case SyncSource.PULL:
-				return " ⤵️";
+				return "download";
 			case undefined:
 			default:
 				return "";
+		}
+	}
+
+	private static renderSyncItemTitle(
+		element: HTMLElement,
+		entry: HistoryEntry
+	): void {
+		const syncTypeIcon = HistoryView.getSyncTypeIcon(entry.type);
+		if (syncTypeIcon) {
+			setIcon(element.createDiv(), syncTypeIcon);
+		}
+
+		element.createEl("span", {
+			text: entry.relativePath,
+		});
+
+		const syncSourceIcon = HistoryView.getSyncSourceIcon(entry.source);
+		if (syncSourceIcon) {
+			setIcon(element.createDiv(), syncSourceIcon);
 		}
 	}
 
@@ -76,34 +95,70 @@ export class HistoryView extends ItemView {
 		container.empty();
 		container.createEl("h4", { text: "VaultLink History" });
 
-		this.history
+		const entries = this.history
 			.getEntries()
 			.reverse()
 			.filter(
 				(entry) =>
 					entry.status !== SyncStatus.NO_OP ||
 					this.database.getSettings().displayNoopSyncEvents
-			)
-			.forEach((entry) => {
-				const card = container.createDiv({
+			);
+
+		entries.forEach((entry) => {
+			container.createDiv(
+				{
 					cls: ["history-card", entry.status.toLocaleLowerCase()],
-				});
-				const header = card.createDiv({ cls: "history-card-header" });
-				header.createEl("h5", {
-					text:
-						HistoryView.formatSyncType(entry.type) +
-						entry.relativePath +
-						HistoryView.formatSource(entry.source),
-					cls: "history-card-title",
-				});
-				header.createSpan({
-					text: intlFormatDistance(entry.timestamp, new Date()),
-					cls: "history-card-timestamp",
-				});
-				card.createEl("p", {
-					text: entry.message,
-					cls: "history-card-message",
-				});
-			});
+				},
+				(card) => {
+					if (
+						this.app.vault.getFileByPath(entry.relativePath) !==
+						null
+					) {
+						card.addEventListener("click", () => {
+							void this.app.workspace.openLinkText(
+								entry.relativePath,
+								entry.relativePath,
+								false
+							);
+						});
+
+						card.addClass("clickable");
+					}
+
+					card.createDiv(
+						{
+							cls: "history-card-header",
+						},
+						(header) => {
+							header.createEl(
+								"h5",
+								{
+									cls: "history-card-title",
+								},
+								(title) => {
+									HistoryView.renderSyncItemTitle(
+										title,
+										entry
+									);
+								}
+							);
+
+							header.createSpan({
+								text: intlFormatDistance(
+									entry.timestamp,
+									new Date()
+								),
+								cls: "history-card-timestamp",
+							});
+						}
+					);
+
+					card.createEl("p", {
+						text: `${entry.message}.`,
+						cls: "history-card-message",
+					});
+				}
+			);
+		});
 	}
 }
