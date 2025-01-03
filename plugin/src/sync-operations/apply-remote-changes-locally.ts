@@ -44,7 +44,13 @@ export async function applyRemoteChangesLocally({
 			)
 		);
 
-		await database.setLastSeenUpdateId(remote.lastUpdateId);
+		const lastSeenUpdateId = database.getLastSeenUpdateId();
+		if (
+			lastSeenUpdateId === undefined ||
+			remote.lastUpdateId > lastSeenUpdateId
+		) {
+			await database.setLastSeenUpdateId(remote.lastUpdateId);
+		}
 	} catch (e) {
 		Logger.getInstance().error(
 			`Failed to apply remote changes locally: ${e}`
