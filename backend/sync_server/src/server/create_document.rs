@@ -7,6 +7,7 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
@@ -67,6 +68,19 @@ pub async fn create_document(
         )
         .context("Failed to decode bytes as UTF-8")
         .map_err(client_error)?;
+
+        if merged_content == existing_version.content {
+            info!(
+                "Content of the new version is the same as the existing version. Not creating a \
+                 new version."
+            );
+            transaction
+                .rollback()
+                .await
+                .context("Failed to rollback unecceseary transaction")
+                .map_err(server_error)?;
+            return Ok(Json(existing_version.into()));
+        }
 
         StoredDocumentVersion {
             vault_id,
