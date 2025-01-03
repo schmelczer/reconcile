@@ -180,6 +180,10 @@ impl Database {
                 is_deleted
             from latest_document_versions
             where vault_id = ? and relative_path = ?
+            order by vault_update_id desc  -- `latest_document_versions` only contains a single latest version of each document, however,
+                                           -- multiple documents can have the same `relative_path`, if they have been deleted. That's
+                                           -- why we only care about the latest version of the document with the given relative path.
+            limit 1
             "#,
             vault,
             relative_path
