@@ -6,12 +6,6 @@ use wasm_bindgen::prelude::*;
 
 pub mod errors;
 
-// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
-// allocator.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
-
 #[wasm_bindgen(js_name = bytesToBase64)]
 pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD_NO_PAD.encode(input) }
 
@@ -49,7 +43,7 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
 }
 
 #[wasm_bindgen(js_name = isBinary)]
-pub fn is_binary(data: &[u8]) -> bool { data.iter().any(|&b| b == 0) }
+pub fn is_binary(data: &[u8]) -> bool { std::str::from_utf8(data).is_ok() }
 
 #[cfg(feature = "console_error_panic_hook")]
 #[wasm_bindgen(js_name = setPanicHook)]
