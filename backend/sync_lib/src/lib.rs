@@ -51,6 +51,7 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
 #[wasm_bindgen(js_name = isBinary)]
 pub fn is_binary(data: &[u8]) -> bool { data.iter().any(|&b| b == 0) }
 
+#[cfg(feature = "console_error_panic_hook")]
 #[wasm_bindgen(js_name = setPanicHook)]
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
@@ -59,6 +60,5 @@ pub fn set_panic_hook() {
     //
     // For more details see
     // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
