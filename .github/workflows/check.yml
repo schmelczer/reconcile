@@ -19,9 +19,6 @@ jobs:
 
       - name: Setup
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
-          . "$HOME/.cargo/env"
-
           rustup install nightly
           rustup default nightly
           rustup component add clippy rustfmt
@@ -34,7 +31,7 @@ jobs:
         run: |
           cd backend
           cargo install wasm-pack
-          wasm-pack build --target web sync_lib --features wee_alloc
+          wasm-pack build --target web sync_lib
 
       - name: Lint backend
         run: |
