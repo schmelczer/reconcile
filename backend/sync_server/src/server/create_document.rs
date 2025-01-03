@@ -78,9 +78,7 @@ pub async fn create_document(
             &[], // the empty string is the first common parent of the two documents,
             &existing_version.content,
             &content_bytes,
-        )
-        .context("Failed to decode bytes as UTF-8")
-        .map_err(client_error)?;
+        );
 
         StoredDocumentVersion {
             vault_id,

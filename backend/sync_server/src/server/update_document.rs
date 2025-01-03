@@ -103,9 +103,7 @@ pub async fn update_document(
         &parent_document.content,
         &latest_version.content,
         &content_bytes,
-    )
-    .context("Failed to decode bytes as UTF-8")
-    .map_err(client_error)?;
+    );
 
     // We can only update the relative path if we're the first one to do so
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
