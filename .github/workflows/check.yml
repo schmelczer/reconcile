@@ -19,6 +19,8 @@ jobs:
 
       - name: Setup
         run: |
+          whoami
+          . "$HOME/.cargo/env"
           rustup install nightly
           rustup default nightly
           rustup component add clippy rustfmt
@@ -29,8 +31,6 @@ jobs:
 
       - name: Build wasm
         run: |
-          whoami
-          . "$HOME/.cargo/env"
           cd backend
           cargo install wasm-pack
           wasm-pack build --target web sync_lib
