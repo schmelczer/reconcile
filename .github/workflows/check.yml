@@ -19,8 +19,6 @@ jobs:
 
       - name: Setup
         run: |
-          whoami
-          . "$HOME/.cargo/env"
           rustup install nightly
           rustup default nightly
           rustup component add clippy rustfmt
