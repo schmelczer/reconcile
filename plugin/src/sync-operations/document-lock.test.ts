@@ -34,7 +34,7 @@ describe("Document Lock Operations", () => {
 	});
 
 	test("should throw an error when unlocking a document that is not locked", () => {
-		expect(() => unlockDocument(testPath)).toThrow(
+		expect(() => { unlockDocument(testPath); }).toThrow(
 			`Document ${testPath} is not locked, cannot unlock`
 		);
 	});

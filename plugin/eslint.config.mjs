@@ -7,7 +7,7 @@ export default tseslint.config({
 		"unused-imports": unusedImports,
 	},
 	extends: [eslint.configs.recommended, tseslint.configs.all],
-	ignores: ["**/types.ts"],
+	ignores: ["**/types.ts", "**/*.test.ts"],
 	rules: {
 		"no-unused-vars": "off",
 		"@typescript-eslint/no-unused-vars": "off",
