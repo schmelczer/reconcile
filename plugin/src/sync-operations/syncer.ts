@@ -78,8 +78,9 @@ export class Syncer {
 	public async syncRemotelyUpdatedFile(
 		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
 	): Promise<void> {
-		await this.syncQueue.add(async () =>
-			this.internalSyncRemotelyUpdatedFile(remoteVersion)
+		await this.syncQueue.add(
+			async () =>
+				this.internalSyncRemotelyUpdatedFile(remoteVersion)
 		);
 	}
 

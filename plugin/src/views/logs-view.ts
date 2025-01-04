@@ -91,9 +91,9 @@ export class LogsView extends ItemView {
 
 		logsContainer = container.createDiv(
 			{ cls: "logs-container" },
-			(logsContainer) => {
-				logs.slice(-100).forEach((message) =>
-					logsContainer.createDiv(
+			(element) => {
+				logs.forEach((message) =>
+					element.createDiv(
 						{
 							cls: ["log-message", message.level],
 						},
@@ -113,7 +113,7 @@ export class LogsView extends ItemView {
 			}
 		);
 
-		if (scrollPosition) {
+		if (scrollPosition !== undefined) {
 			logsContainer.scrollTop = scrollPosition;
 		} else {
 			logsContainer.scrollTop = logsContainer.scrollHeight;
