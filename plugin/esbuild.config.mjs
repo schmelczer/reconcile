@@ -123,7 +123,7 @@ const cssContext = await esbuild.context({
 });
 
 const jsContext = await esbuild.context({
-	entryPoints: ["src/plugin.ts"],
+	entryPoints: ["src/vault-link-plugin.ts"],
 	bundle: true,
 	external: [
 		"obsidian",

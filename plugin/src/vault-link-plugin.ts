@@ -3,22 +3,22 @@ import { Plugin } from "obsidian";
 
 import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
 import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
-import { SyncSettingsTab } from "./views/settings-tab";
+import { SyncSettingsTab } from "./views/settings-tab.js";
 import { HistoryView } from "./views/history-view.js";
 
 import { ObsidianFileEventHandler } from "./events/obisidan-event-handler.js";
-import { SyncService } from "./services/sync-service";
-import { Database } from "./database/database";
-import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
-import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
-import { StatusBar } from "./views/status-bar";
+import { SyncService } from "./services/sync-service.js";
+import { Database } from "./database/database.js";
+import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally.js";
+import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations.js";
+import { StatusBar } from "./views/status-bar.js";
 import { Logger } from "./tracing/logger.js";
 import { SyncHistory } from "./tracing/sync-history.js";
 import { LogsView } from "./views/logs-view.js";
 import { Syncer } from "./sync-operations/syncer.js";
 import { StatusDescription } from "./views/status-description.js";
 
-export default class SyncPlugin extends Plugin {
+export default class VaultLinkPlugin extends Plugin {
 	private readonly operations = new ObsidianFileOperations(this.app.vault);
 	private readonly history = new SyncHistory();
 	private settingsTab: SyncSettingsTab;
@@ -125,7 +125,7 @@ export default class SyncPlugin extends Plugin {
 			HistoryView.TYPE,
 			(leaf) => new HistoryView(leaf, database, this.history)
 		);
-		this.registerView(LogsView.TYPE, (leaf) => new LogsView(leaf));
+		this.registerView(LogsView.TYPE, (leaf) => new LogsView(this, leaf));
 
 		this.addRibbonIcon(
 			HistoryView.ICON,
@@ -139,8 +139,6 @@ export default class SyncPlugin extends Plugin {
 		);
 
 		Logger.getInstance().info("Plugin loaded");
-
-		this.openSettings();
 	}
 
 	public onunload(): void {
