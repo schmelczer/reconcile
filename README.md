@@ -79,3 +79,8 @@ apt install flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install flathub md.obsidian.Obsidian
 flatpak run md.obsidian.Obsidian
+
+
+stop leaking subscriptions
+test with naughty strings https://github.com/minimaxir/big-list-of-naughty-strings/tree/84a5dea833b5e2218f7c8c2104effca3f8f155aa?tab=readme-ov-file
+double check internalSyncRemotelyUpdatedFile
