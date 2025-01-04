@@ -298,12 +298,12 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.WARNING]: LogLevel.WARNING,
 						[LogLevel.ERROR]: LogLevel.ERROR,
 					})
-					.onChange(
-						async (value) =>
-							await this.database.setSetting(
-								"minimumLogLevel",
-								value as LogLevel
-							)
+					.onChange(async (value) =>
+						this.database.setSetting(
+							"minimumLogLevel",
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+							value as LogLevel
+						)
 					)
 					.setValue(this.database.getSettings().minimumLogLevel)
 			);
