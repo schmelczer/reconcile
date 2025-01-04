@@ -1,8 +1,8 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import { LogLevel, Logger } from "src/tracing/logger";
-import { Database } from "src/database/database";
+import { Logger } from "src/tracing/logger";
+import type { Database } from "src/database/database";
 
 export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
@@ -43,17 +43,18 @@ export class LogsView extends ItemView {
 
 		const container = this.containerEl.children[1];
 		container.addClass("logs-view");
-
-		const logsContainer = container
-			.getElementsByClassName("logs-container")
-			.item(0);
-		if (logsContainer) {
-			logsContainer.scrollTop = logsContainer.scrollHeight;
-		}
 	}
 
 	private updateView(): void {
 		const container = this.containerEl.children[1];
+
+		let logsContainer = container
+			.getElementsByClassName("logs-container")
+			.item(0);
+		const scrollPosition = logsContainer?.scrollTop;
+
+		console.log(scrollPosition);
+
 		container.empty();
 
 		container.createEl("h4", { text: "VaultLink logs" });
@@ -88,23 +89,34 @@ export class LogsView extends ItemView {
 			return;
 		}
 
-		container.createDiv({ cls: "logs-container" }, (logsContainer) => {
-			logs.forEach((message) =>
-				logsContainer.createDiv(
-					{
-						cls: ["log-message", message.level],
-					},
-					(messageContainer) => {
-						messageContainer.createEl("span", {
-							text: LogsView.formatTimestamp(message.timestamp),
-							cls: "timestamp",
-						});
-						messageContainer.createEl("span", {
-							text: message.message,
-						});
-					}
-				)
-			);
-		});
+		logsContainer = container.createDiv(
+			{ cls: "logs-container" },
+			(logsContainer) => {
+				logs.slice(-100).forEach((message) =>
+					logsContainer.createDiv(
+						{
+							cls: ["log-message", message.level],
+						},
+						(messageContainer) => {
+							messageContainer.createEl("span", {
+								text: LogsView.formatTimestamp(
+									message.timestamp
+								),
+								cls: "timestamp",
+							});
+							messageContainer.createEl("span", {
+								text: message.message,
+							});
+						}
+					)
+				);
+			}
+		);
+
+		if (scrollPosition) {
+			logsContainer.scrollTop = scrollPosition;
+		} else {
+			logsContainer.scrollTop = logsContainer.scrollHeight;
+		}
 	}
 }

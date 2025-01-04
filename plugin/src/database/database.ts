@@ -88,7 +88,7 @@ export class Database {
 		key: T,
 		value: SyncSettings[T]
 	): Promise<void> {
-		let newSettings = { ...this._settings, [key]: value };
+		const newSettings = { ...this._settings, [key]: value };
 		Logger.getInstance().debug(
 			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
 				newSettings,
