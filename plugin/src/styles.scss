@@ -1,21 +1,25 @@
+@mixin number-card {
+	padding: var(--size-2-1) var(--size-4-1);
+	border-radius: var(--radius-s);
+	background-color: var(--color-base-30);
+	font-size: var(--font-ui-small);
+
+	&.good {
+		background-color: rgba(var(--color-green-rgb), 0.35);
+	}
+
+	&.bad {
+		background-color: rgba(var(--color-red-rgb), 0.35);
+	}
+}
+
 .status-description {
 	margin: var(--p-spacing) 0;
 
 	.number {
-		padding: var(--size-2-1) var(--size-4-1);
-		border-radius: var(--radius-s);
-		background-color: var(--color-base-30);
+		@include number-card;
 		font-family: var(--font-monospace);
 		font-weight: var(--bold-weight);
-		font-size: var(--font-ui-small);
-
-		&.good {
-			background-color: rgba(var(--color-green-rgb), 0.35);
-		}
-
-		&.bad {
-			background-color: rgba(var(--color-red-rgb), 0.35);
-		}
 	}
 
 	.error {
@@ -34,14 +38,11 @@
 		font-size: var(--h2-size);
 
 		.version {
-			display: block;
-			font-size: var(--font-ui-smaller);
-			margin-top: var(--size-2-2);
-			margin-left: var(--size-4-2);
-			padding: var(--size-2-1) var(--size-4-1);
+			@include number-card;
+			margin: var(--size-2-2) 0 0 var(--size-4-2);
 			background-color: var(--color-base-30);
 			color: var(--color-base-70);
-			border-radius: var(--radius-s);
+			font-size: var(--font-ui-smaller);
 		}
 	}
 
@@ -84,23 +85,41 @@
 	}
 }
 
-.log-message {
-	font: var(--font-monospace);
+.logs-view {
+	.logs-container {
+		max-height: 100%;
+		max-width: 100%;
+		overflow-y: auto;
 
-	&.DEBUG {
-		color: var(--color-base-50);
-	}
+		.log-message {
+			font: var(--font-monospace);
+			margin-bottom: var(--size-2-1);
+			overflow-wrap: break-word;
+			white-space: pre-wrap;
 
-	&.INFO {
-		color: var(--color-green-rgb);
-	}
+			.timestamp {
+				@include number-card;
+				font-family: var(--font-monospace);
+				font-weight: var(--bold-weight);
+				margin-right: var(--size-4-1);
+			}
 
-	&.WARNING {
-		color: var(--color-yellow-rgb);
-	}
+			&.DEBUG {
+				color: var(--color-base-50);
+			}
 
-	&.ERROR {
-		color: var(--color-red-rgb);
+			&.INFO {
+				color: var(--color-green-rgb);
+			}
+
+			&.WARNING {
+				color: var(--color-yellow-rgb);
+			}
+
+			&.ERROR {
+				color: var(--color-red-rgb);
+			}
+		}
 	}
 }
 
