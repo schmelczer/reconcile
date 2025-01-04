@@ -14,10 +14,22 @@ RUN sqlx migrate run --source sync_server/src/database/migrations --database-url
 
 RUN cargo build --package sync_server --release --target x86_64-unknown-linux-musl
 
+# Runtime image
 FROM alpine:3.21.0
+
+LABEL org.opencontainers.image.authors="andras@schmelczer.dev"
+
+RUN apk add --no-cache curl
 
 COPY --from=builder /usr/src/backend/target/x86_64-unknown-linux-musl/release/sync_server /app/sync_server
 
-WORKDIR /data
+WORKDIR /app
+
+EXPOSE 3000/tcp
+
+HEALTHCHECK \
+    --interval=30s \
+    --timeout=5s \
+    CMD curl -f http://localhost:3000/ping || exit 1
 
 ENTRYPOINT ["/app/sync_server"]
