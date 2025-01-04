@@ -1,3 +1,5 @@
+import { LogLevel } from "src/tracing/logger";
+
 export interface SyncSettings {
 	remoteUri: string;
 	token: string;
@@ -6,6 +8,7 @@ export interface SyncSettings {
 	syncConcurrency: number;
 	isSyncEnabled: boolean;
 	displayNoopSyncEvents: boolean;
+	minimumLogLevel: LogLevel;
 }
 
 export const DEFAULT_SETTINGS: SyncSettings = {
@@ -16,4 +19,5 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	syncConcurrency: 1,
 	isSyncEnabled: false,
 	displayNoopSyncEvents: false,
+	minimumLogLevel: LogLevel.INFO,
 };

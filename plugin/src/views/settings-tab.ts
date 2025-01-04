@@ -1,10 +1,10 @@
 import type { App } from "obsidian";
 import { Notice, PluginSettingTab, Setting } from "obsidian";
 
-import type SyncPlugin from "src/plugin";
+import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { Database } from "src/database/database";
 import type { SyncService } from "src/services/sync-service";
-import { Logger } from "src/tracing/logger";
+import { Logger, LogLevel } from "src/tracing/logger";
 import type { Syncer } from "src/sync-operations/syncer";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
@@ -13,7 +13,7 @@ import { HistoryView } from "./history-view";
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
 
-	private readonly plugin: SyncPlugin;
+	private readonly plugin: VaultLinkPlugin;
 	private readonly database: Database;
 	private readonly syncService: SyncService;
 	private readonly statusDescription: StatusDescription;
@@ -29,7 +29,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 		syncer,
 	}: {
 		app: App;
-		plugin: SyncPlugin;
+		plugin: VaultLinkPlugin;
 		database: Database;
 		syncService: SyncService;
 		statusDescription: StatusDescription;
@@ -58,22 +58,34 @@ export class SyncSettingsTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.addClass("vault-link-settings");
 
+		this.renderSettingsHeader(containerEl);
+		this.renderConnectionSettings(containerEl);
+		this.renderSyncSettings(containerEl);
+		this.renderViewSettings(containerEl);
+	}
+
+	public hide(): void {
+		super.hide();
+		this.setStatusDescriptionSubscription();
+	}
+
+	private renderSettingsHeader(containerEl: HTMLElement): void {
 		containerEl.createEl("h2", { text: "VaultLink" }).createSpan({
 			text: this.plugin.manifest.version,
 			cls: "version",
 		});
 
-		const descriptionContainer = containerEl.createDiv({
-			cls: "description",
-		});
-		this.statusDescriptionSubscription = (): void => {
-			this.statusDescription.renderStatusDescription(
-				descriptionContainer
-			);
-		};
-		this.statusDescriptionSubscription();
-		this.statusDescription.addStatusChangeListener(
-			this.statusDescriptionSubscription
+		containerEl.createDiv(
+			{
+				cls: "description",
+			},
+			(descriptionContainer) => {
+				this.setStatusDescriptionSubscription((): void => {
+					this.statusDescription.renderStatusDescription(
+						descriptionContainer
+					);
+				});
+			}
 		);
 
 		containerEl.createDiv(
@@ -106,7 +118,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 				);
 			}
 		);
+	}
 
+	private renderConnectionSettings(containerEl: HTMLElement): void {
 		containerEl.createEl("h3", { text: "Connection" });
 
 		new Setting(containerEl)
@@ -179,7 +193,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 					);
 				})
 			);
+	}
 
+	private renderSyncSettings(containerEl: HTMLElement): void {
 		containerEl.createEl("h3", { text: "Sync" });
 
 		new Setting(containerEl)
@@ -253,11 +269,58 @@ export class SyncSettingsTab extends PluginSettingTab {
 			);
 	}
 
-	public hide(): void {
-		super.hide();
+	private renderViewSettings(containerEl: HTMLElement): void {
+		containerEl.createEl("h3", { text: "View" });
 
+		new Setting(containerEl)
+			.setName("Show no-op sync operations in history")
+			.setDesc(
+				"Enabling this will make the history view more verbose while also providing more explanation for the scyning choices made."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.onChange(async (value) =>
+						this.database.setSetting("displayNoopSyncEvents", value)
+					)
+					.setValue(this.database.getSettings().displayNoopSyncEvents)
+			);
+
+		new Setting(containerEl)
+			.setName("Minimum log level")
+			.setDesc(
+				"Set the log level for the plugin. Lower levels will show more logs."
+			)
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOptions({
+						[LogLevel.DEBUG]: LogLevel.DEBUG,
+						[LogLevel.INFO]: LogLevel.INFO,
+						[LogLevel.WARNING]: LogLevel.WARNING,
+						[LogLevel.ERROR]: LogLevel.ERROR,
+					})
+					.onChange(
+						async (value) =>
+							await this.database.setSetting(
+								"minimumLogLevel",
+								value as LogLevel
+							)
+					)
+					.setValue(this.database.getSettings().minimumLogLevel)
+			);
+	}
+
+	private setStatusDescriptionSubscription(
+		newSubscription?: () => void
+	): void {
 		if (this.statusDescriptionSubscription) {
 			this.statusDescription.removeStatusChangeListener(
+				this.statusDescriptionSubscription
+			);
+		}
+		this.statusDescriptionSubscription = newSubscription;
+		if (this.statusDescriptionSubscription) {
+			this.statusDescriptionSubscription();
+			this.statusDescription.addStatusChangeListener(
 				this.statusDescriptionSubscription
 			);
 		}
