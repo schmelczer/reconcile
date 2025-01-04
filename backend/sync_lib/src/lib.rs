@@ -1,3 +1,13 @@
+//! This crate provides utilities for easily communicating between backend &
+//! frontend and ensuring the same logic for encoding and decoding binary data,
+//! and 3-way-merging documents in Rust and JavaScript.
+//!
+//! The crate is designed to be used as a Rust library and as a
+//! TypeScript/JavaScript package through WebAssembly (WASM).
+//!
+//! # Modules
+//!
+//! - `errors`: Contains error types used in this crate.
 use core::str;
 
 use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
