@@ -9,6 +9,7 @@ use crate::tokenizer::Tokenizer;
 
 #[must_use]
 pub fn reconcile(original: &str, left: &str, right: &str) -> String {
+    // Common trivial cases
     if left == right {
         return left.to_owned();
     }
@@ -21,6 +22,7 @@ pub fn reconcile(original: &str, left: &str, right: &str) -> String {
         return left.to_owned();
     }
 
+    // 3-way merge
     let left_operations = EditedText::from_strings(original, left);
     let right_operations = EditedText::from_strings(original, right);
 

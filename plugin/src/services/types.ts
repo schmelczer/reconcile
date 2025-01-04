@@ -111,7 +111,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["DocumentVersion"];
+                        "application/json": components["schemas"]["DocumentUpdateResponse"];
                     };
                 };
                 default: {
@@ -192,7 +192,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["DocumentVersion"];
+                        "application/json": components["schemas"]["DocumentUpdateResponse"];
                     };
                 };
                 default: {
@@ -261,6 +261,37 @@ export interface components {
             createdDate: string;
             relativePath: string;
         };
+        /** @description Response to a create/update document request. */
+        DocumentUpdateResponse: {
+            /** Format: date-time */
+            createdDate: string;
+            /** Format: uuid */
+            documentId: string;
+            isDeleted: boolean;
+            relativePath: string;
+            /** @enum {string} */
+            type: "FastForwardUpdate";
+            /** Format: date-time */
+            updatedDate: string;
+            vaultId: string;
+            /** Format: int64 */
+            vaultUpdateId: number;
+        } | {
+            contentBase64: string;
+            /** Format: date-time */
+            createdDate: string;
+            /** Format: uuid */
+            documentId: string;
+            isDeleted: boolean;
+            relativePath: string;
+            /** @enum {string} */
+            type: "MergingUpdate";
+            /** Format: date-time */
+            updatedDate: string;
+            vaultId: string;
+            /** Format: int64 */
+            vaultUpdateId: number;
+        };
         DocumentVersion: {
             contentBase64: string;
             /** Format: date-time */
@@ -288,8 +319,12 @@ export interface components {
             /** Format: int64 */
             vaultUpdateId: number;
         };
+        /** @description Response to a fetch latest documents request. */
         FetchLatestDocumentsResponse: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description The update ID of the latest document in the response.
+             */
             lastUpdateId: number;
             latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
         };
@@ -314,8 +349,11 @@ export interface components {
             document_id: string;
             vault_id: string;
         };
+        /** @description Response to a ping request. */
         PingResponse: {
+            /** @description Whether the client is authenticated based on the sent Authorization header. */
             isAuthenticated: boolean;
+            /** @description Semantic version of the server. */
             serverVersion: string;
         };
         QueryParams: {

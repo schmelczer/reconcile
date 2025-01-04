@@ -12,10 +12,10 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
 
-use super::{auth::auth, requests::UpdateDocumentVersion};
+use super::{auth::auth, requests::UpdateDocumentVersion, responses::DocumentUpdateResponse};
 use crate::{
     app_state::AppState,
-    database::models::{DocumentId, DocumentVersion, StoredDocumentVersion, VaultId},
+    database::models::{DocumentId, StoredDocumentVersion, VaultId},
     errors::{client_error, not_found_error, server_error, SyncServerError},
 };
 
@@ -35,7 +35,7 @@ pub async fn update_document(
     }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
-) -> Result<Json<DocumentVersion>, SyncServerError> {
+) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
     // No need for a transaction as document versions are immutable
@@ -96,7 +96,9 @@ pub async fn update_document(
             .context("Failed to roll back transaction")
             .map_err(server_error)?;
 
-        return Ok(Json(latest_version.into()));
+        return Ok(Json(DocumentUpdateResponse::FastForwardUpdate(
+            latest_version.into(),
+        )));
     }
 
     let merged_content = merge(
@@ -104,6 +106,7 @@ pub async fn update_document(
         &latest_version.content,
         &content_bytes,
     );
+    let is_different_from_request_content = merged_content != content_bytes;
 
     // We can only update the relative path if we're the first one to do so
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
@@ -135,5 +138,9 @@ pub async fn update_document(
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
 
-    Ok(Json(new_version.into()))
+    Ok(Json(if is_different_from_request_content {
+        DocumentUpdateResponse::MergingUpdate(new_version.into())
+    } else {
+        DocumentUpdateResponse::FastForwardUpdate(new_version.into())
+    }))
 }
