@@ -1,5 +1,5 @@
 import type { Database } from "src/database/database";
-import type SyncPlugin from "src/plugin";
+import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { Syncer } from "src/sync-operations/syncer";
 import type { HistoryStats, SyncHistory } from "src/tracing/sync-history";
 
@@ -11,7 +11,7 @@ export class StatusBar {
 
 	public constructor(
 		private readonly database: Database,
-		private readonly plugin: SyncPlugin,
+		private readonly plugin: VaultLinkPlugin,
 		history: SyncHistory,
 		syncer: Syncer
 	) {

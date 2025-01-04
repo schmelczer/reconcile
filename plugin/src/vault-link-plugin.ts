@@ -125,7 +125,10 @@ export default class VaultLinkPlugin extends Plugin {
 			HistoryView.TYPE,
 			(leaf) => new HistoryView(leaf, database, this.history)
 		);
-		this.registerView(LogsView.TYPE, (leaf) => new LogsView(this, leaf));
+		this.registerView(
+			LogsView.TYPE,
+			(leaf) => new LogsView(this, database, leaf)
+		);
 
 		this.addRibbonIcon(
 			HistoryView.ICON,
