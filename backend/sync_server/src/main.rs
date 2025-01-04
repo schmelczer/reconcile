@@ -1,12 +1,11 @@
-mod app_state;
 mod config;
 mod consts;
 mod database;
 mod errors;
 mod server;
+mod utils;
 
 use anyhow::{Context as _, Result};
-use app_state::AppState;
 use errors::{init_error, SyncServerError};
 use log::info;
 use server::create_server;
@@ -34,12 +33,7 @@ async fn main() -> Result<(), SyncServerError> {
         env!("CARGO_PKG_VERSION")
     );
 
-    let app_state = AppState::try_new()
-        .await
-        .context("Failed to initialise app state")
-        .map_err(init_error)?;
-
-    create_server(app_state)
+    create_server()
         .await
         .context("Failed to start server")
         .map_err(init_error)

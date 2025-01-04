@@ -10,6 +10,7 @@ use aide::{
     transform::TransformOpenApi,
 };
 use anyhow::{anyhow, Context as _, Result};
+use app_state::AppState;
 use axum::{
     extract::{DefaultBodyLimit, Request},
     http::{self, HeaderValue, Method},
@@ -28,10 +29,8 @@ use tower_http::{
 };
 use tracing::{info_span, Level};
 
-use crate::{
-    app_state::AppState,
-    errors::{not_found_error, SerializedError},
-};
+use crate::errors::{not_found_error, SerializedError};
+mod app_state;
 mod auth;
 mod create_document;
 mod delete_document;
@@ -42,9 +41,13 @@ mod requests;
 mod responses;
 mod update_document;
 
-pub async fn create_server(app_state: AppState) -> Result<()> {
+pub async fn create_server() -> Result<()> {
     aide::gen::on_error(|err| error!("{err}"));
     aide::gen::extract_schemas(true);
+
+    let app_state = AppState::try_new()
+        .await
+        .context("Failed to initialise app state")?;
 
     let address = format!(
         "{}:{}",

@@ -1,5 +1,5 @@
+use super::app_state::AppState;
 use crate::{
-    app_state::AppState,
     config::user_config::User,
     errors::{unauthorized_error, SyncServerError},
 };

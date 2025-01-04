@@ -9,9 +9,8 @@ use axum_extra::{
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{auth::auth, responses::FetchLatestDocumentsResponse};
+use super::{app_state::AppState, auth::auth, responses::FetchLatestDocumentsResponse};
 use crate::{
-    app_state::AppState,
     database::models::{VaultId, VaultUpdateId},
     errors::{server_error, SyncServerError},
 };

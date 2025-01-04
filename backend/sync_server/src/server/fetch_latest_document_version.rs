@@ -10,9 +10,8 @@ use axum_extra::{
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::auth::auth;
+use super::{app_state::AppState, auth::auth};
 use crate::{
-    app_state::AppState,
     database::models::{DocumentId, DocumentVersion, VaultId},
     errors::{not_found_error, server_error, SyncServerError},
 };
