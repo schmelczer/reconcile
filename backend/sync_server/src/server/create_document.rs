@@ -12,11 +12,14 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
 
-use super::{auth::auth, requests::CreateDocumentVersion, responses::DocumentUpdateResponse};
+use super::{
+    app_state::AppState, auth::auth, requests::CreateDocumentVersion,
+    responses::DocumentUpdateResponse,
+};
 use crate::{
-    app_state::AppState,
     database::models::{StoredDocumentVersion, VaultId},
     errors::{client_error, server_error, SyncServerError},
+    utils::sanitize_path,
 };
 
 // This is required for aide to infer the path parameter types and names
@@ -49,9 +52,11 @@ pub async fn create_document(
         .await
         .map_err(server_error)?;
 
+    let sanitized_relative_path = sanitize_path(&request.relative_path);
+
     let maybe_existing_version = state
         .database
-        .get_latest_document_by_path(&vault_id, &request.relative_path, Some(&mut transaction))
+        .get_latest_document_by_path(&vault_id, &sanitized_relative_path, Some(&mut transaction))
         .await
         .map_err(server_error)?
         .and_then(|doc| if doc.is_deleted { None } else { Some(doc) });
@@ -87,7 +92,7 @@ pub async fn create_document(
         let new_version = StoredDocumentVersion {
             vault_id,
             vault_update_id: last_update_id + 1,
-            relative_path: request.relative_path,
+            relative_path: sanitized_relative_path,
             document_id: existing_version.document_id,
             content: merged_content,
             created_date: request.created_date,
@@ -107,7 +112,7 @@ pub async fn create_document(
             vault_id,
             vault_update_id: last_update_id + 1,
             document_id: uuid::Uuid::new_v4(),
-            relative_path: request.relative_path,
+            relative_path: sanitized_relative_path,
             content: content_bytes,
             created_date: request.created_date,
             updated_date: chrono::Utc::now(),

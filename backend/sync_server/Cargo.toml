@@ -25,6 +25,7 @@ aide = { version = "0.13.4", features = ["axum", "axum-ws", "scalar", "axum-head
 schemars = { version = "0.8.21", features = ["chrono", "uuid1"] }
 tracing = "0.1"
 rand = "0.8.5"
+sanitize-filename = "0.6.0"
 
 [lints]
 workspace = true

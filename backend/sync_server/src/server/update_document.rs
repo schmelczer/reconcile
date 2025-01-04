@@ -12,11 +12,14 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
 
-use super::{auth::auth, requests::UpdateDocumentVersion, responses::DocumentUpdateResponse};
+use super::{
+    app_state::AppState, auth::auth, requests::UpdateDocumentVersion,
+    responses::DocumentUpdateResponse,
+};
 use crate::{
-    app_state::AppState,
     database::models::{DocumentId, StoredDocumentVersion, VaultId},
     errors::{client_error, not_found_error, server_error, SyncServerError},
+    utils::sanitize_path,
 };
 
 // This is required for aide to infer the path parameter types and names
@@ -84,10 +87,11 @@ pub async fn update_document(
         .context("Failed to decode base64 content in request")
         .map_err(client_error)?;
 
+    let sanitized_relative_path = sanitize_path(&request.relative_path);
     // Return the latest version if the content and path are the same as the latest
     // version
     if content_bytes == latest_version.content
-        && request.relative_path == latest_version.relative_path
+        && sanitized_relative_path == latest_version.relative_path
     {
         info!("Document content is the same as the latest version, skipping update");
         transaction
@@ -110,7 +114,7 @@ pub async fn update_document(
 
     // We can only update the relative path if we're the first one to do so
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
-        request.relative_path.clone()
+        sanitized_relative_path
     } else {
         latest_version.relative_path.clone()
     };

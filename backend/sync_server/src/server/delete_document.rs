@@ -10,11 +10,11 @@ use axum_extra::{
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{auth::auth, requests::DeleteDocumentVersion};
+use super::{app_state::AppState, auth::auth, requests::DeleteDocumentVersion};
 use crate::{
-    app_state::AppState,
     database::models::{DocumentId, StoredDocumentVersion, VaultId},
     errors::{server_error, SyncServerError},
+    utils::sanitize_path,
 };
 
 // This is required for aide to infer the path parameter types and names
@@ -52,7 +52,7 @@ pub async fn delete_document(
         vault_id,
         vault_update_id: last_update_id + 1,
         document_id,
-        relative_path: request.relative_path,
+        relative_path: sanitize_path(&request.relative_path),
         content: vec![],
         created_date: request.created_date,
         updated_date: chrono::Utc::now(),
