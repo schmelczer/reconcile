@@ -7,6 +7,13 @@ export enum LogLevel {
 	ERROR = "ERROR",
 }
 
+const LOG_LEVEL_ORDER = {
+	[LogLevel.DEBUG]: 0,
+	[LogLevel.INFO]: 1,
+	[LogLevel.WARNING]: 2,
+	[LogLevel.ERROR]: 3,
+};
+
 class LogLine {
 	public timestamp = new Date();
 	public constructor(public level: LogLevel, public message: string) {}
@@ -65,7 +72,9 @@ export class Logger {
 
 	public getMessages(mininumSeverity: LogLevel): LogLine[] {
 		return this.messages.filter(
-			(message) => message.level >= mininumSeverity
+			(message) =>
+				LOG_LEVEL_ORDER[message.level] >=
+				LOG_LEVEL_ORDER[mininumSeverity]
 		);
 	}
 
@@ -77,7 +86,9 @@ export class Logger {
 
 	public reset(): void {
 		this.messages.length = 0;
-		this.onMessageListeners.forEach((listener) => { listener(undefined); });
+		this.onMessageListeners.forEach((listener) => {
+			listener(undefined);
+		});
 	}
 
 	private pushMessage(message: string, level: LogLevel): void {
@@ -88,6 +99,8 @@ export class Logger {
 			this.messages.shift();
 		}
 
-		this.onMessageListeners.forEach((listener) => { listener(logLine); });
+		this.onMessageListeners.forEach((listener) => {
+			listener(logLine);
+		});
 	}
 }
