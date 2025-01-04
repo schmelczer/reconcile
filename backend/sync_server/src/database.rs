@@ -70,7 +70,7 @@ impl Database {
         Ok(transaction)
     }
 
-    /// Return the latest state of all non-deleted documents in the vault
+    /// Return the latest state of all documents in the vault
     pub async fn get_latest_documents(
         &self,
         vault: &VaultId,
@@ -88,7 +88,7 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 is_deleted
             from latest_document_versions
-            where is_deleted = false and vault_id = ?
+            where vault_id = ?
             order by vault_update_id desc
             "#,
             vault,
