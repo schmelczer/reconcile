@@ -148,30 +148,16 @@ export class Syncer {
 							);
 						}
 
-						const content = await this.operations.read(
-							relativePath
+						Logger.getInstance().debug(
+							`Document ${relativePath} has been updated locally, scheduling sync to update it`
 						);
-						if (metadata.hash !== hash(content)) {
-							Logger.getInstance().debug(
-								`Document ${relativePath} has been updated locally, scheduling sync to update it`
-							);
-							return this.internalSyncLocallyUpdatedFile({
-								relativePath: relativePath,
-								updateTime:
-									await this.operations.getModificationTime(
-										relativePath
-									),
-							});
-						}
-
-						this.history.addHistoryEntry({
-							status: SyncStatus.NO_OP,
-							source: SyncSource.PUSH,
+						return this.internalSyncLocallyUpdatedFile({
 							relativePath,
-							message:
-								"Document hasn't been updated locally, no need to sync",
+							updateTime:
+								await this.operations.getModificationTime(
+									relativePath
+								),
 						});
-						return Promise.resolve();
 					})
 				)
 			);
@@ -218,7 +204,7 @@ export class Syncer {
 			SyncSource.PUSH,
 			async () => {
 				const contentBytes = await this.operations.read(relativePath);
-				const contentHash = hash(contentBytes);
+				let contentHash = hash(contentBytes);
 
 				const metadata = this.database.getDocument(relativePath);
 				if (metadata) {
@@ -251,10 +237,12 @@ export class Syncer {
 					type: SyncType.CREATE,
 				});
 
-				const responseBytes = lib.base64ToBytes(response.contentBase64);
-				const responseHash = hash(responseBytes);
+				if (response.type === "MergingUpdate") {
+					const responseBytes = lib.base64ToBytes(
+						response.contentBase64
+					);
+					contentHash = hash(responseBytes);
 
-				if (contentHash !== responseHash) {
 					await this.operations.write(
 						relativePath,
 						contentBytes,
@@ -273,7 +261,7 @@ export class Syncer {
 					documentId: response.documentId,
 					relativePath: response.relativePath,
 					parentVersionId: response.vaultUpdateId,
-					hash: responseHash,
+					hash: contentHash,
 				});
 
 				await this.tryIncrementVaultUpdateId(response.vaultUpdateId);
@@ -315,7 +303,7 @@ export class Syncer {
 				}
 
 				const contentBytes = await this.operations.read(relativePath);
-				const contentHash = hash(contentBytes);
+				let contentHash = hash(contentBytes);
 
 				if (metadata.hash === contentHash && oldPath === undefined) {
 					this.history.addHistoryEntry({
@@ -362,50 +350,54 @@ export class Syncer {
 					return;
 				}
 
-				const responseBytes = lib.base64ToBytes(response.contentBase64);
-				const responseHash = hash(responseBytes);
-
 				if (response.relativePath != relativePath) {
 					await waitForDocumentLock(response.relativePath);
+				}
 
-					try {
+				try {
+					if (response.relativePath != relativePath) {
 						await this.operations.move(
 							oldPath ?? relativePath,
 							response.relativePath
 						);
+					}
+
+					if (response.type === "MergingUpdate") {
+						const responseBytes = lib.base64ToBytes(
+							response.contentBase64
+						);
+						contentHash = hash(responseBytes);
 						await this.operations.write(
 							response.relativePath,
 							contentBytes,
 							responseBytes
 						);
-						this.history.addHistoryEntry({
-							status: SyncStatus.SUCCESS,
-							source: SyncSource.PULL,
-							relativePath,
-							message:
-								"The file we updated had been moved remotely, therefore, we have moved it locally as well",
-							type: SyncType.UPDATE,
-						});
-					} finally {
+					}
+
+					this.history.addHistoryEntry({
+						status: SyncStatus.SUCCESS,
+						source: SyncSource.PULL,
+						relativePath,
+						message: `The file we updated had been updated remotely, so we downloaded the merged version`,
+						type: SyncType.UPDATE,
+					});
+
+					await this.database.moveDocument({
+						documentId: metadata.documentId,
+						oldRelativePath: oldPath ?? relativePath,
+						relativePath: response.relativePath,
+						parentVersionId: response.vaultUpdateId,
+						hash: contentHash,
+					});
+
+					await this.tryIncrementVaultUpdateId(
+						response.vaultUpdateId
+					);
+				} finally {
+					if (response.relativePath != relativePath) {
 						unlockDocument(response.relativePath);
 					}
-				} else if (contentHash !== responseHash) {
-					await this.operations.write(
-						relativePath,
-						contentBytes,
-						responseBytes
-					);
 				}
-
-				await this.database.moveDocument({
-					documentId: metadata.documentId,
-					oldRelativePath: oldPath ?? relativePath,
-					relativePath: response.relativePath,
-					parentVersionId: response.vaultUpdateId,
-					hash: responseHash,
-				});
-
-				await this.tryIncrementVaultUpdateId(response.vaultUpdateId);
 			}
 		);
 	}

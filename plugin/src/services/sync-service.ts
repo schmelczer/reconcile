@@ -75,7 +75,7 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 		createdDate: Date;
-	}): Promise<components["schemas"]["DocumentVersion"]> {
+	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
 		const response = await this.client.POST(
 			"/vaults/{vault_id}/documents",
 			{
@@ -126,7 +126,7 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 		createdDate: Date;
-	}): Promise<components["schemas"]["DocumentVersion"]> {
+	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
 		const response = await this.client.PUT(
 			"/vaults/{vault_id}/documents/{document_id}",
 			{
