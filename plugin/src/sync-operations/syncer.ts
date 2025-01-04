@@ -206,13 +206,13 @@ export class Syncer {
 				const contentBytes = await this.operations.read(relativePath);
 				let contentHash = hash(contentBytes);
 
-				const metadata = this.database.getDocument(relativePath);
-				if (metadata) {
+				const localMetadata = this.database.getDocument(relativePath);
+				if (localMetadata) {
 					Logger.getInstance().debug(
 						`Document metadata already exists for ${relativePath}, it must have been downloaded from the server`
 					);
 
-					if (metadata.hash === contentHash) {
+					if (localMetadata.hash === contentHash) {
 						this.history.addHistoryEntry({
 							status: SyncStatus.NO_OP,
 							relativePath,
@@ -283,10 +283,10 @@ export class Syncer {
 			SyncType.UPDATE,
 			SyncSource.PUSH,
 			async () => {
-				const metadata = this.database.getDocument(
+				const localMetadata = this.database.getDocument(
 					oldPath ?? relativePath
 				);
-				if (!metadata) {
+				if (!localMetadata) {
 					if (this.database.getDocument(relativePath)) {
 						this.history.addHistoryEntry({
 							status: SyncStatus.NO_OP,
@@ -305,7 +305,10 @@ export class Syncer {
 				const contentBytes = await this.operations.read(relativePath);
 				let contentHash = hash(contentBytes);
 
-				if (metadata.hash === contentHash && oldPath === undefined) {
+				if (
+					localMetadata.hash === contentHash &&
+					oldPath === undefined
+				) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.NO_OP,
 						relativePath,
@@ -316,8 +319,8 @@ export class Syncer {
 				}
 
 				const response = await this.syncService.put({
-					documentId: metadata.documentId,
-					parentVersionId: metadata.parentVersionId,
+					documentId: localMetadata.documentId,
+					parentVersionId: localMetadata.parentVersionId,
 					relativePath,
 					contentBytes,
 					createdDate: updateTime,
@@ -383,7 +386,7 @@ export class Syncer {
 					});
 
 					await this.database.moveDocument({
-						documentId: metadata.documentId,
+						documentId: localMetadata.documentId,
 						oldRelativePath: oldPath ?? relativePath,
 						relativePath: response.relativePath,
 						parentVersionId: response.vaultUpdateId,
@@ -410,8 +413,8 @@ export class Syncer {
 			SyncType.DELETE,
 			SyncSource.PUSH,
 			async () => {
-				const metadata = this.database.getDocument(relativePath);
-				if (!metadata) {
+				const localMetadata = this.database.getDocument(relativePath);
+				if (!localMetadata) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.NO_OP,
 						relativePath,
@@ -422,7 +425,7 @@ export class Syncer {
 				}
 
 				await this.syncService.delete({
-					documentId: metadata.documentId,
+					documentId: localMetadata.documentId,
 					relativePath,
 					createdDate: new Date(), // We got the event now, so it must have been deleted just now
 				});
@@ -448,11 +451,11 @@ export class Syncer {
 			SyncType.UPDATE,
 			SyncSource.PULL,
 			async () => {
-				const currentVersion = this.database.getDocumentByDocumentId(
+				const localMetadata = this.database.getDocumentByDocumentId(
 					remoteVersion.documentId
 				);
 
-				if (!currentVersion) {
+				if (!localMetadata) {
 					if (remoteVersion.isDeleted) {
 						this.history.addHistoryEntry({
 							status: SyncStatus.NO_OP,
@@ -491,7 +494,7 @@ export class Syncer {
 					return;
 				}
 
-				const [relativePath, metadata] = currentVersion;
+				const [relativePath, metadata] = localMetadata;
 				if (metadata.parentVersionId === remoteVersion.vaultUpdateId) {
 					Logger.getInstance().debug(
 						`Document ${relativePath} is already up to date`
@@ -502,7 +505,6 @@ export class Syncer {
 				if (relativePath !== remoteVersion.relativePath) {
 					await waitForDocumentLock(relativePath);
 				}
-
 				try {
 					if (remoteVersion.isDeleted) {
 						await this.operations.remove(relativePath);
@@ -523,7 +525,7 @@ export class Syncer {
 
 						if (currentHash !== metadata.hash) {
 							Logger.getInstance().info(
-								`Document ${relativePath} has been updated both remotely and locally, skipping until the event is processed`
+								`Document ${relativePath} has been updated both remotely and locally, letting the local file update event handle it`
 							);
 							return;
 						}
