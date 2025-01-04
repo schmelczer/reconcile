@@ -88,12 +88,15 @@ export class Database {
 		key: T,
 		value: SyncSettings[T]
 	): Promise<void> {
+		let newSettings = { ...this._settings, [key]: value };
 		Logger.getInstance().debug(
 			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
-				this._settings
+				newSettings,
+				null,
+				2
 			)}`
 		);
-		await this.setSettings({ ...this._settings, [key]: value });
+		await this.setSettings(newSettings);
 	}
 
 	public getLastSeenUpdateId(): VaultUpdateId | undefined {
