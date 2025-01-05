@@ -51,6 +51,11 @@ jobs:
           cd plugin
           npm install
           npm run lint
+          if [[ -n $(git status --porcelain) ]]; then
+              git status --porcelain
+              echo "Failing CI because the working directory is not clean after linting."
+              exit 1
+          fi
 
       - name: Test frontend
         run: |
