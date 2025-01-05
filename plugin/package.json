@@ -6,13 +6,12 @@
 	"scripts": {
 		"dev": "webpack watch --mode development",
 		"build": "webpack --mode production",
-		"test": "jest",
+		"test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
 		"lint": "eslint --fix src && prettier --write \"src/**/*.(ts|scss|json|html)\"",
 		"version": "node version-bump.mjs"
 	},
 	"keywords": [],
 	"author": "",
-	"type": "commonjs",
 	"license": "MIT",
 	"prettier": {
 		"trailingComma": "none",
