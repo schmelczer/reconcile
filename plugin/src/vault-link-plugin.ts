@@ -1,22 +1,22 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { Plugin } from "obsidian";
-
-import * as lib from "../../backend/sync_lib/pkg/sync_lib.js";
-import * as wasmBin from "../../backend/sync_lib/pkg/sync_lib_bg.wasm";
-import { SyncSettingsTab } from "./views/settings-tab.js";
-import { HistoryView } from "./views/history-view.js";
-
-import { ObsidianFileEventHandler } from "./events/obisidan-event-handler.js";
-import { SyncService } from "./services/sync-service.js";
-import { Database } from "./database/database.js";
-import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally.js";
-import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations.js";
-import { StatusBar } from "./views/status-bar.js";
-import { Logger } from "./tracing/logger.js";
-import { SyncHistory } from "./tracing/sync-history.js";
-import { LogsView } from "./views/logs-view.js";
-import { Syncer } from "./sync-operations/syncer.js";
-import { StatusDescription } from "./views/status-description.js";
+import "./styles.scss";
+import "../manifest.json";
+import init, { setPanicHook } from "sync_lib";
+import wasmBin from "sync_lib/sync_lib_bg.wasm";
+import { SyncSettingsTab } from "./views/settings-tab";
+import { HistoryView } from "./views/history-view";
+import { ObsidianFileEventHandler } from "./events/obisidan-event-handler";
+import { SyncService } from "./services/sync-service";
+import { Database } from "./database/database";
+import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
+import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
+import { StatusBar } from "./views/status-bar";
+import { Logger } from "./tracing/logger";
+import { SyncHistory } from "./tracing/sync-history";
+import { LogsView } from "./views/logs-view";
+import { Syncer } from "./sync-operations/syncer";
+import { StatusDescription } from "./views/status-description";
 
 export default class VaultLinkPlugin extends Plugin {
 	private readonly operations = new ObsidianFileOperations(this.app.vault);
@@ -27,14 +27,10 @@ export default class VaultLinkPlugin extends Plugin {
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
 
-		await lib.default(
-			Promise.resolve(
-				// eslint-disable-next-line
-				(wasmBin as any).default
-			)
-		);
+		// eslint-disable-next-line
+		await init((wasmBin as any).default);
 
-		lib.setPanicHook();
+		setPanicHook();
 
 		const database = new Database(
 			await this.loadData(),
@@ -63,7 +59,7 @@ export default class VaultLinkPlugin extends Plugin {
 			database,
 			syncService,
 			statusDescription,
-			syncer,
+			syncer
 		});
 		this.addSettingTab(this.settingsTab);
 
@@ -90,7 +86,7 @@ export default class VaultLinkPlugin extends Plugin {
 				this.app.vault.on(
 					"rename",
 					eventHandler.onRename.bind(eventHandler)
-				),
+				)
 			].forEach((event) => {
 				this.registerEvent(event);
 			});
@@ -196,7 +192,7 @@ export default class VaultLinkPlugin extends Plugin {
 				applyRemoteChangesLocally({
 					database,
 					syncService,
-					syncer,
+					syncer
 				}),
 			intervalMs
 		);

@@ -16,8 +16,8 @@
 	"license": "MIT",
 	"prettier": {
 		"trailingComma": "none",
-		"tabWidth": 2,
-		"useTabs": false,
+		"tabWidth": 4,
+		"useTabs": true,
 		"endOfLine": "lf"
 	},
 	"devDependencies": {

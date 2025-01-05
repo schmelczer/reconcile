@@ -39,7 +39,7 @@ export class ObsidianFileEventHandler implements FileEventHandler {
 			await this.syncer.syncLocallyUpdatedFile({
 				oldPath,
 				relativePath: file.path,
-				updateTime: new Date(file.stat.ctime),
+				updateTime: new Date(file.stat.ctime)
 			});
 		} else {
 			Logger.getInstance().debug(
@@ -54,7 +54,7 @@ export class ObsidianFileEventHandler implements FileEventHandler {
 
 			await this.syncer.syncLocallyUpdatedFile({
 				relativePath: file.path,
-				updateTime: new Date(file.stat.ctime),
+				updateTime: new Date(file.stat.ctime)
 			});
 		} else {
 			Logger.getInstance().debug(

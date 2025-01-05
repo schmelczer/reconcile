@@ -4,7 +4,7 @@ import type {
 	DocumentId,
 	DocumentMetadata,
 	RelativePath,
-	VaultUpdateId,
+	VaultUpdateId
 } from "./document-metadata";
 import { Logger } from "src/tracing/logger";
 
@@ -47,7 +47,7 @@ export class Database {
 
 		this._settings = {
 			...DEFAULT_SETTINGS,
-			...(initialState.settings ?? {}),
+			...(initialState.settings ?? {})
 		};
 
 		Logger.getInstance().debug(
@@ -128,7 +128,7 @@ export class Database {
 		documentId,
 		relativePath,
 		parentVersionId,
-		hash,
+		hash
 	}: {
 		documentId: DocumentId;
 		relativePath: RelativePath;
@@ -138,7 +138,7 @@ export class Database {
 		this._documents.set(relativePath, {
 			documentId,
 			parentVersionId,
-			hash,
+			hash
 		});
 		await this.save();
 	}
@@ -148,7 +148,7 @@ export class Database {
 		oldRelativePath,
 		relativePath,
 		parentVersionId,
-		hash,
+		hash
 	}: {
 		documentId: DocumentId;
 		oldRelativePath: RelativePath;
@@ -160,7 +160,7 @@ export class Database {
 		this._documents.set(relativePath, {
 			documentId,
 			parentVersionId,
-			hash,
+			hash
 		});
 		await this.save();
 	}
@@ -180,7 +180,7 @@ export class Database {
 		await this.saveData({
 			documents: Object.fromEntries(this._documents.entries()),
 			settings: this._settings,
-			lastSeenUpdateId: this._lastSeenUpdateId,
+			lastSeenUpdateId: this._lastSeenUpdateId
 		});
 	}
 }

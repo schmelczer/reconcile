@@ -1,8 +1,8 @@
 import type { Vault } from "obsidian";
 import { normalizePath } from "obsidian";
 import type { FileOperations } from "./file-operations";
-import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import type { RelativePath } from "src/database/document-metadata";
+import { isBinary, mergeText } from "sync_lib";
 
 export class ObsidianFileOperations implements FileOperations {
 	public constructor(private readonly vault: Vault) {}
@@ -49,7 +49,7 @@ export class ObsidianFileOperations implements FileOperations {
 			return new Uint8Array(0);
 		}
 
-		if (lib.isBinary(expectedContent) || !path.endsWith(".md")) {
+		if (isBinary(expectedContent) || !path.endsWith(".md")) {
 			await this.vault.adapter.writeBinary(
 				normalizePath(path),
 				newContent
@@ -64,7 +64,7 @@ export class ObsidianFileOperations implements FileOperations {
 			normalizePath(path),
 			(currentText) => {
 				if (currentText !== expetedText) {
-					return lib.mergeText(expetedText, currentText, newText);
+					return mergeText(expetedText, currentText, newText);
 				}
 
 				return newText;

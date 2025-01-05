@@ -4,380 +4,382 @@
  */
 
 export interface paths {
-    "/ping": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header?: {
-                    authorization?: string;
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["PingResponse"];
-                    };
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/vaults/{vault_id}/documents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    since_update_id?: number | null;
-                };
-                header: {
-                    authorization: string;
-                };
-                path: {
-                    vault_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["FetchLatestDocumentsResponse"];
-                    };
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header: {
-                    authorization: string;
-                };
-                path: {
-                    vault_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["CreateDocumentVersion"];
-                };
-            };
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["DocumentUpdateResponse"];
-                    };
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/vaults/{vault_id}/documents/{document_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: never;
-                header: {
-                    authorization: string;
-                };
-                path: {
-                    document_id: string;
-                    vault_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["DocumentVersion"];
-                    };
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        put: {
-            parameters: {
-                query?: never;
-                header: {
-                    authorization: string;
-                };
-                path: {
-                    document_id: string;
-                    vault_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["UpdateDocumentVersion"];
-                };
-            };
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["DocumentUpdateResponse"];
-                    };
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete: {
-            parameters: {
-                query?: never;
-                header: {
-                    authorization: string;
-                };
-                path: {
-                    document_id: string;
-                    vault_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["DeleteDocumentVersion"];
-                };
-            };
-            responses: {
-                /** @description no content */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                default: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SerializedError"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+	"/ping": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: {
+					authorization?: string;
+				};
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["PingResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/vaults/{vault_id}/documents": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: {
+					since_update_id?: number | null;
+				};
+				header: {
+					authorization: string;
+				};
+				path: {
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["FetchLatestDocumentsResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": components["schemas"]["CreateDocumentVersion"];
+				};
+			};
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentUpdateResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/vaults/{vault_id}/documents/{document_id}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentVersion"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		put: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": components["schemas"]["UpdateDocumentVersion"];
+				};
+			};
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentUpdateResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": components["schemas"]["DeleteDocumentVersion"];
+				};
+			};
+			responses: {
+				/** @description no content */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content?: never;
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        CreateDocumentVersion: {
-            contentBase64: string;
-            /** Format: date-time */
-            createdDate: string;
-            relativePath: string;
-        };
-        DeleteDocumentVersion: {
-            /** Format: date-time */
-            createdDate: string;
-            relativePath: string;
-        };
-        /** @description Response to a create/update document request. */
-        DocumentUpdateResponse: {
-            /** Format: date-time */
-            createdDate: string;
-            /** Format: uuid */
-            documentId: string;
-            isDeleted: boolean;
-            relativePath: string;
-            /** @enum {string} */
-            type: "FastForwardUpdate";
-            /** Format: date-time */
-            updatedDate: string;
-            vaultId: string;
-            /** Format: int64 */
-            vaultUpdateId: number;
-        } | {
-            contentBase64: string;
-            /** Format: date-time */
-            createdDate: string;
-            /** Format: uuid */
-            documentId: string;
-            isDeleted: boolean;
-            relativePath: string;
-            /** @enum {string} */
-            type: "MergingUpdate";
-            /** Format: date-time */
-            updatedDate: string;
-            vaultId: string;
-            /** Format: int64 */
-            vaultUpdateId: number;
-        };
-        DocumentVersion: {
-            contentBase64: string;
-            /** Format: date-time */
-            createdDate: string;
-            /** Format: uuid */
-            documentId: string;
-            isDeleted: boolean;
-            relativePath: string;
-            /** Format: date-time */
-            updatedDate: string;
-            vaultId: string;
-            /** Format: int64 */
-            vaultUpdateId: number;
-        };
-        DocumentVersionWithoutContent: {
-            /** Format: date-time */
-            createdDate: string;
-            /** Format: uuid */
-            documentId: string;
-            isDeleted: boolean;
-            relativePath: string;
-            /** Format: date-time */
-            updatedDate: string;
-            vaultId: string;
-            /** Format: int64 */
-            vaultUpdateId: number;
-        };
-        /** @description Response to a fetch latest documents request. */
-        FetchLatestDocumentsResponse: {
-            /**
-             * Format: int64
-             * @description The update ID of the latest document in the response.
-             */
-            lastUpdateId: number;
-            latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
-        };
-        PathParams: {
-            vault_id: string;
-        };
-        PathParams2: {
-            vault_id: string;
-        };
-        PathParams3: {
-            /** Format: uuid */
-            document_id: string;
-            vault_id: string;
-        };
-        PathParams4: {
-            /** Format: uuid */
-            document_id: string;
-            vault_id: string;
-        };
-        PathParams5: {
-            /** Format: uuid */
-            document_id: string;
-            vault_id: string;
-        };
-        /** @description Response to a ping request. */
-        PingResponse: {
-            /** @description Whether the client is authenticated based on the sent Authorization header. */
-            isAuthenticated: boolean;
-            /** @description Semantic version of the server. */
-            serverVersion: string;
-        };
-        QueryParams: {
-            /** Format: int64 */
-            since_update_id?: number | null;
-        };
-        SerializedError: {
-            causes: string[];
-            message: string;
-        };
-        UpdateDocumentVersion: {
-            contentBase64: string;
-            /** Format: date-time */
-            createdDate: string;
-            /** Format: int64 */
-            parentVersionId: number;
-            relativePath: string;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+	schemas: {
+		CreateDocumentVersion: {
+			contentBase64: string;
+			/** Format: date-time */
+			createdDate: string;
+			relativePath: string;
+		};
+		DeleteDocumentVersion: {
+			/** Format: date-time */
+			createdDate: string;
+			relativePath: string;
+		};
+		/** @description Response to a create/update document request. */
+		DocumentUpdateResponse:
+			| {
+					/** Format: date-time */
+					createdDate: string;
+					/** Format: uuid */
+					documentId: string;
+					isDeleted: boolean;
+					relativePath: string;
+					/** @enum {string} */
+					type: "FastForwardUpdate";
+					/** Format: date-time */
+					updatedDate: string;
+					vaultId: string;
+					/** Format: int64 */
+					vaultUpdateId: number;
+			  }
+			| {
+					contentBase64: string;
+					/** Format: date-time */
+					createdDate: string;
+					/** Format: uuid */
+					documentId: string;
+					isDeleted: boolean;
+					relativePath: string;
+					/** @enum {string} */
+					type: "MergingUpdate";
+					/** Format: date-time */
+					updatedDate: string;
+					vaultId: string;
+					/** Format: int64 */
+					vaultUpdateId: number;
+			  };
+		DocumentVersion: {
+			contentBase64: string;
+			/** Format: date-time */
+			createdDate: string;
+			/** Format: uuid */
+			documentId: string;
+			isDeleted: boolean;
+			relativePath: string;
+			/** Format: date-time */
+			updatedDate: string;
+			vaultId: string;
+			/** Format: int64 */
+			vaultUpdateId: number;
+		};
+		DocumentVersionWithoutContent: {
+			/** Format: date-time */
+			createdDate: string;
+			/** Format: uuid */
+			documentId: string;
+			isDeleted: boolean;
+			relativePath: string;
+			/** Format: date-time */
+			updatedDate: string;
+			vaultId: string;
+			/** Format: int64 */
+			vaultUpdateId: number;
+		};
+		/** @description Response to a fetch latest documents request. */
+		FetchLatestDocumentsResponse: {
+			/**
+			 * Format: int64
+			 * @description The update ID of the latest document in the response.
+			 */
+			lastUpdateId: number;
+			latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
+		};
+		PathParams: {
+			vault_id: string;
+		};
+		PathParams2: {
+			vault_id: string;
+		};
+		PathParams3: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+		};
+		PathParams4: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+		};
+		PathParams5: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+		};
+		/** @description Response to a ping request. */
+		PingResponse: {
+			/** @description Whether the client is authenticated based on the sent Authorization header. */
+			isAuthenticated: boolean;
+			/** @description Semantic version of the server. */
+			serverVersion: string;
+		};
+		QueryParams: {
+			/** Format: int64 */
+			since_update_id?: number | null;
+		};
+		SerializedError: {
+			causes: string[];
+			message: string;
+		};
+		UpdateDocumentVersion: {
+			contentBase64: string;
+			/** Format: date-time */
+			createdDate: string;
+			/** Format: int64 */
+			parentVersionId: number;
+			relativePath: string;
+		};
+	};
+	responses: never;
+	parameters: never;
+	requestBodies: never;
+	headers: never;
+	pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

@@ -4,11 +4,11 @@ import { Notice, PluginSettingTab, Setting } from "obsidian";
 import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { Database } from "src/database/database";
 import type { SyncService } from "src/services/sync-service";
-import { Logger, LogLevel } from "src/tracing/logger";
 import type { Syncer } from "src/sync-operations/syncer";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";
+import { Logger, LogLevel } from "src/tracing/logger";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
@@ -26,7 +26,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 		database,
 		syncService,
 		statusDescription,
-		syncer,
+		syncer
 	}: {
 		app: App;
 		plugin: VaultLinkPlugin;
@@ -72,12 +72,12 @@ export class SyncSettingsTab extends PluginSettingTab {
 	private renderSettingsHeader(containerEl: HTMLElement): void {
 		containerEl.createEl("h2", { text: "VaultLink" }).createSpan({
 			text: this.plugin.manifest.version,
-			cls: "version",
+			cls: "version"
 		});
 
 		containerEl.createDiv(
 			{
-				cls: "description",
+				cls: "description"
 			},
 			(descriptionContainer) => {
 				this.setStatusDescriptionSubscription((): void => {
@@ -90,13 +90,13 @@ export class SyncSettingsTab extends PluginSettingTab {
 
 		containerEl.createDiv(
 			{
-				cls: "button-container",
+				cls: "button-container"
 			},
 			(buttonContainer) => {
 				buttonContainer.createEl(
 					"button",
 					{
-						text: "Show history",
+						text: "Show history"
 					},
 					(button) =>
 						(button.onclick = async (): Promise<void> => {
@@ -108,7 +108,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 				buttonContainer.createEl(
 					"button",
 					{
-						text: "Show logs",
+						text: "Show logs"
 					},
 					(button) =>
 						(button.onclick = async (): Promise<void> => {
@@ -296,7 +296,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.DEBUG]: LogLevel.DEBUG,
 						[LogLevel.INFO]: LogLevel.INFO,
 						[LogLevel.WARNING]: LogLevel.WARNING,
-						[LogLevel.ERROR]: LogLevel.ERROR,
+						[LogLevel.ERROR]: LogLevel.ERROR
 					})
 					.onChange(async (value) =>
 						this.database.setSetting(

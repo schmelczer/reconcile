@@ -4,19 +4,22 @@ export enum LogLevel {
 	DEBUG = "DEBUG",
 	INFO = "INFO",
 	WARNING = "WARNING",
-	ERROR = "ERROR",
+	ERROR = "ERROR"
 }
 
 const LOG_LEVEL_ORDER = {
 	[LogLevel.DEBUG]: 0,
 	[LogLevel.INFO]: 1,
 	[LogLevel.WARNING]: 2,
-	[LogLevel.ERROR]: 3,
+	[LogLevel.ERROR]: 3
 };
 
 class LogLine {
 	public timestamp = new Date();
-	public constructor(public level: LogLevel, public message: string) {}
+	public constructor(
+		public level: LogLevel,
+		public message: string
+	) {}
 }
 
 export class Logger {

@@ -61,7 +61,7 @@ export class HistoryView extends ItemView {
 		}
 
 		element.createEl("span", {
-			text: entry.relativePath,
+			text: entry.relativePath
 		});
 
 		const syncSourceIcon = HistoryView.getSyncSourceIcon(entry.source);
@@ -107,7 +107,7 @@ export class HistoryView extends ItemView {
 		entries.forEach((entry) => {
 			container.createDiv(
 				{
-					cls: ["history-card", entry.status.toLocaleLowerCase()],
+					cls: ["history-card", entry.status.toLocaleLowerCase()]
 				},
 				(card) => {
 					if (
@@ -127,13 +127,13 @@ export class HistoryView extends ItemView {
 
 					card.createDiv(
 						{
-							cls: "history-card-header",
+							cls: "history-card-header"
 						},
 						(header) => {
 							header.createEl(
 								"h5",
 								{
-									cls: "history-card-title",
+									cls: "history-card-title"
 								},
 								(title) => {
 									HistoryView.renderSyncItemTitle(
@@ -148,14 +148,14 @@ export class HistoryView extends ItemView {
 									entry.timestamp,
 									new Date()
 								),
-								cls: "history-card-timestamp",
+								cls: "history-card-timestamp"
 							});
 						}
 					);
 
 					card.createEl("p", {
 						text: `${entry.message}.`,
-						cls: "history-card-message",
+						cls: "history-card-message"
 					});
 				}
 			);

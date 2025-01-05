@@ -12,18 +12,18 @@ export interface CommonHistoryEntry {
 export enum SyncType {
 	CREATE = "CREATE",
 	UPDATE = "UPDATE",
-	DELETE = "DELETE",
+	DELETE = "DELETE"
 }
 
 export enum SyncSource {
 	PUSH = "PUSH",
-	PULL = "PULL",
+	PULL = "PULL"
 }
 
 export enum SyncStatus {
 	NO_OP = "NO_OP",
 	SUCCESS = "SUCCESS",
-	ERROR = "ERROR",
+	ERROR = "ERROR"
 }
 
 export type HistoryEntry = CommonHistoryEntry & { timestamp: Date };
@@ -44,7 +44,7 @@ export class SyncHistory {
 
 	private status: HistoryStats = {
 		success: 0,
-		error: 0,
+		error: 0
 	};
 
 	public getEntries(): HistoryEntry[] {
@@ -55,7 +55,7 @@ export class SyncHistory {
 		this.entries.length = 0;
 		this.status = {
 			success: 0,
-			error: 0,
+			error: 0
 		};
 		this.syncHistoryUpdateListeners.forEach((listener) => {
 			listener(this.status);
@@ -72,7 +72,7 @@ export class SyncHistory {
 	public addHistoryEntry(entry: CommonHistoryEntry): void {
 		const historyEntry = {
 			...entry,
-			timestamp: new Date(),
+			timestamp: new Date()
 		};
 		this.entries.push(historyEntry);
 

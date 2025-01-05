@@ -22,9 +22,7 @@ export async function retriedFetch(
 		retryOn: function (attempt, error, response) {
 			if (error !== null || !response || response.status >= 500) {
 				Logger.getInstance().warn(
-					`Retrying fetch for ${getUrlFromInput(
-						input
-					)}, attempt ${attempt}`
+					`Retrying fetch for ${getUrlFromInput(input)}, attempt ${attempt}`
 				);
 
 				return true;
@@ -33,6 +31,6 @@ export async function retriedFetch(
 		},
 		retries: 6,
 		retryDelay: (attempt) => Math.pow(1.5, attempt) * 500,
-		...init,
+		...init
 	});
 }

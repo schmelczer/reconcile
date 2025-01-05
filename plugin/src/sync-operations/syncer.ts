@@ -1,10 +1,9 @@
 import type { Database } from "src/database/database";
 import type {
 	DocumentMetadata,
-	RelativePath,
+	RelativePath
 } from "src/database/document-metadata";
 import type { FileOperations } from "src/file-operations/file-operations";
-import * as lib from "../../../backend/sync_lib/pkg/sync_lib.js";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
 import type { SyncHistory } from "src/tracing/sync-history";
@@ -12,7 +11,8 @@ import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history";
 import { unlockDocument, waitForDocumentLock } from "./document-lock";
 import PQueue from "p-queue";
 import { EMPTY_HASH, hash } from "src/utils/hash";
-import type { components } from "src/services/types.js";
+import type { components } from "src/services/types";
+import { base64ToBytes } from "sync_lib";
 
 export class Syncer {
 	private readonly remainingOperationsListeners: ((
@@ -30,7 +30,7 @@ export class Syncer {
 		private readonly history: SyncHistory
 	) {
 		this.syncQueue = new PQueue({
-			concurrency: database.getSettings().syncConcurrency,
+			concurrency: database.getSettings().syncConcurrency
 		});
 
 		database.addOnSettingsChangeHandlers((settings) => {
@@ -78,9 +78,8 @@ export class Syncer {
 	public async syncRemotelyUpdatedFile(
 		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
 	): Promise<void> {
-		await this.syncQueue.add(
-			async () =>
-				this.internalSyncRemotelyUpdatedFile(remoteVersion)
+		await this.syncQueue.add(async () =>
+			this.internalSyncRemotelyUpdatedFile(remoteVersion)
 		);
 	}
 
@@ -104,7 +103,7 @@ export class Syncer {
 		try {
 			const allLocalFiles = await this.operations.listAllFiles();
 			const locallyDeletedFiles = [
-				...this.database.getDocuments().entries(),
+				...this.database.getDocuments().entries()
 			].filter(([path, _]) => !allLocalFiles.includes(path));
 
 			await Promise.all(
@@ -134,7 +133,7 @@ export class Syncer {
 									updateTime:
 										await this.operations.getModificationTime(
 											relativePath
-										),
+										)
 								});
 							}
 
@@ -157,7 +156,7 @@ export class Syncer {
 							updateTime:
 								await this.operations.getModificationTime(
 									relativePath
-								),
+								)
 						});
 					})
 				)
@@ -218,7 +217,7 @@ export class Syncer {
 							status: SyncStatus.NO_OP,
 							relativePath,
 							message: `File hash matches with last synced version, no need to sync`,
-							type: SyncType.UPDATE,
+							type: SyncType.UPDATE
 						});
 						return;
 					}
@@ -227,7 +226,7 @@ export class Syncer {
 				const response = await this.syncService.create({
 					relativePath,
 					contentBytes,
-					createdDate: updateTime,
+					createdDate: updateTime
 				});
 
 				this.history.addHistoryEntry({
@@ -235,13 +234,11 @@ export class Syncer {
 					source: SyncSource.PUSH,
 					relativePath,
 					message: `Successfully uploaded locally created file`,
-					type: SyncType.CREATE,
+					type: SyncType.CREATE
 				});
 
 				if (response.type === "MergingUpdate") {
-					const responseBytes = lib.base64ToBytes(
-						response.contentBase64
-					);
+					const responseBytes = base64ToBytes(response.contentBase64);
 					contentHash = hash(responseBytes);
 
 					await this.operations.write(
@@ -254,7 +251,7 @@ export class Syncer {
 						source: SyncSource.PULL,
 						relativePath,
 						message: `The file we created locally has already existed remotely, so we have merged them`,
-						type: SyncType.UPDATE,
+						type: SyncType.UPDATE
 					});
 				}
 
@@ -262,7 +259,7 @@ export class Syncer {
 					documentId: response.documentId,
 					relativePath: response.relativePath,
 					parentVersionId: response.vaultUpdateId,
-					hash: contentHash,
+					hash: contentHash
 				});
 
 				await this.tryIncrementVaultUpdateId(response.vaultUpdateId);
@@ -273,7 +270,7 @@ export class Syncer {
 	private async internalSyncLocallyUpdatedFile({
 		oldPath,
 		relativePath,
-		updateTime,
+		updateTime
 	}: {
 		oldPath?: RelativePath;
 		relativePath: RelativePath;
@@ -293,7 +290,7 @@ export class Syncer {
 							status: SyncStatus.NO_OP,
 							relativePath,
 							message: `The renaming doesn't require a sync because it must have been pulled from remote`,
-							type: SyncType.UPDATE,
+							type: SyncType.UPDATE
 						});
 						return;
 					}
@@ -314,7 +311,7 @@ export class Syncer {
 						status: SyncStatus.NO_OP,
 						relativePath,
 						message: `File hash matches with last synced version, no need to sync`,
-						type: SyncType.UPDATE,
+						type: SyncType.UPDATE
 					});
 					return;
 				}
@@ -324,7 +321,7 @@ export class Syncer {
 					parentVersionId: localMetadata.parentVersionId,
 					relativePath,
 					contentBytes,
-					createdDate: updateTime,
+					createdDate: updateTime
 				});
 
 				this.history.addHistoryEntry({
@@ -332,7 +329,7 @@ export class Syncer {
 					source: SyncSource.PUSH,
 					relativePath,
 					message: `Successfully uploaded locally updated file to the remote server`,
-					type: SyncType.UPDATE,
+					type: SyncType.UPDATE
 				});
 
 				if (response.isDeleted) {
@@ -348,7 +345,7 @@ export class Syncer {
 						relativePath,
 						message:
 							"The file we tried to update had been deleted remotely, therefore, we have deleted it locally",
-						type: SyncType.DELETE,
+						type: SyncType.DELETE
 					});
 
 					return;
@@ -367,7 +364,7 @@ export class Syncer {
 					}
 
 					if (response.type === "MergingUpdate") {
-						const responseBytes = lib.base64ToBytes(
+						const responseBytes = base64ToBytes(
 							response.contentBase64
 						);
 						contentHash = hash(responseBytes);
@@ -383,7 +380,7 @@ export class Syncer {
 						source: SyncSource.PULL,
 						relativePath,
 						message: `The file we updated had been updated remotely, so we downloaded the merged version`,
-						type: SyncType.UPDATE,
+						type: SyncType.UPDATE
 					});
 
 					await this.database.moveDocument({
@@ -391,7 +388,7 @@ export class Syncer {
 						oldRelativePath: oldPath ?? relativePath,
 						relativePath: response.relativePath,
 						parentVersionId: response.vaultUpdateId,
-						hash: contentHash,
+						hash: contentHash
 					});
 
 					await this.tryIncrementVaultUpdateId(
@@ -420,7 +417,7 @@ export class Syncer {
 						status: SyncStatus.NO_OP,
 						relativePath,
 						message: `Locally deleted file hasn't been uploaded yet, so there's no need to delete it on the remote server`,
-						type: SyncType.DELETE,
+						type: SyncType.DELETE
 					});
 					return;
 				}
@@ -428,7 +425,7 @@ export class Syncer {
 				await this.syncService.delete({
 					documentId: localMetadata.documentId,
 					relativePath,
-					createdDate: new Date(), // We got the event now, so it must have been deleted just now
+					createdDate: new Date() // We got the event now, so it must have been deleted just now
 				});
 
 				this.history.addHistoryEntry({
@@ -436,7 +433,7 @@ export class Syncer {
 					source: SyncSource.PUSH,
 					relativePath,
 					message: `Successfully deleted locally deleted file on the remote server`,
-					type: SyncType.DELETE,
+					type: SyncType.DELETE
 				});
 
 				await this.database.removeDocument(relativePath);
@@ -463,17 +460,17 @@ export class Syncer {
 							source: SyncSource.PULL,
 							relativePath: remoteVersion.relativePath,
 							message: `Remotely deleted file hasn't been synced yet, so there's no need to delete it locally`,
-							type: SyncType.DELETE,
+							type: SyncType.DELETE
 						});
 						return;
 					}
 
 					const content = (
 						await this.syncService.get({
-							documentId: remoteVersion.documentId,
+							documentId: remoteVersion.documentId
 						})
 					).contentBase64;
-					const contentBytes = lib.base64ToBytes(content);
+					const contentBytes = base64ToBytes(content);
 
 					await this.operations.create(
 						remoteVersion.relativePath,
@@ -483,14 +480,14 @@ export class Syncer {
 						documentId: remoteVersion.documentId,
 						relativePath: remoteVersion.relativePath,
 						parentVersionId: remoteVersion.vaultUpdateId,
-						hash: hash(contentBytes),
+						hash: hash(contentBytes)
 					});
 					this.history.addHistoryEntry({
 						status: SyncStatus.SUCCESS,
 						source: SyncSource.PULL,
 						relativePath: remoteVersion.relativePath,
 						message: `Successfully downloaded remote file which hasn't existed locally`,
-						type: SyncType.CREATE,
+						type: SyncType.CREATE
 					});
 					return;
 				}
@@ -516,12 +513,11 @@ export class Syncer {
 							source: SyncSource.PULL,
 							relativePath: remoteVersion.relativePath,
 							message: `Successfully deleted remotely deleted file locally`,
-							type: SyncType.DELETE,
+							type: SyncType.DELETE
 						});
 					} else {
-						const currentContent = await this.operations.read(
-							relativePath
-						);
+						const currentContent =
+							await this.operations.read(relativePath);
 						const currentHash = hash(currentContent);
 
 						if (currentHash !== metadata.hash) {
@@ -533,10 +529,10 @@ export class Syncer {
 
 						const content = (
 							await this.syncService.get({
-								documentId: remoteVersion.documentId,
+								documentId: remoteVersion.documentId
 							})
 						).contentBase64;
-						const contentBytes = lib.base64ToBytes(content);
+						const contentBytes = base64ToBytes(content);
 						const contentHash = hash(contentBytes);
 
 						if (relativePath !== remoteVersion.relativePath) {
@@ -556,7 +552,7 @@ export class Syncer {
 							oldRelativePath: relativePath,
 							relativePath: remoteVersion.relativePath,
 							parentVersionId: remoteVersion.vaultUpdateId,
-							hash: contentHash,
+							hash: contentHash
 						});
 
 						this.history.addHistoryEntry({
@@ -564,7 +560,7 @@ export class Syncer {
 							source: SyncSource.PULL,
 							relativePath: remoteVersion.relativePath,
 							message: `Successfully updated remotely updated file locally`,
-							type: SyncType.UPDATE,
+							type: SyncType.UPDATE
 						});
 					}
 				} finally {
@@ -599,7 +595,7 @@ export class Syncer {
 				relativePath,
 				message: `Failed to ${syncSource.toLocaleLowerCase()} file ${e} when trying to ${syncType.toLocaleLowerCase()} it`,
 				type: syncType,
-				source: syncSource,
+				source: syncSource
 			});
 			throw e;
 		} finally {

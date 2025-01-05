@@ -8,7 +8,7 @@ let isRunning = false;
 export async function applyRemoteChangesLocally({
 	database,
 	syncService,
-	syncer,
+	syncer
 }: {
 	database: Database;
 	syncService: SyncService;

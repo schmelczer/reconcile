@@ -19,5 +19,5 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	syncConcurrency: 1,
 	isSyncEnabled: false,
 	displayNoopSyncEvents: false,
-	minimumLogLevel: LogLevel.INFO,
+	minimumLogLevel: LogLevel.INFO
 };

@@ -1,7 +1,7 @@
 import type { Database } from "src/database/database";
 import type {
 	CheckConnectionResult,
-	SyncService,
+	SyncService
 } from "src/services/sync-service";
 import type { Syncer } from "src/sync-operations/syncer";
 import type { HistoryStats, SyncHistory } from "src/tracing/sync-history";
@@ -57,7 +57,7 @@ export class StatusDescription {
 		if (this.lastConnectionState == undefined) {
 			container.createSpan({
 				text: "VaultLink is starting up…",
-				cls: "warning",
+				cls: "warning"
 			});
 			return;
 		}
@@ -65,7 +65,7 @@ export class StatusDescription {
 		if (!this.lastConnectionState.isSuccessful) {
 			container.createSpan({
 				text: `VaultLink failed to connect to the remote server with the error "${this.lastConnectionState.message}"`,
-				cls: "error",
+				cls: "error"
 			});
 			return;
 		}
@@ -73,18 +73,18 @@ export class StatusDescription {
 		container.createSpan({ text: "VaultLink is connected to the server " });
 		container.createEl("a", {
 			text: this.database.getSettings().remoteUri,
-			href: this.database.getSettings().remoteUri,
+			href: this.database.getSettings().remoteUri
 		});
 
 		container.createSpan({
-			text: ` and has indexed approximately `,
+			text: ` and has indexed approximately `
 		});
 		container.createSpan({
 			text: `${this.database.getDocuments().size}`,
-			cls: "number",
+			cls: "number"
 		});
 		container.createSpan({
-			text: ` documents. `,
+			text: ` documents. `
 		});
 
 		if (
@@ -94,40 +94,40 @@ export class StatusDescription {
 		) {
 			if (this.database.getSettings().isSyncEnabled) {
 				container.createSpan({
-					text: "Syncing is enabled but VaultLink hasn't found anything to sync yet.",
+					text: "Syncing is enabled but VaultLink hasn't found anything to sync yet."
 				});
 			} else {
 				container.createSpan({
 					text: "However, syncing is disabled right now.",
-					cls: "warning",
+					cls: "warning"
 				});
 			}
 			return;
 		}
 
 		container.createSpan({
-			text: "The plugin has ",
+			text: "The plugin has "
 		});
 		container.createSpan({
 			text: `${this.lastRemaining ?? 0}`,
-			cls: "number",
+			cls: "number"
 		});
 		container.createSpan({
-			text: " outstanding operations while having succeeded ",
+			text: " outstanding operations while having succeeded "
 		});
 		container.createSpan({
 			text: `${this.lastHistoryStats?.success ?? 0}`,
-			cls: ["number", "good"],
+			cls: ["number", "good"]
 		});
 		container.createSpan({
-			text: " times and failed ",
+			text: " times and failed "
 		});
 		container.createSpan({
 			text: `${this.lastHistoryStats?.error ?? 0}`,
-			cls: ["number", "bad"],
+			cls: ["number", "bad"]
 		});
 		container.createSpan({
-			text: " times.",
+			text: " times."
 		});
 	}
 

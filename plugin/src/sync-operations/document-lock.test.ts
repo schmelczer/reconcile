@@ -1,7 +1,7 @@
 import {
 	tryLockDocument,
 	waitForDocumentLock,
-	unlockDocument,
+	unlockDocument
 } from "./document-lock";
 import type { RelativePath } from "src/database/document-metadata";
 
@@ -34,9 +34,9 @@ describe("Document Lock Operations", () => {
 	});
 
 	test("should throw an error when unlocking a document that is not locked", () => {
-		expect(() => { unlockDocument(testPath); }).toThrow(
-			`Document ${testPath} is not locked, cannot unlock`
-		);
+		expect(() => {
+			unlockDocument(testPath);
+		}).toThrow(`Document ${testPath} is not locked, cannot unlock`);
 	});
 
 	test("should wait for a document lock and resolve when unlocked", async () => {

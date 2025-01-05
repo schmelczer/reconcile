@@ -34,7 +34,7 @@ export class StatusBar {
 	private updateStatus(): void {
 		this.statusBarItem.empty();
 		const container = this.statusBarItem.createDiv({
-			cls: ["sync-status"],
+			cls: ["sync-status"]
 		});
 
 		let hasShownMessage = false;
@@ -47,14 +47,14 @@ export class StatusBar {
 		if ((this.lastHistoryStats?.success ?? 0) > 0) {
 			hasShownMessage = true;
 			container.createSpan({
-				text: `${this.lastHistoryStats?.success ?? 0} ✅`,
+				text: `${this.lastHistoryStats?.success ?? 0} ✅`
 			});
 		}
 
 		if ((this.lastHistoryStats?.error ?? 0) > 0) {
 			hasShownMessage = true;
 			container.createSpan({
-				text: `${this.lastHistoryStats?.error ?? 0} ❌`,
+				text: `${this.lastHistoryStats?.error ?? 0} ❌`
 			});
 		}
 
@@ -64,7 +64,7 @@ export class StatusBar {
 			} else {
 				const button = container.createEl("button", {
 					text: "VaultLink is disabled, click to configure",
-					cls: "initialize-button",
+					cls: "initialize-button"
 				});
 				button.onclick = (): void => {
 					this.plugin.openSettings();
