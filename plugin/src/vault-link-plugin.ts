@@ -27,8 +27,8 @@ export default class VaultLinkPlugin extends Plugin {
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
 
-		// eslint-disable-next-line
 		await init(
+			// eslint-disable-next-line
 			(wasmBin as any).default // it is loaded as a base64 string by webpack
 		);
 
