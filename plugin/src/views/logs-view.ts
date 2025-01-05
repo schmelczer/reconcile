@@ -53,8 +53,6 @@ export class LogsView extends ItemView {
 			.item(0);
 		const scrollPosition = logsContainer?.scrollTop;
 
-		console.log(scrollPosition);
-
 		container.empty();
 
 		container.createEl("h4", { text: "VaultLink logs" });
