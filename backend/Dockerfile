@@ -23,9 +23,10 @@ RUN apk add --no-cache curl
 
 COPY --from=builder /usr/src/backend/target/x86_64-unknown-linux-musl/release/sync_server /app/sync_server
 
-WORKDIR /app
-
+VOLUME /data
 EXPOSE 3000/tcp
+
+WORKDIR /data
 
 HEALTHCHECK \
     --interval=30s \
