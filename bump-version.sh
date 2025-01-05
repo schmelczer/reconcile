@@ -22,15 +22,25 @@ else
   echo "Your working directory is clean."
 fi
 
+echo "Bumping backend versions"
 cd backend
 cargo set-version --bump patch
+
+echo "Bumping frontend versions"
 cd ../plugin
 npm version patch
+
+echo "Updating frontend dependencies to match the new backend versions"
+npm install
+
 cd ..
 cp plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
+
+# Commit and tag
 git add .
 TAG=$(node -p "require('./plugin/package.json').version")
 git commit -m "Bump versions to $TAG"
+
 git push
 echo "Tagging $TAG"
 git tag -a $TAG -m "Release $TAG"
