@@ -279,10 +279,10 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
+					.setValue(this.database.getSettings().displayNoopSyncEvents)
 					.onChange(async (value) =>
 						this.database.setSetting("displayNoopSyncEvents", value)
 					)
-					.setValue(this.database.getSettings().displayNoopSyncEvents)
 			);
 
 		new Setting(containerEl)
@@ -298,6 +298,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.WARNING]: LogLevel.WARNING,
 						[LogLevel.ERROR]: LogLevel.ERROR
 					})
+					.setValue(this.database.getSettings().minimumLogLevel)
 					.onChange(async (value) =>
 						this.database.setSetting(
 							"minimumLogLevel",
@@ -305,7 +306,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 							value as LogLevel
 						)
 					)
-					.setValue(this.database.getSettings().minimumLogLevel)
 			);
 	}
 
