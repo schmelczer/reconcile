@@ -14,7 +14,7 @@ backend/target
 plugin/build
 
 backend/db.sqlite3*
-backend/config.yaml
+backend/config.yml
 
 *.log
 
