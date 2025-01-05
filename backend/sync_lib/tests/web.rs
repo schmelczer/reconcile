@@ -4,8 +4,6 @@ use insta::assert_debug_snapshot;
 use sync_lib::*;
 use wasm_bindgen_test::*;
 
-wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-
 #[wasm_bindgen_test(unsupported = test)]
 fn test_bytes_to_base64() {
     let input = b"hello";
