@@ -49,7 +49,7 @@ export class ObsidianFileOperations implements FileOperations {
 			return new Uint8Array(0);
 		}
 
-		if (isBinary(expectedContent) || !path.endsWith(".md")) {
+		if (isBinary(expectedContent)) {
 			await this.vault.adapter.writeBinary(
 				normalizePath(path),
 				newContent

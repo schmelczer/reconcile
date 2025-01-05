@@ -12,7 +12,7 @@ import { unlockDocument, waitForDocumentLock } from "./document-lock";
 import PQueue from "p-queue";
 import { EMPTY_HASH, hash } from "src/utils/hash";
 import type { components } from "src/services/types";
-import { base64ToBytes } from "sync_lib";
+import { deserialize } from "src/utils/deserialize";
 
 export class Syncer {
 	private readonly remainingOperationsListeners: ((
@@ -238,7 +238,7 @@ export class Syncer {
 				});
 
 				if (response.type === "MergingUpdate") {
-					const responseBytes = base64ToBytes(response.contentBase64);
+					const responseBytes = deserialize(response.contentBase64);
 					contentHash = hash(responseBytes);
 
 					await this.operations.write(
@@ -364,7 +364,7 @@ export class Syncer {
 					}
 
 					if (response.type === "MergingUpdate") {
-						const responseBytes = base64ToBytes(
+						const responseBytes = deserialize(
 							response.contentBase64
 						);
 						contentHash = hash(responseBytes);
@@ -373,15 +373,15 @@ export class Syncer {
 							contentBytes,
 							responseBytes
 						);
-					}
 
-					this.history.addHistoryEntry({
-						status: SyncStatus.SUCCESS,
-						source: SyncSource.PULL,
-						relativePath,
-						message: `The file we updated had been updated remotely, so we downloaded the merged version`,
-						type: SyncType.UPDATE
-					});
+						this.history.addHistoryEntry({
+							status: SyncStatus.SUCCESS,
+							source: SyncSource.PULL,
+							relativePath,
+							message: `The file we updated had been updated remotely, so we downloaded the merged version`,
+							type: SyncType.UPDATE
+						});
+					}
 
 					await this.database.moveDocument({
 						documentId: localMetadata.documentId,
@@ -470,7 +470,7 @@ export class Syncer {
 							documentId: remoteVersion.documentId
 						})
 					).contentBase64;
-					const contentBytes = base64ToBytes(content);
+					const contentBytes = deserialize(content);
 
 					await this.operations.create(
 						remoteVersion.relativePath,
@@ -532,7 +532,7 @@ export class Syncer {
 								documentId: remoteVersion.documentId
 							})
 						).contentBase64;
-						const contentBytes = base64ToBytes(content);
+						const contentBytes = deserialize(content);
 						const contentHash = hash(contentBytes);
 
 						if (relativePath !== remoteVersion.relativePath) {

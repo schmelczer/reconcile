@@ -10,7 +10,7 @@ import type {
 } from "src/database/document-metadata";
 import { Logger } from "src/tracing/logger";
 import { retriedFetch } from "src/utils/retried-fetch";
-import { bytesToBase64 } from "sync_lib";
+import { serialize } from "src/utils/serialize";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
@@ -83,7 +83,7 @@ export class SyncService {
 					}
 				},
 				body: {
-					contentBase64: bytesToBase64(contentBytes),
+					contentBase64: serialize(contentBytes),
 					createdDate: createdDate.toISOString(),
 					relativePath
 				}
@@ -132,7 +132,7 @@ export class SyncService {
 				},
 				body: {
 					parentVersionId,
-					contentBase64: bytesToBase64(contentBytes),
+					contentBase64: serialize(contentBytes),
 					createdDate: createdDate.toISOString(),
 					relativePath
 				}
