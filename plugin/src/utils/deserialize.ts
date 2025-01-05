@@ -1,3 +1,5 @@
+import { base64ToBytes } from "byte-base64";
+
 export function deserialize(data: string): Uint8Array {
-	return Buffer.from(data, "base64");
+	return base64ToBytes(data);
 }

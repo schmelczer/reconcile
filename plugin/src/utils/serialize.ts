@@ -1,3 +1,5 @@
+import { bytesToBase64 } from "byte-base64";
+
 export function serialize(data: Uint8Array): string {
-	return Buffer.from(data).toString("base64");
+	return bytesToBase64(data);
 }

@@ -23,6 +23,7 @@
 		"@types/jest": "^29.5.14",
 		"@types/node": "^16.11.6",
 		"builtin-modules": "3.3.0",
+		"byte-base64": "^1.1.0",
 		"css-loader": "^7.1.2",
 		"date-fns": "^4.1.0",
 		"dayjs": "^1.11.13",
