@@ -4,16 +4,18 @@ use insta::assert_debug_snapshot;
 use sync_lib::*;
 use wasm_bindgen_test::*;
 
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 #[wasm_bindgen_test(unsupported = test)]
 fn test_bytes_to_base64() {
     let input = b"hello";
-    let expected = "aGVsbG8";
+    let expected = "aGVsbG8=";
     assert_eq!(bytes_to_base64(input), expected);
 }
 
 #[wasm_bindgen_test(unsupported = test)]
 fn test_base64_to_bytes() {
-    let input = "aGVsbG8";
+    let input = "aGVsbG8=";
     let expected = b"hello".to_vec();
     assert_eq!(base64_to_bytes(input).unwrap(), expected);
 }

@@ -10,7 +10,7 @@
 //! - `errors`: Contains error types used in this crate.
 use core::str;
 
-use base64::{engine::general_purpose::STANDARD_NO_PAD, Engine as _};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use errors::SyncLibError;
 use wasm_bindgen::prelude::*;
 
@@ -19,12 +19,12 @@ pub mod errors;
 /// Encode binary data for easy transport over HTTP. Inverse of
 /// `base64_to_bytes`.
 #[wasm_bindgen(js_name = bytesToBase64)]
-pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD_NO_PAD.encode(input) }
+pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD.encode(input) }
 
 /// Inverse of `bytes_to_base64`.
 #[wasm_bindgen(js_name = base64ToBytes)]
 pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
-    STANDARD_NO_PAD.decode(input).map_err(SyncLibError::from)
+    STANDARD.decode(input).map_err(SyncLibError::from)
 }
 
 /// Merge two documents with a common parent. Relies on `reconcile::reconcile`
