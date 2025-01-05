@@ -29,7 +29,7 @@ jobs:
       - name: Build plugin
         run: |
           cd plugin
-          npm install
+          npm ci
           npm run build
 
       - name: Create release
@@ -38,7 +38,7 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
-          cd plugin/build
+          cd plugin/dist
 
           gh release create "$tag" \
             --title="$tag" \
