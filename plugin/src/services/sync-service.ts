@@ -98,7 +98,7 @@ export class SyncService {
 
 		Logger.getInstance().debug(
 			`Created document ${JSON.stringify(
-				response.data.relativePath
+				response.data
 			)} with id ${response.data.documentId}`
 		);
 
@@ -146,7 +146,7 @@ export class SyncService {
 		}
 
 		Logger.getInstance().debug(
-			`Updated document ${response.data.relativePath} with id ${response.data.documentId}`
+			`Updated document ${JSON.stringify(response.data)} with id ${response.data.documentId}`
 		);
 
 		return response.data;
