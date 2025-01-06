@@ -50,6 +50,10 @@ export class ObsidianFileEventHandler implements FileEventHandler {
 
 	public async onModify(file: TAbstractFile): Promise<void> {
 		if (file instanceof TFile) {
+			if (file.basename.startsWith("console-log.iPhone")) {
+				return;
+			}
+
 			Logger.getInstance().info(`File modified: ${file.path}`);
 
 			await this.syncer.syncLocallyUpdatedFile({
