@@ -33,6 +33,8 @@ npm version patch
 echo "Updating frontend dependencies to match the new backend versions"
 cd ../backend/sync_lib
 wasm-pack build --target web --features console_error_panic_hook
+
+cd ../../plugin
 npm install
 
 cd ..

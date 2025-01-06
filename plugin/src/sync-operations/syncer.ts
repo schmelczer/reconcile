@@ -284,6 +284,7 @@ export class Syncer {
 				const localMetadata = this.database.getDocument(
 					oldPath ?? relativePath
 				);
+				console.log(JSON.stringify(localMetadata));
 				if (!localMetadata) {
 					if (this.database.getDocument(relativePath)) {
 						this.history.addHistoryEntry({
@@ -299,9 +300,13 @@ export class Syncer {
 						`Document metadata not found for ${relativePath}. This implies a corrupt local database. Consider resetting the plugin's sync history.`
 					);
 				}
+				console.log("about to read", relativePath);
 
 				const contentBytes = await this.operations.read(relativePath);
+				console.log("has read", relativePath);
+
 				let contentHash = hash(contentBytes);
+				console.log("has hashed", relativePath);
 
 				if (
 					localMetadata.hash === contentHash &&
@@ -316,6 +321,8 @@ export class Syncer {
 					return;
 				}
 
+				console.log("about to send", relativePath);
+
 				const response = await this.syncService.put({
 					documentId: localMetadata.documentId,
 					parentVersionId: localMetadata.parentVersionId,
@@ -323,6 +330,8 @@ export class Syncer {
 					contentBytes,
 					createdDate: updateTime
 				});
+
+				console.log("has sent", relativePath);
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
@@ -364,15 +373,22 @@ export class Syncer {
 					}
 
 					if (response.type === "MergingUpdate") {
+						console.log(
+							"about to deserialize",
+							response.contentBase64
+						);
 						const responseBytes = deserialize(
 							response.contentBase64
 						);
+						console.log("has deserialized", response.relativePath);
 						contentHash = hash(responseBytes);
+						console.log("about to write", response.relativePath);
 						await this.operations.write(
 							response.relativePath,
 							contentBytes,
 							responseBytes
 						);
+						console.log("has written", response.relativePath);
 
 						this.history.addHistoryEntry({
 							status: SyncStatus.SUCCESS,
