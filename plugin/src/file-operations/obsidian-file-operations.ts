@@ -9,28 +9,40 @@ export class ObsidianFileOperations implements FileOperations {
 
 	public async listAllFiles(): Promise<RelativePath[]> {
 		console.log("before getFiles");
+		await sleep(1000);
+
 		const files = this.vault.getFiles();
 		console.log("after getFiles");
+		await sleep(1000);
+
 		console.log(files);
 		return files.map((file) => file.path);
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
 		console.log("before readBinary");
+		await sleep(1000);
+
 		const result = new Uint8Array(
 			await this.vault.adapter.readBinary(normalizePath(path))
 		);
 		console.log("after readBinary");
+		await sleep(1000);
+
 		return result;
 	}
 
 	public async getModificationTime(path: RelativePath): Promise<Date> {
 		console.log("before stat");
+		await sleep(1000);
+
 		const file = await this.vault.adapter.stat(normalizePath(path));
 		if (!file) {
 			throw new Error(`File not found: ${path}`);
 		}
 		console.log("after stat");
+		await sleep(1000);
+
 		return new Date(file.mtime);
 	}
 

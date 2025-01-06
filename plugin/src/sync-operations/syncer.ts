@@ -300,13 +300,17 @@ export class Syncer {
 						`Document metadata not found for ${relativePath}. This implies a corrupt local database. Consider resetting the plugin's sync history.`
 					);
 				}
+				await sleep(1000);
 				console.log("about to read", relativePath);
+				await sleep(1000);
 
 				const contentBytes = await this.operations.read(relativePath);
 				console.log("has read", relativePath);
+				await sleep(1000);
 
 				let contentHash = hash(contentBytes);
 				console.log("has hashed", relativePath);
+				await sleep(1000);
 
 				if (
 					localMetadata.hash === contentHash &&
@@ -322,6 +326,7 @@ export class Syncer {
 				}
 
 				console.log("about to send", relativePath);
+				await sleep(1000);
 
 				const response = await this.syncService.put({
 					documentId: localMetadata.documentId,
@@ -332,6 +337,7 @@ export class Syncer {
 				});
 
 				console.log("has sent", relativePath);
+				await sleep(1000);
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
