@@ -42,32 +42,24 @@ export class Logger {
 	}
 
 	public debug(message: string): void {
-		if (process.env.NODE_ENV !== "production") {
-			console.debug(message);
-		}
+		console.debug(message);
 		this.pushMessage(message, LogLevel.DEBUG);
 	}
 
 	public info(message: string): void {
-		if (process.env.NODE_ENV !== "production") {
-			console.info(message);
-		}
+		console.info(message);
 
 		this.pushMessage(message, LogLevel.INFO);
 	}
 
 	public warn(message: string): void {
-		if (process.env.NODE_ENV !== "production") {
-			console.warn(message);
-		}
+		console.warn(message);
 
 		this.pushMessage(message, LogLevel.WARNING);
 	}
 
 	public error(message: string): void {
-		if (process.env.NODE_ENV !== "production") {
-			console.error(message);
-		}
+		console.error(message);
 
 		this.pushMessage(message, LogLevel.ERROR);
 		new Notice(message, 5000);
