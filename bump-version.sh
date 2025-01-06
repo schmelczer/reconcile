@@ -35,7 +35,7 @@ cd ../backend/sync_lib
 wasm-pack build --target web --features console_error_panic_hook
 npm install
 
-cd ..
+cd ../..
 cp plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
 
 # Commit and tag
