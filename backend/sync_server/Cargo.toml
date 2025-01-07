@@ -1,7 +1,10 @@
 [package]
 name = "sync_server"
-version = "0.0.20"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 reconcile = { path = "../reconcile" }
@@ -14,18 +17,21 @@ tokio = { version = "1.42.0", features = ["full"]}
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 log = { version = "0.4.22" }
 anyhow =  { version = "1.0.94", features = ["backtrace"] }
-axum = { version = "0.7.9", features = ["ws", "macros", "tracing"]}
+axum = { version = "0.7.4", features = ["ws", "macros", "tracing", "multipart"]}
 axum-extra = { version = "0.9.6", features = ["typed-header"] }
-tower-http = { version = "0.6.1", features = ["cors", "trace"] }
+aide-axum-typed-multipart = "0.13.0"
+axum_typed_multipart = "0.11.0"
+tower-http = { version = "0.6.1", features = ["cors", "trace", "limit"] }
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"]}
 serde_yaml = "0.9.34"
 sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 aide = { version = "0.13.4", features = ["axum", "axum-ws", "scalar", "axum-headers"] }
-schemars = { version = "0.8.21", features = ["chrono", "uuid1"] }
-tracing = "0.1"
+schemars = { version = "0.8.21", features = ["chrono", "uuid1", "bytes"] }
+tracing = "0.1.41"
 rand = "0.8.5"
 sanitize-filename = "0.6.0"
+axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 
 [lints]
 workspace = true
