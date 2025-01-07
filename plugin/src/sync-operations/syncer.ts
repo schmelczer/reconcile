@@ -115,9 +115,13 @@ export class Syncer {
 						// If there's no metadata, it must be a new file
 						if (!metadata) {
 							// Perhaps the file has been moved. Let's check by looking at the deleted files
+							const contentBytes =
+								await this.operations.read(relativePath);
+							const contentHash = hash(contentBytes);
+
 							const originalFile =
 								await this.findMatchingFileBasedOnHash(
-									relativePath,
+									contentHash,
 									locallyDeletedFiles
 								);
 							if (originalFile !== undefined) {
@@ -133,7 +137,11 @@ export class Syncer {
 									updateTime:
 										await this.operations.getModificationTime(
 											relativePath
-										)
+										),
+									optimisations: {
+										contentBytes,
+										contentHash
+									}
 								});
 							}
 
@@ -196,15 +204,22 @@ export class Syncer {
 
 	private async internalSyncLocallyCreatedFile(
 		relativePath: RelativePath,
-		updateTime: Date
+		updateTime: Date,
+		optimisations?: {
+			contentBytes?: Uint8Array;
+			contentHash?: string;
+		}
 	): Promise<void> {
 		await this.executeWhileHoldingFileLock(
 			relativePath,
 			SyncType.CREATE,
 			SyncSource.PUSH,
 			async () => {
-				const contentBytes = await this.operations.read(relativePath);
-				let contentHash = hash(contentBytes);
+				const contentBytes =
+					optimisations?.contentBytes ??
+					(await this.operations.read(relativePath));
+				let contentHash =
+					optimisations?.contentHash ?? hash(contentBytes);
 
 				const localMetadata = this.database.getDocument(relativePath);
 				if (localMetadata) {
@@ -270,11 +285,16 @@ export class Syncer {
 	private async internalSyncLocallyUpdatedFile({
 		oldPath,
 		relativePath,
-		updateTime
+		updateTime,
+		optimisations
 	}: {
 		oldPath?: RelativePath;
 		relativePath: RelativePath;
 		updateTime: Date;
+		optimisations?: {
+			contentBytes?: Uint8Array;
+			contentHash?: string;
+		};
 	}): Promise<void> {
 		await this.executeWhileHoldingFileLock(
 			relativePath,
@@ -304,11 +324,15 @@ export class Syncer {
 				console.log("about to read", relativePath);
 				await sleep(1000);
 
-				const contentBytes = await this.operations.read(relativePath);
+				const contentBytes =
+					optimisations?.contentBytes ??
+					(await this.operations.read(relativePath));
+
 				console.log("has read", relativePath);
 				await sleep(1000);
 
-				let contentHash = hash(contentBytes);
+				let contentHash =
+					optimisations?.contentHash ?? hash(contentBytes);
 				console.log("has hashed", relativePath);
 				await sleep(1000);
 
@@ -640,11 +664,9 @@ export class Syncer {
 	}
 
 	private async findMatchingFileBasedOnHash(
-		filePath: RelativePath,
+		contentHash: string,
 		candidates: [RelativePath, DocumentMetadata][]
 	): Promise<[RelativePath, DocumentMetadata] | undefined> {
-		const contentHash = hash(await this.operations.read(filePath));
-
 		if (contentHash != EMPTY_HASH) {
 			return undefined;
 		}
