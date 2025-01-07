@@ -1,19 +1,17 @@
 use anyhow::anyhow;
-use axum::{
-    extract::{Path, State},
-    Json,
-};
+use axum::extract::{Path, State};
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
+use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::{app_state::AppState, auth::auth};
 use crate::{
     database::models::{DocumentId, DocumentVersion, VaultId},
-    errors::{not_found_error, server_error, SyncServerError},
+    errors::{SyncServerError, not_found_error, server_error},
 };
 
 // This is required for aide to infer the path parameter types and names

@@ -6,7 +6,7 @@ mod server;
 mod utils;
 
 use anyhow::{Context as _, Result};
-use errors::{init_error, SyncServerError};
+use errors::{SyncServerError, init_error};
 use log::info;
 use server::create_server;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};

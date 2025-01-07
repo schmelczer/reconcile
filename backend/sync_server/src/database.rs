@@ -6,7 +6,7 @@ use models::{
 };
 use sqlx::{sqlite::SqliteConnectOptions, types::chrono::Utc};
 pub mod models;
-use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
+use sqlx::{Pool, Sqlite, sqlite::SqlitePoolOptions};
 
 use crate::config::database_config::DatabaseConfig;
 

@@ -10,7 +10,7 @@
 //! - `errors`: Contains error types used in this crate.
 use core::str;
 
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use errors::SyncLibError;
 use wasm_bindgen::prelude::*;
 

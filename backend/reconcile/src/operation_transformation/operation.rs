@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use super::merge_context::MergeContext;
 use crate::{
-    utils::{find_common_overlap::find_common_overlap, string_builder::StringBuilder},
     Token,
+    utils::{find_common_overlap::find_common_overlap, string_builder::StringBuilder},
 };
 
 /// Represents a change that can be applied to a text document.
@@ -355,9 +355,11 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_shifting_error() {
-        insta::assert_debug_snapshot!(Operation::create_insert(1, vec!["hi".into()])
-            .unwrap()
-            .with_shifted_index(-2));
+        insta::assert_debug_snapshot!(
+            Operation::create_insert(1, vec!["hi".into()])
+                .unwrap()
+                .with_shifted_index(-2)
+        );
     }
 
     #[test]

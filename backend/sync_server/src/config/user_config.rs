@@ -1,4 +1,4 @@
-use rand::{distributions::Alphanumeric, thread_rng, Rng as _};
+use rand::{Rng as _, distributions::Alphanumeric, thread_rng};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

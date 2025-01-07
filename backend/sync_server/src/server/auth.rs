@@ -1,7 +1,7 @@
 use super::app_state::AppState;
 use crate::{
     config::user_config::User,
-    errors::{unauthorized_error, SyncServerError},
+    errors::{SyncServerError, unauthorized_error},
 };
 
 pub fn auth(app_state: &AppState, token: &str) -> Result<User, SyncServerError> {

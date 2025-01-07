@@ -1,19 +1,17 @@
 use anyhow::Context as _;
-use axum::{
-    extract::{Path, State},
-    Json,
-};
+use axum::extract::{Path, State};
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
+use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::{app_state::AppState, auth::auth, requests::DeleteDocumentVersion};
 use crate::{
     database::models::{DocumentId, StoredDocumentVersion, VaultId},
-    errors::{server_error, SyncServerError},
+    errors::{SyncServerError, server_error},
     utils::sanitize_path,
 };
 

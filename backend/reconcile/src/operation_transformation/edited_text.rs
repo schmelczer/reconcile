@@ -7,7 +7,7 @@ use super::Operation;
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
     operation_transformation::merge_context::MergeContext,
-    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
+    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{
         merge_iters::MergeSorted as _, ordered_operation::OrderedOperation, side::Side,
         string_builder::StringBuilder,

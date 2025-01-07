@@ -1,8 +1,8 @@
 use aide::OperationOutput;
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use log::{error, info};
 use schemars::JsonSchema;
