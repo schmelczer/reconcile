@@ -102,6 +102,56 @@ export interface paths {
 			};
 			requestBody: {
 				content: {
+					"multipart/form-data": components["schemas"]["CreateDocumentVersionMultipart"];
+				};
+			};
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentUpdateResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/vaults/{vault_id}/documents/json": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
 					"application/json": components["schemas"]["CreateDocumentVersion"];
 				};
 			};
@@ -183,7 +233,7 @@ export interface paths {
 			};
 			requestBody: {
 				content: {
-					"application/json": components["schemas"]["UpdateDocumentVersion"];
+					"multipart/form-data": components["schemas"]["UpdateDocumentVersionMultipart"];
 				};
 			};
 			responses: {
@@ -246,15 +296,73 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/vaults/{vault_id}/documents/{document_id}/json": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": components["schemas"]["UpdateDocumentVersion"];
+				};
+			};
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentUpdateResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
 	schemas: {
+		Array_of_uint8: number[];
 		CreateDocumentVersion: {
 			contentBase64: string;
 			/** Format: date-time */
 			createdDate: string;
 			relativePath: string;
+		};
+		CreateDocumentVersionMultipart: {
+			content: components["schemas"]["Array_of_uint8"];
+			/** Format: date-time */
+			created_date: string;
+			relative_path: string;
 		};
 		DeleteDocumentVersion: {
 			/** Format: date-time */
@@ -368,6 +476,14 @@ export interface components {
 		};
 		UpdateDocumentVersion: {
 			contentBase64: string;
+			/** Format: date-time */
+			createdDate: string;
+			/** Format: int64 */
+			parentVersionId: number;
+			relativePath: string;
+		};
+		UpdateDocumentVersionMultipart: {
+			content: components["schemas"]["Array_of_uint8"];
 			/** Format: date-time */
 			createdDate: string;
 			/** Format: int64 */
