@@ -1,24 +1,26 @@
-use anyhow::{anyhow, Context as _};
-use axum::{
-    extract::{Path, State},
-    Json,
-};
+use aide_axum_typed_multipart::TypedMultipart;
+use anyhow::{Context as _, anyhow};
+use axum::extract::{Path, State};
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
+use axum_jsonschema::Json;
+use chrono::{DateTime, Utc};
 use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
 
 use super::{
-    app_state::AppState, auth::auth, requests::UpdateDocumentVersion,
+    app_state::AppState,
+    auth::auth,
+    requests::{UpdateDocumentVersion, UpdateDocumentVersionMultipart},
     responses::DocumentUpdateResponse,
 };
 use crate::{
-    database::models::{DocumentId, StoredDocumentVersion, VaultId},
-    errors::{client_error, not_found_error, server_error, SyncServerError},
+    database::models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+    errors::{SyncServerError, client_error, not_found_error, server_error},
     utils::sanitize_path,
 };
 
@@ -30,7 +32,32 @@ pub struct PathParams {
 }
 
 #[axum::debug_handler]
-pub async fn update_document(
+pub async fn update_document_multipart(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
+    Path(PathParams {
+        vault_id,
+        document_id,
+    }): Path<PathParams>,
+    State(state): State<AppState>,
+    TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
+        UpdateDocumentVersionMultipart,
+    >,
+) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+    internal_update_document(
+        auth_header,
+        state,
+        vault_id,
+        document_id,
+        request.parent_version_id,
+        request.relative_path,
+        request.created_date,
+        request.content.contents.to_vec(),
+    )
+    .await
+}
+
+#[axum::debug_handler]
+pub async fn update_document_json(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams {
         vault_id,
@@ -39,19 +66,47 @@ pub async fn update_document(
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+    let content_bytes = base64_to_bytes(&request.content_base64)
+        .context("Failed to decode base64 content in request")
+        .map_err(client_error)?;
+
+    internal_update_document(
+        auth_header,
+        state,
+        vault_id,
+        document_id,
+        request.parent_version_id,
+        request.relative_path,
+        request.created_date,
+        content_bytes,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn internal_update_document(
+    auth_header: Authorization<Bearer>,
+    state: AppState,
+    vault_id: VaultId,
+    document_id: DocumentId,
+    parent_version_id: VaultUpdateId,
+    relative_path: String,
+    created_date: DateTime<Utc>,
+    content: Vec<u8>,
+) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
     // No need for a transaction as document versions are immutable
     let parent_document = state
         .database
-        .get_document_version(&vault_id, request.parent_version_id, None)
+        .get_document_version(&vault_id, parent_version_id, None)
         .await
         .map_err(server_error)?
         .map_or_else(
             || {
                 Err(not_found_error(anyhow!(
                     "Parent version with id `{}` not found",
-                    request.parent_version_id
+                    parent_version_id
                 )))
             },
             Ok,
@@ -83,15 +138,10 @@ pub async fn update_document(
             Ok,
         )?;
 
-    let content_bytes = base64_to_bytes(&request.content_base64)
-        .context("Failed to decode base64 content in request")
-        .map_err(client_error)?;
-
-    let sanitized_relative_path = sanitize_path(&request.relative_path);
+    let sanitized_relative_path = sanitize_path(&relative_path);
     // Return the latest version if the content and path are the same as the latest
     // version
-    if content_bytes == latest_version.content
-        && sanitized_relative_path == latest_version.relative_path
+    if content == latest_version.content && sanitized_relative_path == latest_version.relative_path
     {
         info!("Document content is the same as the latest version, skipping update");
         transaction
@@ -105,12 +155,8 @@ pub async fn update_document(
         )));
     }
 
-    let merged_content = merge(
-        &parent_document.content,
-        &latest_version.content,
-        &content_bytes,
-    );
-    let is_different_from_request_content = merged_content != content_bytes;
+    let merged_content = merge(&parent_document.content, &latest_version.content, &content);
+    let is_different_from_request_content = merged_content != content;
 
     // We can only update the relative path if we're the first one to do so
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
@@ -125,7 +171,7 @@ pub async fn update_document(
         vault_update_id: last_update_id + 1,
         relative_path: new_relative_path,
         content: merged_content,
-        created_date: request.created_date,
+        created_date,
         updated_date: chrono::Utc::now(),
         is_deleted: latest_version.is_deleted,
     };

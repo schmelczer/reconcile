@@ -1,24 +1,26 @@
+use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::Context as _;
-use axum::{
-    extract::{Path, State},
-    Json,
-};
+use axum::extract::{Path, State};
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
+use axum_jsonschema::Json;
+use chrono::{DateTime, Utc};
 use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, merge};
 
 use super::{
-    app_state::AppState, auth::auth, requests::CreateDocumentVersion,
+    app_state::AppState,
+    auth::auth,
+    requests::{CreateDocumentVersion, CreateDocumentVersionMultipart},
     responses::DocumentUpdateResponse,
 };
 use crate::{
     database::models::{StoredDocumentVersion, VaultId},
-    errors::{client_error, server_error, SyncServerError},
+    errors::{SyncServerError, client_error, server_error},
     utils::sanitize_path,
 };
 
@@ -32,11 +34,57 @@ pub struct PathParams {
 /// already. If a document with the same path exists, a new version is created
 /// with their content merged.
 #[axum::debug_handler]
-pub async fn create_document(
+pub async fn create_document_multipart(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
+    Path(PathParams { vault_id }): Path<PathParams>,
+    State(state): State<AppState>,
+    TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
+        CreateDocumentVersionMultipart,
+    >,
+) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+    internal_create_document(
+        auth_header,
+        state,
+        vault_id,
+        request.relative_path,
+        request.created_date,
+        request.content.contents.to_vec(),
+    )
+    .await
+}
+
+/// Create a new document in case a document with the same doesn't exist
+/// already. If a document with the same path exists, a new version is created
+/// with their content merged.
+#[axum::debug_handler]
+pub async fn create_document_json(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams { vault_id }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
+) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+    let content_bytes = base64_to_bytes(&request.content_base64)
+        .context("Failed to decode base64 content in request")
+        .map_err(client_error)?;
+
+    internal_create_document(
+        auth_header,
+        state,
+        vault_id,
+        request.relative_path,
+        request.created_date,
+        content_bytes,
+    )
+    .await
+}
+
+async fn internal_create_document(
+    auth_header: Authorization<Bearer>,
+    state: AppState,
+    vault_id: VaultId,
+    relative_path: String,
+    created_date: DateTime<Utc>,
+    content: Vec<u8>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
@@ -52,7 +100,7 @@ pub async fn create_document(
         .await
         .map_err(server_error)?;
 
-    let sanitized_relative_path = sanitize_path(&request.relative_path);
+    let sanitized_relative_path = sanitize_path(&relative_path);
 
     let maybe_existing_version = state
         .database
@@ -61,12 +109,8 @@ pub async fn create_document(
         .map_err(server_error)?
         .and_then(|doc| if doc.is_deleted { None } else { Some(doc) });
 
-    let content_bytes = base64_to_bytes(&request.content_base64)
-        .context("Failed to decode base64 content in request")
-        .map_err(client_error)?;
-
     let response = if let Some(existing_version) = maybe_existing_version {
-        if content_bytes == existing_version.content {
+        if content == existing_version.content {
             info!(
                 "Content of the new version is the same as the existing version. Not creating a \
                  new version."
@@ -86,7 +130,7 @@ pub async fn create_document(
         let merged_content = merge(
             &[], // the empty string is the first common parent of the two documents,
             &existing_version.content,
-            &content_bytes,
+            &content,
         );
 
         let new_version = StoredDocumentVersion {
@@ -95,7 +139,7 @@ pub async fn create_document(
             relative_path: sanitized_relative_path,
             document_id: existing_version.document_id,
             content: merged_content,
-            created_date: request.created_date,
+            created_date,
             updated_date: chrono::Utc::now(),
             is_deleted: false,
         };
@@ -113,8 +157,8 @@ pub async fn create_document(
             vault_update_id: last_update_id + 1,
             document_id: uuid::Uuid::new_v4(),
             relative_path: sanitized_relative_path,
-            content: content_bytes,
-            created_date: request.created_date,
+            content,
+            created_date,
             updated_date: chrono::Utc::now(),
             is_deleted: false,
         };

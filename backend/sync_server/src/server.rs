@@ -2,34 +2,35 @@ use std::sync::Arc;
 
 use aide::{
     axum::{
-        routing::{delete, get, post, put},
         ApiRouter,
+        routing::{delete, get, post, put},
     },
     openapi::{Info, OpenApi},
     scalar::Scalar,
     transform::TransformOpenApi,
 };
-use anyhow::{anyhow, Context as _, Result};
+use anyhow::{Context as _, Result, anyhow};
 use app_state::AppState;
 use axum::{
+    Extension, Json,
     extract::{DefaultBodyLimit, Request},
     http::{self, HeaderValue, Method},
     response::IntoResponse,
-    Extension, Json,
 };
 use log::{error, info};
 use tokio::signal;
 use tower_http::{
+    LatencyUnit,
     cors::CorsLayer,
+    limit::RequestBodyLimitLayer,
     trace::{
         DefaultOnBodyChunk, DefaultOnEos, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse,
         TraceLayer,
     },
-    LatencyUnit,
 };
-use tracing::{info_span, Level};
+use tracing::{Level, info_span};
 
-use crate::errors::{not_found_error, SerializedError};
+use crate::errors::{SerializedError, not_found_error};
 mod app_state;
 mod auth;
 mod create_document;
@@ -42,8 +43,8 @@ mod responses;
 mod update_document;
 
 pub async fn create_server() -> Result<()> {
-    aide::gen::on_error(|err| error!("{err}"));
-    aide::gen::extract_schemas(true);
+    aide::r#gen::on_error(|err| error!("{err}"));
+    aide::r#gen::extract_schemas(true);
 
     let app_state = AppState::try_new()
         .await
@@ -75,7 +76,11 @@ pub async fn create_server() -> Result<()> {
         )
         .api_route(
             "/vaults/:vault_id/documents",
-            post(create_document::create_document),
+            post(create_document::create_document_multipart),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/json",
+            post(create_document::create_document_json),
         )
         .api_route(
             "/vaults/:vault_id/documents/:document_id",
@@ -83,7 +88,11 @@ pub async fn create_server() -> Result<()> {
         )
         .api_route(
             "/vaults/:vault_id/documents/:document_id",
-            put(update_document::update_document),
+            put(update_document::update_document_multipart),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/:document_id/json",
+            put(update_document::update_document_json),
         )
         .api_route(
             "/vaults/:vault_id/documents/:document_id",
@@ -110,7 +119,8 @@ pub async fn create_server() -> Result<()> {
                 .on_eos(DefaultOnEos::new())
                 .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
         )
-        .layer(DefaultBodyLimit::max(
+        .layer(DefaultBodyLimit::disable())
+        .layer(RequestBodyLimitLayer::new(
             app_state.config.server.max_body_size_mb * 1024 * 1024,
         ))
         .layer(
