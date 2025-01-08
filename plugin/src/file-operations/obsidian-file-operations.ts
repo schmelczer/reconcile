@@ -1,4 +1,4 @@
-import type { Vault } from "obsidian";
+import { TFile, Vault } from "obsidian";
 import { normalizePath } from "obsidian";
 import type { FileOperations } from "./file-operations";
 import type { RelativePath } from "src/database/document-metadata";
@@ -25,7 +25,7 @@ export class ObsidianFileOperations implements FileOperations {
 		await sleep(1000);
 
 		const result = new Uint8Array(
-			await this.vault.adapter.readBinary(normalizePath(path))
+			await this.vault.readBinary(this.getAbstractFile(path))
 		);
 		console.log("after readBinary");
 		await sleep(1000);
@@ -61,7 +61,7 @@ export class ObsidianFileOperations implements FileOperations {
 		}
 
 		await this.createParentDirectories(normalizePath(path));
-		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
+		await this.vault.createBinary(normalizePath(path), newContent);
 		console.log("after create2");
 		await sleep(1000);
 	}
@@ -77,26 +77,21 @@ export class ObsidianFileOperations implements FileOperations {
 		}
 
 		if (isBinary(expectedContent)) {
-			await this.vault.adapter.writeBinary(
-				normalizePath(path),
-				newContent
-			);
+			await this.vault.createBinary(normalizePath(path), newContent);
 			return newContent;
 		}
 
 		const expetedText = new TextDecoder().decode(expectedContent);
 		const newText = new TextDecoder().decode(newContent);
 
-		const resultText = await this.vault.adapter.process(
-			normalizePath(path),
-			(currentText) => {
-				if (currentText !== expetedText) {
-					return mergeText(expetedText, currentText, newText);
-				}
-
-				return newText;
+		const file = this.getAbstractFile(path);
+		const resultText = await this.vault.process(file, (currentText) => {
+			if (currentText !== expetedText) {
+				return mergeText(expetedText, currentText, newText);
 			}
-		);
+
+			return newText;
+		});
 		return new TextEncoder().encode(resultText);
 	}
 
@@ -131,5 +126,18 @@ export class ObsidianFileOperations implements FileOperations {
 				await this.vault.adapter.mkdir(parentDir);
 			}
 		}
+	}
+
+	private getAbstractFile(path: RelativePath): TFile {
+		const file = this.vault.getAbstractFileByPath(path);
+		if (!file) {
+			throw new Error(`File not found: ${path}`);
+		}
+
+		if (file instanceof TFile) {
+			return file;
+		}
+
+		throw new Error(`Not a file: ${path}`);
 	}
 }
