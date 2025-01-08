@@ -8,6 +8,7 @@ export class ObsidianFileOperations implements FileOperations {
 	public constructor(private readonly vault: Vault) {}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
+		console.log(this.vault);
 		console.log("before getFiles");
 		await sleep(1000);
 
@@ -50,13 +51,19 @@ export class ObsidianFileOperations implements FileOperations {
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
+		console.log("before create");
+		await sleep(1000);
 		if (await this.vault.adapter.exists(normalizePath(path))) {
 			await this.write(path, new Uint8Array(0), newContent);
+			console.log("after create");
+			await sleep(1000);
 			return;
 		}
 
 		await this.createParentDirectories(normalizePath(path));
 		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
+		console.log("after create2");
+		await sleep(1000);
 	}
 
 	public async write(
