@@ -215,6 +215,21 @@ export class Syncer {
 			SyncType.CREATE,
 			SyncSource.PUSH,
 			async () => {
+				if (
+					(await this.operations.getFileSize(relativePath)) /
+						1024 /
+						1024 >
+					this.database.getSettings().maxFileSizeMB
+				) {
+					this.history.addHistoryEntry({
+						status: SyncStatus.ERROR,
+						relativePath,
+						message: `File size exceeds the maximum file size limit of ${this.database.getSettings().maxFileSizeMB}MB`,
+						type: SyncType.CREATE
+					});
+					return;
+				}
+
 				const contentBytes =
 					optimisations?.contentBytes ??
 					(await this.operations.read(relativePath));
@@ -301,10 +316,25 @@ export class Syncer {
 			SyncType.UPDATE,
 			SyncSource.PUSH,
 			async () => {
+				if (
+					(await this.operations.getFileSize(relativePath)) /
+						1024 /
+						1024 >
+					this.database.getSettings().maxFileSizeMB
+				) {
+					this.history.addHistoryEntry({
+						status: SyncStatus.ERROR,
+						relativePath,
+						message: `File size exceeds the maximum file size limit of ${this.database.getSettings().maxFileSizeMB}MB`,
+						type: SyncType.CREATE
+					});
+					return;
+				}
+
 				const localMetadata = this.database.getDocument(
 					oldPath ?? relativePath
 				);
-				console.log(JSON.stringify(localMetadata));
+
 				if (!localMetadata) {
 					if (this.database.getDocument(relativePath)) {
 						this.history.addHistoryEntry({
@@ -320,21 +350,13 @@ export class Syncer {
 						`Document metadata not found for ${relativePath}. This implies a corrupt local database. Consider resetting the plugin's sync history.`
 					);
 				}
-				await sleep(1000);
-				console.log("about to read", relativePath);
-				await sleep(1000);
 
 				const contentBytes =
 					optimisations?.contentBytes ??
 					(await this.operations.read(relativePath));
 
-				console.log("has read", relativePath);
-				await sleep(1000);
-
 				let contentHash =
 					optimisations?.contentHash ?? hash(contentBytes);
-				console.log("has hashed", relativePath);
-				await sleep(1000);
 
 				if (
 					localMetadata.hash === contentHash &&
@@ -349,9 +371,6 @@ export class Syncer {
 					return;
 				}
 
-				console.log("about to send", relativePath);
-				await sleep(1000);
-
 				const response = await this.syncService.put({
 					documentId: localMetadata.documentId,
 					parentVersionId: localMetadata.parentVersionId,
@@ -359,9 +378,6 @@ export class Syncer {
 					contentBytes,
 					createdDate: updateTime
 				});
-
-				console.log("has sent", relativePath);
-				await sleep(1000);
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
@@ -403,22 +419,16 @@ export class Syncer {
 					}
 
 					if (response.type === "MergingUpdate") {
-						console.log(
-							"about to deserialize",
-							response.contentBase64
-						);
 						const responseBytes = deserialize(
 							response.contentBase64
 						);
-						console.log("has deserialized", response.relativePath);
 						contentHash = hash(responseBytes);
-						console.log("about to write", response.relativePath);
+
 						await this.operations.write(
 							response.relativePath,
 							contentBytes,
 							responseBytes
 						);
-						console.log("has written", response.relativePath);
 
 						this.history.addHistoryEntry({
 							status: SyncStatus.SUCCESS,

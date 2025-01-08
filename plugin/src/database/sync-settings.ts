@@ -9,6 +9,7 @@ export interface SyncSettings {
 	isSyncEnabled: boolean;
 	displayNoopSyncEvents: boolean;
 	minimumLogLevel: LogLevel;
+	maxFileSizeMB: number;
 }
 
 export const DEFAULT_SETTINGS: SyncSettings = {
@@ -19,5 +20,6 @@ export const DEFAULT_SETTINGS: SyncSettings = {
 	syncConcurrency: 1,
 	isSyncEnabled: false,
 	displayNoopSyncEvents: false,
-	minimumLogLevel: LogLevel.INFO
+	minimumLogLevel: LogLevel.INFO,
+	maxFileSizeMB: 10
 };

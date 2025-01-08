@@ -8,41 +8,32 @@ export class ObsidianFileOperations implements FileOperations {
 	public constructor(private readonly vault: Vault) {}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
-		console.log(this.vault);
-		console.log("before getFiles");
-		await sleep(1000);
-
 		const files = this.vault.getFiles();
-		console.log("after getFiles");
-		await sleep(1000);
-
-		console.log(files);
 		return files.map((file) => file.path);
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		console.log("before readBinary");
-		await sleep(1000);
-
 		const result = new Uint8Array(
 			await this.vault.readBinary(this.getAbstractFile(path))
 		);
-		console.log("after readBinary");
-		await sleep(1000);
 
 		return result;
 	}
 
-	public async getModificationTime(path: RelativePath): Promise<Date> {
-		console.log("before stat");
-		await sleep(1000);
-
+	public async getFileSize(path: RelativePath): Promise<number> {
 		const file = await this.vault.adapter.stat(normalizePath(path));
 		if (!file) {
 			throw new Error(`File not found: ${path}`);
 		}
-		console.log("after stat");
-		await sleep(1000);
+
+		return file.size;
+	}
+
+	public async getModificationTime(path: RelativePath): Promise<Date> {
+		const file = await this.vault.adapter.stat(normalizePath(path));
+		if (!file) {
+			throw new Error(`File not found: ${path}`);
+		}
 
 		return new Date(file.mtime);
 	}
@@ -51,19 +42,13 @@ export class ObsidianFileOperations implements FileOperations {
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
-		console.log("before create");
-		await sleep(1000);
 		if (await this.vault.adapter.exists(normalizePath(path))) {
 			await this.write(path, new Uint8Array(0), newContent);
-			console.log("after create");
-			await sleep(1000);
 			return;
 		}
 
 		await this.createParentDirectories(normalizePath(path));
 		await this.vault.createBinary(normalizePath(path), newContent);
-		console.log("after create2");
-		await sleep(1000);
 	}
 
 	public async write(

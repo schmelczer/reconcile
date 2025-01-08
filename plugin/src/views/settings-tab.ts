@@ -253,6 +253,22 @@ export class SyncSettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Maximum file size to be uploaded (MB)")
+			.setDesc(
+				"Set the maximum file size that can be uploaded to the server. Files larger than this size will be ignored."
+			)
+			.addSlider((slider) =>
+				slider
+					.setLimits(0, 32, 1)
+					.setDynamicTooltip()
+					.setInstant(false)
+					.setValue(this.database.getSettings().maxFileSizeMB)
+					.onChange(async (value) =>
+						this.database.setSetting("maxFileSizeMB", value)
+					)
+			);
+
+		new Setting(containerEl)
 			.setName("Enable sync")
 			.setDesc(
 				"Enable pulling and pushing changes to the remote server. The first time it's enabled, or after the sync state has been reset, all local files will be pushed to the server."
