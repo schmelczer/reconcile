@@ -10,7 +10,6 @@ import type {
 } from "src/database/document-metadata";
 import { Logger } from "src/tracing/logger";
 import { retriedFetch } from "src/utils/retried-fetch";
-import { serialize } from "src/utils/serialize";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
@@ -87,6 +86,7 @@ export class SyncService {
 						authorization: `Bearer ${this.database.getSettings().token}`
 					}
 				},
+				// eslint-disable-next-line
 				body: formData as any // FormData is not supported by openapi-fetch
 			}
 		);
@@ -137,6 +137,7 @@ export class SyncService {
 						authorization: `Bearer ${this.database.getSettings().token}`
 					}
 				},
+				// eslint-disable-next-line
 				body: formData as any // FormData is not supported by openapi-fetch
 			}
 		);

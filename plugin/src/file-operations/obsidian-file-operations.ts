@@ -1,4 +1,5 @@
-import { TFile, Vault } from "obsidian";
+import type { Vault } from "obsidian";
+import { TFile } from "obsidian";
 import { normalizePath } from "obsidian";
 import type { FileOperations } from "./file-operations";
 import type { RelativePath } from "src/database/document-metadata";

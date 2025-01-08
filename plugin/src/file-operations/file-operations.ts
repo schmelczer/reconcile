@@ -5,7 +5,7 @@ export interface FileOperations {
 
 	read: (path: RelativePath) => Promise<Uint8Array>;
 
-	getFileSize(path: RelativePath): Promise<number>;
+	getFileSize: (path: RelativePath) => Promise<number>;
 
 	getModificationTime: (path: RelativePath) => Promise<Date>;
 
