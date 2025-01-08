@@ -71,6 +71,11 @@ export class SyncService {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
+		const formData = new FormData();
+		formData.append("relative_path", relativePath);
+		formData.append("created_date", createdDate.toISOString());
+		formData.append("content", new Blob([contentBytes]));
+
 		const response = await this.client.POST(
 			"/vaults/{vault_id}/documents",
 			{
@@ -82,11 +87,7 @@ export class SyncService {
 						authorization: `Bearer ${this.database.getSettings().token}`
 					}
 				},
-				body: {
-					contentBase64: serialize(contentBytes),
-					createdDate: createdDate.toISOString(),
-					relativePath
-				}
+				body: formData as any // FormData is not supported by openapi-fetch
 			}
 		);
 
@@ -118,6 +119,12 @@ export class SyncService {
 		contentBytes: Uint8Array;
 		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
+		const formData = new FormData();
+		formData.append("parent_version_id", parentVersionId.toString());
+		formData.append("created_date", createdDate.toISOString());
+		formData.append("relative_path", relativePath);
+		formData.append("content", new Blob([contentBytes]));
+
 		const response = await this.client.PUT(
 			"/vaults/{vault_id}/documents/{document_id}",
 			{
@@ -130,12 +137,7 @@ export class SyncService {
 						authorization: `Bearer ${this.database.getSettings().token}`
 					}
 				},
-				body: {
-					parentVersionId,
-					contentBase64: serialize(contentBytes),
-					createdDate: createdDate.toISOString(),
-					relativePath
-				}
+				body: formData as any // FormData is not supported by openapi-fetch
 			}
 		);
 
