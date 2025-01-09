@@ -15,7 +15,7 @@ export class ObsidianFileOperations implements FileOperations {
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
 		const result = new Uint8Array(
-			await this.vault.readBinary(this.getAbstractFile(path))
+			await this.vault.adapter.readBinary(normalizePath(path))
 		);
 
 		return result;
@@ -49,7 +49,7 @@ export class ObsidianFileOperations implements FileOperations {
 		}
 
 		await this.createParentDirectories(normalizePath(path));
-		await this.vault.createBinary(normalizePath(path), newContent);
+		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
 	}
 
 	public async write(
@@ -63,21 +63,26 @@ export class ObsidianFileOperations implements FileOperations {
 		}
 
 		if (isBinary(expectedContent)) {
-			await this.vault.createBinary(normalizePath(path), newContent);
+			await this.vault.adapter.writeBinary(
+				normalizePath(path),
+				newContent
+			);
 			return newContent;
 		}
 
 		const expetedText = new TextDecoder().decode(expectedContent);
 		const newText = new TextDecoder().decode(newContent);
 
-		const file = this.getAbstractFile(path);
-		const resultText = await this.vault.process(file, (currentText) => {
-			if (currentText !== expetedText) {
-				return mergeText(expetedText, currentText, newText);
-			}
+		const resultText = await this.vault.adapter.process(
+			normalizePath(path),
+			(currentText) => {
+				if (currentText !== expetedText) {
+					return mergeText(expetedText, currentText, newText);
+				}
 
-			return newText;
-		});
+				return newText;
+			}
+		);
 		return new TextEncoder().encode(resultText);
 	}
 
@@ -112,18 +117,5 @@ export class ObsidianFileOperations implements FileOperations {
 				await this.vault.adapter.mkdir(parentDir);
 			}
 		}
-	}
-
-	private getAbstractFile(path: RelativePath): TFile {
-		const file = this.vault.getAbstractFileByPath(path);
-		if (!file) {
-			throw new Error(`File not found: ${path}`);
-		}
-
-		if (file instanceof TFile) {
-			return file;
-		}
-
-		throw new Error(`Not a file: ${path}`);
 	}
 }
