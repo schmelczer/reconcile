@@ -640,6 +640,12 @@ export class Syncer {
 			);
 			return;
 		}
+		if (!this.operations.isFileEligibleForSync(relativePath)) {
+			Logger.getInstance().info(
+				`File ${relativePath} is not eligible for syncing`
+			);
+			return;
+		}
 		Logger.getInstance().debug(`Syncing ${relativePath}`);
 
 		await waitForDocumentLock(relativePath);
