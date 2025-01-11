@@ -10,7 +10,7 @@ use chrono::{DateTime, Utc};
 use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::{base64_to_bytes, merge};
+use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
 
 use super::{
     app_state::AppState,
@@ -155,7 +155,12 @@ async fn internal_update_document(
         )));
     }
 
-    let merged_content = merge(&parent_document.content, &latest_version.content, &content);
+    let merged_content = if is_file_type_mergable(&sanitized_relative_path) {
+        merge(&parent_document.content, &latest_version.content, &content)
+    } else {
+        content.clone()
+    };
+
     let is_different_from_request_content = merged_content != content;
 
     // We can only update the relative path if we're the first one to do so

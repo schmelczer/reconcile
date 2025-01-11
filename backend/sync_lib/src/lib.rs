@@ -19,11 +19,17 @@ pub mod errors;
 /// Encode binary data for easy transport over HTTP. Inverse of
 /// `base64_to_bytes`.
 #[wasm_bindgen(js_name = bytesToBase64)]
-pub fn bytes_to_base64(input: &[u8]) -> String { STANDARD.encode(input) }
+pub fn bytes_to_base64(input: &[u8]) -> String {
+    set_panic_hook();
+
+    STANDARD.encode(input)
+}
 
 /// Inverse of `bytes_to_base64`.
 #[wasm_bindgen(js_name = base64ToBytes)]
 pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
+    set_panic_hook();
+
     STANDARD.decode(input).map_err(SyncLibError::from)
 }
 
@@ -32,6 +38,8 @@ pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
 /// documents is binary.
 #[wasm_bindgen]
 pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
+    set_panic_hook();
+
     if is_binary(parent) || is_binary(left) || is_binary(right) {
         right.to_vec()
     } else {
@@ -47,6 +55,8 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
 /// WASM wrapper around `reconcile::reconcile` for text merging.
 #[wasm_bindgen(js_name = mergeText)]
 pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
+    set_panic_hook();
+
     reconcile::reconcile(parent, left, right)
 }
 
@@ -54,6 +64,8 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
 /// content.
 #[wasm_bindgen(js_name = isBinary)]
 pub fn is_binary(data: &[u8]) -> bool {
+    set_panic_hook();
+
     if data.iter().any(|&b| b == 0) {
         // Even though the NUL character is valid in UTF-8, it's highly suspicious in
         // human-readable text.
@@ -63,10 +75,18 @@ pub fn is_binary(data: &[u8]) -> bool {
     std::str::from_utf8(data).is_err()
 }
 
-/// Set up panic hook for better error messages in the browser console.
-#[cfg(feature = "console_error_panic_hook")]
-#[wasm_bindgen(js_name = setPanicHook)]
-pub fn set_panic_hook() {
+/// We don't want to supporte merging structured data like JSON, YAML, etc.
+#[wasm_bindgen(js_name = isFileTypeMergable)]
+pub fn is_file_type_mergable(path_or_file_name: &str) -> bool {
+    set_panic_hook();
+
+    let file_extension = path_or_file_name.split('.').last().unwrap_or_default();
+
+    matches!(file_extension.to_lowercase().as_str(), "md" | "txt")
+}
+
+fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
+    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }

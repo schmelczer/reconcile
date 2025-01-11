@@ -1,5 +1,3 @@
-//! Test suite for the Web and headless browsers.
-
 use insta::assert_debug_snapshot;
 use sync_lib::*;
 use wasm_bindgen_test::*;
@@ -43,4 +41,22 @@ fn test_is_binary() {
     assert!(is_binary(&[0, 159, 146, 150]));
     assert!(is_binary(&[0, 12]));
     assert!(!is_binary(b"hello"));
+}
+
+#[wasm_bindgen_test(unsupported = test)]
+fn test_is_binary_empty() {
+    assert!(!is_binary(b""));
+}
+
+#[wasm_bindgen_test(unsupported = test)]
+fn test_is_file_type_mergable() {
+    assert!(is_file_type_mergable(".md"));
+    assert!(is_file_type_mergable("hi.md"));
+    assert!(is_file_type_mergable("my/path/to/my/document.md"));
+    assert!(is_file_type_mergable("hi.MD"));
+    assert!(is_file_type_mergable("my/path/to/my/DOCUMENT.MD"));
+
+    assert!(!is_file_type_mergable(".json"));
+    assert!(!is_file_type_mergable("HELLO.JSON"));
+    assert!(!is_file_type_mergable("my/config.yml"));
 }
