@@ -25,4 +25,6 @@ export interface FileOperations {
 	remove: (path: RelativePath) => Promise<void>;
 
 	move: (oldPath: RelativePath, newPath: RelativePath) => Promise<void>;
+
+	isFileEligibleForSync: (path: RelativePath) => boolean;
 }
