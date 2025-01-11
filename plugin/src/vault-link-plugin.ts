@@ -2,7 +2,7 @@ import type { WorkspaceLeaf } from "obsidian";
 import { Plugin } from "obsidian";
 import "./styles.scss";
 import "../manifest.json";
-import init, { setPanicHook } from "sync_lib";
+import init from "sync_lib";
 import wasmBin from "sync_lib/sync_lib_bg.wasm";
 import { SyncSettingsTab } from "./views/settings-tab";
 import { HistoryView } from "./views/history-view";
@@ -31,8 +31,6 @@ export default class VaultLinkPlugin extends Plugin {
 			// eslint-disable-next-line
 			(wasmBin as any).default // it is loaded as a base64 string by webpack
 		);
-
-		setPanicHook();
 
 		const database = new Database(
 			await this.loadData(),
@@ -66,6 +64,26 @@ export default class VaultLinkPlugin extends Plugin {
 		this.addSettingTab(this.settingsTab);
 
 		new StatusBar(database, this, this.history, syncer);
+
+		this.registerView(
+			HistoryView.TYPE,
+			(leaf) => new HistoryView(leaf, database, this.history)
+		);
+		this.registerView(
+			LogsView.TYPE,
+			(leaf) => new LogsView(this, database, leaf)
+		);
+
+		this.addRibbonIcon(
+			HistoryView.ICON,
+			"Open VaultLink events",
+			async (_: MouseEvent) => this.activateView(HistoryView.TYPE)
+		);
+		this.addRibbonIcon(
+			LogsView.ICON,
+			"Open VaultLink logs",
+			async (_: MouseEvent) => this.activateView(LogsView.TYPE)
+		);
 
 		const eventHandler = new ObsidianFileEventHandler(syncer);
 
@@ -118,26 +136,6 @@ export default class VaultLinkPlugin extends Plugin {
 				await syncer.scheduleSyncForOfflineChanges();
 			}
 		});
-
-		this.registerView(
-			HistoryView.TYPE,
-			(leaf) => new HistoryView(leaf, database, this.history)
-		);
-		this.registerView(
-			LogsView.TYPE,
-			(leaf) => new LogsView(this, database, leaf)
-		);
-
-		this.addRibbonIcon(
-			HistoryView.ICON,
-			"Open VaultLink events",
-			async (_: MouseEvent) => this.activateView(HistoryView.TYPE)
-		);
-		this.addRibbonIcon(
-			LogsView.ICON,
-			"Open VaultLink logs",
-			async (_: MouseEvent) => this.activateView(LogsView.TYPE)
-		);
 
 		Logger.getInstance().info("Plugin loaded");
 	}
