@@ -116,15 +116,17 @@ export class ObsidianFileOperations implements FileOperations {
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
+		oldPath = normalizePath(oldPath);
+		newPath = normalizePath(newPath);
+
 		Logger.getInstance().debug(`Moving file: ${oldPath} -> ${newPath}`);
+
 		if (oldPath === newPath) {
 			return;
 		}
 
-		await this.vault.adapter.rename(
-			normalizePath(oldPath),
-			normalizePath(newPath)
-		);
+		await this.createParentDirectories(newPath);
+		await this.vault.adapter.rename(oldPath, newPath);
 	}
 
 	public isFileEligibleForSync(path: RelativePath): boolean {
