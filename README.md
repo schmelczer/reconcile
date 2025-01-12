@@ -42,22 +42,6 @@ openapi-typescript http://localhost:3030/api.json --output plugin/src/services/t
 ```
 
 ```
-## Todos
-
-- Add users to vaults
-- Websocket for db updates
-- async read body
-- e2e tests
-- add clap
-- add auth middleware
-- shard db per user
-- update card title max width
-- retry
-- CI for:
-    - publish reconcile
-    - cross-platform build server
-    - run load test on server
-    - build and publish plugin with openapi types
 
 todo: enable
 [workspace.lints.clippy]
@@ -79,8 +63,3 @@ apt install flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install flathub md.obsidian.Obsidian
 flatpak run md.obsidian.Obsidian
-
-
-stop leaking subscriptions
-test with naughty strings https://github.com/minimaxir/big-list-of-naughty-strings/tree/84a5dea833b5e2218f7c8c2104effca3f8f155aa?tab=readme-ov-file
-double check internalSyncRemotelyUpdatedFile

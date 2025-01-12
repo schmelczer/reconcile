@@ -95,6 +95,12 @@ export class HistoryView extends ItemView {
 		container.empty();
 		container.createEl("h4", { text: "VaultLink History" });
 
+		const virtualScroller = new VirtualScroller(
+			document.getElementById("messages"),
+			messages,
+			renderMessage
+		);
+
 		const entries = this.history
 			.getEntries()
 			.reverse()
