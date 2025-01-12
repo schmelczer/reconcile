@@ -69,7 +69,7 @@ export class ObsidianFileOperations implements FileOperations {
 			return new Uint8Array(0);
 		}
 
-		if (isFileTypeMergable(path)) {
+		if (!isFileTypeMergable(path)) {
 			Logger.getInstance().debug(
 				`The expected content is not mergable, so we won't perform a 3-way merge, just overwrite it`
 			);
