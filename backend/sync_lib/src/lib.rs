@@ -80,7 +80,7 @@ pub fn is_binary(data: &[u8]) -> bool {
 pub fn is_file_type_mergable(path_or_file_name: &str) -> bool {
     set_panic_hook();
 
-    let file_extension = path_or_file_name.split('.').last().unwrap_or_default();
+    let file_extension = path_or_file_name.split('.').next_back().unwrap_or_default();
 
     matches!(file_extension.to_lowercase().as_str(), "md" | "txt")
 }
