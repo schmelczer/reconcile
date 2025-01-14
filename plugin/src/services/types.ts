@@ -347,6 +347,103 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/vaults/{vault_id}/documents/{document_id}/versions/{version_id}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+					vault_update_id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["DocumentVersion"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/vaults/{vault_id}/documents/{document_id}/versions/{version_id}/content": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put: {
+			parameters: {
+				query?: never;
+				header: {
+					authorization: string;
+				};
+				path: {
+					document_id: string;
+					vault_id: string;
+					vault_update_id: number;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description byte stream */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/octet-stream": unknown;
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -455,6 +552,20 @@ export interface components {
 			vault_id: string;
 		};
 		PathParams5: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+			/** Format: int64 */
+			vault_update_id: number;
+		};
+		PathParams6: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+			/** Format: int64 */
+			vault_update_id: number;
+		};
+		PathParams7: {
 			/** Format: uuid */
 			document_id: string;
 			vault_id: string;

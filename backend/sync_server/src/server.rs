@@ -35,6 +35,8 @@ mod app_state;
 mod auth;
 mod create_document;
 mod delete_document;
+mod fetch_document_version;
+mod fetch_document_version_content;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
 mod ping;
@@ -93,6 +95,14 @@ pub async fn create_server() -> Result<()> {
         .api_route(
             "/vaults/:vault_id/documents/:document_id/json",
             put(update_document::update_document_json),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/:document_id/versions/:version_id",
+            put(fetch_document_version::fetch_document_version),
+        )
+        .api_route(
+            "/vaults/:vault_id/documents/:document_id/versions/:version_id/content",
+            put(fetch_document_version_content::fetch_document_version_content),
         )
         .api_route(
             "/vaults/:vault_id/documents/:document_id",
