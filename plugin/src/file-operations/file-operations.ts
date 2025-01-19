@@ -7,6 +7,8 @@ export interface FileOperations {
 
 	getFileSize: (path: RelativePath) => Promise<number>;
 
+	exists: (path: RelativePath) => Promise<boolean>;
+
 	getModificationTime: (path: RelativePath) => Promise<Date>;
 
 	// Create and write the file if it doesn't exist. Otherwise, it has the same behavior as write.

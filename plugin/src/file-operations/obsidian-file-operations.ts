@@ -39,6 +39,11 @@ export class ObsidianFileOperations implements FileOperations {
 		return new Date((await this.statFile(path)).mtime);
 	}
 
+	public async exists(path: RelativePath): Promise<boolean> {
+		Logger.getInstance().debug(`Checking existance of ${path}`);
+		return this.vault.adapter.exists(normalizePath(path));
+	}
+
 	public async create(
 		path: RelativePath,
 		newContent: Uint8Array
@@ -108,7 +113,7 @@ export class ObsidianFileOperations implements FileOperations {
 	public async remove(path: RelativePath): Promise<void> {
 		Logger.getInstance().debug(`Removing file: ${path}`);
 		if (await this.vault.adapter.exists(normalizePath(path))) {
-			return this.vault.adapter.remove(normalizePath(path));
+			await this.vault.adapter.trashSystem(normalizePath(path));
 		}
 	}
 

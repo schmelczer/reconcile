@@ -176,6 +176,13 @@ export class Syncer {
 						`Document ${relativePath} has been deleted locally, scheduling sync to delete it`
 					);
 
+					if (await this.operations.exists(relativePath)) {
+						Logger.getInstance().debug(
+							`Document ${relativePath} actually exists locally, skipping`
+						);
+						return Promise.resolve();
+					}
+
 					return this.internalSyncLocallyDeletedFile(relativePath);
 				})
 			);
