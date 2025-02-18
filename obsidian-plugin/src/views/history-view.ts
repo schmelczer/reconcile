@@ -1,10 +1,14 @@
 import type { IconName, WorkspaceLeaf } from "obsidian";
 import { ItemView, setIcon } from "obsidian";
-import type { HistoryEntry, SyncHistory } from "src/tracing/sync-history";
-import { SyncType } from "src/tracing/sync-history";
-import { SyncSource, SyncStatus } from "src/tracing/sync-history";
+
 import { intlFormatDistance } from "date-fns";
-import type { Database } from "src/database/database";
+import type {
+	SyncHistory,
+	HistoryEntry,
+	Database,
+	RelativePath
+} from "sync-client";
+import { SyncType, SyncSource, SyncStatus } from "sync-client";
 
 export class HistoryView extends ItemView {
 	public static readonly TYPE = "history-view";

@@ -1,5 +1,3 @@
-import { Notice } from "obsidian";
-
 export enum LogLevel {
 	DEBUG = "DEBUG",
 	INFO = "INFO",
@@ -62,7 +60,6 @@ export class Logger {
 		console.error(message);
 
 		this.pushMessage(message, LogLevel.ERROR);
-		new Notice(message, 5000);
 	}
 
 	public getMessages(mininumSeverity: LogLevel): LogLine[] {

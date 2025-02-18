@@ -1,10 +1,9 @@
+import type { Syncer } from "sync-client";
+import { Logger } from "sync-client";
 import type { TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
-import type { FileEventHandler } from "./file-event-handler";
-import { Logger } from "src/tracing/logger";
-import type { Syncer } from "src/sync-operations/syncer";
 
-export class ObsidianFileEventHandler implements FileEventHandler {
+export class ObsidianFileEventHandler {
 	public constructor(private readonly syncer: Syncer) {}
 
 	public async onCreate(file: TAbstractFile): Promise<void> {

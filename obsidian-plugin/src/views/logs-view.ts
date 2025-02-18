@@ -1,8 +1,8 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import { Logger } from "src/tracing/logger";
-import type { Database } from "src/database/database";
+import type { Database } from "sync-client";
+import { Logger } from "sync-client";
 
 export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";

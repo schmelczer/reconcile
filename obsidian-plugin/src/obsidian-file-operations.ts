@@ -1,10 +1,8 @@
 import type { Stat, Vault } from "obsidian";
 import { normalizePath } from "obsidian";
-import type { FileOperations } from "./file-operations";
-import type { RelativePath } from "src/database/document-metadata";
-import { isFileTypeMergable, mergeText } from "sync_lib";
 import { Platform } from "obsidian";
-import { Logger } from "src/tracing/logger";
+import type { FileOperations, RelativePath } from "sync-client";
+import { Logger, isFileTypeMergable, mergeText } from "sync-client";
 
 export class ObsidianFileOperations implements FileOperations {
 	public constructor(private readonly vault: Vault) {}

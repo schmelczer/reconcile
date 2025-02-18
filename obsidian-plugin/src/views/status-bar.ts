@@ -1,7 +1,5 @@
-import type { Database } from "src/database/database";
+import type { Database, HistoryStats, SyncHistory, Syncer } from "sync-client";
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import type { Syncer } from "src/sync-operations/syncer";
-import type { HistoryStats, SyncHistory } from "src/tracing/sync-history";
 
 export class StatusBar {
 	private readonly statusBarItem: HTMLElement;

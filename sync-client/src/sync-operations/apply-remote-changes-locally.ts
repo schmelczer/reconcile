@@ -1,4 +1,4 @@
-import type { Database } from "src/database/database";
+import type { Database } from "../database/database";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
 import type { Syncer } from "./syncer";

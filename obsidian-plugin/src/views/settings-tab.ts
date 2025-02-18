@@ -2,13 +2,11 @@ import type { App } from "obsidian";
 import { Notice, PluginSettingTab, Setting } from "obsidian";
 
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import type { Database } from "src/database/database";
-import type { SyncService } from "src/services/sync-service";
-import type { Syncer } from "src/sync-operations/syncer";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";
-import { Logger, LogLevel } from "src/tracing/logger";
+import type { SyncService, Syncer, Database } from "sync-client";
+import { Logger, LogLevel } from "sync-client";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;

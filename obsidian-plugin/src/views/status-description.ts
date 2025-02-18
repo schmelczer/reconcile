@@ -1,10 +1,11 @@
-import type { Database } from "src/database/database";
 import type {
+	HistoryStats,
 	CheckConnectionResult,
-	SyncService
-} from "src/services/sync-service";
-import type { Syncer } from "src/sync-operations/syncer";
-import type { HistoryStats, SyncHistory } from "src/tracing/sync-history";
+	SyncService,
+	SyncHistory,
+	Syncer,
+	Database
+} from "sync-client";
 
 export class StatusDescription {
 	private lastHistoryStats: HistoryStats | undefined;

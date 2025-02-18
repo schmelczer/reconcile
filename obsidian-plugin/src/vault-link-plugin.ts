@@ -2,21 +2,24 @@ import type { WorkspaceLeaf } from "obsidian";
 import { Plugin } from "obsidian";
 import "./styles.scss";
 import "../manifest.json";
-import init from "sync_lib";
-import wasmBin from "sync_lib/sync_lib_bg.wasm";
+
 import { SyncSettingsTab } from "./views/settings-tab";
 import { HistoryView } from "./views/history-view";
-import { ObsidianFileEventHandler } from "./events/obisidan-event-handler";
-import { SyncService } from "./services/sync-service";
-import { Database } from "./database/database";
-import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
-import { ObsidianFileOperations } from "./file-operations/obsidian-file-operations";
+import { ObsidianFileEventHandler } from "./obisidan-event-handler";
+import { ObsidianFileOperations } from "./obsidian-file-operations";
 import { StatusBar } from "./views/status-bar";
-import { Logger } from "./tracing/logger";
-import { SyncHistory } from "./tracing/sync-history";
+
 import { LogsView } from "./views/logs-view";
-import { Syncer } from "./sync-operations/syncer";
 import { StatusDescription } from "./views/status-description";
+import {
+	applyRemoteChangesLocally,
+	Database,
+	Logger,
+	Syncer,
+	SyncHistory,
+	SyncService,
+	initialize
+} from "sync-client";
 
 export default class VaultLinkPlugin extends Plugin {
 	private readonly operations = new ObsidianFileOperations(this.app.vault);
@@ -27,10 +30,7 @@ export default class VaultLinkPlugin extends Plugin {
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
 
-		await init(
-			// eslint-disable-next-line
-			(wasmBin as any).default // it is loaded as a base64 string by webpack
-		);
+		await initialize();
 
 		const database = new Database(
 			await this.loadData(),
