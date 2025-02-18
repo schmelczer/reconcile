@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "baseUrl": ".",
+        "target": "ES2022",
+        "noImplicitAny": true,
+        "moduleResolution": "node",
+        "strictNullChecks": true,
+        "esModuleInterop": true,
+        "lib": [
+            "DOM",
+            "ESNext"
+        ]
+    }
+}

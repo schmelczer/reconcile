@@ -1,9 +1,9 @@
-import type { Database } from "src/database/database";
+import type { Database } from "../database/database";
 import type {
 	DocumentMetadata,
 	RelativePath
 } from "src/database/document-metadata";
-import type { FileOperations } from "src/file-operations/file-operations";
+import type { FileOperations } from "src/file-operations";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
 import type { SyncHistory } from "src/tracing/sync-history";
@@ -102,7 +102,7 @@ export class Syncer {
 
 		try {
 			const allLocalFiles = await this.operations.listAllFiles();
-			const locallyDeletedFiles = [
+			let locallyDeletedFiles = [
 				...this.database.getDocuments().entries()
 			].filter(([path, _]) => !allLocalFiles.includes(path));
 
@@ -126,7 +126,10 @@ export class Syncer {
 								);
 							if (originalFile !== undefined) {
 								// `originalFile` hasn't been deleted but it got moved instead
-								locallyDeletedFiles.remove(originalFile);
+								locallyDeletedFiles =
+									locallyDeletedFiles.filter(
+										(item) => item != originalFile
+									);
 
 								Logger.getInstance().debug(
 									`Document ${relativePath} was not found under its current path in the database but was found under a different path ${originalFile[0]}, scheduling sync to move it`
@@ -231,7 +234,9 @@ export class Syncer {
 					this.history.addHistoryEntry({
 						status: SyncStatus.ERROR,
 						relativePath,
-						message: `File size exceeds the maximum file size limit of ${this.database.getSettings().maxFileSizeMB}MB`,
+						message: `File size exceeds the maximum file size limit of ${
+							this.database.getSettings().maxFileSizeMB
+						}MB`,
 						type: SyncType.CREATE
 					});
 					return;
@@ -332,7 +337,9 @@ export class Syncer {
 					this.history.addHistoryEntry({
 						status: SyncStatus.ERROR,
 						relativePath,
-						message: `File size exceeds the maximum file size limit of ${this.database.getSettings().maxFileSizeMB}MB`,
+						message: `File size exceeds the maximum file size limit of ${
+							this.database.getSettings().maxFileSizeMB
+						}MB`,
 						type: SyncType.CREATE
 					});
 					return;
