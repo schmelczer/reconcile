@@ -15,12 +15,14 @@
         "build": "npm run build --workspaces",
         "dev": "npm run dev --workspaces",
         "test": "npm run test --workspaces",
-        "lint": "eslint --fix sync-client obsidian-plugin; prettier --write \"sync-client/**/*.(ts|scss|json|html)\" \"obsidian-plugin/**/*.(ts|scss|json|html)\""
+        "lint": "eslint --fix sync-client obsidian-plugin; prettier --write \"sync-client/**/*.(ts|scss|json|html)\" \"obsidian-plugin/**/*.(ts|scss|json|html)\"",
+        "update": "ncu -u -ws"
     },
     "devDependencies": {
-        "prettier": "^3.4.2",
-        "eslint": "9.17.0",
-        "typescript-eslint": "8.18.0",
+        "npm-check-updates": "^17.1.14",
+        "prettier": "^3.5.1",
+        "eslint": "9.20.1",
+        "typescript-eslint": "8.24.1",
         "eslint-plugin-unused-imports": "^4.1.4"
     }
 }

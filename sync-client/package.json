@@ -9,20 +9,20 @@
 		"test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
 	},
 	"devDependencies": {
-		"tslib": "2.4.0",
-		"typescript": "5.7.2",
+		"tslib": "2.8.1",
+		"typescript": "5.7.3",
 		"sync_lib": "file:../backend/sync_lib/pkg",
 		"@types/jest": "^29.5.14",
-		"@types/node": "^16.11.6",
+		"@types/node": "^22.13.4",
 		"jest": "^29.7.0",
 		"ts-jest": "^29.2.5",
-		"p-queue": "^8.0.1",
+		"p-queue": "^8.1.0",
 		"fetch-retry": "^6.0.0",
 		"byte-base64": "^1.1.0",
-		"openapi-fetch": "0.13.3",
-		"openapi-typescript": "7.4.4",
-		"ts-loader": "^9.5.1",
-		"webpack": "^5.97.1",
+		"openapi-fetch": "0.13.4",
+		"openapi-typescript": "7.6.1",
+		"ts-loader": "^9.5.2",
+		"webpack": "^5.98.0",
 		"webpack-cli": "^6.0.1"
 	}
 }

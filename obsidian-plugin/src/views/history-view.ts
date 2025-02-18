@@ -13,7 +13,7 @@ import { SyncType, SyncSource, SyncStatus } from "sync-client";
 export class HistoryView extends ItemView {
 	public static readonly TYPE = "history-view";
 	public static readonly ICON = "square-stack";
-	private timer: NodeJS.Timer | null = null;
+	private timer: NodeJS.Timeout | null = null;
 
 	public constructor(
 		leaf: WorkspaceLeaf,
