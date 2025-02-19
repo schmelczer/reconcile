@@ -40,7 +40,7 @@ pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone,
 {
-    let max_d = max_d(old.len(), new.len());
+    let max_d = (old.len() + new.len()).div_ceil(2);
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
     let mut result: Vec<RawOperation<T>> = vec![];
@@ -99,11 +99,6 @@ impl IndexMut<isize> for V {
     }
 }
 
-fn max_d(len1: usize, len2: usize) -> usize {
-    // XXX look into reducing the need to have the additional '+ 1'
-    (len1 + len2 + 1) / 2 + 1
-}
-
 #[inline(always)]
 fn split_at(range: Range<usize>, at: usize) -> (Range<usize>, Range<usize>) {
     (range.start..at, at..range.end)
@@ -145,7 +140,7 @@ where
     vb[1] = 0;
 
     // We only need to explore ceil(D/2) + 1
-    let d_max = max_d(n, m);
+    let d_max = (n + m).div_ceil(2);
     assert!(vf.len() >= d_max);
     assert!(vb.len() >= d_max);
 
