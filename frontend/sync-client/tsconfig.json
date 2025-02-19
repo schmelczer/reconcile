@@ -7,9 +7,6 @@
 		"moduleResolution": "bundler",
 		"strictNullChecks": true,
 		"allowSyntheticDefaultImports": true,
-		"lib": [
-			"DOM",
-			"ESNext"
-		]
-	},
+		"lib": ["DOM", "ESNext"]
+	}
 }

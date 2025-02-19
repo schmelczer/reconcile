@@ -6,9 +6,6 @@
 		"noImplicitAny": true,
 		"moduleResolution": "bundler",
 		"strictNullChecks": true,
-		"lib": [
-			"DOM",
-			"ESNext"
-		]
+		"lib": ["DOM", "ESNext"]
 	}
 }

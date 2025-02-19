@@ -1,4 +1,4 @@
-import { RelativePath } from "../database/document-metadata";
+import type { RelativePath } from "../database/document-metadata";
 
 const locked = new Set<RelativePath>();
 const waiters = new Map<RelativePath, (() => void)[]>();
