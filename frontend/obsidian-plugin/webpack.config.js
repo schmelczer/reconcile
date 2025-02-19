@@ -27,10 +27,6 @@ module.exports = (env, argv) => ({
 		new MiniCssExtractPlugin({
 			filename: "styles.css"
 		}),
-
-		new (require("webpack").DefinePlugin)({
-			__CURRENT_DATE__: Date.now()
-		}),
 		{
 			apply: (compiler) => {
 				if (argv.mode !== "development") {
