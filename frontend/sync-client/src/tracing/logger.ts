@@ -12,7 +12,7 @@ const LOG_LEVEL_ORDER = {
 	[LogLevel.ERROR]: 3
 };
 
-class LogLine {
+export class LogLine {
 	public timestamp = new Date();
 	public constructor(
 		public level: LogLevel,
@@ -46,19 +46,16 @@ export class Logger {
 
 	public info(message: string): void {
 		console.info(message);
-
 		this.pushMessage(message, LogLevel.INFO);
 	}
 
 	public warn(message: string): void {
 		console.warn(message);
-
 		this.pushMessage(message, LogLevel.WARNING);
 	}
 
 	public error(message: string): void {
 		console.error(message);
-
 		this.pushMessage(message, LogLevel.ERROR);
 	}
 

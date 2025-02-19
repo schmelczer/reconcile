@@ -1,8 +1,9 @@
-import type { Database } from "../database/database";
 import type {
+	Database,
 	DocumentMetadata,
 	RelativePath
-} from "src/database/document-metadata";
+} from "../persistence/database";
+
 import type { FileOperations } from "src/file-operations";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
@@ -13,6 +14,7 @@ import PQueue from "p-queue";
 import { EMPTY_HASH, hash } from "src/utils/hash";
 import type { components } from "src/services/types";
 import { deserialize } from "src/utils/deserialize";
+import type { Settings } from "src/persistence/settings";
 
 export class Syncer {
 	private readonly remainingOperationsListeners: ((
@@ -25,16 +27,17 @@ export class Syncer {
 
 	public constructor(
 		private readonly database: Database,
+		private readonly settings: Settings,
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
 		private readonly history: SyncHistory
 	) {
 		this.syncQueue = new PQueue({
-			concurrency: database.getSettings().syncConcurrency
+			concurrency: settings.getSettings().syncConcurrency
 		});
 
-		database.addOnSettingsChangeHandlers((settings) => {
-			this.syncQueue.concurrency = settings.syncConcurrency;
+		settings.addOnSettingsChangeHandlers((newSettings) => {
+			this.syncQueue.concurrency = newSettings.syncConcurrency;
 		});
 
 		this.syncQueue.on("active", () => {
@@ -91,7 +94,7 @@ export class Syncer {
 			return;
 		}
 
-		if (!this.database.getSettings().isSyncEnabled) {
+		if (!this.settings.getSettings().isSyncEnabled) {
 			Logger.getInstance().debug(
 				`Syncing is disabled, not uploading local changes`
 			);
@@ -229,13 +232,13 @@ export class Syncer {
 					(await this.operations.getFileSize(relativePath)) /
 						1024 /
 						1024 >
-					this.database.getSettings().maxFileSizeMB
+					this.settings.getSettings().maxFileSizeMB
 				) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.ERROR,
 						relativePath,
 						message: `File size exceeds the maximum file size limit of ${
-							this.database.getSettings().maxFileSizeMB
+							this.settings.getSettings().maxFileSizeMB
 						}MB`,
 						type: SyncType.CREATE
 					});
@@ -332,13 +335,13 @@ export class Syncer {
 					(await this.operations.getFileSize(relativePath)) /
 						1024 /
 						1024 >
-					this.database.getSettings().maxFileSizeMB
+					this.settings.getSettings().maxFileSizeMB
 				) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.ERROR,
 						relativePath,
 						message: `File size exceeds the maximum file size limit of ${
-							this.database.getSettings().maxFileSizeMB
+							this.settings.getSettings().maxFileSizeMB
 						}MB`,
 						type: SyncType.CREATE
 					});
@@ -648,7 +651,7 @@ export class Syncer {
 		syncSource: SyncSource,
 		fn: () => Promise<void>
 	): Promise<void> {
-		if (!this.database.getSettings().isSyncEnabled) {
+		if (!this.settings.getSettings().isSyncEnabled) {
 			Logger.getInstance().info(
 				`Syncing is disabled, not syncing ${relativePath}`
 			);

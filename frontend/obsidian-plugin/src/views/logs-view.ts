@@ -1,7 +1,7 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import type { Database } from "sync-client";
+import type { Settings } from "sync-client";
 import { Logger } from "sync-client";
 
 export class LogsView extends ItemView {
@@ -10,7 +10,7 @@ export class LogsView extends ItemView {
 
 	public constructor(
 		private readonly plugin: VaultLinkPlugin,
-		private readonly database: Database,
+		private readonly settings: Settings,
 		leaf: WorkspaceLeaf
 	) {
 		super(leaf);
@@ -19,7 +19,7 @@ export class LogsView extends ItemView {
 			this.updateView();
 		});
 
-		database.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
 			if (newSettings.minimumLogLevel !== oldSettings.minimumLogLevel) {
 				this.updateView();
 			}
@@ -79,7 +79,7 @@ export class LogsView extends ItemView {
 		);
 
 		const logs = Logger.getInstance().getMessages(
-			this.database.getSettings().minimumLogLevel
+			this.settings.getSettings().minimumLogLevel
 		);
 
 		if (logs.length === 0) {

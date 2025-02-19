@@ -1,4 +1,4 @@
-import { RelativePath } from "../database/document-metadata";
+import { RelativePath } from "../persistence/database";
 import {
 	tryLockDocument,
 	waitForDocumentLock,

@@ -4,7 +4,8 @@ import type {
 	SyncService,
 	SyncHistory,
 	Syncer,
-	Database
+	Database,
+	Settings
 } from "sync-client";
 
 export class StatusDescription {
@@ -15,6 +16,7 @@ export class StatusDescription {
 	private statusChangeListeners: (() => void)[] = [];
 
 	public constructor(
+		private readonly settings: Settings,
 		private readonly database: Database,
 		private readonly syncService: SyncService,
 		history: SyncHistory,
@@ -32,7 +34,7 @@ export class StatusDescription {
 			this.updateDescription();
 		});
 
-		database.addOnSettingsChangeHandlers(() => {
+		settings.addOnSettingsChangeHandlers(() => {
 			void this.updateConnectionState();
 		});
 	}
@@ -73,8 +75,8 @@ export class StatusDescription {
 
 		container.createSpan({ text: "VaultLink is connected to the server " });
 		container.createEl("a", {
-			text: this.database.getSettings().remoteUri,
-			href: this.database.getSettings().remoteUri
+			text: this.settings.getSettings().remoteUri,
+			href: this.settings.getSettings().remoteUri
 		});
 
 		container.createSpan({
@@ -93,7 +95,7 @@ export class StatusDescription {
 			(this.lastHistoryStats?.success ?? 0) === 0 &&
 			(this.lastHistoryStats?.error ?? 0) === 0
 		) {
-			if (this.database.getSettings().isSyncEnabled) {
+			if (this.settings.getSettings().isSyncEnabled) {
 				container.createSpan({
 					text: "Syncing is enabled but VaultLink hasn't found anything to sync yet."
 				});

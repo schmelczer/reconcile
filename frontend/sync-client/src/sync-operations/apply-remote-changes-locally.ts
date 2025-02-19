@@ -1,20 +1,23 @@
-import type { Database } from "../database/database";
+import type { Database } from "../persistence/database";
 import type { SyncService } from "src/services/sync-service";
 import { Logger } from "src/tracing/logger";
 import type { Syncer } from "./syncer";
+import type { Settings } from "src/persistence/settings";
 
 let isRunning = false;
 
 export async function applyRemoteChangesLocally({
+	settings,
 	database,
 	syncService,
 	syncer
 }: {
+	settings: Settings;
 	database: Database;
 	syncService: SyncService;
 	syncer: Syncer;
 }): Promise<void> {
-	if (!database.getSettings().isSyncEnabled) {
+	if (!settings.getSettings().isSyncEnabled) {
 		Logger.getInstance().debug(
 			`Syncing is disabled, not fetching remote changes`
 		);

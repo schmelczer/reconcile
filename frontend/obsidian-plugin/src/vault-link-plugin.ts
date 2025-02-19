@@ -18,7 +18,8 @@ import {
 	Syncer,
 	SyncHistory,
 	SyncService,
-	initialize
+	initialize,
+	Settings
 } from "sync-client";
 
 export default class VaultLinkPlugin extends Plugin {
@@ -32,21 +33,38 @@ export default class VaultLinkPlugin extends Plugin {
 
 		await initialize();
 
+		let state = (await this.loadData()) ?? {
+			settings: undefined,
+			database: undefined
+		};
 		const database = new Database(
-			await this.loadData(),
-			this.saveData.bind(this)
+			state.database,
+			async (data: unknown): Promise<void> => {
+				state = { ...state, database: data };
+				return this.saveData(state);
+			}
+		);
+
+		const settings = new Settings(
+			state.settings,
+			async (data: unknown): Promise<void> => {
+				state = { ...state, settings: data };
+				return this.saveData(state);
+			}
 		);
 
 		const syncService = new SyncService(database);
 
 		const syncer = new Syncer(
 			database,
+			settings,
 			syncService,
 			this.operations,
 			this.history
 		);
 
 		const statusDescription = new StatusDescription(
+			settings,
 			database,
 			syncService,
 			this.history,
@@ -56,22 +74,22 @@ export default class VaultLinkPlugin extends Plugin {
 		this.settingsTab = new SyncSettingsTab({
 			app: this.app,
 			plugin: this,
-			database,
+			settings,
 			syncService,
 			statusDescription,
 			syncer
 		});
 		this.addSettingTab(this.settingsTab);
 
-		new StatusBar(database, this, this.history, syncer);
+		new StatusBar(settings, this, this.history, syncer);
 
 		this.registerView(
 			HistoryView.TYPE,
-			(leaf) => new HistoryView(leaf, database, this.history)
+			(leaf) => new HistoryView(leaf, settings, this.history)
 		);
 		this.registerView(
 			LogsView.TYPE,
-			(leaf) => new LogsView(this, database, leaf)
+			(leaf) => new LogsView(this, settings, leaf)
 		);
 
 		this.addRibbonIcon(
@@ -117,21 +135,23 @@ export default class VaultLinkPlugin extends Plugin {
 		});
 
 		this.registerRemoteEventListener(
+			settings,
 			database,
 			syncService,
 			syncer,
-			database.getSettings().fetchChangesUpdateIntervalMs
+			settings.getSettings().fetchChangesUpdateIntervalMs
 		);
 
-		database.addOnSettingsChangeHandlers((settings, oldSettings) => {
+		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
 			this.registerRemoteEventListener(
+				settings,
 				database,
 				syncService,
 				syncer,
-				settings.fetchChangesUpdateIntervalMs
+				newSettings.fetchChangesUpdateIntervalMs
 			);
 
-			if (!oldSettings.isSyncEnabled && settings.isSyncEnabled) {
+			if (!oldSettings.isSyncEnabled && newSettings.isSyncEnabled) {
 				syncer
 					.scheduleSyncForOfflineChanges()
 					.catch((_error: unknown) => {
@@ -182,6 +202,7 @@ export default class VaultLinkPlugin extends Plugin {
 	}
 
 	private registerRemoteEventListener(
+		settings: Settings,
 		database: Database,
 		syncService: SyncService,
 		syncer: Syncer,
@@ -195,6 +216,7 @@ export default class VaultLinkPlugin extends Plugin {
 			// eslint-disable-next-line @typescript-eslint/no-misused-promises
 			async () =>
 				applyRemoteChangesLocally({
+					settings,
 					database,
 					syncService,
 					syncer

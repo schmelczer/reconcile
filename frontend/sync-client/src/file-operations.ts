@@ -1,4 +1,4 @@
-import type { RelativePath } from "src/database/document-metadata";
+import type { RelativePath } from "src/persistence/database";
 
 export interface FileOperations {
 	listAllFiles: () => Promise<RelativePath[]>;

@@ -2,7 +2,7 @@ import type { IconName, WorkspaceLeaf } from "obsidian";
 import { ItemView, setIcon } from "obsidian";
 
 import { intlFormatDistance } from "date-fns";
-import type { SyncHistory, HistoryEntry, Database } from "sync-client";
+import type { SyncHistory, HistoryEntry, Settings } from "sync-client";
 import { SyncType, SyncSource, SyncStatus, Logger } from "sync-client";
 
 export class HistoryView extends ItemView {
@@ -12,7 +12,7 @@ export class HistoryView extends ItemView {
 
 	public constructor(
 		leaf: WorkspaceLeaf,
-		private readonly database: Database,
+		private readonly settings: Settings,
 		private readonly history: SyncHistory
 	) {
 		super(leaf);
@@ -101,7 +101,7 @@ export class HistoryView extends ItemView {
 			.filter(
 				(entry) =>
 					entry.status !== SyncStatus.NO_OP ||
-					this.database.getSettings().displayNoopSyncEvents
+					this.settings.getSettings().displayNoopSyncEvents
 			);
 
 		entries.forEach((entry) => {

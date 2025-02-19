@@ -1,13 +1,14 @@
 export { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
 
 export {
+	Database,
 	type RelativePath,
 	type DocumentId,
 	type VaultUpdateId,
 	type DocumentMetadata
-} from "./database/document-metadata";
+} from "./persistence/database";
 
-export { Database } from "./database/database";
+export { Settings, type SyncSettings } from "./persistence/settings";
 
 export {
 	SyncService,
@@ -32,12 +33,6 @@ export { type FileOperations } from "./file-operations";
 import init from "sync_lib";
 import wasmBin from "sync_lib/sync_lib_bg.wasm";
 
-export const initialize = async (): Promise<void> => {
-	await init(
-		// eslint-disable-next-line
-		(wasmBin as any).default // it is loaded as a base64 string by webpack
-	);
-};
 export {
 	isFileTypeMergable,
 	mergeText,
@@ -46,3 +41,10 @@ export {
 	merge,
 	isBinary
 } from "sync_lib";
+
+export const initialize = async (): Promise<void> => {
+	await init(
+		// eslint-disable-next-line
+		(wasmBin as any).default // it is loaded as a base64 string by webpack
+	);
+};

@@ -1,4 +1,4 @@
-import type { Database, HistoryStats, SyncHistory, Syncer } from "sync-client";
+import type { HistoryStats, Settings, SyncHistory, Syncer } from "sync-client";
 import type VaultLinkPlugin from "src/vault-link-plugin";
 
 export class StatusBar {
@@ -8,7 +8,7 @@ export class StatusBar {
 	private lastRemaining: number | undefined;
 
 	public constructor(
-		private readonly database: Database,
+		private readonly settings: Settings,
 		private readonly plugin: VaultLinkPlugin,
 		history: SyncHistory,
 		syncer: Syncer
@@ -24,7 +24,7 @@ export class StatusBar {
 			this.updateStatus();
 		});
 
-		database.addOnSettingsChangeHandlers(() => {
+		settings.addOnSettingsChangeHandlers(() => {
 			this.updateStatus();
 		});
 	}
@@ -57,7 +57,7 @@ export class StatusBar {
 		}
 
 		if (!hasShownMessage) {
-			if (this.database.getSettings().isSyncEnabled) {
+			if (this.settings.getSettings().isSyncEnabled) {
 				container.createSpan({ text: "VaultLink is idle" });
 			} else {
 				const button = container.createEl("button", {

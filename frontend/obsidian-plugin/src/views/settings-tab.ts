@@ -5,14 +5,14 @@ import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";
-import type { SyncService, Syncer, Database } from "sync-client";
+import type { SyncService, Syncer, Settings } from "sync-client";
 import { Logger, LogLevel } from "sync-client";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
 
 	private readonly plugin: VaultLinkPlugin;
-	private readonly database: Database;
+	private readonly settings: Settings;
 	private readonly syncService: SyncService;
 	private readonly statusDescription: StatusDescription;
 	private readonly syncer: Syncer;
@@ -21,27 +21,27 @@ export class SyncSettingsTab extends PluginSettingTab {
 	public constructor({
 		app,
 		plugin,
-		database,
+		settings,
 		syncService,
 		statusDescription,
 		syncer
 	}: {
 		app: App;
 		plugin: VaultLinkPlugin;
-		database: Database;
+		settings: Settings;
 		syncService: SyncService;
 		statusDescription: StatusDescription;
 		syncer: Syncer;
 	}) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.database = database;
+		this.settings = settings;
 		this.syncService = syncService;
 		this.statusDescription = statusDescription;
 		this.syncer = syncer;
 
-		this.editedVaultName = this.database.getSettings().vaultName;
-		this.database.addOnSettingsChangeHandlers(
+		this.editedVaultName = this.settings.getSettings().vaultName;
+		this.settings.addOnSettingsChangeHandlers(
 			(newSettings, oldSettings) => {
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					this.editedVaultName = newSettings.vaultName;
@@ -130,9 +130,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:3030")
-					.setValue(this.database.getSettings().remoteUri)
+					.setValue(this.settings.getSettings().remoteUri)
 					.onChange(async (value) =>
-						this.database.setSetting("remoteUri", value)
+						this.settings.setSetting("remoteUri", value)
 					)
 			)
 			.addButton((button) =>
@@ -154,9 +154,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("ey...")
-					.setValue(this.database.getSettings().token)
+					.setValue(this.settings.getSettings().token)
 					.onChange(async (value) =>
-						this.database.setSetting("token", value)
+						this.settings.setSetting("token", value)
 					)
 			);
 
@@ -169,18 +169,18 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("My Obsidian Vault")
-					.setValue(this.database.getSettings().vaultName)
+					.setValue(this.settings.getSettings().vaultName)
 					.onChange((value) => (this.editedVaultName = value))
 			)
 			.addButton((button) =>
 				button.setButtonText("Apply").onClick(async () => {
 					if (
 						this.editedVaultName ===
-						this.database.getSettings().vaultName
+						this.settings.getSettings().vaultName
 					) {
 						return;
 					}
-					await this.database.setSetting(
+					await this.settings.setSetting(
 						"vaultName",
 						this.editedVaultName
 					);
@@ -223,11 +223,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.setInstant(false)
 					.setValue(
-						this.database.getSettings()
+						this.settings.getSettings()
 							.fetchChangesUpdateIntervalMs / 1000
 					)
 					.onChange(async (value) =>
-						this.database.setSetting(
+						this.settings.setSetting(
 							"fetchChangesUpdateIntervalMs",
 							value * 1000
 						)
@@ -244,9 +244,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 16, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(this.database.getSettings().syncConcurrency)
+					.setValue(this.settings.getSettings().syncConcurrency)
 					.onChange(async (value) =>
-						this.database.setSetting("syncConcurrency", value)
+						this.settings.setSetting("syncConcurrency", value)
 					)
 			);
 
@@ -260,9 +260,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(0, 32, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(this.database.getSettings().maxFileSizeMB)
+					.setValue(this.settings.getSettings().maxFileSizeMB)
 					.onChange(async (value) =>
-						this.database.setSetting("maxFileSizeMB", value)
+						this.settings.setSetting("maxFileSizeMB", value)
 					)
 			);
 
@@ -276,9 +276,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.database.getSettings().isSyncEnabled)
+					.setValue(this.settings.getSettings().isSyncEnabled)
 					.onChange(async (value) =>
-						this.database.setSetting("isSyncEnabled", value)
+						this.settings.setSetting("isSyncEnabled", value)
 					)
 			);
 	}
@@ -293,9 +293,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.database.getSettings().displayNoopSyncEvents)
+					.setValue(this.settings.getSettings().displayNoopSyncEvents)
 					.onChange(async (value) =>
-						this.database.setSetting("displayNoopSyncEvents", value)
+						this.settings.setSetting("displayNoopSyncEvents", value)
 					)
 			);
 
@@ -312,9 +312,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.WARNING]: LogLevel.WARNING,
 						[LogLevel.ERROR]: LogLevel.ERROR
 					})
-					.setValue(this.database.getSettings().minimumLogLevel)
+					.setValue(this.settings.getSettings().minimumLogLevel)
 					.onChange(async (value) =>
-						this.database.setSetting(
+						this.settings.setSetting(
 							"minimumLogLevel",
 							// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 							value as LogLevel
