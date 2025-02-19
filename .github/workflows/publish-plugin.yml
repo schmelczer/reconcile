@@ -29,7 +29,7 @@ jobs:
 
       - name: Build plugin
         run: |
-          cd plugin
+          cd frontend
           npm ci
           npm run build
 
@@ -39,7 +39,7 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
-          cd plugin/dist
+          cd frontend/obsidian-plugin/dist
 
           gh release create "$tag" \
             --title="$tag" \
