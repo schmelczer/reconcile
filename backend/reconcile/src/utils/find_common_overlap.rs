@@ -40,29 +40,26 @@ mod tests {
         assert_eq!(find_common_overlap(&["".into()], &["".into()]), 0);
 
         assert_eq!(
-            find_common_overlap(&["a".into(), "b".into(), "c".into()], &[
-                "b".into(),
-                "c".into(),
-                "a".into()
-            ]),
+            find_common_overlap(
+                &["a".into(), "b".into(), "c".into()],
+                &["b".into(), "c".into(), "a".into()]
+            ),
             1
         );
 
         assert_eq!(
-            find_common_overlap(&["a".into(), "a".into(), "a".into()], &[
-                "a".into(),
-                "b".into(),
-                "c".into()
-            ]),
+            find_common_overlap(
+                &["a".into(), "a".into(), "a".into()],
+                &["a".into(), "b".into(), "c".into()]
+            ),
             2
         );
 
         assert_eq!(
-            find_common_overlap(&["a".into(), "b".into(), "c".into()], &[
-                "d".into(),
-                "e".into(),
-                "a".into()
-            ]),
+            find_common_overlap(
+                &["a".into(), "b".into(), "c".into()],
+                &["d".into(), "e".into(), "a".into()]
+            ),
             3
         );
 
