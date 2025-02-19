@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"module": "ESNext",
+		"target": "ESNext",
+		"noImplicitAny": true,
+		"moduleResolution": "bundler",
+		"strictNullChecks": true,
+		"allowSyntheticDefaultImports": true,
+		"lib": [
+			"DOM",
+			"ESNext"
+		]
+	},
+}

@@ -1,4 +1,7 @@
 {
     "jest.jestCommandLine": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" npx jest",
-    "jest.rootPath": "plugin"
+    "jest.rootPath": "plugin",
+    "files.exclude": {
+        "**/node_modules": true
+    }
 }

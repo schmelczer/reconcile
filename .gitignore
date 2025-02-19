@@ -7,8 +7,8 @@ node_modules
 # Rust build folder
 backend/target
 
-obsidian-plugin/dist
-sync-client/dist
+frontend/obsidian-plugin/dist
+frontend/sync-client/dist
 
 backend/db.sqlite3*
 backend/config.yml

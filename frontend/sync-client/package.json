@@ -2,7 +2,7 @@
 	"name": "sync-client",
 	"version": "1.0.0",
 	"main": "dist/index.js",
-	"types": "dist/types/src/index.d.ts",
+	"types": "dist/types/index.d.ts",
 	"scripts": {
 		"dev": "webpack watch --mode development",
 		"build": "webpack --mode production",
@@ -11,7 +11,7 @@
 	"devDependencies": {
 		"tslib": "2.8.1",
 		"typescript": "5.7.3",
-		"sync_lib": "file:../backend/sync_lib/pkg",
+		"sync_lib": "file:../../backend/sync_lib/pkg",
 		"@types/jest": "^29.5.14",
 		"@types/node": "^22.13.4",
 		"jest": "^29.7.0",

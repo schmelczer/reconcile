@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"module": "ESNext",
+		"target": "ES2023",
+		"noImplicitAny": true,
+		"moduleResolution": "bundler",
+		"strictNullChecks": true,
+		"lib": [
+			"DOM",
+			"ESNext"
+		]
+	}
+}

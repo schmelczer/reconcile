@@ -1,9 +1,9 @@
+import { RelativePath } from "../database/document-metadata";
 import {
 	tryLockDocument,
 	waitForDocumentLock,
 	unlockDocument
 } from "./document-lock";
-import type { RelativePath } from "src/database/document-metadata";
 
 describe("Document Lock Operations", () => {
 	const testPath: RelativePath = "test/document/path";

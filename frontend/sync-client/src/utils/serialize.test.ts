@@ -5,7 +5,7 @@ import fs from "fs";
 describe("serialize", () => {
 	it("should serialize a Uint8Array to a base64 string", async () => {
 		const wasmBin = fs.readFileSync(
-			"../backend/sync_lib/pkg/sync_lib_bg.wasm"
+			"../../backend/sync_lib/pkg/sync_lib_bg.wasm"
 		);
 		await init({ module_or_path: wasmBin });
 

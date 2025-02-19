@@ -56,7 +56,10 @@ export class ObsidianFileOperations implements FileOperations {
 		}
 
 		await this.createParentDirectories(normalizePath(path));
-		await this.vault.adapter.writeBinary(normalizePath(path), newContent);
+		await this.vault.adapter.writeBinary(
+			normalizePath(path),
+			newContent.buffer as ArrayBuffer
+		);
 	}
 
 	public async write(
@@ -78,7 +81,7 @@ export class ObsidianFileOperations implements FileOperations {
 			);
 			await this.vault.adapter.writeBinary(
 				normalizePath(path),
-				newContent
+				newContent.buffer as ArrayBuffer
 			);
 			return newContent;
 		}

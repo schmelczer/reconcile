@@ -2,13 +2,8 @@ import type { IconName, WorkspaceLeaf } from "obsidian";
 import { ItemView, setIcon } from "obsidian";
 
 import { intlFormatDistance } from "date-fns";
-import type {
-	SyncHistory,
-	HistoryEntry,
-	Database,
-	RelativePath
-} from "sync-client";
-import { SyncType, SyncSource, SyncStatus } from "sync-client";
+import type { SyncHistory, HistoryEntry, Database } from "sync-client";
+import { SyncType, SyncSource, SyncStatus, Logger } from "sync-client";
 
 export class HistoryView extends ItemView {
 	public static readonly TYPE = "history-view";
@@ -23,9 +18,10 @@ export class HistoryView extends ItemView {
 		super(leaf);
 		this.icon = HistoryView.ICON;
 
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		history.addSyncHistoryUpdateListener(async () => {
-			await this.updateView();
+		history.addSyncHistoryUpdateListener(() => {
+			this.updateView().catch((_error: unknown) => {
+				Logger.getInstance().error("Failed to update history view");
+			});
 		});
 	}
 
@@ -65,6 +61,7 @@ export class HistoryView extends ItemView {
 		}
 
 		element.createEl("span", {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			text: entry.relativePath
 		});
 

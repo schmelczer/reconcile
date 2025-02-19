@@ -123,8 +123,7 @@ export default class VaultLinkPlugin extends Plugin {
 			database.getSettings().fetchChangesUpdateIntervalMs
 		);
 
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		database.addOnSettingsChangeHandlers(async (settings, oldSettings) => {
+		database.addOnSettingsChangeHandlers((settings, oldSettings) => {
 			this.registerRemoteEventListener(
 				database,
 				syncService,
@@ -133,7 +132,13 @@ export default class VaultLinkPlugin extends Plugin {
 			);
 
 			if (!oldSettings.isSyncEnabled && settings.isSyncEnabled) {
-				await syncer.scheduleSyncForOfflineChanges();
+				syncer
+					.scheduleSyncForOfflineChanges()
+					.catch((_error: unknown) => {
+						Logger.getInstance().error(
+							"Failed to schedule sync for offline changes"
+						);
+					});
 			}
 		});
 
