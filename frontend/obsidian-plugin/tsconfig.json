@@ -3,9 +3,9 @@
 		"baseUrl": ".",
 		"module": "ESNext",
 		"target": "ES2023",
-		"noImplicitAny": true,
 		"moduleResolution": "bundler",
-		"strictNullChecks": true,
+		"strict": true,
 		"lib": ["DOM", "ESNext"]
-	}
+	},
+	"exclude": ["./dist"]
 }

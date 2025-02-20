@@ -3,10 +3,10 @@
 		"baseUrl": ".",
 		"module": "ESNext",
 		"target": "ESNext",
-		"noImplicitAny": true,
+		"strict": true,
 		"moduleResolution": "bundler",
-		"strictNullChecks": true,
 		"allowSyntheticDefaultImports": true,
 		"lib": ["DOM", "ESNext"]
-	}
+	},
+	"exclude": ["./dist"]
 }
