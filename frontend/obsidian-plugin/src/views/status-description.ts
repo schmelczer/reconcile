@@ -1,11 +1,7 @@
 import type {
 	HistoryStats,
 	CheckConnectionResult,
-	SyncService,
-	SyncHistory,
-	Syncer,
-	Database,
-	Settings
+	SyncClient
 } from "sync-client";
 
 export class StatusDescription {
@@ -15,32 +11,28 @@ export class StatusDescription {
 
 	private statusChangeListeners: (() => void)[] = [];
 
-	public constructor(
-		private readonly settings: Settings,
-		private readonly database: Database,
-		private readonly syncService: SyncService,
-		history: SyncHistory,
-		syncer: Syncer
-	) {
+	public constructor(private readonly syncClient: SyncClient) {
 		void this.updateConnectionState();
 
-		history.addSyncHistoryUpdateListener((status) => {
+		syncClient.history.addSyncHistoryUpdateListener((status) => {
 			this.lastHistoryStats = status;
 			this.updateDescription();
 		});
 
-		syncer.addRemainingOperationsListener((remainingOperations) => {
-			this.lastRemaining = remainingOperations;
-			this.updateDescription();
-		});
+		this.syncClient.syncer.addRemainingOperationsListener(
+			(remainingOperations) => {
+				this.lastRemaining = remainingOperations;
+				this.updateDescription();
+			}
+		);
 
-		settings.addOnSettingsChangeHandlers(() => {
+		this.syncClient.settings.addOnSettingsChangeHandlers(() => {
 			void this.updateConnectionState();
 		});
 	}
 
 	public async updateConnectionState(): Promise<void> {
-		this.lastConnectionState = await this.syncService.checkConnection();
+		this.lastConnectionState = await this.syncClient.checkConnection();
 		this.updateDescription();
 	}
 
@@ -75,15 +67,15 @@ export class StatusDescription {
 
 		container.createSpan({ text: "VaultLink is connected to the server " });
 		container.createEl("a", {
-			text: this.settings.getSettings().remoteUri,
-			href: this.settings.getSettings().remoteUri
+			text: this.syncClient.settings.getSettings().remoteUri,
+			href: this.syncClient.settings.getSettings().remoteUri
 		});
 
 		container.createSpan({
 			text: ` and has indexed approximately `
 		});
 		container.createSpan({
-			text: `${this.database.getDocuments().size}`,
+			text: `${this.syncClient.documentCount}`,
 			cls: "number"
 		});
 		container.createSpan({
@@ -95,7 +87,7 @@ export class StatusDescription {
 			(this.lastHistoryStats?.success ?? 0) === 0 &&
 			(this.lastHistoryStats?.error ?? 0) === 0
 		) {
-			if (this.settings.getSettings().isSyncEnabled) {
+			if (this.syncClient.settings.getSettings().isSyncEnabled) {
 				container.createSpan({
 					text: "Syncing is enabled but VaultLink hasn't found anything to sync yet."
 				});

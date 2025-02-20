@@ -1,4 +1,4 @@
-import type { HistoryStats, Settings, SyncHistory, Syncer } from "sync-client";
+import type { HistoryStats, SyncClient } from "sync-client";
 import type VaultLinkPlugin from "src/vault-link-plugin";
 
 export class StatusBar {
@@ -8,23 +8,23 @@ export class StatusBar {
 	private lastRemaining: number | undefined;
 
 	public constructor(
-		private readonly settings: Settings,
 		private readonly plugin: VaultLinkPlugin,
-		history: SyncHistory,
-		syncer: Syncer
+		private readonly syncClient: SyncClient
 	) {
 		this.statusBarItem = plugin.addStatusBarItem();
-		history.addSyncHistoryUpdateListener((status) => {
+		this.syncClient.history.addSyncHistoryUpdateListener((status) => {
 			this.lastHistoryStats = status;
 			this.updateStatus();
 		});
 
-		syncer.addRemainingOperationsListener((remainingOperations) => {
-			this.lastRemaining = remainingOperations;
-			this.updateStatus();
-		});
+		this.syncClient.syncer.addRemainingOperationsListener(
+			(remainingOperations) => {
+				this.lastRemaining = remainingOperations;
+				this.updateStatus();
+			}
+		);
 
-		settings.addOnSettingsChangeHandlers(() => {
+		this.syncClient.settings.addOnSettingsChangeHandlers(() => {
 			this.updateStatus();
 		});
 	}
@@ -57,7 +57,7 @@ export class StatusBar {
 		}
 
 		if (!hasShownMessage) {
-			if (this.settings.getSettings().isSyncEnabled) {
+			if (this.syncClient.settings.getSettings().isSyncEnabled) {
 				container.createSpan({ text: "VaultLink is idle" });
 			} else {
 				const button = container.createEl("button", {

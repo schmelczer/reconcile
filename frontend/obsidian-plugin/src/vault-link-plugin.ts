@@ -11,85 +11,43 @@ import { StatusBar } from "./views/status-bar";
 
 import { LogsView } from "./views/logs-view";
 import { StatusDescription } from "./views/status-description";
-import {
-	applyRemoteChangesLocally,
-	Database,
-	Logger,
-	Syncer,
-	SyncHistory,
-	SyncService,
-	initialize,
-	Settings
-} from "sync-client";
+import { Logger, SyncClient } from "sync-client";
 
 export default class VaultLinkPlugin extends Plugin {
-	private readonly operations = new ObsidianFileOperations(this.app.vault);
-	private readonly history = new SyncHistory();
-	private settingsTab: SyncSettingsTab;
-	private remoteListenerIntervalId: number | null = null;
+	private settingsTab: SyncSettingsTab | undefined;
+	private client!: SyncClient;
 
 	public async onload(): Promise<void> {
 		Logger.getInstance().info("Starting plugin");
 
-		await initialize();
-
-		let state = (await this.loadData()) ?? {
-			settings: undefined,
-			database: undefined
-		};
-		const database = new Database(
-			state.database,
-			async (data: unknown): Promise<void> => {
-				state = { ...state, database: data };
-				return this.saveData(state);
+		this.client = await SyncClient.create(
+			new ObsidianFileOperations(this.app.vault),
+			{
+				load: this.loadData.bind(this),
+				save: this.saveData.bind(this)
 			}
 		);
 
-		const settings = new Settings(
-			state.settings,
-			async (data: unknown): Promise<void> => {
-				state = { ...state, settings: data };
-				return this.saveData(state);
-			}
-		);
-
-		const syncService = new SyncService(database);
-
-		const syncer = new Syncer(
-			database,
-			settings,
-			syncService,
-			this.operations,
-			this.history
-		);
-
-		const statusDescription = new StatusDescription(
-			settings,
-			database,
-			syncService,
-			this.history,
-			syncer
-		);
+		const statusDescription = new StatusDescription(this.client);
 
 		this.settingsTab = new SyncSettingsTab({
 			app: this.app,
 			plugin: this,
-			settings,
-			syncService,
-			statusDescription,
-			syncer
+			syncClient: this.client,
+			statusDescription
 		});
 		this.addSettingTab(this.settingsTab);
 
-		new StatusBar(settings, this, this.history, syncer);
+		new StatusBar(this, this.client);
 
 		this.registerView(
 			HistoryView.TYPE,
-			(leaf) => new HistoryView(leaf, settings, this.history)
+			(leaf) =>
+				new HistoryView(leaf, this.client.settings, this.client.history)
 		);
 		this.registerView(
 			LogsView.TYPE,
-			(leaf) => new LogsView(this, settings, leaf)
+			(leaf) => new LogsView(this, this.client.settings, leaf)
 		);
 
 		this.addRibbonIcon(
@@ -103,7 +61,7 @@ export default class VaultLinkPlugin extends Plugin {
 			async (_: MouseEvent) => this.activateView(LogsView.TYPE)
 		);
 
-		const eventHandler = new ObsidianFileEventHandler(syncer);
+		const eventHandler = new ObsidianFileEventHandler(this.client.syncer);
 
 		this.app.workspace.onLayoutReady(async () => {
 			Logger.getInstance().info("Initialising sync handlers");
@@ -131,44 +89,12 @@ export default class VaultLinkPlugin extends Plugin {
 
 			Logger.getInstance().info("Sync handlers initialised");
 
-			void syncer.scheduleSyncForOfflineChanges();
+			void this.client.syncer.scheduleSyncForOfflineChanges();
 		});
-
-		this.registerRemoteEventListener(
-			settings,
-			database,
-			syncService,
-			syncer,
-			settings.getSettings().fetchChangesUpdateIntervalMs
-		);
-
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
-			this.registerRemoteEventListener(
-				settings,
-				database,
-				syncService,
-				syncer,
-				newSettings.fetchChangesUpdateIntervalMs
-			);
-
-			if (!oldSettings.isSyncEnabled && newSettings.isSyncEnabled) {
-				syncer
-					.scheduleSyncForOfflineChanges()
-					.catch((_error: unknown) => {
-						Logger.getInstance().error(
-							"Failed to schedule sync for offline changes"
-						);
-					});
-			}
-		});
-
-		Logger.getInstance().info("Plugin loaded");
 	}
 
 	public onunload(): void {
-		if (this.remoteListenerIntervalId !== null) {
-			window.clearInterval(this.remoteListenerIntervalId);
-		}
+		this.client.onunload();
 	}
 
 	public openSettings(): void {
@@ -199,29 +125,5 @@ export default class VaultLinkPlugin extends Plugin {
 		if (leaf) {
 			await workspace.revealLeaf(leaf);
 		}
-	}
-
-	private registerRemoteEventListener(
-		settings: Settings,
-		database: Database,
-		syncService: SyncService,
-		syncer: Syncer,
-		intervalMs: number
-	): void {
-		if (this.remoteListenerIntervalId !== null) {
-			window.clearInterval(this.remoteListenerIntervalId);
-		}
-
-		this.remoteListenerIntervalId = window.setInterval(
-			// eslint-disable-next-line @typescript-eslint/no-misused-promises
-			async () =>
-				applyRemoteChangesLocally({
-					settings,
-					database,
-					syncService,
-					syncer
-				}),
-			intervalMs
-		);
 	}
 }

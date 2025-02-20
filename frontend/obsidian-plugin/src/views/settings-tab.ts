@@ -5,43 +5,35 @@ import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";
-import type { SyncService, Syncer, Settings } from "sync-client";
-import { Logger, LogLevel } from "sync-client";
+import type { SyncClient } from "sync-client";
+import { LogLevel } from "sync-client";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedVaultName: string;
 
 	private readonly plugin: VaultLinkPlugin;
-	private readonly settings: Settings;
-	private readonly syncService: SyncService;
+	private readonly syncClient: SyncClient;
 	private readonly statusDescription: StatusDescription;
-	private readonly syncer: Syncer;
 	private statusDescriptionSubscription: (() => void) | undefined;
 
 	public constructor({
 		app,
 		plugin,
-		settings,
-		syncService,
-		statusDescription,
-		syncer
+		syncClient,
+		statusDescription
 	}: {
 		app: App;
 		plugin: VaultLinkPlugin;
-		settings: Settings;
-		syncService: SyncService;
+		syncClient: SyncClient;
 		statusDescription: StatusDescription;
-		syncer: Syncer;
 	}) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.settings = settings;
-		this.syncService = syncService;
+		this.syncClient = syncClient;
 		this.statusDescription = statusDescription;
-		this.syncer = syncer;
 
-		this.editedVaultName = this.settings.getSettings().vaultName;
-		this.settings.addOnSettingsChangeHandlers(
+		this.editedVaultName = this.syncClient.settings.getSettings().vaultName;
+		this.syncClient.settings.addOnSettingsChangeHandlers(
 			(newSettings, oldSettings) => {
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					this.editedVaultName = newSettings.vaultName;
@@ -130,15 +122,15 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:3030")
-					.setValue(this.settings.getSettings().remoteUri)
+					.setValue(this.syncClient.settings.getSettings().remoteUri)
 					.onChange(async (value) =>
-						this.settings.setSetting("remoteUri", value)
+						this.syncClient.settings.setSetting("remoteUri", value)
 					)
 			)
 			.addButton((button) =>
 				button.setButtonText("Test connection").onClick(async () => {
 					new Notice(
-						(await this.syncService.checkConnection()).message
+						(await this.syncClient.checkConnection()).message
 					);
 					await this.statusDescription.updateConnectionState();
 				})
@@ -154,9 +146,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("ey...")
-					.setValue(this.settings.getSettings().token)
+					.setValue(this.syncClient.settings.getSettings().token)
 					.onChange(async (value) =>
-						this.settings.setSetting("token", value)
+						this.syncClient.settings.setSetting("token", value)
 					)
 			);
 
@@ -169,23 +161,22 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("My Obsidian Vault")
-					.setValue(this.settings.getSettings().vaultName)
+					.setValue(this.syncClient.settings.getSettings().vaultName)
 					.onChange((value) => (this.editedVaultName = value))
 			)
 			.addButton((button) =>
 				button.setButtonText("Apply").onClick(async () => {
 					if (
 						this.editedVaultName ===
-						this.settings.getSettings().vaultName
+						this.syncClient.settings.getSettings().vaultName
 					) {
 						return;
 					}
-					await this.settings.setSetting(
+					await this.syncClient.settings.setSetting(
 						"vaultName",
 						this.editedVaultName
 					);
-					await this.syncer.reset();
-					Logger.getInstance().reset();
+					await this.syncClient.reset();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
 					);
@@ -203,8 +194,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset sync state").onClick(async () => {
-					await this.syncer.reset();
-					Logger.getInstance().reset();
+					await this.syncClient.reset();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
 					);
@@ -223,11 +213,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.setInstant(false)
 					.setValue(
-						this.settings.getSettings()
+						this.syncClient.settings.getSettings()
 							.fetchChangesUpdateIntervalMs / 1000
 					)
 					.onChange(async (value) =>
-						this.settings.setSetting(
+						this.syncClient.settings.setSetting(
 							"fetchChangesUpdateIntervalMs",
 							value * 1000
 						)
@@ -244,9 +234,14 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 16, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(this.settings.getSettings().syncConcurrency)
+					.setValue(
+						this.syncClient.settings.getSettings().syncConcurrency
+					)
 					.onChange(async (value) =>
-						this.settings.setSetting("syncConcurrency", value)
+						this.syncClient.settings.setSetting(
+							"syncConcurrency",
+							value
+						)
 					)
 			);
 
@@ -260,9 +255,14 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(0, 32, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(this.settings.getSettings().maxFileSizeMB)
+					.setValue(
+						this.syncClient.settings.getSettings().maxFileSizeMB
+					)
 					.onChange(async (value) =>
-						this.settings.setSetting("maxFileSizeMB", value)
+						this.syncClient.settings.setSetting(
+							"maxFileSizeMB",
+							value
+						)
 					)
 			);
 
@@ -276,9 +276,14 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.settings.getSettings().isSyncEnabled)
+					.setValue(
+						this.syncClient.settings.getSettings().isSyncEnabled
+					)
 					.onChange(async (value) =>
-						this.settings.setSetting("isSyncEnabled", value)
+						this.syncClient.settings.setSetting(
+							"isSyncEnabled",
+							value
+						)
 					)
 			);
 	}
@@ -293,9 +298,15 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.settings.getSettings().displayNoopSyncEvents)
+					.setValue(
+						this.syncClient.settings.getSettings()
+							.displayNoopSyncEvents
+					)
 					.onChange(async (value) =>
-						this.settings.setSetting("displayNoopSyncEvents", value)
+						this.syncClient.settings.setSetting(
+							"displayNoopSyncEvents",
+							value
+						)
 					)
 			);
 
@@ -312,9 +323,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.WARNING]: LogLevel.WARNING,
 						[LogLevel.ERROR]: LogLevel.ERROR
 					})
-					.setValue(this.settings.getSettings().minimumLogLevel)
+					.setValue(
+						this.syncClient.settings.getSettings().minimumLogLevel
+					)
 					.onChange(async (value) =>
-						this.settings.setSetting(
+						this.syncClient.settings.setSetting(
 							"minimumLogLevel",
 							// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 							value as LogLevel
