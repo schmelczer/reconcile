@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const globalFiles: Record<string, Uint8Array> = {};
 const iterations = 100;
+const doDeletes = false;
 
 async function runTest(): Promise<void> {
 	console.info("Starting test");
@@ -17,11 +18,41 @@ async function runTest(): Promise<void> {
 	};
 
 	const clients = [
-		new MockAgent(globalFiles, initialSettings, "agent-1", "#ff0000"),
-		new MockAgent(globalFiles, initialSettings, "agent-2", "#00ff00"),
-		new MockAgent(globalFiles, initialSettings, "agent-3", "#0000ff"),
-		new MockAgent(globalFiles, initialSettings, "agent-4", "#ffaa00"),
-		new MockAgent(globalFiles, initialSettings, "agent-5", "#00ffaa")
+		new MockAgent(
+			globalFiles,
+			initialSettings,
+			"agent-1",
+			"#ff0000",
+			doDeletes
+		),
+		new MockAgent(
+			globalFiles,
+			initialSettings,
+			"agent-2",
+			"#00ff00",
+			doDeletes
+		),
+		new MockAgent(
+			globalFiles,
+			initialSettings,
+			"agent-3",
+			"#0000ff",
+			doDeletes
+		),
+		new MockAgent(
+			globalFiles,
+			initialSettings,
+			"agent-4",
+			"#ffaa00",
+			doDeletes
+		),
+		new MockAgent(
+			globalFiles,
+			initialSettings,
+			"agent-5",
+			"#00ffaa",
+			doDeletes
+		)
 	];
 
 	await Promise.all(clients.map((client) => client.init()));

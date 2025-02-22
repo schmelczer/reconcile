@@ -4,6 +4,7 @@ import { assert } from "../utils/assert";
 import { LogLevel, SyncSettings } from "sync-client";
 import { MockClient } from "./mock-client";
 import chalk from "chalk";
+import { sleep } from "../utils/sleep";
 
 export class MockAgent extends MockClient {
 	private writtenContents: Array<string> = [];
@@ -13,7 +14,8 @@ export class MockAgent extends MockClient {
 		globalFiles: Record<string, Uint8Array>,
 		initialSettings: Partial<SyncSettings>,
 		public readonly name: string,
-		private readonly color: string
+		private readonly color: string,
+		private readonly doDeletes: boolean
 	) {
 		super(globalFiles, initialSettings);
 	}
@@ -47,31 +49,60 @@ export class MockAgent extends MockClient {
 
 	public async act(): Promise<void> {
 		let options: Array<() => Promise<unknown>> = [
-			() =>
-				this.create(
-					this.getFileName(),
+			() => {
+				const file = this.getFileName();
+				this.client.logger.info(`Decided to create file ${file}`);
+				return this.create(
+					file,
 					new TextEncoder().encode(this.getContent())
-				),
-			() =>
-				this.client.settings.setSetting(
+				);
+			},
+			() => {
+				this.client.logger.info(
+					`Decided to change fetchChangesUpdateIntervalMs`
+				);
+				return this.client.settings.setSetting(
 					"fetchChangesUpdateIntervalMs",
 					Math.random() * 1000
-				),
-			() => this.client.settings.setSetting("isSyncEnabled", false),
-			() => this.client.settings.setSetting("isSyncEnabled", true)
+				);
+			},
+			() => {
+				this.client.logger.info(`Decided to disable sync`);
+				return this.client.settings.setSetting("isSyncEnabled", false);
+			},
+			() => {
+				this.client.logger.info(`Decided to enable sync`);
+				return this.client.settings.setSetting("isSyncEnabled", true);
+			}
 		];
 
 		let files = await this.listAllFiles();
 
 		if (files.length > 0) {
 			options.push(
-				() => this.rename(choose(files), this.getFileName()),
-				() =>
-					this.atomicUpdateText(
-						choose(files),
+				() => {
+					const file = choose(files);
+
+					const newName = this.getFileName();
+					this.client.logger.info(
+						`Decided to rename file ${file} to ${newName}`
+					);
+					return this.rename(file, newName);
+				},
+				() => {
+					const file = choose(files);
+
+					this.client.logger.info(`Decided to update file ${file}`);
+					return this.atomicUpdateText(
+						file,
 						(old) => old + " " + this.getContent()
-					)
+					);
+				}
 			);
+
+			if (this.doDeletes) {
+				options.push(() => this.delete(choose(files)));
+			}
 		}
 
 		this.pendingActions.push(choose(options)());
@@ -91,47 +122,68 @@ export class MockAgent extends MockClient {
 		await Promise.all(this.pendingActions);
 		await this.client.settings.setSetting("isSyncEnabled", true);
 		await this.client.syncer.applyRemoteChangesLocally();
+		await sleep(5000);
+		await this.client.syncer.waitForSyncQueue();
 		this.client.stop();
 	}
 
 	public assertFileSystemIsConsistent(): void {
-		const files = Object.keys(this.globalFiles);
-		const localFiles = Object.keys(this.files);
+		const globalFiles = Object.keys(this.globalFiles);
+		const localFiles = Object.keys(this.localFiles);
 
-		assert(
-			files.length === localFiles.length,
-			`File count mismatch: ${files.length} != ${localFiles.length}`
+		const missingInGlobal = localFiles.filter(
+			(file) => !(file in this.globalFiles)
+		);
+		const missingInLocal = globalFiles.filter(
+			(file) => !(file in this.localFiles)
 		);
 
-		for (const file of files) {
-			assert(
-				file in this.globalFiles,
-				`File ${file} missing in global files`
+		assert(
+			missingInGlobal.length === 0,
+			`Files missing in global files: ${missingInGlobal.join(", ")}`
+		);
+		assert(
+			missingInLocal.length === 0,
+			`Files missing in local files: ${missingInLocal.join(", ")}`
+		);
+
+		for (const file of globalFiles) {
+			const localContent = new TextDecoder().decode(
+				this.localFiles[file]
+			);
+			const globalContent = new TextDecoder().decode(
+				this.globalFiles[file]
 			);
 			assert(
-				new TextDecoder().decode(this.globalFiles[file]) ===
-					new TextDecoder().decode(this.files[file]),
-				`File ${file} content mismatch`
+				localContent === globalContent,
+				`Content mismatch for file ${file}: ${localContent} <> ${globalContent}`
 			);
 		}
 	}
 
 	public assertAllContentIsPresentOnce(): void {
 		for (const content of this.writtenContents) {
-			const found = Object.values(this.files).filter((file) => {
+			const found = Object.values(this.localFiles).filter((file) => {
 				return new TextDecoder().decode(file).includes(content);
 			});
 
-			assert(
-				found.length === 1,
-				`Content ${content} found in ${found.length} files`
-			);
+			if (this.doDeletes) {
+				assert(
+					found.length <= 1,
+					`Content ${content} found in ${found.length} files`
+				);
+			} else {
+				assert(
+					found.length === 1,
+					`Content ${content} found in ${found.length} files`
+				);
 
-			const file = found[0];
-			assert(
-				new TextDecoder().decode(file).split(content).length === 2,
-				`Content ${content} found more than once in a file`
-			);
+				const file = found[0];
+				assert(
+					new TextDecoder().decode(file).split(content).length === 2,
+					`Content ${content} found more than once in a file`
+				);
+			}
 		}
 	}
 }

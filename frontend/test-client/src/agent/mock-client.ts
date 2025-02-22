@@ -7,7 +7,7 @@ import {
 import { assert } from "../utils/assert";
 
 export class MockClient implements FileSystemOperations {
-	protected readonly files: Record<string, Uint8Array> = {};
+	protected readonly localFiles: Record<string, Uint8Array> = {};
 	protected client!: SyncClient;
 
 	public constructor(
@@ -37,31 +37,43 @@ export class MockClient implements FileSystemOperations {
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
-		return Object.keys(this.files) as RelativePath[];
+		return Object.keys(this.localFiles) as RelativePath[];
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		return this.files[path];
+		if (!(path in this.localFiles)) {
+			throw new Error(`File ${path} does not exist`);
+		}
+		return this.localFiles[path];
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		return this.files[path].length;
+		if (!(path in this.localFiles)) {
+			throw new Error(`File ${path} does not exist`);
+		}
+		return this.localFiles[path].length;
 	}
 
 	public async getModificationTime(path: RelativePath): Promise<Date> {
+		if (!(path in this.localFiles)) {
+			throw new Error(`File ${path} does not exist`);
+		}
 		return new Date();
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
-		return path in this.files;
+		return path in this.localFiles;
 	}
 
 	public async create(
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
+		if (path in this.localFiles) {
+			throw new Error(`File ${path} already exists`);
+		}
 		this.globalFiles[path] = newContent;
-		this.files[path] = newContent;
+		this.localFiles[path] = newContent;
 		this.client.syncer.syncLocallyCreatedFile(path, new Date());
 	}
 
@@ -71,55 +83,62 @@ export class MockClient implements FileSystemOperations {
 		path: RelativePath,
 		updater: (currentContent: string) => string
 	): Promise<string> {
-		const currentContent = new TextDecoder().decode(this.files[path]);
+		if (!(path in this.localFiles)) {
+			throw new Error(`File ${path} does not exist`);
+		}
+		const currentContent = new TextDecoder().decode(this.localFiles[path]);
 		const newContent = updater(currentContent);
 		const newContentUint8Array = new TextEncoder().encode(newContent);
 		this.globalFiles[path] = newContentUint8Array;
-		this.files[path] = newContentUint8Array;
-		this.client.syncer.syncLocallyUpdatedFile({
+		this.localFiles[path] = newContentUint8Array;
+
+		void this.client.syncer.syncLocallyUpdatedFile({
 			relativePath: path,
 			updateTime: new Date()
 		});
+
 		return newContent;
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
 		this.globalFiles[path] = content;
-		this.files[path] = content;
-		this.client.syncer.syncLocallyUpdatedFile({
+		this.localFiles[path] = content;
+
+		void this.client.syncer.syncLocallyUpdatedFile({
 			relativePath: path,
 			updateTime: new Date()
 		});
 	}
 
 	public async delete(path: RelativePath): Promise<void> {
-		delete this.files[path];
+		delete this.localFiles[path];
 		if (path in this.globalFiles) {
 			delete this.globalFiles[path];
 		}
-		this.client.syncer.syncLocallyDeletedFile(path);
+
+		void this.client.syncer.syncLocallyDeletedFile(path);
 	}
 
 	public async rename(
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
-		this.files[newPath] = this.files[oldPath];
-		delete this.files[oldPath];
+		if (!(oldPath in this.localFiles)) {
+			throw new Error(`File ${oldPath} does not exist`);
+		}
+
+		this.localFiles[newPath] = this.localFiles[oldPath];
+		delete this.localFiles[oldPath];
 
 		if (oldPath in this.globalFiles) {
-			this.globalFiles[newPath] = this.files[oldPath];
+			this.globalFiles[newPath] = this.localFiles[oldPath];
 			delete this.globalFiles[oldPath];
 		}
 
-		this.client.syncer.syncLocallyUpdatedFile({
+		void this.client.syncer.syncLocallyUpdatedFile({
 			oldPath,
 			relativePath: newPath,
 			updateTime: new Date()
 		});
-	}
-
-	public isFileEligibleForSync(path: RelativePath): boolean {
-		return true;
 	}
 }
