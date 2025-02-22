@@ -120,7 +120,7 @@ export class FileOperations {
 	}
 
 	public async remove(path: RelativePath): Promise<void> {
-		this.logger.debug(`Removing file: ${path}`);
+		this.logger.debug(`Deleting file: ${path}`);
 		return this.fs.delete(path);
 	}
 

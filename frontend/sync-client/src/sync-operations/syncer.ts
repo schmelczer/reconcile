@@ -15,6 +15,7 @@ import type { components } from "src/services/types";
 import { deserialize } from "src/utils/deserialize";
 import type { Settings } from "src/persistence/settings";
 import { FileOperations } from "src/file-operations/file-operations";
+import { findMatchingFileBasedOnHash } from "src/utils/find-matching-file-based-on-hash";
 
 export class Syncer {
 	private readonly remainingOperationsListeners: ((
@@ -72,6 +73,10 @@ export class Syncer {
 		await this.syncQueue.add(async () =>
 			this.internalSyncLocallyUpdatedFile(args)
 		);
+	}
+
+	public waitForSyncQueue(): Promise<void> {
+		return this.syncQueue.onEmpty();
 	}
 
 	public async syncLocallyDeletedFile(
@@ -136,11 +141,10 @@ export class Syncer {
 							await this.operations.read(relativePath);
 						const contentHash = hash(contentBytes);
 
-						const originalFile =
-							await this.findMatchingFileBasedOnHash(
-								contentHash,
-								locallyDeletedFiles
-							);
+						const originalFile = findMatchingFileBasedOnHash(
+							contentHash,
+							locallyDeletedFiles
+						);
 						if (originalFile !== undefined) {
 							// `originalFile` hasn't been deleted but it got moved instead
 							locallyDeletedFiles = locallyDeletedFiles.filter(
@@ -202,7 +206,8 @@ export class Syncer {
 					return Promise.resolve();
 				}
 
-				return this.internalSyncLocallyDeletedFile(relativePath);
+				// We're outside of the pqueue, so we need to call the public wrapper
+				return this.syncLocallyDeletedFile(relativePath);
 			})
 		);
 	}
@@ -265,8 +270,6 @@ export class Syncer {
 	public async reset(): Promise<void> {
 		this.syncQueue.clear();
 		await this.syncQueue.onEmpty();
-		await this.database.resetSyncState();
-		this.history.reset();
 		this.remainingOperationsListeners.forEach((listener) => {
 			listener(0);
 		});
@@ -388,22 +391,9 @@ export class Syncer {
 			SyncType.UPDATE,
 			SyncSource.PUSH,
 			async () => {
-				if (
-					(await this.operations.getFileSize(relativePath)) /
-						1024 /
-						1024 >
-					this.settings.getSettings().maxFileSizeMB
-				) {
-					this.history.addHistoryEntry({
-						status: SyncStatus.ERROR,
-						relativePath,
-						message: `File size exceeds the maximum file size limit of ${
-							this.settings.getSettings().maxFileSizeMB
-						}MB`,
-						type: SyncType.CREATE
-					});
-					return;
-				}
+				this.logger.debug(
+					`Renaming? oldPath ${oldPath} relativePath ${relativePath}`
+				);
 
 				const localMetadata = this.database.getDocument(
 					oldPath ?? relativePath
@@ -420,9 +410,27 @@ export class Syncer {
 						return;
 					}
 
-					throw new Error(
-						`Document metadata not found for ${relativePath}. This implies a corrupt local database. Consider resetting the plugin's sync history.`
+					this.logger.debug(
+						`Document metadata doesn't exist for ${relativePath}, it must have been already deleted`
 					);
+					return;
+				}
+
+				if (
+					(await this.operations.getFileSize(relativePath)) /
+						1024 /
+						1024 >
+					this.settings.getSettings().maxFileSizeMB
+				) {
+					this.history.addHistoryEntry({
+						status: SyncStatus.ERROR,
+						relativePath,
+						message: `File size exceeds the maximum file size limit of ${
+							this.settings.getSettings().maxFileSizeMB
+						}MB`,
+						type: SyncType.CREATE
+					});
+					return;
 				}
 
 				const contentBytes =
@@ -487,7 +495,7 @@ export class Syncer {
 				try {
 					if (response.relativePath != relativePath) {
 						await this.operations.move(
-							oldPath ?? relativePath,
+							relativePath,
 							response.relativePath
 						);
 					}
@@ -616,7 +624,7 @@ export class Syncer {
 						status: SyncStatus.SUCCESS,
 						source: SyncSource.PULL,
 						relativePath: remoteVersion.relativePath,
-						message: `Successfully downloaded remote file which hasn't existed locally`,
+						message: `Successfully downloaded remote file which hadn't existed locally`,
 						type: SyncType.CREATE
 					});
 					return;
@@ -720,7 +728,9 @@ export class Syncer {
 			);
 			return;
 		}
-		this.logger.debug(`Syncing ${relativePath}`);
+		this.logger.debug(
+			`Syncing ${relativePath} (${syncSource} - ${syncType})`
+		);
 
 		await waitForDocumentLock(relativePath);
 		try {
@@ -751,18 +761,5 @@ export class Syncer {
 		if (this.database.getLastSeenUpdateId() === responseVaultUpdateId - 1) {
 			await this.database.setLastSeenUpdateId(responseVaultUpdateId);
 		}
-	}
-
-	private async findMatchingFileBasedOnHash(
-		contentHash: string,
-		candidates: [RelativePath, DocumentMetadata][]
-	): Promise<[RelativePath, DocumentMetadata] | undefined> {
-		if (contentHash != EMPTY_HASH) {
-			return undefined;
-		}
-
-		return candidates.find(
-			([_, document]) => document.hash === contentHash
-		);
 	}
 }

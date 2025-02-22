@@ -135,6 +135,7 @@ export class SyncClient {
 	public async reset(): Promise<void> {
 		await this._syncer.reset();
 		this._history.reset();
+		await this._database.resetSyncState();
 		this.logger.reset();
 	}
 
