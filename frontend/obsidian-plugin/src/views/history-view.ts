@@ -80,8 +80,7 @@ export class HistoryView extends ItemView {
 
 	public async onOpen(): Promise<void> {
 		await this.updateView();
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.timer = setInterval(async () => this.updateView(), 1000);
+		this.timer = setInterval(() => void this.updateView(), 1000);
 	}
 
 	public async onClose(): Promise<void> {

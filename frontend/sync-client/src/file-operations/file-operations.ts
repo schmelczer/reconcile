@@ -22,6 +22,7 @@ export class FileOperations {
 
 		const decoder = new TextDecoder("utf-8");
 
+		// Normalize line endings to LF on Windows
 		let text = decoder.decode(content);
 		text = text.replace(/\r\n/g, "\n");
 
@@ -136,6 +137,7 @@ export class FileOperations {
 
 	public isFileEligibleForSync(path: RelativePath): boolean {
 		return true;
+		// TODO: figure this out
 		// if (Platform.isDesktopApp) {
 		// 	return true;
 		// }

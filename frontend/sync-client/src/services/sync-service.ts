@@ -22,9 +22,7 @@ export class SyncService {
 	public constructor(private readonly settings: Settings) {
 		this.createClient(settings.getSettings());
 
-		settings.addOnSettingsChangeHandlers((s) => {
-			this.createClient(s);
-		});
+		settings.addOnSettingsChangeHandlers(this.createClient.bind(this));
 	}
 
 	private static formatError(
