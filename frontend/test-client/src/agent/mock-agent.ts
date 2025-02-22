@@ -5,7 +5,6 @@ import type { SyncSettings } from "sync-client";
 import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
 import chalk from "chalk";
-import { sleep } from "../utils/sleep";
 
 export class MockAgent extends MockClient {
 	private readonly writtenContents: string[] = [];
@@ -52,6 +51,11 @@ export class MockAgent extends MockClient {
 		const options: (() => Promise<unknown>)[] = [
 			async (): Promise<unknown> => {
 				const file = this.getFileName();
+
+				if (await this.exists(file)) {
+					return;
+				}
+
 				this.client.logger.info(`Decided to create file ${file}`);
 				return this.create(
 					file,
@@ -83,8 +87,12 @@ export class MockAgent extends MockClient {
 			options.push(
 				async (): Promise<unknown> => {
 					const file = choose(files);
-
 					const newName = this.getFileName();
+
+					if (await this.exists(newName)) {
+						return;
+					}
+
 					this.client.logger.info(
 						`Decided to rename file ${file} to ${newName}`
 					);
@@ -102,18 +110,38 @@ export class MockAgent extends MockClient {
 			);
 
 			if (this.doDeletes) {
-				options.push(async () => this.delete(choose(files)));
+				options.push(async (): Promise<unknown> => {
+					const file = choose(files);
+					this.client.logger.info(`Decided to delete file ${file}`);
+					return this.delete(file);
+				});
 			}
 		}
 
-		this.pendingActions.push(choose(options)());
+		this.pendingActions.push(
+			(() => {
+				try {
+					return choose(options)();
+				} catch (error) {
+					this.client.logger.error(
+						`Failed to perform an action: ${error}`
+					);
+					this.client.logger.info(
+						JSON.stringify(JSON.parse(this.data as any), null, 2)
+					);
+					this.client.logger.info(
+						JSON.stringify(this.localFiles, null, 2)
+					);
+					throw error;
+				}
+			})()
+		);
 	}
 
 	public async finish(): Promise<void> {
 		await Promise.all(this.pendingActions);
 		await this.client.settings.setSetting("isSyncEnabled", true);
 		await this.client.syncer.applyRemoteChangesLocally();
-		await sleep(5000);
 		await this.client.syncer.waitForSyncQueue();
 		this.client.stop();
 	}
@@ -185,6 +213,7 @@ export class MockAgent extends MockClient {
 	}
 
 	private getFileName(): string {
-		return `${this.name}-${uuidv4()}.md`;
+		// Simulate name collisions between the clients
+		return `file-${Math.floor(Math.random() * 64)}.md`;
 	}
 }
