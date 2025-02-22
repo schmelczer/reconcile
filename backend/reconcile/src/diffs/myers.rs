@@ -40,7 +40,7 @@ pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone,
 {
-    let max_d = (old.len() + new.len()).div_ceil(2);
+    let max_d = (old.len() + new.len()).div_ceil(2) + 1;
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
     let mut result: Vec<RawOperation<T>> = vec![];
@@ -139,8 +139,7 @@ where
     // The initial point at (N, M+1)
     vb[1] = 0;
 
-    // We only need to explore ceil(D/2) + 1
-    let d_max = (n + m).div_ceil(2);
+    let d_max = (n + m).div_ceil(2) + 1;
     assert!(vf.len() >= d_max);
     assert!(vb.len() >= d_max);
 
