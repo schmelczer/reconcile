@@ -21,41 +21,27 @@ export class LogLine {
 }
 
 export class Logger {
-	private static readonly MAX_MESSAGES = 1000;
-
-	private static instance: Logger | null = null;
+	private static readonly MAX_MESSAGES = 10000;
 	private readonly messages: LogLine[] = [];
+	private readonly onMessageListeners: ((message: LogLine) => void)[] = [];
 
-	private readonly onMessageListeners: ((
-		status: LogLine | undefined
-	) => void)[] = [];
-
-	private constructor() {} // eslint-disable-line @typescript-eslint/no-empty-function
-
-	public static getInstance(): Logger {
-		if (!Logger.instance) {
-			Logger.instance = new Logger();
-		}
-		return Logger.instance;
+	public constructor(...onMessageListeners: ((message: LogLine) => void)[]) {
+		this.onMessageListeners = onMessageListeners;
 	}
 
 	public debug(message: string): void {
-		console.debug(message);
 		this.pushMessage(message, LogLevel.DEBUG);
 	}
 
 	public info(message: string): void {
-		console.info(message);
 		this.pushMessage(message, LogLevel.INFO);
 	}
 
 	public warn(message: string): void {
-		console.warn(message);
 		this.pushMessage(message, LogLevel.WARNING);
 	}
 
 	public error(message: string): void {
-		console.error(message);
 		this.pushMessage(message, LogLevel.ERROR);
 	}
 
@@ -67,17 +53,13 @@ export class Logger {
 		);
 	}
 
-	public addOnMessageListener(
-		listener: (message: LogLine | undefined) => void
-	): void {
+	public addOnMessageListener(listener: (message: LogLine) => void): void {
 		this.onMessageListeners.push(listener);
 	}
 
 	public reset(): void {
 		this.messages.length = 0;
-		this.onMessageListeners.forEach((listener) => {
-			listener(undefined);
-		});
+		this.debug("Logger has been reset");
 	}
 
 	private pushMessage(message: string, level: LogLevel): void {
