@@ -2,14 +2,14 @@ import init from "sync_lib";
 import wasmBin from "sync_lib/sync_lib_bg.wasm";
 import type { PersistenceProvider } from "./persistence/persistence";
 import { SyncHistory } from "./tracing/sync-history";
-import type { FileOperations } from "./file-operations";
 import { Logger } from "./tracing/logger";
 import { Database } from "./persistence/database";
 import { Settings } from "./persistence/settings";
 import type { CheckConnectionResult } from "./services/sync-service";
 import { SyncService } from "./services/sync-service";
 import { Syncer } from "./sync-operations/syncer";
-import { applyRemoteChangesLocally } from "./sync-operations/apply-remote-changes-locally";
+import { FileSystemOperations } from "./file-operations/filesystem-operations";
+import { FileOperations } from "./file-operations/file-operations";
 
 export class SyncClient {
 	private remoteListenerIntervalId: number | null = null;
@@ -35,7 +35,7 @@ export class SyncClient {
 	}
 
 	public static async create(
-		operations: FileOperations,
+		fs: FileSystemOperations,
 		persistence: PersistenceProvider
 	): Promise<SyncClient> {
 		const history = new SyncHistory();
@@ -75,7 +75,7 @@ export class SyncClient {
 			database,
 			settings,
 			syncService,
-			operations,
+			new FileOperations(fs),
 			history
 		);
 
@@ -90,19 +90,11 @@ export class SyncClient {
 		void syncer.scheduleSyncForOfflineChanges();
 
 		client.registerRemoteEventListener(
-			settings,
-			database,
-			syncService,
-			syncer,
 			settings.getSettings().fetchChangesUpdateIntervalMs
 		);
 
 		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
 			client.registerRemoteEventListener(
-				settings,
-				database,
-				syncService,
-				syncer,
 				newSettings.fetchChangesUpdateIntervalMs
 			);
 
@@ -142,26 +134,13 @@ export class SyncClient {
 		}
 	}
 
-	private registerRemoteEventListener(
-		settings: Settings,
-		database: Database,
-		syncService: SyncService,
-		syncer: Syncer,
-		intervalMs: number
-	): void {
+	private registerRemoteEventListener(intervalMs: number): void {
 		if (this.remoteListenerIntervalId !== null) {
 			window.clearInterval(this.remoteListenerIntervalId);
 		}
 
 		this.remoteListenerIntervalId = window.setInterval(
-			// eslint-disable-next-line @typescript-eslint/no-misused-promises
-			async () =>
-				applyRemoteChangesLocally({
-					settings,
-					database,
-					syncService,
-					syncer
-				}),
+			() => void this._syncer.applyRemoteChangesLocally(),
 			intervalMs
 		);
 	}

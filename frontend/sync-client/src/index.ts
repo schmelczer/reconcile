@@ -1,9 +1,3 @@
-export { Settings, type SyncSettings } from "./persistence/settings";
-
-export { type CheckConnectionResult } from "./services/sync-service";
-
-export { Syncer } from "./sync-operations/syncer";
-
 export {
 	SyncHistory,
 	SyncType,
@@ -12,17 +6,14 @@ export {
 	type HistoryStats,
 	type HistoryEntry
 } from "./tracing/sync-history";
+
 export { Logger, LogLevel } from "./tracing/logger";
 
 export { SyncClient } from "./sync-client";
-export { type FileOperations } from "./file-operations";
-export { type RelativePath } from "./persistence/database";
-export type { PersistenceProvider } from "./persistence/persistence";
+export { Syncer } from "./sync-operations/syncer";
+export type { CheckConnectionResult } from "./services/sync-service";
+export { Settings, type SyncSettings } from "./persistence/settings";
 
-export {
-	isFileTypeMergable,
-	mergeText,
-	bytesToBase64,
-	base64ToBytes,
-	merge
-} from "sync_lib";
+export type { RelativePath } from "./persistence/database";
+export type { FileSystemOperations } from "./file-operations/filesystem-operations";
+export type { PersistenceProvider } from "./persistence/persistence";

@@ -6,12 +6,12 @@ import "../manifest.json";
 import { SyncSettingsTab } from "./views/settings-tab";
 import { HistoryView } from "./views/history-view";
 import { ObsidianFileEventHandler } from "./obisidan-event-handler";
-import { ObsidianFileOperations } from "./obsidian-file-operations";
 import { StatusBar } from "./views/status-bar";
 
 import { LogsView } from "./views/logs-view";
 import { StatusDescription } from "./views/status-description";
 import { Logger, SyncClient } from "sync-client";
+import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 
 export default class VaultLinkPlugin extends Plugin {
 	private settingsTab: SyncSettingsTab | undefined;
@@ -21,7 +21,7 @@ export default class VaultLinkPlugin extends Plugin {
 		Logger.getInstance().info("Starting plugin");
 
 		this.client = await SyncClient.create(
-			new ObsidianFileOperations(this.app.vault),
+			new ObsidianFileSystemOperations(this.app.vault),
 			{
 				load: this.loadData.bind(this),
 				save: this.saveData.bind(this)
