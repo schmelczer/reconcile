@@ -12,14 +12,15 @@ import { FileSystemOperations } from "./file-operations/filesystem-operations";
 import { FileOperations } from "./file-operations/file-operations";
 
 export class SyncClient {
-	private remoteListenerIntervalId: number | null = null;
+	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
 
 	private constructor(
 		private readonly _history: SyncHistory,
 		private readonly _settings: Settings,
 		private readonly _database: Database,
 		private readonly _syncer: Syncer,
-		private readonly _syncService: SyncService
+		private readonly _syncService: SyncService,
+		private readonly _logger: Logger
 	) {}
 
 	public get history(): SyncHistory {
@@ -34,12 +35,17 @@ export class SyncClient {
 		return this._syncer;
 	}
 
+	public get logger(): Logger {
+		return this._logger;
+	}
+
 	public static async create(
 		fs: FileSystemOperations,
 		persistence: PersistenceProvider
 	): Promise<SyncClient> {
-		const history = new SyncHistory();
-		Logger.getInstance().info("Starting SyncClient");
+		const logger = new Logger();
+		const history = new SyncHistory(logger);
+		logger.info("Starting SyncClient");
 
 		await init(
 			// eslint-disable-next-line
@@ -54,6 +60,7 @@ export class SyncClient {
 			database: undefined
 		};
 		const database = new Database(
+			logger,
 			state.database,
 			async (data: unknown): Promise<void> => {
 				state = { ...state, database: data };
@@ -62,6 +69,7 @@ export class SyncClient {
 		);
 
 		const settings = new Settings(
+			logger,
 			state.settings,
 			async (data: unknown): Promise<void> => {
 				state = { ...state, settings: data };
@@ -69,13 +77,14 @@ export class SyncClient {
 			}
 		);
 
-		const syncService = new SyncService(settings);
+		const syncService = new SyncService(settings, logger);
 
 		const syncer = new Syncer(
+			logger,
 			database,
 			settings,
 			syncService,
-			new FileOperations(fs),
+			new FileOperations(logger, fs),
 			history
 		);
 
@@ -84,7 +93,8 @@ export class SyncClient {
 			settings,
 			database,
 			syncer,
-			syncService
+			syncService,
+			logger
 		);
 
 		void syncer.scheduleSyncForOfflineChanges();
@@ -102,14 +112,14 @@ export class SyncClient {
 				syncer
 					.scheduleSyncForOfflineChanges()
 					.catch((_error: unknown) => {
-						Logger.getInstance().error(
+						logger.error(
 							"Failed to schedule sync for offline changes"
 						);
 					});
 			}
 		});
 
-		Logger.getInstance().info("SyncClient loaded");
+		logger.info("SyncClient loaded");
 
 		return client;
 	}
@@ -125,21 +135,21 @@ export class SyncClient {
 	public async reset(): Promise<void> {
 		await this._syncer.reset();
 		this._history.reset();
-		Logger.getInstance().reset();
+		this.logger.reset();
 	}
 
 	public onunload(): void {
 		if (this.remoteListenerIntervalId !== null) {
-			window.clearInterval(this.remoteListenerIntervalId);
+			clearInterval(this.remoteListenerIntervalId);
 		}
 	}
 
 	private registerRemoteEventListener(intervalMs: number): void {
 		if (this.remoteListenerIntervalId !== null) {
-			window.clearInterval(this.remoteListenerIntervalId);
+			clearInterval(this.remoteListenerIntervalId);
 		}
 
-		this.remoteListenerIntervalId = window.setInterval(
+		this.remoteListenerIntervalId = setInterval(
 			() => void this._syncer.applyRemoteChangesLocally(),
 			intervalMs
 		);

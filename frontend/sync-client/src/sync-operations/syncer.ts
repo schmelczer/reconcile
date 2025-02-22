@@ -29,6 +29,7 @@ export class Syncer {
 		undefined;
 
 	public constructor(
+		private readonly logger: Logger,
 		private readonly database: Database,
 		private readonly settings: Settings,
 		private readonly syncService: SyncService,
@@ -91,16 +92,14 @@ export class Syncer {
 
 	public async scheduleSyncForOfflineChanges(): Promise<void> {
 		if (!this.settings.getSettings().isSyncEnabled) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`Syncing is disabled, not uploading local changes`
 			);
 			return;
 		}
 
 		if (this.runningScheduleSyncForOfflineChanges != null) {
-			Logger.getInstance().debug(
-				"Uploading local changes is already in progress"
-			);
+			this.logger.debug("Uploading local changes is already in progress");
 			return this.runningScheduleSyncForOfflineChanges;
 		}
 
@@ -108,11 +107,9 @@ export class Syncer {
 			this.runningScheduleSyncForOfflineChanges =
 				this.internalScheduleSyncForOfflineChanges();
 			await this.runningScheduleSyncForOfflineChanges;
-			Logger.getInstance().info(
-				`All local changes have been applied remotely`
-			);
+			this.logger.info(`All local changes have been applied remotely`);
 		} catch (e) {
-			Logger.getInstance().error(
+			this.logger.error(
 				`Not all local changes have been applied remotely: ${e}`
 			);
 			throw e;
@@ -150,7 +147,7 @@ export class Syncer {
 								(item) => item != originalFile
 							);
 
-							Logger.getInstance().debug(
+							this.logger.debug(
 								`Document ${relativePath} was not found under its current path in the database but was found under a different path ${originalFile[0]}, scheduling sync to move it`
 							);
 							return this.internalSyncLocallyUpdatedFile({
@@ -167,7 +164,7 @@ export class Syncer {
 							});
 						}
 
-						Logger.getInstance().debug(
+						this.logger.debug(
 							`Document ${relativePath} not found in database, scheduling sync to create it`
 						);
 						return this.internalSyncLocallyCreatedFile(
@@ -178,7 +175,7 @@ export class Syncer {
 						);
 					}
 
-					Logger.getInstance().debug(
+					this.logger.debug(
 						`Document ${relativePath} has been updated locally, scheduling sync to update it`
 					);
 					return this.internalSyncLocallyUpdatedFile({
@@ -194,12 +191,12 @@ export class Syncer {
 
 		await Promise.all(
 			locallyDeletedFiles.map(async ([relativePath, _]) => {
-				Logger.getInstance().debug(
+				this.logger.debug(
 					`Document ${relativePath} has been deleted locally, scheduling sync to delete it`
 				);
 
 				if (await this.operations.exists(relativePath)) {
-					Logger.getInstance().debug(
+					this.logger.debug(
 						`Document ${relativePath} actually exists locally, skipping`
 					);
 					return Promise.resolve();
@@ -212,14 +209,14 @@ export class Syncer {
 
 	public async applyRemoteChangesLocally(): Promise<void> {
 		if (!this.settings.getSettings().isSyncEnabled) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`Syncing is disabled, not fetching remote changes`
 			);
 			return;
 		}
 
 		if (this.runningApplyRemoteChangesLocally != null) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				"Applying remote changes locally is already in progress"
 			);
 			return this.runningApplyRemoteChangesLocally;
@@ -229,13 +226,9 @@ export class Syncer {
 			this.runningApplyRemoteChangesLocally =
 				this.internalApplyRemoteChangesLocally();
 			await this.runningApplyRemoteChangesLocally;
-			Logger.getInstance().info(
-				"All remote changes have been applied locally"
-			);
+			this.logger.info("All remote changes have been applied locally");
 		} catch (e) {
-			Logger.getInstance().error(
-				`Failed to apply remote changes locally: ${e}`
-			);
+			this.logger.error(`Failed to apply remote changes locally: ${e}`);
 			throw e;
 		} finally {
 			this.runningApplyRemoteChangesLocally = undefined;
@@ -248,11 +241,11 @@ export class Syncer {
 		);
 
 		if (remote.latestDocuments.length === 0) {
-			Logger.getInstance().debug("No remote changes to apply");
+			this.logger.debug("No remote changes to apply");
 			return;
 		}
 
-		Logger.getInstance().info("Applying remote changes locally");
+		this.logger.info("Applying remote changes locally");
 
 		await Promise.all(
 			remote.latestDocuments.map(async (remoteDocument) =>
@@ -317,7 +310,7 @@ export class Syncer {
 
 				const localMetadata = this.database.getDocument(relativePath);
 				if (localMetadata) {
-					Logger.getInstance().debug(
+					this.logger.debug(
 						`Document metadata already exists for ${relativePath}, it must have been downloaded from the server`
 					);
 
@@ -631,7 +624,7 @@ export class Syncer {
 
 				const [relativePath, metadata] = localMetadata;
 				if (metadata.parentVersionId === remoteVersion.vaultUpdateId) {
-					Logger.getInstance().debug(
+					this.logger.debug(
 						`Document ${relativePath} is already up to date`
 					);
 					return;
@@ -658,7 +651,7 @@ export class Syncer {
 						const currentHash = hash(currentContent);
 
 						if (currentHash !== metadata.hash) {
-							Logger.getInstance().info(
+							this.logger.info(
 								`Document ${relativePath} has been updated both remotely and locally, letting the local file update event handle it`
 							);
 							return;
@@ -716,18 +709,18 @@ export class Syncer {
 		fn: () => Promise<void>
 	): Promise<void> {
 		if (!this.settings.getSettings().isSyncEnabled) {
-			Logger.getInstance().info(
+			this.logger.info(
 				`Syncing is disabled, not syncing ${relativePath}`
 			);
 			return;
 		}
 		if (!this.operations.isFileEligibleForSync(relativePath)) {
-			Logger.getInstance().info(
+			this.logger.info(
 				`File ${relativePath} is not eligible for syncing`
 			);
 			return;
 		}
-		Logger.getInstance().debug(`Syncing ${relativePath}`);
+		this.logger.debug(`Syncing ${relativePath}`);
 
 		await waitForDocumentLock(relativePath);
 		try {

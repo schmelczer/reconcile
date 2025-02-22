@@ -4,16 +4,19 @@ import { RelativePath } from "src/persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
 
 export class FileOperations {
-	public constructor(private readonly fs: FileSystemOperations) {}
+	public constructor(
+		private readonly logger: Logger,
+		private readonly fs: FileSystemOperations
+	) {}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
 		const files = await this.fs.listAllFiles();
-		Logger.getInstance().debug(`Listing all files, found ${files.length}`);
+		this.logger.debug(`Listing all files, found ${files.length}`);
 		return files;
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		Logger.getInstance().debug(`Reading file: ${path}`);
+		this.logger.debug(`Reading file: ${path}`);
 		const content = await this.fs.read(path);
 
 		if (isBinary(content)) {
@@ -30,17 +33,17 @@ export class FileOperations {
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		Logger.getInstance().debug(`Getting file size: ${path}`);
+		this.logger.debug(`Getting file size: ${path}`);
 		return this.fs.getFileSize(path);
 	}
 
 	public async getModificationTime(path: RelativePath): Promise<Date> {
-		Logger.getInstance().debug(`Getting modification time: ${path}`);
+		this.logger.debug(`Getting modification time: ${path}`);
 		return this.fs.getModificationTime(path);
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
-		Logger.getInstance().debug(`Checking existance of ${path}`);
+		this.logger.debug(`Checking existance of ${path}`);
 		return this.fs.exists(path);
 	}
 
@@ -50,9 +53,9 @@ export class FileOperations {
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
-		Logger.getInstance().debug(`Creating file: ${path}`);
+		this.logger.debug(`Creating file: ${path}`);
 		if (await this.fs.exists(path)) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`Didn't expect ${path} to exist, when trying to create it, merging instead`
 			);
 			await this.write(path, new Uint8Array(0), newContent);
@@ -71,9 +74,9 @@ export class FileOperations {
 		expectedContent: Uint8Array,
 		newContent: Uint8Array
 	): Promise<Uint8Array> {
-		Logger.getInstance().debug(`Writing file: ${path}`);
+		this.logger.debug(`Writing file: ${path}`);
 		if (!(await this.fs.exists(path))) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`The caller assumed ${path} exists, but it no longer, so we wont recreate it`
 			);
 			return new Uint8Array(0);
@@ -84,7 +87,7 @@ export class FileOperations {
 			isBinary(expectedContent) ||
 			isBinary(newContent)
 		) {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`The expected content is not mergable, so we won't perform a 3-way merge, just overwrite it`
 			);
 			await this.fs.write(path, newContent);
@@ -99,14 +102,14 @@ export class FileOperations {
 			(currentText) => {
 				currentText = currentText.replace(/\r\n/g, "\n");
 				if (currentText !== expectedText) {
-					Logger.getInstance().debug(
+					this.logger.debug(
 						`Performing a 3-way merge for ${path} with the expected content`
 					);
 
 					return mergeText(expectedText, currentText, newText);
 				}
 
-				Logger.getInstance().debug(
+				this.logger.debug(
 					`The current content of ${path} is the same as the expected content, so we will just write the new content`
 				);
 
@@ -117,7 +120,7 @@ export class FileOperations {
 	}
 
 	public async remove(path: RelativePath): Promise<void> {
-		Logger.getInstance().debug(`Removing file: ${path}`);
+		this.logger.debug(`Removing file: ${path}`);
 		return this.fs.delete(path);
 	}
 
@@ -125,7 +128,7 @@ export class FileOperations {
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
-		Logger.getInstance().debug(`Moving file: ${oldPath} -> ${newPath}`);
+		this.logger.debug(`Moving file: ${oldPath} -> ${newPath}`);
 
 		if (oldPath === newPath) {
 			return;

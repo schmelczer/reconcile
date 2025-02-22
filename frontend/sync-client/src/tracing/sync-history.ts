@@ -47,6 +47,8 @@ export class SyncHistory {
 		error: 0
 	};
 
+	public constructor(private logger: Logger) {}
+
 	public getEntries(): HistoryEntry[] {
 		return [...this.entries];
 	}
@@ -78,16 +80,16 @@ export class SyncHistory {
 
 		if (entry.status === SyncStatus.SUCCESS) {
 			this.status.success++;
-			Logger.getInstance().info(
+			this.logger.info(
 				`History entry: ${entry.relativePath} - ${entry.message}`
 			);
 		} else if (entry.status === SyncStatus.ERROR) {
 			this.status.error++;
-			Logger.getInstance().error(
+			this.logger.error(
 				`Error syncing file: ${entry.relativePath} - ${entry.message}`
 			);
 		} else {
-			Logger.getInstance().debug(
+			this.logger.debug(
 				`No-op syncing file: ${entry.relativePath} - ${entry.message}`
 			);
 		}

@@ -10,7 +10,7 @@ import { StatusBar } from "./views/status-bar";
 
 import { LogsView } from "./views/logs-view";
 import { StatusDescription } from "./views/status-description";
-import { Logger, SyncClient } from "sync-client";
+import { SyncClient } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 
 export default class VaultLinkPlugin extends Plugin {
@@ -18,8 +18,6 @@ export default class VaultLinkPlugin extends Plugin {
 	private client!: SyncClient;
 
 	public async onload(): Promise<void> {
-		Logger.getInstance().info("Starting plugin");
-
 		this.client = await SyncClient.create(
 			new ObsidianFileSystemOperations(this.app.vault),
 			{
@@ -27,6 +25,8 @@ export default class VaultLinkPlugin extends Plugin {
 				save: this.saveData.bind(this)
 			}
 		);
+
+		this.client.logger.info("Starting plugin");
 
 		const statusDescription = new StatusDescription(this.client);
 
@@ -42,12 +42,11 @@ export default class VaultLinkPlugin extends Plugin {
 
 		this.registerView(
 			HistoryView.TYPE,
-			(leaf) =>
-				new HistoryView(leaf, this.client.settings, this.client.history)
+			(leaf) => new HistoryView(leaf, this.client)
 		);
 		this.registerView(
 			LogsView.TYPE,
-			(leaf) => new LogsView(this, this.client.settings, leaf)
+			(leaf) => new LogsView(this, this.client, leaf)
 		);
 
 		this.addRibbonIcon(
@@ -61,11 +60,10 @@ export default class VaultLinkPlugin extends Plugin {
 			async (_: MouseEvent) => this.activateView(LogsView.TYPE)
 		);
 
-		const eventHandler = new ObsidianFileEventHandler(this.client.syncer);
+		const eventHandler = new ObsidianFileEventHandler(this.client);
 
 		this.app.workspace.onLayoutReady(async () => {
-			Logger.getInstance().info("Initialising sync handlers");
-
+			this.client.logger.info("Initialising sync handlers");
 			[
 				this.app.vault.on(
 					"create",
@@ -87,7 +85,7 @@ export default class VaultLinkPlugin extends Plugin {
 				this.registerEvent(event);
 			});
 
-			Logger.getInstance().info("Sync handlers initialised");
+			this.client.logger.info("Sync handlers initialised");
 
 			void this.client.syncer.scheduleSyncForOfflineChanges();
 		});

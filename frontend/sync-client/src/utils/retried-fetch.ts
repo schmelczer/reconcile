@@ -14,23 +14,25 @@ function getUrlFromInput(input: RequestInfo | URL): string {
 	return input.url;
 }
 
-export async function retriedFetch(
-	input: RequestInfo | URL,
-	init: RequestInitRetryParams<typeof fetch> = {}
-): Promise<Response> {
-	return fetchWithRetry(input, {
-		retryOn: function (attempt, error, response) {
-			if (error !== null || !response || response.status >= 500) {
-				Logger.getInstance().warn(
-					`Retrying fetch for ${getUrlFromInput(input)}, attempt ${attempt}`
-				);
+export function retriedFetchFactory(logger: Logger) {
+	return (
+		input: RequestInfo | URL,
+		init: RequestInitRetryParams<typeof fetch> = {}
+	): Promise<Response> => {
+		return fetchWithRetry(input, {
+			retryOn: function (attempt, error, response) {
+				if (error !== null || !response || response.status >= 500) {
+					logger.warn(
+						`Retrying fetch for ${getUrlFromInput(input)}, attempt ${attempt}`
+					);
 
-				return true;
-			}
-			return false;
-		},
-		retries: 6,
-		retryDelay: (attempt) => Math.pow(1.5, attempt) * 500,
-		...init
-	});
+					return true;
+				}
+				return false;
+			},
+			retries: 6,
+			retryDelay: (attempt) => Math.pow(1.5, attempt) * 500,
+			...init
+		});
+	};
 }

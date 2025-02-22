@@ -1,8 +1,7 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type VaultLinkPlugin from "src/vault-link-plugin";
-import type { Settings } from "sync-client";
-import { Logger } from "sync-client";
+import type { SyncClient } from "sync-client";
 
 export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
@@ -10,20 +9,24 @@ export class LogsView extends ItemView {
 
 	public constructor(
 		private readonly plugin: VaultLinkPlugin,
-		private readonly settings: Settings,
+		private readonly client: SyncClient,
 		leaf: WorkspaceLeaf
 	) {
 		super(leaf);
 		this.icon = LogsView.ICON;
-		Logger.getInstance().addOnMessageListener(() => {
+		this.client.logger.addOnMessageListener(() => {
 			this.updateView();
 		});
 
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
-			if (newSettings.minimumLogLevel !== oldSettings.minimumLogLevel) {
-				this.updateView();
+		this.client.settings.addOnSettingsChangeHandlers(
+			(newSettings, oldSettings) => {
+				if (
+					newSettings.minimumLogLevel !== oldSettings.minimumLogLevel
+				) {
+					this.updateView();
+				}
 			}
-		});
+		);
 	}
 
 	private static formatTimestamp(timestamp: Date): string {
@@ -78,8 +81,8 @@ export class LogsView extends ItemView {
 			}
 		);
 
-		const logs = Logger.getInstance().getMessages(
-			this.settings.getSettings().minimumLogLevel
+		const logs = this.client.logger.getMessages(
+			this.client.settings.getSettings().minimumLogLevel
 		);
 
 		if (logs.length === 0) {

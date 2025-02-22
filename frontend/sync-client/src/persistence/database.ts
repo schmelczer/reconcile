@@ -20,6 +20,7 @@ export class Database {
 	private lastSeenUpdateId: VaultUpdateId | undefined;
 
 	public constructor(
+		private readonly logger: Logger,
 		initialState: Partial<StoredDatabase> | undefined,
 		private readonly saveData: (data: unknown) => Promise<void>
 	) {
@@ -32,10 +33,10 @@ export class Database {
 				this.documents.set(relativePath, metadata as DocumentMetadata);
 			}
 		}
-		Logger.getInstance().debug(`Loaded ${this.documents.size} documents`);
+		this.logger.debug(`Loaded ${this.documents.size} documents`);
 
 		this.lastSeenUpdateId = initialState.lastSeenUpdateId;
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Loaded last seen update id: ${this.lastSeenUpdateId}`
 		);
 	}

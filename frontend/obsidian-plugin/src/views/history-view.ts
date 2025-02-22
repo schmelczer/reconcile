@@ -2,7 +2,7 @@ import type { IconName, WorkspaceLeaf } from "obsidian";
 import { ItemView, setIcon } from "obsidian";
 
 import { intlFormatDistance } from "date-fns";
-import type { SyncHistory, HistoryEntry, Settings } from "sync-client";
+import type { HistoryEntry, SyncClient } from "sync-client";
 import { SyncType, SyncSource, SyncStatus, Logger } from "sync-client";
 
 export class HistoryView extends ItemView {
@@ -12,15 +12,14 @@ export class HistoryView extends ItemView {
 
 	public constructor(
 		leaf: WorkspaceLeaf,
-		private readonly settings: Settings,
-		private readonly history: SyncHistory
+		private readonly client: SyncClient
 	) {
 		super(leaf);
 		this.icon = HistoryView.ICON;
 
-		history.addSyncHistoryUpdateListener(() => {
+		this.client.history.addSyncHistoryUpdateListener(() => {
 			this.updateView().catch((_error: unknown) => {
-				Logger.getInstance().error("Failed to update history view");
+				this.client.logger.error("Failed to update history view");
 			});
 		});
 	}
@@ -94,13 +93,13 @@ export class HistoryView extends ItemView {
 		container.empty();
 		container.createEl("h4", { text: "VaultLink History" });
 
-		const entries = this.history
+		const entries = this.client.history
 			.getEntries()
 			.reverse()
 			.filter(
 				(entry) =>
 					entry.status !== SyncStatus.NO_OP ||
-					this.settings.getSettings().displayNoopSyncEvents
+					this.client.settings.getSettings().displayNoopSyncEvents
 			);
 
 		entries.forEach((entry) => {

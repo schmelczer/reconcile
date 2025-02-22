@@ -7,7 +7,7 @@ import type {
 	VaultUpdateId
 } from "../persistence/database";
 import { Logger } from "src/tracing/logger";
-import { retriedFetch } from "src/utils/retried-fetch";
+import { retriedFetchFactory } from "src/utils/retried-fetch";
 import type { SyncSettings } from "dist/types";
 import type { Settings } from "src/persistence/settings";
 
@@ -19,7 +19,10 @@ export class SyncService {
 	private client!: Client<paths>;
 	private clientWithoutRetries!: Client<paths>;
 
-	public constructor(private readonly settings: Settings) {
+	public constructor(
+		private readonly settings: Settings,
+		private readonly logger: Logger
+	) {
 		this.createClient(settings.getSettings());
 
 		settings.addOnSettingsChangeHandlers(this.createClient.bind(this));
@@ -73,7 +76,7 @@ export class SyncService {
 			);
 		}
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Created document ${JSON.stringify(response.data)} with id ${
 				response.data.documentId
 			}`
@@ -124,7 +127,7 @@ export class SyncService {
 			);
 		}
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Updated document ${JSON.stringify(response.data)} with id ${
 				response.data.documentId
 			}`
@@ -165,7 +168,7 @@ export class SyncService {
 			throw new Error(`Failed to delete document`);
 		}
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Deleted document ${relativePath} with id ${documentId}`
 		);
 
@@ -198,7 +201,7 @@ export class SyncService {
 			);
 		}
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Get document ${response.data.relativePath} with id ${response.data.documentId}`
 		);
 
@@ -229,7 +232,7 @@ export class SyncService {
 			);
 		}
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Got ${response.data.latestDocuments.length} document metadata`
 		);
 
@@ -267,9 +270,7 @@ export class SyncService {
 			}
 		});
 
-		Logger.getInstance().debug(
-			`Ping response: ${JSON.stringify(response.data)}`
-		);
+		this.logger.debug(`Ping response: ${JSON.stringify(response.data)}`);
 
 		if (!response.data) {
 			throw new Error(
@@ -283,7 +284,7 @@ export class SyncService {
 	private createClient(settings: SyncSettings): void {
 		this.client = createClient<paths>({
 			baseUrl: settings.remoteUri,
-			fetch: retriedFetch
+			fetch: retriedFetchFactory(this.logger)
 		});
 
 		this.clientWithoutRetries = createClient<paths>({

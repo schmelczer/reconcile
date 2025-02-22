@@ -1,47 +1,45 @@
-import type { Syncer } from "sync-client";
+import type { SyncClient, Syncer } from "sync-client";
 import { Logger } from "sync-client";
 import type { TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 
 export class ObsidianFileEventHandler {
-	public constructor(private readonly syncer: Syncer) {}
+	public constructor(private readonly client: SyncClient) {}
 
 	public async onCreate(file: TAbstractFile): Promise<void> {
 		if (file instanceof TFile) {
-			Logger.getInstance().info(`File created: ${file.path}`);
+			this.client.logger.info(`File created: ${file.path}`);
 
-			await this.syncer.syncLocallyCreatedFile(
+			await this.client.syncer.syncLocallyCreatedFile(
 				file.path,
 				new Date(file.stat.ctime)
 			);
 		} else {
-			Logger.getInstance().debug(`Folder created: ${file.path}, ignored`);
+			this.client.logger.debug(`Folder created: ${file.path}, ignored`);
 		}
 	}
 
 	public async onDelete(file: TAbstractFile): Promise<void> {
 		if (file instanceof TFile) {
-			Logger.getInstance().info(`File deleted: ${file.path}`);
+			this.client.logger.info(`File deleted: ${file.path}`);
 
-			await this.syncer.syncLocallyDeletedFile(file.path);
+			await this.client.syncer.syncLocallyDeletedFile(file.path);
 		} else {
-			Logger.getInstance().debug(`Folder deleted: ${file.path}, ignored`);
+			this.client.logger.debug(`Folder deleted: ${file.path}, ignored`);
 		}
 	}
 
 	public async onRename(file: TAbstractFile, oldPath: string): Promise<void> {
 		if (file instanceof TFile) {
-			Logger.getInstance().info(
-				`File renamed: ${oldPath} -> ${file.path}`
-			);
+			this.client.logger.info(`File renamed: ${oldPath} -> ${file.path}`);
 
-			await this.syncer.syncLocallyUpdatedFile({
+			await this.client.syncer.syncLocallyUpdatedFile({
 				oldPath,
 				relativePath: file.path,
 				updateTime: new Date(file.stat.ctime)
 			});
 		} else {
-			Logger.getInstance().debug(
+			this.client.logger.debug(
 				`Folder renamed: ${oldPath} -> ${file.path}, ignored`
 			);
 		}
@@ -53,16 +51,14 @@ export class ObsidianFileEventHandler {
 				return;
 			}
 
-			Logger.getInstance().info(`File modified: ${file.path}`);
+			this.client.logger.info(`File modified: ${file.path}`);
 
-			await this.syncer.syncLocallyUpdatedFile({
+			await this.client.syncer.syncLocallyUpdatedFile({
 				relativePath: file.path,
 				updateTime: new Date(file.stat.ctime)
 			});
 		} else {
-			Logger.getInstance().debug(
-				`Folder modified: ${file.path}, ignored`
-			);
+			this.client.logger.debug(`Folder modified: ${file.path}, ignored`);
 		}
 	}
 }

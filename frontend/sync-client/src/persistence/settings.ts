@@ -33,6 +33,7 @@ export class Settings {
 	) => void)[] = [];
 
 	public constructor(
+		private readonly logger: Logger,
 		initialState: Partial<SyncSettings> | undefined,
 		private readonly saveData: (data: unknown) => Promise<void>
 	) {
@@ -41,7 +42,7 @@ export class Settings {
 			...(initialState ?? {})
 		};
 
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Loaded settings: ${JSON.stringify(this.settings, null, 2)}`
 		);
 	}
@@ -70,7 +71,7 @@ export class Settings {
 		value: SyncSettings[T]
 	): Promise<void> {
 		const newSettings = { ...this.settings, [key]: value };
-		Logger.getInstance().debug(
+		this.logger.debug(
 			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
 				newSettings,
 				null,
