@@ -75,7 +75,7 @@ pub fn is_binary(data: &[u8]) -> bool {
     std::str::from_utf8(data).is_err()
 }
 
-/// We don't want to supporte merging structured data like JSON, YAML, etc.
+/// We don't want to support merging structured data like JSON, YAML, etc.
 #[wasm_bindgen(js_name = isFileTypeMergable)]
 pub fn is_file_type_mergable(path_or_file_name: &str) -> bool {
     set_panic_hook();
