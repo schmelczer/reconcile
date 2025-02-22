@@ -1,8 +1,9 @@
 import { choose } from "../utils/choose";
 import { v4 as uuidv4 } from "uuid";
 import { assert } from "../utils/assert";
-import { SyncSettings } from "sync-client";
+import { LogLevel, SyncSettings } from "sync-client";
 import { MockClient } from "./mock-client";
+import chalk from "chalk";
 
 export class MockAgent extends MockClient {
 	private writtenContents: Array<string> = [];
@@ -11,9 +12,37 @@ export class MockAgent extends MockClient {
 	public constructor(
 		globalFiles: Record<string, Uint8Array>,
 		initialSettings: Partial<SyncSettings>,
-		private readonly name: string
+		public readonly name: string,
+		private readonly color: string
 	) {
 		super(globalFiles, initialSettings);
+	}
+
+	public async init(): Promise<void> {
+		await super.init();
+
+		this.client.logger.addOnMessageListener((message) => {
+			const formatted = chalk.hex(this.color)(
+				`[${this.name}] ${message.timestamp.toISOString()} ${message.level} ${message.message}`
+			);
+
+			switch (message.level) {
+				case LogLevel.ERROR:
+					console.error(formatted);
+					break;
+				case LogLevel.WARNING:
+					console.warn(formatted);
+					break;
+				case LogLevel.INFO:
+					console.info(formatted);
+					break;
+				case LogLevel.DEBUG:
+					console.debug(formatted);
+					break;
+			}
+		});
+
+		this.client.logger.info("Agent initialized");
 	}
 
 	public async act(): Promise<void> {

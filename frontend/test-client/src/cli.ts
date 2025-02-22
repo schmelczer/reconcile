@@ -7,20 +7,21 @@ const globalFiles: Record<string, Uint8Array> = {};
 const iterations = 100;
 
 async function runTest(): Promise<void> {
-	console.info("Starting test...");
+	console.info("Starting test");
 
 	const initialSettings: Partial<SyncSettings> = {
 		isSyncEnabled: true,
 		token: "token",
-		vaultName: uuidv4()
+		vaultName: uuidv4(),
+		remoteUri: "http://localhost:3030"
 	};
 
 	const clients = [
-		new MockAgent(globalFiles, initialSettings, "agent-1"),
-		new MockAgent(globalFiles, initialSettings, "agent-2"),
-		new MockAgent(globalFiles, initialSettings, "agent-3"),
-		new MockAgent(globalFiles, initialSettings, "agent-4"),
-		new MockAgent(globalFiles, initialSettings, "agent-5")
+		new MockAgent(globalFiles, initialSettings, "agent-1", "#ff0000"),
+		new MockAgent(globalFiles, initialSettings, "agent-2", "#00ff00"),
+		new MockAgent(globalFiles, initialSettings, "agent-3", "#0000ff"),
+		new MockAgent(globalFiles, initialSettings, "agent-4", "#ffaa00"),
+		new MockAgent(globalFiles, initialSettings, "agent-5", "#00ffaa")
 	];
 
 	await Promise.all(clients.map((client) => client.init()));
@@ -32,9 +33,20 @@ async function runTest(): Promise<void> {
 
 	await Promise.all(clients.map((client) => client.finish()));
 
+	console.info("Agents finished successfully");
+
 	clients.forEach((client) => {
+		console.info(`Checking consistency for ${client.name}`);
 		client.assertFileSystemIsConsistent();
+		console.info(`Consistency check for ${client.name} passed`);
+	});
+
+	console.info("File systems found to be consistent");
+
+	clients.forEach((client) => {
+		console.info(`Checking content for ${client.name}`);
 		client.assertAllContentIsPresentOnce();
+		console.info(`Content check for ${client.name} passed`);
 	});
 
 	console.info("Test completed successfully");
