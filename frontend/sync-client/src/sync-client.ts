@@ -138,7 +138,7 @@ export class SyncClient {
 		this.logger.reset();
 	}
 
-	public onunload(): void {
+	public stop(): void {
 		if (this.remoteListenerIntervalId !== null) {
 			clearInterval(this.remoteListenerIntervalId);
 		}

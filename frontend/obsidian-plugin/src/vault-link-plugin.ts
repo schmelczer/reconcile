@@ -92,7 +92,7 @@ export default class VaultLinkPlugin extends Plugin {
 	}
 
 	public onunload(): void {
-		this.client.onunload();
+		this.client.stop();
 	}
 
 	public openSettings(): void {
