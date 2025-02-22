@@ -8,7 +8,7 @@ export interface DocumentMetadata {
 	hash: string;
 }
 
-import { Logger } from "src/tracing/logger";
+import type { Logger } from "src/tracing/logger";
 
 export interface StoredDatabase {
 	documents: Map<RelativePath, DocumentMetadata>;

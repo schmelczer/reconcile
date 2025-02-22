@@ -1,5 +1,5 @@
 import type { RelativePath } from "src/persistence/database";
-import { Logger } from "./logger";
+import type { Logger } from "./logger";
 
 export interface CommonHistoryEntry {
 	status: SyncStatus;
@@ -47,7 +47,7 @@ export class SyncHistory {
 		error: 0
 	};
 
-	public constructor(private logger: Logger) {}
+	public constructor(private readonly logger: Logger) {}
 
 	public getEntries(): HistoryEntry[] {
 		return [...this.entries];

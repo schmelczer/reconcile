@@ -1,5 +1,6 @@
-import { normalizePath, Stat, Vault } from "obsidian";
-import { FileSystemOperations, RelativePath } from "sync-client";
+import type { Stat, Vault } from "obsidian";
+import { normalizePath } from "obsidian";
+import type { FileSystemOperations, RelativePath } from "sync-client";
 
 export class ObsidianFileSystemOperations implements FileSystemOperations {
 	public constructor(private readonly vault: Vault) {}
@@ -17,6 +18,7 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
 		return this.vault.adapter.writeBinary(
 			normalizePath(path),
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			content.buffer as ArrayBuffer
 		);
 	}

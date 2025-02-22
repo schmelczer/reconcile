@@ -1,4 +1,4 @@
-import { SyncSettings } from "sync-client";
+import type { SyncSettings } from "sync-client";
 import { MockAgent } from "./agent/mock-agent";
 import { sleep } from "./utils/sleep";
 import { v4 as uuidv4 } from "uuid";
@@ -55,14 +55,14 @@ async function runTest(): Promise<void> {
 		)
 	];
 
-	await Promise.all(clients.map((client) => client.init()));
+	await Promise.all(clients.map(async (client) => client.init()));
 
 	for (let i = 0; i < iterations; i++) {
-		await Promise.all(clients.map((client) => client.act()));
+		await Promise.all(clients.map(async (client) => client.act()));
 		await sleep(100);
 	}
 
-	await Promise.all(clients.map((client) => client.finish()));
+	await Promise.all(clients.map(async (client) => client.finish()));
 
 	console.info("Agents finished successfully");
 
@@ -83,4 +83,11 @@ async function runTest(): Promise<void> {
 	console.info("Test completed successfully");
 }
 
-runTest();
+runTest()
+	.then(() => {
+		process.exit(0);
+	})
+	.catch((err: unknown) => {
+		console.error(err);
+		process.exit(1);
+	});

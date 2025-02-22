@@ -1,9 +1,9 @@
-import {
-	SyncClient,
+import type {
 	RelativePath,
 	FileSystemOperations,
 	SyncSettings
 } from "sync-client";
+import { SyncClient } from "sync-client";
 import { assert } from "../utils/assert";
 
 export class MockClient implements FileSystemOperations {
@@ -15,7 +15,7 @@ export class MockClient implements FileSystemOperations {
 		private readonly initialSettings: Partial<SyncSettings>
 	) {}
 
-	public async init() {
+	public async init(): Promise<void> {
 		let _data: unknown = "";
 
 		this.client = await SyncClient.create(this, {
@@ -23,12 +23,14 @@ export class MockClient implements FileSystemOperations {
 			save: async (data: unknown) => void (_data = data)
 		});
 
-		Object.keys(this.initialSettings).forEach((key) => {
-			this.client.settings.setSetting(
-				key as keyof SyncSettings,
-				this.initialSettings[key as keyof SyncSettings]
-			);
-		});
+		await Promise.all(
+			Object.keys(this.initialSettings).map(async (key) => {
+				return this.client.settings.setSetting(
+					key as keyof SyncSettings,
+					this.initialSettings[key as keyof SyncSettings]
+				);
+			})
+		);
 
 		assert(
 			(await this.client.checkConnection()).isSuccessful,
@@ -37,7 +39,7 @@ export class MockClient implements FileSystemOperations {
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
-		return Object.keys(this.localFiles) as RelativePath[];
+		return Object.keys(this.localFiles);
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
@@ -77,7 +79,9 @@ export class MockClient implements FileSystemOperations {
 		this.client.syncer.syncLocallyCreatedFile(path, new Date());
 	}
 
-	public async createDirectory(path: RelativePath): Promise<void> {}
+	public async createDirectory(path: RelativePath): Promise<void> {
+		// This doesn't mean anything in our virtual FS representation
+	}
 
 	public async atomicUpdateText(
 		path: RelativePath,

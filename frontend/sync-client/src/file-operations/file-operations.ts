@@ -1,6 +1,6 @@
-import { Logger } from "src/tracing/logger";
-import { FileSystemOperations } from "./filesystem-operations";
-import { RelativePath } from "src/persistence/database";
+import type { Logger } from "src/tracing/logger";
+import type { FileSystemOperations } from "./filesystem-operations";
+import type { RelativePath } from "src/persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
 
 export class FileOperations {
@@ -138,7 +138,7 @@ export class FileOperations {
 		await this.fs.rename(oldPath, newPath);
 	}
 
-	public isFileEligibleForSync(path: RelativePath): boolean {
+	public isFileEligibleForSync(_path: RelativePath): boolean {
 		return true;
 		// TODO: figure this out
 		// if (Platform.isDesktopApp) {

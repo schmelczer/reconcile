@@ -1,4 +1,4 @@
-import { DocumentMetadata, RelativePath } from "src/persistence/database";
+import type { DocumentMetadata, RelativePath } from "src/persistence/database";
 import { EMPTY_HASH } from "./hash";
 
 export function findMatchingFileBasedOnHash(

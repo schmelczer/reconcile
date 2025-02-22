@@ -8,7 +8,7 @@ import { Settings } from "./persistence/settings";
 import type { CheckConnectionResult } from "./services/sync-service";
 import { SyncService } from "./services/sync-service";
 import { Syncer } from "./sync-operations/syncer";
-import { FileSystemOperations } from "./file-operations/filesystem-operations";
+import type { FileSystemOperations } from "./file-operations/filesystem-operations";
 import { FileOperations } from "./file-operations/file-operations";
 
 export class SyncClient {
@@ -37,6 +37,10 @@ export class SyncClient {
 
 	public get logger(): Logger {
 		return this._logger;
+	}
+
+	public get documentCount(): number {
+		return this._database.getDocuments().size;
 	}
 
 	public static async create(
@@ -122,10 +126,6 @@ export class SyncClient {
 		logger.info("SyncClient loaded");
 
 		return client;
-	}
-
-	public get documentCount(): number {
-		return this._database.getDocuments().size;
 	}
 
 	public async checkConnection(): Promise<CheckConnectionResult> {

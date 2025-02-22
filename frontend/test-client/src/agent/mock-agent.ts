@@ -1,14 +1,15 @@
 import { choose } from "../utils/choose";
 import { v4 as uuidv4 } from "uuid";
 import { assert } from "../utils/assert";
-import { LogLevel, SyncSettings } from "sync-client";
+import type { SyncSettings } from "sync-client";
+import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
 import chalk from "chalk";
 import { sleep } from "../utils/sleep";
 
 export class MockAgent extends MockClient {
-	private writtenContents: Array<string> = [];
-	private pendingActions: Array<Promise<unknown>> = [];
+	private readonly writtenContents: string[] = [];
+	private readonly pendingActions: Promise<unknown>[] = [];
 
 	public constructor(
 		globalFiles: Record<string, Uint8Array>,
@@ -48,8 +49,8 @@ export class MockAgent extends MockClient {
 	}
 
 	public async act(): Promise<void> {
-		let options: Array<() => Promise<unknown>> = [
-			() => {
+		const options: (() => Promise<unknown>)[] = [
+			async (): Promise<unknown> => {
 				const file = this.getFileName();
 				this.client.logger.info(`Decided to create file ${file}`);
 				return this.create(
@@ -57,7 +58,7 @@ export class MockAgent extends MockClient {
 					new TextEncoder().encode(this.getContent())
 				);
 			},
-			() => {
+			async (): Promise<unknown> => {
 				this.client.logger.info(
 					`Decided to change fetchChangesUpdateIntervalMs`
 				);
@@ -66,21 +67,21 @@ export class MockAgent extends MockClient {
 					Math.random() * 1000
 				);
 			},
-			() => {
+			async (): Promise<unknown> => {
 				this.client.logger.info(`Decided to disable sync`);
 				return this.client.settings.setSetting("isSyncEnabled", false);
 			},
-			() => {
+			async (): Promise<unknown> => {
 				this.client.logger.info(`Decided to enable sync`);
 				return this.client.settings.setSetting("isSyncEnabled", true);
 			}
 		];
 
-		let files = await this.listAllFiles();
+		const files = await this.listAllFiles();
 
 		if (files.length > 0) {
 			options.push(
-				() => {
+				async (): Promise<unknown> => {
 					const file = choose(files);
 
 					const newName = this.getFileName();
@@ -89,7 +90,7 @@ export class MockAgent extends MockClient {
 					);
 					return this.rename(file, newName);
 				},
-				() => {
+				async (): Promise<unknown> => {
 					const file = choose(files);
 
 					this.client.logger.info(`Decided to update file ${file}`);
@@ -101,21 +102,11 @@ export class MockAgent extends MockClient {
 			);
 
 			if (this.doDeletes) {
-				options.push(() => this.delete(choose(files)));
+				options.push(async () => this.delete(choose(files)));
 			}
 		}
 
 		this.pendingActions.push(choose(options)());
-	}
-
-	private getContent() {
-		const uuid = uuidv4();
-		this.writtenContents.push(uuid);
-		return uuid;
-	}
-
-	private getFileName() {
-		return `${this.name}-${uuidv4()}.md`;
 	}
 
 	public async finish(): Promise<void> {
@@ -178,12 +169,22 @@ export class MockAgent extends MockClient {
 					`Content ${content} found in ${found.length} files`
 				);
 
-				const file = found[0];
+				const [file] = found;
 				assert(
 					new TextDecoder().decode(file).split(content).length === 2,
 					`Content ${content} found more than once in a file`
 				);
 			}
 		}
+	}
+
+	private getContent(): string {
+		const uuid = uuidv4();
+		this.writtenContents.push(uuid);
+		return uuid;
+	}
+
+	private getFileName(): string {
+		return `${this.name}-${uuidv4()}.md`;
 	}
 }

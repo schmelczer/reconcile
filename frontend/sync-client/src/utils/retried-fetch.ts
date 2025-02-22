@@ -1,6 +1,6 @@
 import * as fetchRetryFactory from "fetch-retry";
 import type { RequestInitRetryParams } from "fetch-retry";
-import { Logger } from "src/tracing/logger";
+import type { Logger } from "src/tracing/logger";
 
 const fetchWithRetry = fetchRetryFactory.default(fetch);
 
@@ -15,7 +15,7 @@ function getUrlFromInput(input: RequestInfo | URL): string {
 }
 
 export function retriedFetchFactory(logger: Logger) {
-	return (
+	return async (
 		input: RequestInfo | URL,
 		init: RequestInitRetryParams<typeof fetch> = {}
 	): Promise<Response> => {

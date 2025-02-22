@@ -1,5 +1,4 @@
-import type { SyncClient, Syncer } from "sync-client";
-import { Logger } from "sync-client";
+import type { SyncClient } from "sync-client";
 import type { TAbstractFile } from "obsidian";
 import { TFile } from "obsidian";
 

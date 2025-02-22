@@ -1,20 +1,16 @@
-import type {
-	Database,
-	DocumentMetadata,
-	RelativePath
-} from "../persistence/database";
+import type { Database, RelativePath } from "../persistence/database";
 
 import type { SyncService } from "src/services/sync-service";
-import { Logger } from "src/tracing/logger";
+import type { Logger } from "src/tracing/logger";
 import type { SyncHistory } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history";
 import { unlockDocument, waitForDocumentLock } from "./document-lock";
 import PQueue from "p-queue";
-import { EMPTY_HASH, hash } from "src/utils/hash";
+import { hash } from "src/utils/hash";
 import type { components } from "src/services/types";
 import { deserialize } from "src/utils/deserialize";
 import type { Settings } from "src/persistence/settings";
-import { FileOperations } from "src/file-operations/file-operations";
+import type { FileOperations } from "src/file-operations/file-operations";
 import { findMatchingFileBasedOnHash } from "src/utils/find-matching-file-based-on-hash";
 
 export class Syncer {
@@ -75,7 +71,7 @@ export class Syncer {
 		);
 	}
 
-	public waitForSyncQueue(): Promise<void> {
+	public async waitForSyncQueue(): Promise<void> {
 		return this.syncQueue.onEmpty();
 	}
 

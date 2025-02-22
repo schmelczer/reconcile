@@ -1,4 +1,5 @@
-import { Logger, LogLevel } from "src/tracing/logger";
+import type { Logger } from "src/tracing/logger";
+import { LogLevel } from "src/tracing/logger";
 
 export interface SyncSettings {
 	remoteUri: string;
