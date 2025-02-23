@@ -32,6 +32,7 @@ tracing = "0.1.41"
 rand = "0.8.5"
 sanitize-filename = "0.6.0"
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
+regex = "1.11.1"
 
 [lints]
 workspace = true

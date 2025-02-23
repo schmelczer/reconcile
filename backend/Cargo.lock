@@ -2441,6 +2441,7 @@ dependencies = [
  "log",
  "rand",
  "reconcile",
+ "regex",
  "sanitize-filename",
  "schemars",
  "serde",
