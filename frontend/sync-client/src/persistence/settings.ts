@@ -72,13 +72,7 @@ export class Settings {
 		value: SyncSettings[T]
 	): Promise<void> {
 		const newSettings = { ...this.settings, [key]: value };
-		this.logger.debug(
-			`Setting ${key} to ${value}, new settings: ${JSON.stringify(
-				newSettings,
-				null,
-				2
-			)}`
-		);
+		this.logger.debug(`Setting '${key}' to '${value}'`);
 		await this.setSettings(newSettings);
 	}
 
