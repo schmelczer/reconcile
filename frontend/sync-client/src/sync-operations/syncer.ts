@@ -37,7 +37,10 @@ export class Syncer {
 			concurrency: settings.getSettings().syncConcurrency
 		});
 
-		settings.addOnSettingsChangeHandlers((newSettings) => {
+		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+			if (newSettings.syncConcurrency === oldSettings.syncConcurrency) {
+				return;
+			}
 			this.syncQueue.concurrency = newSettings.syncConcurrency;
 		});
 

@@ -23,9 +23,15 @@ export class SyncService {
 		private readonly settings: Settings,
 		private readonly logger: Logger
 	) {
-		this.createClient(settings.getSettings());
+		this.createClient(settings.getSettings().remoteUri);
 
-		settings.addOnSettingsChangeHandlers(this.createClient.bind(this));
+		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+			if (newSettings.remoteUri === oldSettings.remoteUri) {
+				return;
+			}
+
+			this.createClient(newSettings.remoteUri);
+		});
 	}
 
 	private static formatError(
@@ -281,14 +287,14 @@ export class SyncService {
 		return response.data;
 	}
 
-	private createClient(settings: SyncSettings): void {
+	private createClient(remoteUri: string): void {
 		this.client = createClient<paths>({
-			baseUrl: settings.remoteUri,
+			baseUrl: remoteUri,
 			fetch: retriedFetchFactory(this.logger)
 		});
 
 		this.clientWithoutRetries = createClient<paths>({
-			baseUrl: settings.remoteUri
+			baseUrl: remoteUri
 		});
 	}
 }
