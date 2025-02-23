@@ -67,6 +67,7 @@ export class SyncClient {
 			settings: undefined,
 			database: undefined
 		};
+
 		const database = new Database(
 			logger,
 			state.database,
@@ -136,6 +137,9 @@ export class SyncClient {
 		return this._syncService.checkConnection();
 	}
 
+	/// Wait for the in-flight operations to finish, reset all tracking,
+	/// and the local database but retain the settings.
+	/// The SyncClient can be used again after calling this method.
 	public async reset(): Promise<void> {
 		await this._syncer.reset();
 		this._history.reset();
@@ -143,6 +147,7 @@ export class SyncClient {
 		this.logger.reset();
 	}
 
+	/// Clear all global state that has been touched by SyncClient.
 	public stop(): void {
 		if (this.remoteListenerIntervalId !== null) {
 			clearInterval(this.remoteListenerIntervalId);
