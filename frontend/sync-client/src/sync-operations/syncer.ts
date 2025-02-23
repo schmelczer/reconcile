@@ -95,16 +95,6 @@ export class Syncer {
 		);
 	}
 
-	private async syncRemotelyUpdatedFile(
-		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
-	): Promise<void> {
-		await this.syncQueue.add(async () =>
-			this.internalSyncer.unrestrictedSyncRemotelyUpdatedFile(
-				remoteVersion
-			)
-		);
-	}
-
 	public async scheduleSyncForOfflineChanges(): Promise<void> {
 		if (!this.settings.getSettings().isSyncEnabled) {
 			this.logger.debug(
@@ -131,6 +121,52 @@ export class Syncer {
 		} finally {
 			this.runningScheduleSyncForOfflineChanges = undefined;
 		}
+	}
+
+	public async applyRemoteChangesLocally(): Promise<void> {
+		if (!this.settings.getSettings().isSyncEnabled) {
+			this.logger.debug(
+				`Syncing is disabled, not fetching remote changes`
+			);
+			return;
+		}
+
+		if (this.runningApplyRemoteChangesLocally != null) {
+			this.logger.debug(
+				"Applying remote changes locally is already in progress"
+			);
+			return this.runningApplyRemoteChangesLocally;
+		}
+
+		try {
+			this.runningApplyRemoteChangesLocally =
+				this.internalApplyRemoteChangesLocally();
+			await this.runningApplyRemoteChangesLocally;
+			this.logger.info("All remote changes have been applied locally");
+		} catch (e) {
+			this.logger.error(`Failed to apply remote changes locally: ${e}`);
+			throw e;
+		} finally {
+			this.runningApplyRemoteChangesLocally = undefined;
+		}
+	}
+
+	public async reset(): Promise<void> {
+		this.syncQueue.clear();
+		await this.syncQueue.onEmpty();
+		this.remainingOperationsListeners.forEach((listener) => {
+			listener(0);
+		});
+	}
+
+	private async syncRemotelyUpdatedFile(
+		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
+	): Promise<void> {
+		await this.syncQueue.add(async () =>
+			this.internalSyncer.unrestrictedSyncRemotelyUpdatedFile(
+				remoteVersion
+			)
+		);
 	}
 
 	private async internalScheduleSyncForOfflineChanges(): Promise<void> {
@@ -226,34 +262,6 @@ export class Syncer {
 		);
 	}
 
-	public async applyRemoteChangesLocally(): Promise<void> {
-		if (!this.settings.getSettings().isSyncEnabled) {
-			this.logger.debug(
-				`Syncing is disabled, not fetching remote changes`
-			);
-			return;
-		}
-
-		if (this.runningApplyRemoteChangesLocally != null) {
-			this.logger.debug(
-				"Applying remote changes locally is already in progress"
-			);
-			return this.runningApplyRemoteChangesLocally;
-		}
-
-		try {
-			this.runningApplyRemoteChangesLocally =
-				this.internalApplyRemoteChangesLocally();
-			await this.runningApplyRemoteChangesLocally;
-			this.logger.info("All remote changes have been applied locally");
-		} catch (e) {
-			this.logger.error(`Failed to apply remote changes locally: ${e}`);
-			throw e;
-		} finally {
-			this.runningApplyRemoteChangesLocally = undefined;
-		}
-	}
-
 	private async internalApplyRemoteChangesLocally(): Promise<void> {
 		const remote = await this.syncService.getAll(
 			this.database.getLastSeenUpdateId()
@@ -279,14 +287,6 @@ export class Syncer {
 		) {
 			await this.database.setLastSeenUpdateId(remote.lastUpdateId);
 		}
-	}
-
-	public async reset(): Promise<void> {
-		this.syncQueue.clear();
-		await this.syncQueue.onEmpty();
-		this.remainingOperationsListeners.forEach((listener) => {
-			listener(0);
-		});
 	}
 
 	private emitRemainingOperationsChange(remainingOperations: number): void {

@@ -2,7 +2,7 @@ import type { FileSystemOperations } from "dist/types";
 import type { RelativePath } from "src/persistence/database";
 
 export class FileNotFoundError extends Error {
-	constructor(message: string) {
+	public constructor(message: string) {
 		super(message);
 		this.name = "FileNotFoundError";
 	}
