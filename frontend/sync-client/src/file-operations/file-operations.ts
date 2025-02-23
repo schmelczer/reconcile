@@ -2,12 +2,17 @@ import type { Logger } from "src/tracing/logger";
 import type { FileSystemOperations } from "./filesystem-operations";
 import type { RelativePath } from "src/persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
+import { SafeFileSystemOperations } from "./safe-filesystem-operations";
 
 export class FileOperations {
+	private readonly fs: SafeFileSystemOperations;
+
 	public constructor(
 		private readonly logger: Logger,
-		private readonly fs: FileSystemOperations
-	) {}
+		fs: FileSystemOperations
+	) {
+		this.fs = new SafeFileSystemOperations(fs);
+	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
 		const files = await this.fs.listAllFiles();
@@ -43,7 +48,7 @@ export class FileOperations {
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
-		this.logger.debug(`Checking existance of ${path}`);
+		this.logger.debug(`Checking existence of ${path}`);
 		return this.fs.exists(path);
 	}
 
