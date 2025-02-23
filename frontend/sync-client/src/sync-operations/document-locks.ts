@@ -47,4 +47,9 @@ export class DocumentLocks {
 			this.locked.delete(relativePath);
 		}
 	}
+
+	public reset(): void {
+		this.locked.clear();
+		this.waiters.clear();
+	}
 }

@@ -157,6 +157,7 @@ export class Syncer {
 		this.remainingOperationsListeners.forEach((listener) => {
 			listener(0);
 		});
+		this.internalSyncer.reset();
 	}
 
 	private async syncRemotelyUpdatedFile(
@@ -214,7 +215,7 @@ export class Syncer {
 							);
 
 						this.logger.debug(
-							`Document ${relativePath} was not found under its current path in the database but was found under a different path ${originalFile[0]}, scheduling sync to move it`
+							`Document '${originalFile[0]}' was not found under its current path in the database but was found under a different path (${relativePath}), scheduling sync to move it`
 						);
 						return this.internalSyncer.unrestrictedSyncLocallyUpdatedFile(
 							{

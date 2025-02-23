@@ -527,7 +527,11 @@ export class UnrestrictedSyncer {
 		}
 	}
 
-	public async tryIncrementVaultUpdateId(
+	public reset(): void {
+		this.locks.reset();
+	}
+
+	private async tryIncrementVaultUpdateId(
 		responseVaultUpdateId: number
 	): Promise<void> {
 		if (this.database.getLastSeenUpdateId() === responseVaultUpdateId - 1) {
