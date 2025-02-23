@@ -220,8 +220,9 @@ async fn get_deduped_file_name(
     transaction: &mut Transaction<'_>,
     path: &str,
 ) -> Result<String, SyncServerError> {
-    let mut parts = path.rsplitn(2, '.');
-    let (stem, extension) = match (parts.next(), parts.next()) {
+    let parts = path.rsplitn(2, '.').collect::<Vec<_>>();
+    let mut reverse_parts = parts.into_iter().rev();
+    let (stem, extension) = match (reverse_parts.next(), reverse_parts.next()) {
         (Some(stem), maybe_extension) => (
             stem,
             maybe_extension
