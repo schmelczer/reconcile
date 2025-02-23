@@ -3,6 +3,7 @@ const path = require("path");
 module.exports = (_env, _argv) => ({
 	entry: "./src/index.ts",
 	devtool: "source-map",
+	target: "node",
 	module: {
 		rules: [
 			{
@@ -43,7 +44,6 @@ module.exports = (_env, _argv) => ({
 			name: "SyncClient",
 			type: "umd"
 		},
-		globalObject: "this",
 		path: path.resolve(__dirname, "dist")
 	}
 });

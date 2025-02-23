@@ -21,10 +21,10 @@
 	},
 	"devDependencies": {
 		"concurrently": "^9.1.2",
-		"eslint": "9.20.1",
+		"eslint": "9.21.0",
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"npm-check-updates": "^17.1.14",
-		"prettier": "^3.5.1",
+		"prettier": "^3.5.2",
 		"typescript-eslint": "8.24.1"
 	}
 }
