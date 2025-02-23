@@ -79,7 +79,7 @@ async function runTest({
 async function runTests(): Promise<void> {
 	const agentCounts = [2, 10];
 	const concurrencies = [1, 16];
-	const iterations = [300];
+	const iterations = [50, 300];
 	const doDeletes = [false, true];
 
 	for (const agentCount of agentCounts) {

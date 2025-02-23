@@ -70,6 +70,9 @@ export class MockClient implements FileSystemOperations {
 		if (this.localFiles.has(path)) {
 			throw new Error(`File ${path} already exists`);
 		}
+		this.client.logger.info(
+			`Creating file ${path} with content ${new TextDecoder().decode(newContent)}`
+		);
 		this.localFiles.set(path, newContent);
 		void this.client.syncer.syncLocallyCreatedFile(path, new Date());
 	}
@@ -117,6 +120,9 @@ export class MockClient implements FileSystemOperations {
 	}
 
 	public async delete(path: RelativePath): Promise<void> {
+		this.client.logger.info(
+			`Deleting file: ${path} with:\n  content ${new TextDecoder().decode(this.localFiles.get(path))}`
+		);
 		this.localFiles.delete(path);
 		void this.client.syncer.syncLocallyDeletedFile(path);
 	}
@@ -133,6 +139,10 @@ export class MockClient implements FileSystemOperations {
 		if (oldPath !== newPath) {
 			this.localFiles.delete(oldPath);
 		}
+
+		this.client.logger.info(
+			`Renamed file: ${oldPath} -> ${newPath} with:\n  content ${new TextDecoder().decode(file)}`
+		);
 
 		void this.client.syncer.syncLocallyUpdatedFile({
 			oldPath,
