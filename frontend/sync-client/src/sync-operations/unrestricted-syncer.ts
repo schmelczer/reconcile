@@ -4,15 +4,17 @@ import type { SyncService } from "src/services/sync-service";
 import type { Logger } from "src/tracing/logger";
 import type { SyncHistory } from "src/tracing/sync-history";
 import { SyncSource, SyncStatus, SyncType } from "src/tracing/sync-history";
-import { unlockDocument, waitForDocumentLock } from "./document-lock";
 import { hash } from "src/utils/hash";
 import type { components } from "src/services/types";
 import { deserialize } from "src/utils/deserialize";
 import type { Settings } from "src/persistence/settings";
 import type { FileOperations } from "src/file-operations/file-operations";
 import { FileNotFoundError } from "src/file-operations/safe-filesystem-operations";
+import { DocumentLocks } from "./document-locks";
 
 export class UnrestrictedSyncer {
+	private readonly locks = new DocumentLocks();
+
 	public constructor(
 		private readonly logger: Logger,
 		private readonly database: Database,
@@ -232,7 +234,7 @@ export class UnrestrictedSyncer {
 					response.relativePath != relativePath &&
 					response.relativePath != oldPath
 				) {
-					await waitForDocumentLock(response.relativePath);
+					await this.locks.waitForDocumentLock(response.relativePath);
 				}
 
 				try {
@@ -282,7 +284,7 @@ export class UnrestrictedSyncer {
 						response.relativePath != relativePath &&
 						response.relativePath != oldPath
 					) {
-						unlockDocument(response.relativePath);
+						this.locks.unlockDocument(response.relativePath);
 					}
 				}
 			}
@@ -343,7 +345,7 @@ export class UnrestrictedSyncer {
 					localMetadata &&
 					localMetadata[0] !== remoteVersion.relativePath
 				) {
-					await waitForDocumentLock(localMetadata[0]);
+					await this.locks.waitForDocumentLock(localMetadata[0]);
 				}
 				// Waiting for the new lock might take a while so we need to fetch the database
 				// entry again in case it's changed.
@@ -464,7 +466,7 @@ export class UnrestrictedSyncer {
 					}
 				} finally {
 					if (relativePath !== remoteVersion.relativePath) {
-						unlockDocument(relativePath);
+						this.locks.unlockDocument(relativePath);
 					}
 				}
 			}
@@ -495,7 +497,9 @@ export class UnrestrictedSyncer {
 			`Syncing ${relativePath} (${syncSource} - ${syncType})`
 		);
 
-		await Promise.all(lockedPaths.map(waitForDocumentLock));
+		await Promise.all(
+			lockedPaths.map(this.locks.waitForDocumentLock.bind(this.locks))
+		);
 		try {
 			await fn();
 		} catch (e) {
@@ -519,7 +523,7 @@ export class UnrestrictedSyncer {
 				throw e;
 			}
 		} finally {
-			lockedPaths.forEach(unlockDocument);
+			lockedPaths.forEach(this.locks.unlockDocument.bind(this.locks));
 		}
 	}
 
