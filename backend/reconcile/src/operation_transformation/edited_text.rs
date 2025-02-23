@@ -191,7 +191,7 @@ where
     pub fn merge(self, other: Self) -> Self {
         debug_assert_eq!(
             self.text, other.text,
-            "EditedTexts must be derived from the same text to be mergable"
+            "EditedText-s must be derived from the same text to be mergable"
         );
 
         let mut left_merge_context = MergeContext::default();
@@ -232,12 +232,6 @@ where
     }
 
     /// Apply the operations to the text and return the resulting text.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `SyncLibError::OperationError` if the operations cannot be
-    /// applied to the text.
-    #[must_use]
     pub fn apply(&self) -> String {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
