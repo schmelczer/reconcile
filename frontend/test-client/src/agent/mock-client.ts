@@ -9,18 +9,16 @@ import { assert } from "../utils/assert";
 export class MockClient implements FileSystemOperations {
 	protected readonly localFiles: Record<string, Uint8Array> = {};
 	protected client!: SyncClient;
+	protected data: unknown = "";
 
 	public constructor(
-		protected readonly globalFiles: Record<string, Uint8Array>,
 		private readonly initialSettings: Partial<SyncSettings>
 	) {}
 
 	public async init(): Promise<void> {
-		let _data: unknown = "";
-
 		this.client = await SyncClient.create(this, {
-			load: async () => _data,
-			save: async (data: unknown) => void (_data = data)
+			load: async () => this.data,
+			save: async (data: unknown) => void (this.data = data)
 		});
 
 		await Promise.all(
@@ -74,9 +72,8 @@ export class MockClient implements FileSystemOperations {
 		if (path in this.localFiles) {
 			throw new Error(`File ${path} already exists`);
 		}
-		this.globalFiles[path] = newContent;
 		this.localFiles[path] = newContent;
-		this.client.syncer.syncLocallyCreatedFile(path, new Date());
+		void this.client.syncer.syncLocallyCreatedFile(path, new Date());
 	}
 
 	public async createDirectory(path: RelativePath): Promise<void> {
@@ -93,7 +90,6 @@ export class MockClient implements FileSystemOperations {
 		const currentContent = new TextDecoder().decode(this.localFiles[path]);
 		const newContent = updater(currentContent);
 		const newContentUint8Array = new TextEncoder().encode(newContent);
-		this.globalFiles[path] = newContentUint8Array;
 		this.localFiles[path] = newContentUint8Array;
 
 		void this.client.syncer.syncLocallyUpdatedFile({
@@ -105,7 +101,6 @@ export class MockClient implements FileSystemOperations {
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
-		this.globalFiles[path] = content;
 		this.localFiles[path] = content;
 
 		void this.client.syncer.syncLocallyUpdatedFile({
@@ -116,10 +111,6 @@ export class MockClient implements FileSystemOperations {
 
 	public async delete(path: RelativePath): Promise<void> {
 		delete this.localFiles[path];
-		if (path in this.globalFiles) {
-			delete this.globalFiles[path];
-		}
-
 		void this.client.syncer.syncLocallyDeletedFile(path);
 	}
 
@@ -132,11 +123,8 @@ export class MockClient implements FileSystemOperations {
 		}
 
 		this.localFiles[newPath] = this.localFiles[oldPath];
-		delete this.localFiles[oldPath];
-
-		if (oldPath in this.globalFiles) {
-			this.globalFiles[newPath] = this.localFiles[oldPath];
-			delete this.globalFiles[oldPath];
+		if (oldPath !== newPath) {
+			delete this.localFiles[oldPath];
 		}
 
 		void this.client.syncer.syncLocallyUpdatedFile({
