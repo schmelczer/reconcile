@@ -7,7 +7,8 @@
 	},
 	"scripts": {
 		"dev": "webpack watch --mode development",
-		"build": "webpack --mode production"
+		"build": "webpack --mode production",
+		"test": "jest --passWithNoTests"
 	},
 	"dependencies": {
 		"sync-client": "file:../sync-client"
