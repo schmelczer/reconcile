@@ -58,6 +58,7 @@ describe("Document Lock Operations", () => {
 
 		let firstResolved = false;
 		let secondResolved = false;
+		let thirdResolved = false;
 
 		const firstWaitPromise = waitForDocumentLock(testPath).then(() => {
 			firstResolved = true;
@@ -67,13 +68,23 @@ describe("Document Lock Operations", () => {
 			secondResolved = true;
 		});
 
+		const thirdWaitPromise = waitForDocumentLock(testPath).then(() => {
+			thirdResolved = true;
+		});
+
 		unlockDocument(testPath);
 		await firstWaitPromise;
 		expect(firstResolved).toBe(true);
 		expect(secondResolved).toBe(false);
+		expect(thirdResolved).toBe(false);
 
 		unlockDocument(testPath);
 		await secondWaitPromise;
 		expect(secondResolved).toBe(true);
+		expect(thirdResolved).toBe(false);
+
+		unlockDocument(testPath);
+		await thirdWaitPromise;
+		expect(thirdResolved).toBe(true);
 	});
 });
