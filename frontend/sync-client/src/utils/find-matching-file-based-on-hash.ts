@@ -5,9 +5,9 @@ export function findMatchingFileBasedOnHash(
 	contentHash: string,
 	candidates: [RelativePath, DocumentMetadata][]
 ): [RelativePath, DocumentMetadata] | undefined {
-	if (contentHash != EMPTY_HASH) {
+	if (contentHash === EMPTY_HASH) {
 		return undefined;
 	}
 
-	return candidates.find(([_, document]) => document.hash === contentHash);
+	return candidates.find(([_, metadata]) => metadata.hash === contentHash);
 }
