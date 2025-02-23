@@ -1,4 +1,4 @@
-import { FileSystemOperations } from "dist/types";
+import type { FileSystemOperations } from "dist/types";
 import type { RelativePath } from "src/persistence/database";
 
 export class FileNotFoundError extends Error {
@@ -13,12 +13,12 @@ export class FileNotFoundError extends Error {
 export class SafeFileSystemOperations implements FileSystemOperations {
 	public constructor(private readonly fs: FileSystemOperations) {}
 
-	public listAllFiles(): Promise<RelativePath[]> {
+	public async listAllFiles(): Promise<RelativePath[]> {
 		return this.fs.listAllFiles();
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		return this.safeOperation(path, () => this.fs.read(path));
+		return this.safeOperation(path, async () => this.fs.read(path));
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
@@ -29,17 +29,17 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		path: RelativePath,
 		updater: (currentContent: string) => string
 	): Promise<string> {
-		return this.safeOperation(path, () =>
+		return this.safeOperation(path, async () =>
 			this.fs.atomicUpdateText(path, updater)
 		);
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		return this.safeOperation(path, () => this.fs.getFileSize(path));
+		return this.safeOperation(path, async () => this.fs.getFileSize(path));
 	}
 
 	public async getModificationTime(path: RelativePath): Promise<Date> {
-		return this.safeOperation(path, () =>
+		return this.safeOperation(path, async () =>
 			this.fs.getModificationTime(path)
 		);
 	}
@@ -60,7 +60,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
-		return this.safeOperation(oldPath, () =>
+		return this.safeOperation(oldPath, async () =>
 			this.fs.rename(oldPath, newPath)
 		);
 	}
