@@ -1,5 +1,5 @@
-import type { FileSystemOperations } from "dist/types";
 import type { RelativePath } from "src/persistence/database";
+import type { FileSystemOperations } from "./filesystem-operations";
 
 export class FileNotFoundError extends Error {
 	public constructor(message: string) {

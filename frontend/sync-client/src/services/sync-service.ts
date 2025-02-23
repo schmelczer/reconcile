@@ -8,7 +8,6 @@ import type {
 } from "../persistence/database";
 import type { Logger } from "src/tracing/logger";
 import { retriedFetchFactory } from "src/utils/retried-fetch";
-import type { SyncSettings } from "dist/types";
 import type { Settings } from "src/persistence/settings";
 
 export interface CheckConnectionResult {

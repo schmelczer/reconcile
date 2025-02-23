@@ -224,6 +224,16 @@ export class MockAgent extends MockClient {
 
 	private async renameFileAction(files: RelativePath[]): Promise<void> {
 		const file = choose(files);
+
+		// We can't edit files offline that have been renamed while offline.
+		// Otherwise, the resolution logic couldn't handle it.
+		if (this.doNotTouch.includes(file)) {
+			this.client.logger.info(
+				`Skipping file ${file} because it has been updated while offline`
+			);
+			return;
+		}
+
 		const newName = this.getFileName();
 
 		if (await this.exists(newName)) {
@@ -242,7 +252,7 @@ export class MockAgent extends MockClient {
 		const file = choose(files);
 
 		// We can't edit files offline that have been renamed while offline.
-		// Othwersie, the resolution logic couldn't handle it.
+		// Otherwise, the resolution logic couldn't handle it.
 		if (this.doNotTouch.includes(file)) {
 			this.client.logger.info(
 				`Skipping file ${file} because it has been renamed while offline`
@@ -254,6 +264,9 @@ export class MockAgent extends MockClient {
 		this.client.logger.info(
 			`Decided to update file ${file} with ${content}`
 		);
+		if (!this.client.settings.getSettings().isSyncEnabled) {
+			this.doNotTouch.push(file);
+		}
 		await this.atomicUpdateText(file, (old) => old + `   |${content}|   `);
 	}
 

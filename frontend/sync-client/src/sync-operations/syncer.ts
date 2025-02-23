@@ -206,6 +206,7 @@ export class Syncer {
 						await this.operations.read(relativePath);
 					const contentHash = hash(contentBytes);
 
+					// todo: make this smarter so that offline files can be renamed & edited at the same time
 					const originalFile = findMatchingFileBasedOnHash(
 						contentHash,
 						locallyPossiblyDeletedFiles
