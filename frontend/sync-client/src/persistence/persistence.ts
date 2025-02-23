@@ -1,4 +1,4 @@
-export interface PersistenceProvider {
-	load: () => Promise<unknown>;
-	save: (data: unknown) => Promise<void>;
+export interface PersistenceProvider<T extends object> {
+	load: () => Promise<T | undefined>;
+	save: (data: T | undefined) => Promise<void>;
 }

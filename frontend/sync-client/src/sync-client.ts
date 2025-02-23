@@ -3,7 +3,9 @@ import wasmBin from "sync_lib/sync_lib_bg.wasm";
 import type { PersistenceProvider } from "./persistence/persistence";
 import { SyncHistory } from "./tracing/sync-history";
 import { Logger } from "./tracing/logger";
+import type { StoredDatabase } from "./persistence/database";
 import { Database } from "./persistence/database";
+import type { SyncSettings } from "./persistence/settings";
 import { Settings } from "./persistence/settings";
 import type { CheckConnectionResult } from "./services/sync-service";
 import { SyncService } from "./services/sync-service";
@@ -45,7 +47,12 @@ export class SyncClient {
 
 	public static async create(
 		fs: FileSystemOperations,
-		persistence: PersistenceProvider
+		persistence: PersistenceProvider<
+			Partial<{
+				settings: Partial<SyncSettings>;
+				database: Partial<StoredDatabase>;
+			}>
+		>
 	): Promise<SyncClient> {
 		const logger = new Logger();
 		const history = new SyncHistory(logger);
@@ -56,17 +63,14 @@ export class SyncClient {
 			(wasmBin as any).default // it is loaded as a base64 string by webpack
 		);
 
-		let state: Partial<{
-			settings: any;
-			database: any;
-		}> = (await persistence.load()) ?? {
+		let state = (await persistence.load()) ?? {
 			settings: undefined,
 			database: undefined
 		};
 		const database = new Database(
 			logger,
 			state.database,
-			async (data: unknown): Promise<void> => {
+			async (data): Promise<void> => {
 				state = { ...state, database: data };
 				return persistence.save(state);
 			}
@@ -75,7 +79,7 @@ export class SyncClient {
 		const settings = new Settings(
 			logger,
 			state.settings,
-			async (data: unknown): Promise<void> => {
+			async (data): Promise<void> => {
 				state = { ...state, settings: data };
 				return persistence.save(state);
 			}

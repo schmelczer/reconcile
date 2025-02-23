@@ -11,7 +11,7 @@ export interface DocumentMetadata {
 import type { Logger } from "src/tracing/logger";
 
 export interface StoredDatabase {
-	documents: Map<RelativePath, DocumentMetadata>;
+	documents: Record<RelativePath, DocumentMetadata>;
 	lastSeenUpdateId: VaultUpdateId | undefined;
 }
 
@@ -22,15 +22,14 @@ export class Database {
 	public constructor(
 		private readonly logger: Logger,
 		initialState: Partial<StoredDatabase> | undefined,
-		private readonly saveData: (data: unknown) => Promise<void>
+		private readonly saveData: (data: StoredDatabase) => Promise<void>
 	) {
 		initialState ??= {};
 		if (initialState.documents) {
 			for (const [relativePath, metadata] of Object.entries(
 				initialState.documents
 			)) {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-				this.documents.set(relativePath, metadata as DocumentMetadata);
+				this.documents.set(relativePath, metadata);
 			}
 		}
 		this.logger.debug(`Loaded ${this.documents.size} documents`);

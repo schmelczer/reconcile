@@ -36,7 +36,7 @@ export class Settings {
 	public constructor(
 		private readonly logger: Logger,
 		initialState: Partial<SyncSettings> | undefined,
-		private readonly saveData: (data: unknown) => Promise<void>
+		private readonly saveData: (data: SyncSettings) => Promise<void>
 	) {
 		this.settings = {
 			...DEFAULT_SETTINGS,
