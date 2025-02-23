@@ -21,7 +21,6 @@ export class FileOperations {
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		this.logger.debug(`Reading file: ${path}`);
 		const content = await this.fs.read(path);
 
 		if (isBinary(content)) {
@@ -38,17 +37,14 @@ export class FileOperations {
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		this.logger.debug(`Getting file size: ${path}`);
 		return this.fs.getFileSize(path);
 	}
 
 	public async getModificationTime(path: RelativePath): Promise<Date> {
-		this.logger.debug(`Getting modification time: ${path}`);
 		return this.fs.getModificationTime(path);
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
-		this.logger.debug(`Checking existence of ${path}`);
 		return this.fs.exists(path);
 	}
 
@@ -58,7 +54,6 @@ export class FileOperations {
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
-		this.logger.debug(`Creating file: ${path}`);
 		if (await this.fs.exists(path)) {
 			this.logger.debug(
 				`Didn't expect ${path} to exist, when trying to create it, merging instead`
@@ -79,7 +74,6 @@ export class FileOperations {
 		expectedContent: Uint8Array,
 		newContent: Uint8Array
 	): Promise<Uint8Array> {
-		this.logger.debug(`Writing file: ${path}`);
 		if (!(await this.fs.exists(path))) {
 			this.logger.debug(
 				`The caller assumed ${path} exists, but it no longer, so we wont recreate it`
@@ -133,24 +127,25 @@ export class FileOperations {
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
-		this.logger.debug(`Moving file: ${oldPath} -> ${newPath}`);
-
 		if (oldPath === newPath) {
 			return;
 		}
 
-		await this.createParentDirectories(newPath);
+		if (await this.fs.exists(newPath)) {
+			const deconflictedPath = await this.deconflictPath(newPath);
+			this.logger.debug(
+				`Conflict when moving '${oldPath}' to '${newPath}', '${newPath}' already exists, deconflicting by moving it to '${deconflictedPath}'`
+			);
+			this.fs.rename(newPath, deconflictedPath);
+		} else {
+			await this.createParentDirectories(newPath);
+		}
+
 		await this.fs.rename(oldPath, newPath);
 	}
 
-	public isFileEligibleForSync(_path: RelativePath): boolean {
-		return true;
-		// TODO: figure this out
-		// if (Platform.isDesktopApp) {
-		// 	return true;
-		// }
-
-		// return isFileTypeMergable(path);
+	public isFileEligibleForSync(path: RelativePath): boolean {
+		return isFileTypeMergable(path);
 	}
 
 	private async createParentDirectories(path: string): Promise<void> {
@@ -162,6 +157,36 @@ export class FileOperations {
 			const parentDir = components.slice(0, i).join("/");
 			if (!(await this.fs.exists(parentDir))) {
 				await this.fs.createDirectory(parentDir);
+			}
+		}
+	}
+
+	private async deconflictPath(path: RelativePath): Promise<RelativePath> {
+		const pathParts = path.split("/");
+		const fileName = pathParts.pop()!;
+
+		let directory = pathParts.join("/");
+		if (directory) {
+			directory += "/";
+		}
+
+		const nameParts = fileName.split(".");
+		const extension =
+			nameParts.length > 1 ? "." + nameParts[nameParts.length - 1] : "";
+		const stem = extension ? nameParts.slice(0, -1).join(".") : fileName;
+		let currentCount = Number.parseInt(
+			/ \((\d+)\)$/.exec(stem)?.groups?.[0] ?? "0"
+		);
+
+		while (true) {
+			const newName =
+				currentCount === 0
+					? `${directory}${stem}${extension}`
+					: `${directory}${stem} (${currentCount})${extension}`;
+			if (await this.fs.exists(newName)) {
+				currentCount++;
+			} else {
+				return newName;
 			}
 		}
 	}
