@@ -83,10 +83,6 @@ module.exports = (env, argv) => ({
 			{
 				test: /\.ts$/,
 				use: ["ts-loader"]
-			},
-			{
-				test: /\.wasm$/,
-				type: "asset/inline"
 			}
 		]
 	},

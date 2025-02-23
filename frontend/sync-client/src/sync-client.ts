@@ -1,5 +1,5 @@
 import init from "sync_lib";
-import wasmBin from "sync_lib/sync_lib_bg.wasm";
+import wasmBin from "../../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import type { PersistenceProvider } from "./persistence/persistence";
 import { SyncHistory } from "./tracing/sync-history";
 import { Logger } from "./tracing/logger";

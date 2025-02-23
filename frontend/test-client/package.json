@@ -10,10 +10,8 @@
 		"build": "webpack --mode production",
 		"test": "jest --passWithNoTests"
 	},
-	"dependencies": {
-		"sync-client": "file:../sync-client"
-	},
 	"devDependencies": {
+		"sync-client": "file:../sync-client",
 		"uuid": "^11.1.0",
 		"chalk": "^5.4.1",
 		"ts-loader": "^9.5.2",
