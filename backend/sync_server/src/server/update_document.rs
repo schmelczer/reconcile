@@ -8,6 +8,7 @@ use axum_extra::{
 use axum_jsonschema::Json;
 use chrono::{DateTime, Utc};
 use log::info;
+use regex::Regex;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
@@ -19,7 +20,10 @@ use super::{
     responses::DocumentUpdateResponse,
 };
 use crate::{
-    database::models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+    database::{
+        self, Transaction,
+        models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+    },
     errors::{SyncServerError, client_error, not_found_error, server_error},
     utils::sanitize_path,
 };
@@ -139,6 +143,7 @@ async fn internal_update_document(
         )?;
 
     let sanitized_relative_path = sanitize_path(&relative_path);
+
     // Return the latest version if the content and path are the same as the latest
     // version
     if content == latest_version.content && sanitized_relative_path == latest_version.relative_path
@@ -165,7 +170,13 @@ async fn internal_update_document(
 
     // We can only update the relative path if we're the first one to do so
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
-        sanitized_relative_path
+        get_deduped_file_name(
+            &state.database,
+            &vault_id,
+            &mut transaction,
+            &sanitized_relative_path,
+        )
+        .await?
     } else {
         latest_version.relative_path.clone()
     };
@@ -198,4 +209,53 @@ async fn internal_update_document(
     } else {
         DocumentUpdateResponse::FastForwardUpdate(new_version.into())
     }))
+}
+
+// Only a single file can be on the same path, so we need to dedup the path
+// in case the client is trying to rename the file to an existing file's name
+// that it's unaware of.
+async fn get_deduped_file_name(
+    database: &database::Database,
+    vault_id: &VaultId,
+    transaction: &mut Transaction<'_>,
+    path: &str,
+) -> Result<String, SyncServerError> {
+    let mut parts = path.rsplitn(2, '.');
+    let (stem, extension) = match (parts.next(), parts.next()) {
+        (Some(stem), maybe_extension) => (
+            stem,
+            maybe_extension
+                .map(|ext| format!(".{ext}"))
+                .unwrap_or_default(),
+        ),
+        _ => unreachable!("Path must have at least one part"),
+    };
+
+    let regex = Regex::new(r" \((\d+)\)$").unwrap();
+    let start_number = regex
+        .captures(stem)
+        .and_then(|caps| caps.get(1))
+        .and_then(|m| m.as_str().parse::<u32>().ok())
+        .unwrap_or(0);
+
+    let clean_stem = regex.replace(stem, "").to_string();
+
+    for dedup_number in start_number.. {
+        let proposed_path = if dedup_number == 0 {
+            format!("{clean_stem}{extension}")
+        } else {
+            format!("{clean_stem} ({dedup_number}){extension}")
+        };
+
+        if database
+            .get_latest_document_by_path(vault_id, &proposed_path, Some(transaction))
+            .await
+            .map_err(server_error)?
+            .is_none()
+        {
+            return Ok(proposed_path.to_string());
+        }
+    }
+
+    unreachable!("Loop must always return a value");
 }
