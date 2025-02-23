@@ -23,7 +23,8 @@ jobs:
       - name: Build wasm
         run: |
           cd backend
-          rustup install nightly && rustup default nightly
+          rustup install nightly
+          rustup default nightly
           cargo install wasm-pack
           wasm-pack build --target web sync_lib
 
