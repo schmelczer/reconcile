@@ -169,7 +169,9 @@ async fn internal_update_document(
     let is_different_from_request_content = merged_content != content;
 
     // We can only update the relative path if we're the first one to do so
-    let new_relative_path = if parent_document.relative_path == latest_version.relative_path {
+    let new_relative_path = if parent_document.relative_path == latest_version.relative_path
+        && latest_version.relative_path != sanitized_relative_path
+    {
         get_deduped_file_name(
             &state.database,
             &vault_id,
