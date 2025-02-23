@@ -1,7 +1,7 @@
 import { choose } from "../utils/choose";
 import { v4 as uuidv4 } from "uuid";
 import { assert } from "../utils/assert";
-import type { SyncSettings } from "sync-client";
+import type { RelativePath, SyncSettings } from "sync-client";
 import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
 import chalk from "chalk";
@@ -9,15 +9,15 @@ import chalk from "chalk";
 export class MockAgent extends MockClient {
 	private readonly writtenContents: string[] = [];
 	private readonly pendingActions: Promise<unknown>[] = [];
+	private doNotTouch: string[] = [];
 
 	public constructor(
-		globalFiles: Record<string, Uint8Array>,
 		initialSettings: Partial<SyncSettings>,
 		public readonly name: string,
 		private readonly color: string,
 		private readonly doDeletes: boolean
 	) {
-		super(globalFiles, initialSettings);
+		super(initialSettings);
 	}
 
 	public async init(): Promise<void> {
@@ -49,86 +49,34 @@ export class MockAgent extends MockClient {
 
 	public async act(): Promise<void> {
 		const options: (() => Promise<unknown>)[] = [
-			async (): Promise<unknown> => {
-				const file = this.getFileName();
-
-				if (await this.exists(file)) {
-					return;
-				}
-
-				this.client.logger.info(`Decided to create file ${file}`);
-				return this.create(
-					file,
-					new TextEncoder().encode(this.getContent())
-				);
-			},
-			async (): Promise<unknown> => {
-				this.client.logger.info(
-					`Decided to change fetchChangesUpdateIntervalMs`
-				);
-				return this.client.settings.setSetting(
-					"fetchChangesUpdateIntervalMs",
-					Math.random() * 1000
-				);
-			},
-			async (): Promise<unknown> => {
-				this.client.logger.info(`Decided to disable sync`);
-				return this.client.settings.setSetting("isSyncEnabled", false);
-			},
-			async (): Promise<unknown> => {
-				this.client.logger.info(`Decided to enable sync`);
-				return this.client.settings.setSetting("isSyncEnabled", true);
-			}
+			this.createFileAction.bind(this),
+			this.changeFetchChangesUpdateIntervalMsAction.bind(this),
+			this.disableSyncAction.bind(this),
+			this.enableSyncAction.bind(this)
 		];
 
 		const files = await this.listAllFiles();
 
 		if (files.length > 0) {
 			options.push(
-				async (): Promise<unknown> => {
-					const file = choose(files);
-					const newName = this.getFileName();
-
-					if (await this.exists(newName)) {
-						return;
-					}
-
-					this.client.logger.info(
-						`Decided to rename file ${file} to ${newName}`
-					);
-					return this.rename(file, newName);
-				},
-				async (): Promise<unknown> => {
-					const file = choose(files);
-
-					this.client.logger.info(`Decided to update file ${file}`);
-					return this.atomicUpdateText(
-						file,
-						(old) => old + " " + this.getContent()
-					);
-				}
+				this.renameFileAction.bind(this, files),
+				this.updateFileAction.bind(this, files)
 			);
 
 			if (this.doDeletes) {
-				options.push(async (): Promise<unknown> => {
-					const file = choose(files);
-					this.client.logger.info(`Decided to delete file ${file}`);
-					return this.delete(file);
-				});
+				options.push(this.deleteFileAction.bind(this, files));
 			}
 		}
 
 		this.pendingActions.push(
-			(() => {
+			(async (): Promise<unknown> => {
 				try {
-					return choose(options)();
+					return await choose(options)();
 				} catch (error) {
 					this.client.logger.error(
 						`Failed to perform an action: ${error}`
 					);
-					this.client.logger.info(
-						JSON.stringify(JSON.parse(this.data as any), null, 2)
-					);
+					this.client.logger.info(JSON.stringify(this.data, null, 2));
 					this.client.logger.info(
 						JSON.stringify(this.localFiles, null, 2)
 					);
@@ -141,69 +89,178 @@ export class MockAgent extends MockClient {
 	public async finish(): Promise<void> {
 		await Promise.all(this.pendingActions);
 		await this.client.settings.setSetting("isSyncEnabled", true);
-		await this.client.syncer.applyRemoteChangesLocally();
 		await this.client.syncer.waitForSyncQueue();
+		await this.client.syncer.applyRemoteChangesLocally();
 		this.client.stop();
 	}
 
-	public assertFileSystemIsConsistent(): void {
-		const globalFiles = Object.keys(this.globalFiles);
-		const localFiles = Object.keys(this.localFiles);
+	public assertFileSystemsAreConsistent(otherAgent: MockAgent): void {
+		const globalFiles = Array.from(otherAgent.localFiles.keys());
+		const localFiles = Array.from(this.localFiles.keys());
 
-		const missingInGlobal = localFiles.filter(
-			(file) => !(file in this.globalFiles)
+		const missingInOther = localFiles.filter(
+			(file) => !otherAgent.localFiles.has(file)
 		);
 		const missingInLocal = globalFiles.filter(
-			(file) => !(file in this.localFiles)
+			(file) => !this.localFiles.has(file)
 		);
 
-		assert(
-			missingInGlobal.length === 0,
-			`Files missing in global files: ${missingInGlobal.join(", ")}`
-		);
-		assert(
-			missingInLocal.length === 0,
-			`Files missing in local files: ${missingInLocal.join(", ")}`
-		);
-
-		for (const file of globalFiles) {
-			const localContent = new TextDecoder().decode(
-				this.localFiles[file]
-			);
-			const globalContent = new TextDecoder().decode(
-				this.globalFiles[file]
+		try {
+			assert(
+				missingInOther.length === 0,
+				`Files from ${this.name} missing in ${otherAgent.name}: ${missingInOther.join(", ")}`
 			);
 			assert(
-				localContent === globalContent,
-				`Content mismatch for file ${file}: ${localContent} <> ${globalContent}`
+				missingInLocal.length === 0,
+				`Files from ${otherAgent.name} missing in ${this.name}: ${missingInLocal.join(", ")}`
 			);
+
+			for (const file of globalFiles) {
+				const localContent = new TextDecoder().decode(
+					this.localFiles.get(file)
+				);
+				const otherContent = new TextDecoder().decode(
+					otherAgent.localFiles.get(file)
+				);
+				assert(
+					localContent === otherContent,
+					`Content mismatch for file ${file}:\n${localContent}\n${otherContent}`
+				);
+			}
+		} catch (e) {
+			this.client.logger.info(
+				"Local data: " + JSON.stringify(this.data, null, 2)
+			);
+			this.client.logger.info(
+				"Local files: " +
+					Array.from(otherAgent.localFiles.keys()).join(", ")
+			);
+			otherAgent.client.logger.info(
+				"Local data: " + JSON.stringify(otherAgent.data, null, 2)
+			);
+			otherAgent.client.logger.info(
+				"Local files: " +
+					Array.from(otherAgent.localFiles.keys()).join(", ")
+			);
+
+			throw e;
 		}
 	}
 
 	public assertAllContentIsPresentOnce(): void {
 		for (const content of this.writtenContents) {
-			const found = Object.values(this.localFiles).filter((file) => {
-				return new TextDecoder().decode(file).includes(content);
+			const found = Array.from(this.localFiles.keys()).filter((key) => {
+				return new TextDecoder()
+					.decode(this.localFiles.get(key))
+					.includes(content);
 			});
 
 			if (this.doDeletes) {
 				assert(
 					found.length <= 1,
-					`Content ${content} found in ${found.length} files`
+					`[${this.name}] Content ${content} found in ${found.join(", ")}`
 				);
 			} else {
 				assert(
-					found.length === 1,
-					`Content ${content} found in ${found.length} files`
+					found.length >= 1,
+					`[${this.name}] Content ${content} not found in any files`
+				);
+
+				assert(
+					found.length <= 1,
+					`[${this.name}] Content ${content} found in multiple files: ${found.join(", ")}`
 				);
 
 				const [file] = found;
+				const fileContent = new TextDecoder().decode(
+					this.localFiles.get(file)
+				);
 				assert(
-					new TextDecoder().decode(file).split(content).length === 2,
-					`Content ${content} found more than once in a file`
+					fileContent.split(content).length == 2,
+					`Content ${content} (of ${this.name}) found more than once in file ${file}. File content:\n${fileContent}`
 				);
 			}
 		}
+	}
+
+	private async createFileAction(): Promise<void> {
+		const file = this.getFileName();
+
+		if (await this.exists(file)) {
+			return;
+		}
+
+		const content = this.getContent();
+		this.client.logger.info(
+			`Decided to create file ${file} with content ${content}`
+		);
+
+		return this.create(
+			file,
+			new TextEncoder().encode(`   |${content}|   `)
+		);
+	}
+
+	private async changeFetchChangesUpdateIntervalMsAction(): Promise<void> {
+		this.client.logger.info(
+			`Decided to change fetchChangesUpdateIntervalMs`
+		);
+		return this.client.settings.setSetting(
+			"fetchChangesUpdateIntervalMs",
+			Math.random() * 1000
+		);
+	}
+
+	private async disableSyncAction(): Promise<void> {
+		this.client.logger.info(`Decided to disable sync`);
+		await this.client.settings.setSetting("isSyncEnabled", false);
+	}
+
+	private async enableSyncAction(): Promise<void> {
+		this.client.logger.info(`Decided to enable sync`);
+		await this.client.settings.setSetting("isSyncEnabled", true);
+		this.doNotTouch = [];
+	}
+
+	private async renameFileAction(files: RelativePath[]): Promise<void> {
+		const file = choose(files);
+		const newName = this.getFileName();
+
+		if (await this.exists(newName)) {
+			return;
+		}
+
+		this.client.logger.info(`Decided to rename file ${file} to ${newName}`);
+		if (!this.client.settings.getSettings().isSyncEnabled) {
+			this.doNotTouch.push(newName);
+		}
+
+		return this.rename(file, newName);
+	}
+
+	private async updateFileAction(files: RelativePath[]): Promise<void> {
+		const file = choose(files);
+
+		// We can't edit files offline that have been renamed while offline.
+		// Othwersie, the resolution logic couldn't handle it.
+		if (this.doNotTouch.includes(file)) {
+			this.client.logger.info(
+				`Skipping file ${file} because it has been renamed while offline`
+			);
+			return;
+		}
+
+		const content = this.getContent();
+		this.client.logger.info(
+			`Decided to update file ${file} with ${content}`
+		);
+		await this.atomicUpdateText(file, (old) => old + `   |${content}|   `);
+	}
+
+	private async deleteFileAction(files: RelativePath[]): Promise<void> {
+		const file = choose(files);
+		this.client.logger.info(`Decided to delete file ${file}`);
+		return this.delete(file);
 	}
 
 	private getContent(): string {

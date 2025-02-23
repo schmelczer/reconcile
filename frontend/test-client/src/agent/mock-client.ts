@@ -23,12 +23,10 @@ export class MockClient implements FileSystemOperations {
 
 		await Promise.all(
 			Object.keys(this.initialSettings).map(async (key) => {
-				if (key in this.client.settings) {
-					return this.client.settings.setSetting(
-						key as keyof SyncSettings, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-						this.initialSettings[key as keyof SyncSettings] // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-					);
-				}
+				return this.client.settings.setSetting(
+					key as keyof SyncSettings, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+					this.initialSettings[key as keyof SyncSettings] // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+				);
 			})
 		);
 
@@ -93,6 +91,10 @@ export class MockClient implements FileSystemOperations {
 		const newContentUint8Array = new TextEncoder().encode(newContent);
 		this.localFiles.set(path, newContentUint8Array);
 
+		this.client.logger.info(
+			`Updated file ${path} with:\n  current content: ${currentContent}\n  new content: ${newContent}`
+		);
+
 		void this.client.syncer.syncLocallyUpdatedFile({
 			relativePath: path,
 			updateTime: new Date()
@@ -103,6 +105,10 @@ export class MockClient implements FileSystemOperations {
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
 		this.localFiles.set(path, content);
+
+		this.client.logger.info(
+			`Updated file ${path} with:\n  new content: ${new TextDecoder().decode(content)}`
+		);
 
 		void this.client.syncer.syncLocallyUpdatedFile({
 			relativePath: path,
