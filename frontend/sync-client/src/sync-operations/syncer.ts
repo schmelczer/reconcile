@@ -188,7 +188,7 @@ export class Syncer {
 
 					if (metadata) {
 						this.logger.debug(
-							`Document ${relativePath} has been updated locally, scheduling sync to update it`
+							`Document ${relativePath} might have been updated locally, scheduling sync to validate and update it`
 						);
 						return this.internalSyncer.unrestrictedSyncLocallyUpdatedFile(
 							{
