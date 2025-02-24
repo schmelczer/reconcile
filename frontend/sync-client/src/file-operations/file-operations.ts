@@ -1,14 +1,16 @@
 import type { Logger } from "src/tracing/logger";
 import type { FileSystemOperations } from "./filesystem-operations";
-import type { RelativePath } from "src/persistence/database";
+import type { Database, RelativePath } from "src/persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
 import { SafeFileSystemOperations } from "./safe-filesystem-operations";
 
 export class FileOperations {
 	private readonly fs: SafeFileSystemOperations;
+	private static readonly PARENTHESES_REGEX = / \((\d+)\)$/;
 
 	public constructor(
 		private readonly logger: Logger,
+		private readonly database: Database,
 		fs: FileSystemOperations
 	) {
 		this.fs = new SafeFileSystemOperations(fs);
@@ -134,9 +136,10 @@ export class FileOperations {
 		if (await this.fs.exists(newPath)) {
 			const deconflictedPath = await this.deconflictPath(newPath);
 			this.logger.debug(
-				`Conflict when moving '${oldPath}' to '${newPath}', '${newPath}' already exists, deconflicting by moving it to '${deconflictedPath}'`
+				`Conflict when moving '${oldPath}' to '${newPath}', latter already exists, deconflicting by moving it to '${deconflictedPath}'`
 			);
-			this.fs.rename(newPath, deconflictedPath);
+			await this.database.updatePath(newPath, deconflictedPath);
+			await this.fs.rename(newPath, deconflictedPath);
 		} else {
 			await this.createParentDirectories(newPath);
 		}
@@ -163,7 +166,10 @@ export class FileOperations {
 
 	private async deconflictPath(path: RelativePath): Promise<RelativePath> {
 		const pathParts = path.split("/");
-		const fileName = pathParts.pop()!;
+		const fileName = pathParts.pop();
+		if (fileName == "" || fileName == null) {
+			throw new Error(`Path '${path}' cannot be empty`);
+		}
 
 		let directory = pathParts.join("/");
 		if (directory) {
@@ -173,11 +179,13 @@ export class FileOperations {
 		const nameParts = fileName.split(".");
 		const extension =
 			nameParts.length > 1 ? "." + nameParts[nameParts.length - 1] : "";
-		const stem = extension ? nameParts.slice(0, -1).join(".") : fileName;
+		let stem = extension ? nameParts.slice(0, -1).join(".") : fileName;
 		let currentCount = Number.parseInt(
-			/ \((\d+)\)$/.exec(stem)?.groups?.[0] ?? "0"
+			FileOperations.PARENTHESES_REGEX.exec(stem)?.groups?.[0] ?? "0"
 		);
+		stem = stem.replace(FileOperations.PARENTHESES_REGEX, "");
 
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 		while (true) {
 			const newName =
 				currentCount === 0

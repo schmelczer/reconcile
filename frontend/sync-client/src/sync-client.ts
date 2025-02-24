@@ -93,7 +93,7 @@ export class SyncClient {
 			database,
 			settings,
 			syncService,
-			new FileOperations(logger, fs),
+			new FileOperations(logger, database, fs),
 			history
 		);
 

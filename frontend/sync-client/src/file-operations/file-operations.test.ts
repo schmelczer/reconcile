@@ -2,7 +2,7 @@ import type { FileSystemOperations } from "sync-client";
 import type { Database, RelativePath } from "../persistence/database";
 import { FileOperations } from "./file-operations";
 import { Logger } from "../tracing/logger";
-import { assertSetContainsExactly } from "src/utils/assert-set-contains-exactly";
+import { assertSetContainsExactly } from "../utils/assert-set-contains-exactly";
 
 describe("File operations", () => {
 	class MockDatabase {
@@ -95,6 +95,22 @@ describe("File operations", () => {
 		await fileOperations.create("c.md", new Uint8Array());
 		await fileOperations.move("c.md", "b.md");
 		assertSetContainsExactly(fs.names, "b.md", "b (1).md");
+
+		await fileOperations.create("d.md", new Uint8Array());
+		await fileOperations.move("d.md", "b.md");
+		assertSetContainsExactly(fs.names, "b.md", "b (1).md", "b (2).md");
+
+		await fileOperations.create("file-23.md", new Uint8Array());
+		await fileOperations.create("file-23 (1).md", new Uint8Array());
+		await fileOperations.move("file-23.md", "file-23 (1).md");
+		assertSetContainsExactly(
+			fs.names,
+			"b.md",
+			"b (1).md",
+			"b (2).md",
+			"file-23 (1).md",
+			"file-23 (2).md"
+		);
 	});
 
 	test("should deconflict renames with paths", async () => {
