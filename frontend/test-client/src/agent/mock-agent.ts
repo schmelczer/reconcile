@@ -47,6 +47,15 @@ export class MockAgent extends MockClient {
 		this.client.logger.info("Agent initialized");
 	}
 
+	public async delete(path: RelativePath): Promise<void> {
+		assert(
+			this.doDeletes,
+			`Agent ${this.name} tried to delete file ${path} while doDeletes is false`
+		);
+
+		await super.delete(path);
+	}
+
 	public async act(): Promise<void> {
 		const options: (() => Promise<unknown>)[] = [
 			this.createFileAction.bind(this),
@@ -242,7 +251,7 @@ export class MockAgent extends MockClient {
 
 		this.client.logger.info(`Decided to rename file ${file} to ${newName}`);
 		if (!this.client.settings.getSettings().isSyncEnabled) {
-			this.doNotTouch.push(newName);
+			this.doNotTouch.push(file, newName);
 		}
 
 		return this.rename(file, newName);
