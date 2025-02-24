@@ -69,6 +69,7 @@ mod test {
     #[test]
     fn test_sanitize_path() {
         assert_eq!(sanitize_path("/my/path/what?"), "/my/path/what");
+        assert_eq!(sanitize_path("file (1).md"), "file (1).md");
         assert_eq!(sanitize_path("/my/path/\\\\:?"), "/my/path/_");
     }
 
