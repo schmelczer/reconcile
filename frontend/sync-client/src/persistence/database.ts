@@ -88,28 +88,6 @@ export class Database {
 		await this.save();
 	}
 
-	public async moveDocument({
-		documentId,
-		oldRelativePath,
-		relativePath,
-		parentVersionId,
-		hash
-	}: {
-		documentId: DocumentId;
-		oldRelativePath: RelativePath;
-		relativePath: RelativePath;
-		parentVersionId: VaultUpdateId;
-		hash: string;
-	}): Promise<void> {
-		this.documents.delete(oldRelativePath);
-		this.documents.set(relativePath, {
-			documentId,
-			parentVersionId,
-			hash
-		});
-		await this.save();
-	}
-
 	public async removeDocument(relativePath: RelativePath): Promise<void> {
 		this.documents.delete(relativePath);
 		await this.save();
@@ -119,6 +97,29 @@ export class Database {
 		relativePath: RelativePath
 	): DocumentMetadata | undefined {
 		return this.documents.get(relativePath);
+	}
+
+	public async updatePath(
+		oldRelativePath: RelativePath,
+		newRelativePath: RelativePath
+	): Promise<void> {
+		const document = this.documents.get(oldRelativePath);
+		if (!document) {
+			throw new Error(
+				`Cannot update physical path for document that does not exist: ${oldRelativePath}`
+			);
+		}
+
+		if (this.documents.has(newRelativePath)) {
+			throw new Error(
+				`Cannot update physical path to path that is already in use: ${newRelativePath}`
+			);
+		}
+
+		this.documents.delete(oldRelativePath);
+		this.documents.set(newRelativePath, document);
+
+		await this.save();
 	}
 
 	private async save(): Promise<void> {
