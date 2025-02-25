@@ -155,7 +155,6 @@ export class FileOperations {
 				await this.fs.rename(newPath, deconflictedPath);
 			} else {
 				await this.database.deleteDocument(newPath);
-				await this.fs.delete(newPath);
 			}
 		} else {
 			await this.createParentDirectories(newPath);
