@@ -45,6 +45,10 @@ export class SyncClient {
 		return this._database.getDocuments().size;
 	}
 
+	public set fetchImplementation(fetch: typeof globalThis.fetch) {
+		this._syncService.fetchImplementation = fetch;
+	}
+
 	public static async create(
 		fs: FileSystemOperations,
 		persistence: PersistenceProvider<

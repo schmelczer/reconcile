@@ -17,12 +17,13 @@ export interface CheckConnectionResult {
 export class SyncService {
 	private client!: Client<paths>;
 	private clientWithoutRetries!: Client<paths>;
+	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
 		private readonly settings: Settings,
 		private readonly logger: Logger
 	) {
-		this.createClient(settings.getSettings().remoteUri);
+		this.createClient(this.settings.getSettings().remoteUri);
 
 		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
 			if (newSettings.remoteUri === oldSettings.remoteUri) {
@@ -31,6 +32,11 @@ export class SyncService {
 
 			this.createClient(newSettings.remoteUri);
 		});
+	}
+
+	public set fetchImplementation(fetch: typeof globalThis.fetch) {
+		this._fetchImplementation = fetch;
+		this.createClient(this.settings.getSettings().remoteUri);
 	}
 
 	private static formatError(
@@ -289,7 +295,7 @@ export class SyncService {
 	private createClient(remoteUri: string): void {
 		this.client = createClient<paths>({
 			baseUrl: remoteUri,
-			fetch: retriedFetchFactory(this.logger)
+			fetch: retriedFetchFactory(this.logger, this._fetchImplementation)
 		});
 
 		this.clientWithoutRetries = createClient<paths>({

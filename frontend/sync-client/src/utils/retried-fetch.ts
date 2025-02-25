@@ -2,8 +2,6 @@ import * as fetchRetryFactory from "fetch-retry";
 import type { RequestInitRetryParams } from "fetch-retry";
 import type { Logger } from "src/tracing/logger";
 
-const fetchWithRetry = fetchRetryFactory.default(fetch);
-
 function getUrlFromInput(input: RequestInfo | URL): string {
 	if (input instanceof URL) {
 		return input.href;
@@ -14,12 +12,15 @@ function getUrlFromInput(input: RequestInfo | URL): string {
 	return input.url;
 }
 
-export function retriedFetchFactory(logger: Logger) {
+export function retriedFetchFactory(
+	logger: Logger,
+	fetch: typeof globalThis.fetch = globalThis.fetch
+) {
 	return async (
 		input: RequestInfo | URL,
 		init: RequestInitRetryParams<typeof fetch> = {}
 	): Promise<Response> => {
-		return fetchWithRetry(input, {
+		return fetchRetryFactory.default(fetch)(input, {
 			retryOn: function (attempt, error, response) {
 				if (error !== null || !response || response.status >= 500) {
 					logger.warn(
