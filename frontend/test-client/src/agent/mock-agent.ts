@@ -31,7 +31,8 @@ export class MockAgent extends MockClient {
 			switch (message.level) {
 				case LogLevel.ERROR:
 					console.error(formatted);
-					break;
+					// Let's not ignore errors
+					process.exit(1);
 				case LogLevel.WARNING:
 					console.warn(formatted);
 					break;
@@ -98,9 +99,9 @@ export class MockAgent extends MockClient {
 	public async finish(): Promise<void> {
 		await Promise.all(this.pendingActions);
 		await this.client.settings.setSetting("isSyncEnabled", true);
+		this.client.stop();
 		await this.client.syncer.waitForSyncQueue();
 		await this.client.syncer.applyRemoteChangesLocally();
-		this.client.stop();
 	}
 
 	public assertFileSystemsAreConsistent(otherAgent: MockAgent): void {
@@ -216,7 +217,7 @@ export class MockAgent extends MockClient {
 		);
 		return this.client.settings.setSetting(
 			"fetchChangesUpdateIntervalMs",
-			Math.random() * 1000
+			Math.random() * 2000 + 100
 		);
 	}
 

@@ -141,6 +141,7 @@ export class SyncClient {
 	/// and the local database but retain the settings.
 	/// The SyncClient can be used again after calling this method.
 	public async reset(): Promise<void> {
+		this.stop();
 		await this._syncer.reset();
 		this._history.reset();
 		await this._database.resetSyncState();
