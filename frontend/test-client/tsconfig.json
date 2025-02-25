@@ -5,7 +5,13 @@
 		"target": "ES2022",
 		"module": "CommonJS",
 		"esModuleInterop": true,
-		"lib": ["DOM", "ESNext"]
+		"lib": [
+			"DOM",
+			"ESNext"
+		],
+		"moduleResolution": "node"
 	},
-	"exclude": ["./dist"]
+	"exclude": [
+		"./dist"
+	]
 }

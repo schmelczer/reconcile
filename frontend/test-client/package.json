@@ -11,12 +11,13 @@
 		"test": "jest --passWithNoTests"
 	},
 	"devDependencies": {
-		"sync-client": "file:../sync-client",
-		"uuid": "^11.1.0",
+		"@types/node": "^22.13.5",
 		"chalk": "^5.4.1",
+		"sync-client": "file:../sync-client",
 		"ts-loader": "^9.5.2",
 		"tslib": "2.8.1",
 		"typescript": "5.7.3",
+		"uuid": "^11.1.0",
 		"webpack": "^5.98.0",
 		"webpack-cli": "^6.0.1"
 	}

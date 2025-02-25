@@ -3,9 +3,15 @@
 		"baseUrl": ".",
 		"module": "ESNext",
 		"target": "ES2023",
-		"moduleResolution": "bundler",
 		"strict": true,
-		"lib": ["DOM", "ESNext"]
+		"moduleResolution": "bundler",
+		"allowSyntheticDefaultImports": true,
+		"lib": [
+			"DOM",
+			"ESNext"
+		]
 	},
-	"exclude": ["./dist"]
+	"exclude": [
+		"./dist"
+	]
 }
