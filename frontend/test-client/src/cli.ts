@@ -7,16 +7,17 @@ async function runTest({
 	agentCount,
 	concurrency,
 	iterations,
-	doDeletes
+	doDeletes,
+	jitterScaleInSeconds
 }: {
 	agentCount: number;
 	concurrency: number;
 	iterations: number;
 	doDeletes: boolean;
+	jitterScaleInSeconds: number;
 }): Promise<void> {
-	console.info(
-		`Running test with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}`
-	);
+	const settings = `with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}, jitterScaleInSeconds ${jitterScaleInSeconds}`;
+	console.info(`Running test ${settings}`);
 
 	const initialSettings: Partial<SyncSettings> = {
 		isSyncEnabled: true,
@@ -29,7 +30,12 @@ async function runTest({
 	const clients: MockAgent[] = [];
 	for (let i = 0; i < agentCount; i++) {
 		clients.push(
-			new MockAgent(initialSettings, `agent-${i}`, "#ff0000", doDeletes)
+			new MockAgent(
+				initialSettings,
+				`agent-${i}`,
+				doDeletes,
+				jitterScaleInSeconds
+			)
 		);
 	}
 
@@ -42,8 +48,15 @@ async function runTest({
 			await sleep(100);
 		}
 
+		console.info("Stopping agents");
+
+		// Each agent can have unpushed changes which might conflict with eachother so each has to resolve the conflicts & push, and
 		for (const client of clients) {
-			// todo: make it less hacky
+			await client.finish();
+		}
+
+		// then we need a second pass to ensure that all agents pull the same state.
+		for (const client of clients) {
 			await client.finish();
 		}
 
@@ -65,33 +78,35 @@ async function runTest({
 			console.info(`Content check for ${client.name} passed`);
 		});
 
-		console.info(
-			`Test passed with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}`
-		);
+		console.info(`Test passed with ${settings}`);
 	} catch (err) {
-		console.error(
-			`Test failed with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}`
-		);
+		console.error(`Test failed with ${settings}`);
 		throw err;
 	}
 }
 
 async function runTests(): Promise<void> {
 	const agentCounts = [2, 10];
+	const jitterScaleInSeconds = [0.5, 3, 0];
 	const concurrencies = [1, 16];
 	const iterations = [50, 300];
 	const doDeletes = [false, true];
 
 	for (const agentCount of agentCounts) {
 		for (const concurrency of concurrencies) {
-			for (const iteration of iterations) {
-				for (const deleteFiles of doDeletes) {
-					await runTest({
-						agentCount,
-						concurrency,
-						iterations: iteration,
-						doDeletes: deleteFiles
-					});
+			for (const jitter of jitterScaleInSeconds) {
+				for (const iteration of iterations) {
+					for (const deleteFiles of doDeletes) {
+						while (true) {
+							await runTest({
+								agentCount,
+								concurrency,
+								iterations: iteration,
+								doDeletes: deleteFiles,
+								jitterScaleInSeconds: jitter
+							});
+						}
+					}
 				}
 			}
 		}

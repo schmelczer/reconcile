@@ -4,7 +4,7 @@ import { assert } from "../utils/assert";
 import type { RelativePath, SyncSettings } from "sync-client";
 import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
-import chalk from "chalk";
+import { sleep } from "../utils/sleep";
 
 export class MockAgent extends MockClient {
 	private readonly writtenContents: string[] = [];
@@ -14,8 +14,8 @@ export class MockAgent extends MockClient {
 	public constructor(
 		initialSettings: Partial<SyncSettings>,
 		public readonly name: string,
-		private readonly color: string,
-		private readonly doDeletes: boolean
+		private readonly doDeletes: boolean,
+		private readonly jitterScaleInSeconds: number
 	) {
 		super(initialSettings);
 	}
@@ -23,11 +23,18 @@ export class MockAgent extends MockClient {
 	public async init(): Promise<void> {
 		await super.init();
 
-		this.client.logger.addOnMessageListener((message) => {
-			const formatted = chalk.hex(this.color)(
-				`[${this.name}] ${message.timestamp.toISOString()} ${message.level} ${message.message}`
-			);
+		this.client.fetchImplementation = async (
+			input: string | URL | globalThis.Request,
+			init?: RequestInit
+		): Promise<Response> => {
+			await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
+			const response = await fetch(input, init);
+			await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
+			return response;
+		};
 
+		this.client.logger.addOnMessageListener((message) => {
+			const formatted = `[${this.name}] ${message.timestamp.toISOString()} ${message.level} ${message.message}`;
 			switch (message.level) {
 				case LogLevel.ERROR:
 					console.error(formatted);
