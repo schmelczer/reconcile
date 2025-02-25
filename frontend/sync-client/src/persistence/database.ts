@@ -99,6 +99,11 @@ export class Database {
 		return this.documents.get(relativePath);
 	}
 
+	public async deleteDocument(relativePath: RelativePath): Promise<void> {
+		this.documents.delete(relativePath);
+		await this.save();
+	}
+
 	public async updatePath(
 		oldRelativePath: RelativePath,
 		newRelativePath: RelativePath

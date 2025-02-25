@@ -1,12 +1,16 @@
 import type { Logger } from "src/tracing/logger";
 import type { FileSystemOperations } from "./filesystem-operations";
-import type { Database, RelativePath } from "src/persistence/database";
+import type {
+	Database,
+	DocumentId,
+	RelativePath
+} from "src/persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
 import { SafeFileSystemOperations } from "./safe-filesystem-operations";
 
 export class FileOperations {
-	private readonly fs: SafeFileSystemOperations;
 	private static readonly PARENTHESES_REGEX = / \((\d+)\)$/;
+	private readonly fs: SafeFileSystemOperations;
 
 	public constructor(
 		private readonly logger: Logger,
@@ -57,14 +61,16 @@ export class FileOperations {
 		newContent: Uint8Array
 	): Promise<void> {
 		if (await this.fs.exists(path)) {
+			const deconflictedPath = await this.deconflictPath(path);
 			this.logger.debug(
-				`Didn't expect ${path} to exist, when trying to create it, merging instead`
+				`Didn't expect ${path} to exist, deconflicting by moving it to '${deconflictedPath}'`
 			);
-			await this.write(path, new Uint8Array(0), newContent);
-			return;
+			await this.database.updatePath(path, deconflictedPath);
+			await this.fs.rename(path, deconflictedPath);
+		} else {
+			await this.createParentDirectories(path);
 		}
 
-		await this.createParentDirectories(path);
 		await this.fs.write(path, newContent);
 	}
 
@@ -127,7 +133,8 @@ export class FileOperations {
 
 	public async move(
 		oldPath: RelativePath,
-		newPath: RelativePath
+		newPath: RelativePath,
+		documentId?: DocumentId
 	): Promise<void> {
 		if (oldPath === newPath) {
 			return;
@@ -136,10 +143,20 @@ export class FileOperations {
 		if (await this.fs.exists(newPath)) {
 			const deconflictedPath = await this.deconflictPath(newPath);
 			this.logger.debug(
-				`Conflict when moving '${oldPath}' to '${newPath}', latter already exists, deconflicting by moving it to '${deconflictedPath}'`
+				`Conflict when moving '${oldPath}' to '${newPath}', the latter already exists, deconflicting by moving it to '${deconflictedPath}'`
 			);
-			await this.database.updatePath(newPath, deconflictedPath);
-			await this.fs.rename(newPath, deconflictedPath);
+
+			const existingMetadata = this.database.getDocument(newPath);
+			if (
+				existingMetadata === undefined ||
+				existingMetadata.documentId !== documentId
+			) {
+				await this.database.updatePath(newPath, deconflictedPath);
+				await this.fs.rename(newPath, deconflictedPath);
+			} else {
+				await this.database.deleteDocument(newPath);
+				await this.fs.delete(newPath);
+			}
 		} else {
 			await this.createParentDirectories(newPath);
 		}

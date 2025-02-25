@@ -144,17 +144,17 @@ export class UnrestrictedSyncer {
 			SyncType.UPDATE,
 			SyncSource.PUSH,
 			async () => {
-				const localMetadata = this.database.getDocument(
-					oldPath ?? relativePath
-				);
+				// Check the new path first in case the metadata has been already moved
+				let localMetadata = this.database.getDocument(relativePath);
+				let metadataPath = relativePath;
+
+				if (localMetadata === undefined && oldPath !== undefined) {
+					localMetadata = this.database.getDocument(oldPath);
+					metadataPath = oldPath;
+				}
 
 				if (!localMetadata) {
-					this.history.addHistoryEntry({
-						status: SyncStatus.NO_OP,
-						relativePath,
-						message: `Document metadata doesn't exist for ${oldPath ?? relativePath}, it must have been already deleted`,
-						type: SyncType.UPDATE
-					});
+					// It's fine, a subsequent sync operation must have dealt with this
 					return;
 				}
 
@@ -243,7 +243,8 @@ export class UnrestrictedSyncer {
 						await this.operations.move(
 							// this can throw FileNotFoundError
 							relativePath,
-							response.relativePath
+							response.relativePath,
+							response.documentId
 						);
 					}
 
@@ -268,9 +269,14 @@ export class UnrestrictedSyncer {
 						});
 					}
 
-					await this.database.moveDocument({
+					if (metadataPath !== response.relativePath) {
+						await this.database.updatePath(
+							metadataPath,
+							response.relativePath
+						);
+					}
+					await this.database.setDocument({
 						documentId: localMetadata.documentId,
-						oldRelativePath: oldPath ?? relativePath,
 						relativePath: response.relativePath,
 						parentVersionId: response.vaultUpdateId,
 						hash: contentHash
@@ -394,7 +400,7 @@ export class UnrestrictedSyncer {
 
 				const [relativePath, metadata] = localMetadata;
 
-				if (metadata.parentVersionId === remoteVersion.vaultUpdateId) {
+				if (remoteVersion.vaultUpdateId <= metadata.parentVersionId) {
 					this.logger.debug(
 						`Document ${relativePath} is already up to date`
 					);
@@ -439,6 +445,12 @@ export class UnrestrictedSyncer {
 							await this.operations.move(
 								// this can throw FileNotFoundError
 								relativePath,
+								remoteVersion.relativePath,
+								remoteVersion.documentId
+							);
+
+							await this.database.updatePath(
+								relativePath,
 								remoteVersion.relativePath
 							);
 						}
@@ -448,9 +460,8 @@ export class UnrestrictedSyncer {
 							currentContent,
 							contentBytes
 						);
-						await this.database.moveDocument({
+						await this.database.setDocument({
 							documentId: remoteVersion.documentId,
-							oldRelativePath: relativePath,
 							relativePath: remoteVersion.relativePath,
 							parentVersionId: remoteVersion.vaultUpdateId,
 							hash: contentHash

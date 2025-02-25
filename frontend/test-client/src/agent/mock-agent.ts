@@ -33,6 +33,7 @@ export class MockAgent extends MockClient {
 					console.error(formatted);
 					// Let's not ignore errors
 					process.exit(1);
+					break;
 				case LogLevel.WARNING:
 					console.warn(formatted);
 					break;
@@ -46,15 +47,6 @@ export class MockAgent extends MockClient {
 		});
 
 		this.client.logger.info("Agent initialized");
-	}
-
-	public async delete(path: RelativePath): Promise<void> {
-		assert(
-			this.doDeletes,
-			`Agent ${this.name} tried to delete file ${path} while doDeletes is false`
-		);
-
-		await super.delete(path);
 	}
 
 	public async act(): Promise<void> {
@@ -97,8 +89,8 @@ export class MockAgent extends MockClient {
 	}
 
 	public async finish(): Promise<void> {
-		await Promise.all(this.pendingActions);
 		await this.client.settings.setSetting("isSyncEnabled", true);
+		await Promise.all(this.pendingActions);
 		this.client.stop();
 		await this.client.syncer.waitForSyncQueue();
 		await this.client.syncer.applyRemoteChangesLocally();
@@ -196,7 +188,7 @@ export class MockAgent extends MockClient {
 	private async createFileAction(): Promise<void> {
 		const file = this.getFileName();
 
-		if (await this.exists(file)) {
+		if (this.doNotTouch.includes(file) || (await this.exists(file))) {
 			return;
 		}
 
@@ -246,7 +238,7 @@ export class MockAgent extends MockClient {
 
 		const newName = this.getFileName();
 
-		if (await this.exists(newName)) {
+		if (this.doNotTouch.includes(newName) || (await this.exists(newName))) {
 			return;
 		}
 
