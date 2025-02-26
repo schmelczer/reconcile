@@ -111,7 +111,7 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
-						"application/json": components["schemas"]["DocumentUpdateResponse"];
+						"application/json": components["schemas"]["DocumentVersionWithoutContent"];
 					};
 				};
 				default: {
@@ -161,7 +161,7 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
-						"application/json": components["schemas"]["DocumentUpdateResponse"];
+						"application/json": components["schemas"]["DocumentVersionWithoutContent"];
 					};
 				};
 				default: {
@@ -466,7 +466,7 @@ export interface components {
 			createdDate: string;
 			relativePath: string;
 		};
-		/** @description Response to a create/update document request. */
+		/** @description Response to a update document request. */
 		DocumentUpdateResponse:
 			| {
 					/** Format: date-time */

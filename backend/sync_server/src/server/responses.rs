@@ -25,7 +25,7 @@ pub struct FetchLatestDocumentsResponse {
     pub last_update_id: VaultUpdateId,
 }
 
-/// Response to a create/update document request.
+/// Response to an update document request.
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(tag = "type")]
 pub enum DocumentUpdateResponse {

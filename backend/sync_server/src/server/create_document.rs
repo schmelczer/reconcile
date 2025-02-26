@@ -7,19 +7,17 @@ use axum_extra::{
 };
 use axum_jsonschema::Json;
 use chrono::{DateTime, Utc};
-use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
+use sync_lib::base64_to_bytes;
 
 use super::{
     app_state::AppState,
     auth::auth,
     requests::{CreateDocumentVersion, CreateDocumentVersionMultipart},
-    responses::DocumentUpdateResponse,
 };
 use crate::{
-    database::models::{StoredDocumentVersion, VaultId},
+    database::models::{DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
     errors::{SyncServerError, client_error, server_error},
     utils::sanitize_path,
 };
@@ -41,7 +39,7 @@ pub async fn create_document_multipart(
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         CreateDocumentVersionMultipart,
     >,
-) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     internal_create_document(
         auth_header,
         state,
@@ -62,7 +60,7 @@ pub async fn create_document_json(
     Path(PathParams { vault_id }): Path<PathParams>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
-) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     let content_bytes = base64_to_bytes(&request.content_base64)
         .context("Failed to decode base64 content in request")
         .map_err(client_error)?;
@@ -85,7 +83,7 @@ async fn internal_create_document(
     relative_path: String,
     created_date: DateTime<Utc>,
     content: Vec<u8>,
-) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
+) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
     let mut transaction = state
@@ -102,79 +100,22 @@ async fn internal_create_document(
 
     let sanitized_relative_path = sanitize_path(&relative_path);
 
-    let maybe_existing_version = state
-        .database
-        .get_latest_document_by_path(&vault_id, &sanitized_relative_path, Some(&mut transaction))
-        .await
-        .map_err(server_error)?
-        .and_then(|doc| if doc.is_deleted { None } else { Some(doc) });
-
-    let response = if let Some(existing_version) = maybe_existing_version {
-        if content == existing_version.content {
-            info!(
-                "Content of the new version is the same as the existing version. Not creating a \
-                 new version."
-            );
-
-            transaction
-                .rollback()
-                .await
-                .context("Failed to roll back unecceseary transaction")
-                .map_err(server_error)?;
-
-            return Ok(Json(DocumentUpdateResponse::FastForwardUpdate(
-                existing_version.into(),
-            )));
-        }
-
-        let merged_content = if is_file_type_mergable(&sanitized_relative_path) {
-            merge(
-                &[], // the empty string is the first common parent of the two documents,
-                &existing_version.content,
-                &content,
-            )
-        } else {
-            content
-        };
-
-        let new_version = StoredDocumentVersion {
-            vault_id,
-            vault_update_id: last_update_id + 1,
-            relative_path: sanitized_relative_path,
-            document_id: existing_version.document_id,
-            content: merged_content,
-            created_date,
-            updated_date: chrono::Utc::now(),
-            is_deleted: false,
-        };
-
-        state
-            .database
-            .insert_document_version(&new_version, Some(&mut transaction))
-            .await
-            .map_err(server_error)?;
-
-        DocumentUpdateResponse::MergingUpdate(new_version.into())
-    } else {
-        let new_version = StoredDocumentVersion {
-            vault_id,
-            vault_update_id: last_update_id + 1,
-            document_id: uuid::Uuid::new_v4(),
-            relative_path: sanitized_relative_path,
-            content,
-            created_date,
-            updated_date: chrono::Utc::now(),
-            is_deleted: false,
-        };
-
-        state
-            .database
-            .insert_document_version(&new_version, Some(&mut transaction))
-            .await
-            .map_err(server_error)?;
-
-        DocumentUpdateResponse::FastForwardUpdate(new_version.into())
+    let new_version = StoredDocumentVersion {
+        vault_id,
+        vault_update_id: last_update_id + 1,
+        document_id: uuid::Uuid::new_v4(),
+        relative_path: sanitized_relative_path,
+        content,
+        created_date,
+        updated_date: chrono::Utc::now(),
+        is_deleted: false,
     };
+
+    state
+        .database
+        .insert_document_version(&new_version, Some(&mut transaction))
+        .await
+        .map_err(server_error)?;
 
     transaction
         .commit()
@@ -182,5 +123,5 @@ async fn internal_create_document(
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
 
-    Ok(Json(response))
+    Ok(Json(new_version.into()))
 }
