@@ -5,11 +5,14 @@ import type { RelativePath, SyncSettings } from "sync-client";
 import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
 import { sleep } from "../utils/sleep";
+import type { LogLine } from "sync-client/dist/types/tracing/logger";
 
 export class MockAgent extends MockClient {
 	private readonly writtenContents: string[] = [];
 	private readonly pendingActions: Promise<unknown>[] = [];
-	private doNotTouch: string[] = [];
+
+	// The renamed file finding algorithm isn't too smart so we can't both update and rename the same file
+	private doNotTouchWhileOffline: string[] = [];
 
 	public constructor(
 		initialSettings: Partial<SyncSettings>,
@@ -23,6 +26,11 @@ export class MockAgent extends MockClient {
 	public async init(): Promise<void> {
 		await super.init();
 
+		assert(
+			(await this.client.checkConnection()).isSuccessful,
+			"Connection check failed"
+		);
+
 		this.client.fetchImplementation = async (
 			input: string | URL | globalThis.Request,
 			init?: RequestInit
@@ -33,9 +41,12 @@ export class MockAgent extends MockClient {
 			return response;
 		};
 
-		this.client.logger.addOnMessageListener((message) => {
-			const formatted = `[${this.name}] ${message.timestamp.toISOString()} ${message.level} ${message.message}`;
-			switch (message.level) {
+		this.client.logger.addOnMessageListener((logLine: LogLine) => {
+			const state = this.client.settings.getSettings().isSyncEnabled
+				? "(online) "
+				: "(offline)";
+			const formatted = `[${this.name} ${state}] ${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
+			switch (logLine.level) {
 				case LogLevel.ERROR:
 					console.error(formatted);
 					// Let's not ignore errors
@@ -45,6 +56,17 @@ export class MockAgent extends MockClient {
 					console.warn(formatted);
 					break;
 				case LogLevel.INFO:
+					// HACK: we have to ensure the file has been synced if we want to change it offline without data loss
+					const result = /.*History entry: (.*.md).*/.exec(
+						logLine.message
+					);
+					if (result) {
+						this.doNotTouchWhileOffline =
+							this.doNotTouchWhileOffline.filter(
+								(file) => file !== result[1]
+							);
+					}
+
 					console.info(formatted);
 					break;
 				case LogLevel.DEBUG:
@@ -59,10 +81,17 @@ export class MockAgent extends MockClient {
 	public async act(): Promise<void> {
 		const options: (() => Promise<unknown>)[] = [
 			this.createFileAction.bind(this),
-			this.changeFetchChangesUpdateIntervalMsAction.bind(this),
-			this.disableSyncAction.bind(this),
-			this.enableSyncAction.bind(this)
+			this.changeFetchChangesUpdateIntervalMsAction.bind(this)
 		];
+
+		if (
+			this.client.settings.getSettings().isSyncEnabled &&
+			this.doNotTouchWhileOffline.length === 0
+		) {
+			options.push(this.disableSyncAction.bind(this));
+		} else {
+			options.push(this.enableSyncAction.bind(this));
+		}
 
 		const files = await this.listAllFiles();
 
@@ -195,7 +224,11 @@ export class MockAgent extends MockClient {
 	private async createFileAction(): Promise<void> {
 		const file = this.getFileName();
 
-		if (this.doNotTouch.includes(file) || (await this.exists(file))) {
+		if (
+			(!this.client.settings.getSettings().isSyncEnabled &&
+				this.doNotTouchWhileOffline.includes(file)) ||
+			(await this.exists(file))
+		) {
 			return;
 		}
 
@@ -228,15 +261,17 @@ export class MockAgent extends MockClient {
 	private async enableSyncAction(): Promise<void> {
 		this.client.logger.info(`Decided to enable sync`);
 		await this.client.settings.setSetting("isSyncEnabled", true);
-		this.doNotTouch = [];
 	}
 
 	private async renameFileAction(files: RelativePath[]): Promise<void> {
 		const file = choose(files);
 
-		// We can't edit files offline that have been renamed while offline.
+		// We can't edit files offline that have been updated while offline.
 		// Otherwise, the resolution logic couldn't handle it.
-		if (this.doNotTouch.includes(file)) {
+		if (
+			!this.client.settings.getSettings().isSyncEnabled &&
+			this.doNotTouchWhileOffline.includes(file)
+		) {
 			this.client.logger.info(
 				`Skipping file ${file} because it has been updated while offline`
 			);
@@ -245,14 +280,16 @@ export class MockAgent extends MockClient {
 
 		const newName = this.getFileName();
 
-		if (this.doNotTouch.includes(newName) || (await this.exists(newName))) {
+		if (
+			(!this.client.settings.getSettings().isSyncEnabled &&
+				this.doNotTouchWhileOffline.includes(newName)) ||
+			(await this.exists(newName))
+		) {
 			return;
 		}
 
 		this.client.logger.info(`Decided to rename file ${file} to ${newName}`);
-		if (!this.client.settings.getSettings().isSyncEnabled) {
-			this.doNotTouch.push(file, newName);
-		}
+		this.doNotTouchWhileOffline.push(file, newName);
 
 		return this.rename(file, newName);
 	}
@@ -260,11 +297,14 @@ export class MockAgent extends MockClient {
 	private async updateFileAction(files: RelativePath[]): Promise<void> {
 		const file = choose(files);
 
-		// We can't edit files offline that have been renamed while offline.
+		// We can't edit files offline that have been updated while offline.
 		// Otherwise, the resolution logic couldn't handle it.
-		if (this.doNotTouch.includes(file)) {
+		if (
+			!this.client.settings.getSettings().isSyncEnabled &&
+			this.doNotTouchWhileOffline.includes(file)
+		) {
 			this.client.logger.info(
-				`Skipping file ${file} because it has been renamed while offline`
+				`Skipping file ${file} because it has been updated while offline`
 			);
 			return;
 		}
@@ -273,9 +313,7 @@ export class MockAgent extends MockClient {
 		this.client.logger.info(
 			`Decided to update file ${file} with ${content}`
 		);
-		if (!this.client.settings.getSettings().isSyncEnabled) {
-			this.doNotTouch.push(file);
-		}
+		this.doNotTouchWhileOffline.push(file);
 		await this.atomicUpdateText(file, (old) => old + `   |${content}|   `);
 	}
 

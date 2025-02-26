@@ -4,7 +4,6 @@ import type {
 	SyncSettings
 } from "sync-client";
 import { SyncClient } from "sync-client";
-import { assert } from "../utils/assert";
 
 export class MockClient implements FileSystemOperations {
 	protected readonly localFiles = new Map<string, Uint8Array>();
@@ -28,11 +27,6 @@ export class MockClient implements FileSystemOperations {
 					this.initialSettings[key as keyof SyncSettings] // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 				);
 			})
-		);
-
-		assert(
-			(await this.client.checkConnection()).isSuccessful,
-			"Connection check failed"
 		);
 	}
 
