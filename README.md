@@ -38,7 +38,7 @@
 
 ```sh 
 npm install -g openapi-typescript
-openapi-typescript http://localhost:3030/api.json --output plugin/src/services/types.ts
+openapi-typescript http://localhost:3030/api.json --output frontend/sync-client/src/services/types.ts
 ```
 
 ```
