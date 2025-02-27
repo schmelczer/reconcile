@@ -17,6 +17,7 @@ export interface StoredDatabase {
 
 export class Database {
 	private documents = new Map<RelativePath, DocumentMetadata>();
+
 	private lastSeenUpdateId: VaultUpdateId | undefined;
 
 	public constructor(
@@ -32,6 +33,8 @@ export class Database {
 				this.documents.set(relativePath, metadata);
 			}
 		}
+		this.ensureConsistency();
+
 		this.logger.debug(`Loaded ${this.documents.size} documents`);
 
 		this.lastSeenUpdateId = initialState.lastSeenUpdateId;
@@ -128,9 +131,33 @@ export class Database {
 	}
 
 	private async save(): Promise<void> {
+		this.ensureConsistency();
 		await this.saveData({
 			documents: Object.fromEntries(this.documents.entries()),
 			lastSeenUpdateId: this.lastSeenUpdateId
 		});
+	}
+
+	private ensureConsistency(): void {
+		const allMetadata = Array.from(this.documents.entries());
+		const idToPath = new Map<string, Array<string>>();
+
+		allMetadata.forEach(([name, metadata]) => {
+			idToPath.set(metadata.documentId, [
+				...(idToPath.get(metadata.documentId) ?? []),
+				name
+			]);
+		});
+
+		const duplicates = Array.from(idToPath.entries())
+			.filter(([_, paths]) => paths.length > 1)
+			.map(([id, paths]) => `${id} (${paths.join(", ")})`);
+
+		if (duplicates.length > 0) {
+			throw new Error(
+				"Document IDs are not unique, found duplicates: " +
+					duplicates.join("; ")
+			);
+		}
 	}
 }
