@@ -1,8 +1,11 @@
+import type { Logger } from "../tracing/logger";
 import type { RelativePath } from "../persistence/database";
 
 export class DocumentLocks {
 	private readonly locked = new Set<RelativePath>();
 	private readonly waiters = new Map<RelativePath, (() => void)[]>();
+
+	public constructor(private readonly logger: Logger) {}
 
 	public tryLockDocument(relativePath: RelativePath): boolean {
 		if (this.locked.has(relativePath)) {
@@ -10,6 +13,7 @@ export class DocumentLocks {
 		}
 
 		this.locked.add(relativePath);
+
 		return true;
 	}
 
@@ -19,6 +23,8 @@ export class DocumentLocks {
 		if (this.tryLockDocument(relativePath)) {
 			return Promise.resolve();
 		}
+
+		this.logger.debug(`Waiting for lock on ${relativePath}`);
 
 		return new Promise((resolve) => {
 			let waiting = this.waiters.get(relativePath);
@@ -42,6 +48,7 @@ export class DocumentLocks {
 		const nextWaiting = this.waiters.get(relativePath)?.shift();
 
 		if (nextWaiting) {
+			this.logger.debug(`Granted lock on ${relativePath}`);
 			nextWaiting();
 		} else {
 			this.locked.delete(relativePath);

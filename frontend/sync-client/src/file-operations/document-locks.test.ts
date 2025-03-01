@@ -1,12 +1,14 @@
+import { Logger } from "../tracing/logger";
 import type { RelativePath } from "../persistence/database";
 import { DocumentLocks } from "./document-locks";
 
 describe("Document lock", () => {
 	const testPath: RelativePath = "test/document/path";
-	let locks = new DocumentLocks();
+	const logger = new Logger();
+	let locks = new DocumentLocks(logger);
 
 	beforeEach(() => {
-		locks = new DocumentLocks();
+		locks = new DocumentLocks(logger);
 	});
 
 	test("should lock a document successfully", () => {
