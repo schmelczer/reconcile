@@ -94,15 +94,7 @@ export class HistoryView extends ItemView {
 		container.empty();
 		container.createEl("h4", { text: "VaultLink History" });
 
-		const entries = this.client.history
-			.getEntries()
-			.reverse()
-			.filter(
-				(entry) =>
-					entry.status !== SyncStatus.NO_OP ||
-					this.client.settings.getSettings().displayNoopSyncEvents
-			);
-
+		const entries = this.client.history.getEntries().reverse();
 		entries.forEach((entry) => {
 			container.createDiv(
 				{

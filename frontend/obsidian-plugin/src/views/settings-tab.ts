@@ -292,25 +292,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 		containerEl.createEl("h3", { text: "View" });
 
 		new Setting(containerEl)
-			.setName("Show no-op sync operations in history")
-			.setDesc(
-				"Enabling this will make the history view more verbose while also providing more explanation for the scyning choices made."
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(
-						this.syncClient.settings.getSettings()
-							.displayNoopSyncEvents
-					)
-					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
-							"displayNoopSyncEvents",
-							value
-						)
-					)
-			);
-
-		new Setting(containerEl)
 			.setName("Minimum log level")
 			.setDesc(
 				"Set the log level for the plugin. Lower levels will show more logs."

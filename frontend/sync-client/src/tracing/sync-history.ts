@@ -21,7 +21,6 @@ export enum SyncSource {
 }
 
 export enum SyncStatus {
-	NO_OP = "NO_OP",
 	SUCCESS = "SUCCESS",
 	ERROR = "ERROR"
 }
@@ -83,14 +82,10 @@ export class SyncHistory {
 			this.logger.info(
 				`History entry: ${entry.relativePath} - ${entry.message}`
 			);
-		} else if (entry.status === SyncStatus.ERROR) {
+		} else {
 			this.status.error++;
 			this.logger.error(
 				`Error syncing file: ${entry.relativePath} - ${entry.message}`
-			);
-		} else {
-			this.logger.debug(
-				`No-op syncing file: ${entry.relativePath} - ${entry.message}`
 			);
 		}
 

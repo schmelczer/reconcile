@@ -8,7 +8,6 @@ export interface SyncSettings {
 	fetchChangesUpdateIntervalMs: number;
 	syncConcurrency: number;
 	isSyncEnabled: boolean;
-	displayNoopSyncEvents: boolean;
 	minimumLogLevel: LogLevel;
 	maxFileSizeMB: number;
 }
@@ -20,7 +19,6 @@ const DEFAULT_SETTINGS: SyncSettings = {
 	fetchChangesUpdateIntervalMs: 1000,
 	syncConcurrency: 1,
 	isSyncEnabled: false,
-	displayNoopSyncEvents: false,
 	minimumLogLevel: LogLevel.INFO,
 	maxFileSizeMB: 10
 };
