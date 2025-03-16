@@ -1,25 +1,13 @@
 const path = require("path");
+const { merge } = require("webpack-merge");
 
-module.exports = (_env, _argv) => ({
+const common = {
 	entry: "./src/index.ts",
-	devtool: "source-map",
-	target: "node",
 	module: {
 		rules: [
 			{
 				test: /\.ts$/,
-				use: [
-					{
-						loader: "ts-loader",
-						options: {
-							compilerOptions: {
-								declaration: true,
-								declarationDir: "./dist/types"
-							},
-							transpileOnly: false
-						}
-					}
-				]
+				use: ["ts-loader"]
 			},
 			{
 				test: /\.wasm$/,
@@ -28,22 +16,40 @@ module.exports = (_env, _argv) => ({
 		]
 	},
 	optimization: {
+		// the consuming project should take care of minification
 		minimize: false
 	},
 	resolve: {
-		extensions: [".ts", ".js"],
+		extensions: [".ts"],
 		alias: {
 			root: __dirname,
 			src: path.resolve(__dirname, "src")
 		}
 	},
-	output: {
-		clean: true,
-		filename: "index.js",
-		library: {
-			name: "SyncClient",
-			type: "umd"
-		},
-		path: path.resolve(__dirname, "dist")
+	performance: {
+		hints: false // it's a library, no need to warn about its size
 	}
-});
+};
+
+module.exports = [
+	merge(common, {
+		target: "web",
+		output: {
+			path: path.resolve(__dirname, "dist"),
+			filename: "sync-client.web.js",
+			library: {
+				name: "SyncClient",
+				type: "umd"
+			},
+			globalObject: "this"
+		}
+	}),
+	merge(common, {
+		target: "node",
+		output: {
+			path: path.resolve(__dirname, "dist"),
+			filename: "sync-client.node.js",
+			libraryTarget: "commonjs2"
+		}
+	})
+];

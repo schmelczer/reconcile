@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use super::{app_state::AppState, auth::auth, requests::DeleteDocumentVersion};
 use crate::{
-    database::models::{DocumentId, StoredDocumentVersion, VaultId},
+    database::models::{DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
     errors::{SyncServerError, server_error},
     utils::sanitize_path,
 };
@@ -29,14 +29,14 @@ pub async fn delete_document(
         vault_id,
         document_id,
     }): Path<PathParams>,
-    State(state): State<AppState>,
+    State(mut state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
-) -> Result<(), SyncServerError> {
+) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
     let mut transaction = state
         .database
-        .create_write_transaction()
+        .create_write_transaction(&vault_id)
         .await
         .map_err(server_error)?;
 
@@ -47,19 +47,17 @@ pub async fn delete_document(
         .map_err(server_error)?;
 
     let new_version = StoredDocumentVersion {
-        vault_id,
         vault_update_id: last_update_id + 1,
         document_id,
         relative_path: sanitize_path(&request.relative_path),
         content: vec![],
-        created_date: request.created_date,
         updated_date: chrono::Utc::now(),
         is_deleted: true,
     };
 
     state
         .database
-        .insert_document_version(&new_version, Some(&mut transaction))
+        .insert_document_version(&vault_id, &new_version, Some(&mut transaction))
         .await
         .map_err(server_error)?;
 
@@ -69,5 +67,5 @@ pub async fn delete_document(
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
 
-    Ok(())
+    Ok(Json(new_version.into()))
 }

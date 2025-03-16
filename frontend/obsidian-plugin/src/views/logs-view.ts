@@ -1,6 +1,6 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
-import type VaultLinkPlugin from "src/vault-link-plugin";
+import type VaultLinkPlugin from "../vault-link-plugin";
 import type { SyncClient } from "sync-client";
 
 export class LogsView extends ItemView {

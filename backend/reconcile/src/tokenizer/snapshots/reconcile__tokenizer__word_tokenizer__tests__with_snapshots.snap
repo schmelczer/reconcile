@@ -1,0 +1,15 @@
+---
+source: reconcile/src/tokenizer/word_tokenizer.rs
+expression: "word_tokenizer(\"Hi there!\")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "Hi",
+        original: "Hi",
+    },
+    Token {
+        normalised: "there!",
+        original: " there!",
+    },
+]

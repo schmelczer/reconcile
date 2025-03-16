@@ -2,29 +2,27 @@ name: Publish Obsidian plugin
 
 on:
   push:
-    tags:
-      - "*"
+    tags: ["*"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-plugin:
+  publish-plugin:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.2.0
         with:
-          node-version: "18.x"
+          node-version: "22.x"
+          check-latest: true
 
       - name: Build wasm
         run: |
           cd backend
-          rustup install nightly
-          rustup default nightly
           cargo install wasm-pack
           wasm-pack build --target web sync_lib
 

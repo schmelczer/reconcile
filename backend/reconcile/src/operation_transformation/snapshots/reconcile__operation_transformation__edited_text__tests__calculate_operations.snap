@@ -8,19 +8,19 @@ EditedText {
     operations: [
         OrderedOperation {
             order: 0,
-            operation: <insert 'Hello, my friend! ' from index 0>,
+            operation: <insert 'Hello, my friend!' from index 0>,
         },
         OrderedOperation {
             order: 0,
-            operation: <delete 'hello world! ' from index 18>,
+            operation: <delete 'hello world!' from index 17>,
         },
         OrderedOperation {
-            order: 21,
-            operation: <insert 'you doing? Albert' from index 26>,
+            order: 20,
+            operation: <insert ' you doing? Albert' from index 25>,
         },
         OrderedOperation {
-            order: 21,
-            operation: <delete 'you?  Adam' from index 43>,
+            order: 20,
+            operation: <delete ' you?  Adam' from index 43>,
         },
     ],
 }

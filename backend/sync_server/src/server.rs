@@ -16,6 +16,7 @@ use axum::{
     extract::{DefaultBodyLimit, Request},
     http::{self, HeaderValue, Method},
     response::IntoResponse,
+    routing::IntoMakeService,
 };
 use log::{error, info};
 use tokio::signal;
@@ -30,7 +31,10 @@ use tower_http::{
 };
 use tracing::{Level, info_span};
 
-use crate::errors::{SerializedError, not_found_error};
+use crate::{
+    config::server_config::ServerConfig,
+    errors::{SerializedError, not_found_error},
+};
 mod app_state;
 mod auth;
 mod create_document;
@@ -52,24 +56,9 @@ pub async fn create_server() -> Result<()> {
         .await
         .context("Failed to initialise app state")?;
 
-    let address = format!(
-        "{}:{}",
-        &app_state.config.server.host, &app_state.config.server.port
-    );
+    let server_config = app_state.config.server.clone();
 
-    let mut api = OpenApi {
-        info: Info {
-            title: "VaultLink sync server".to_owned(),
-            summary: Some(
-                "Simple API for syncing documents between concurrent clients.".to_owned(),
-            ),
-            description: Some(include_str!("../README.md").to_owned()),
-            version: env!("CARGO_PKG_VERSION").to_owned(),
-            ..Info::default()
-        },
-        ..OpenApi::default()
-    };
-
+    let mut api = create_open_api();
     let app = ApiRouter::new()
         .api_route("/ping", get(ping::ping))
         .api_route(
@@ -140,11 +129,42 @@ pub async fn create_server() -> Result<()> {
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
         )
         .with_state(app_state)
-        .finish_api_with(&mut api, api_docs)
+        .finish_api_with(&mut api, add_api_docs_error_example)
         .layer(Extension(Arc::new(api))) // https://github.com/tamasfe/aide/blob/507f4a8822bc0c13cbda0f589da1e0f4cbcdb812/examples/example-axum/src/main.rs#L39
         .fallback(handler_404)
         .into_make_service();
 
+    start_server(app, &server_config).await
+}
+
+async fn serve_api(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse { Json(api) }
+
+fn create_open_api() -> OpenApi {
+    OpenApi {
+        info: Info {
+            title: "VaultLink sync server".to_owned(),
+            summary: Some(
+                "Simple API for syncing documents between concurrent clients.".to_owned(),
+            ),
+            description: Some(include_str!("../README.md").to_owned()),
+            version: env!("CARGO_PKG_VERSION").to_owned(),
+            ..Info::default()
+        },
+        ..OpenApi::default()
+    }
+}
+
+fn add_api_docs_error_example(api: TransformOpenApi<'_>) -> TransformOpenApi<'_> {
+    api.default_response_with::<Json<SerializedError>, _>(|res| {
+        res.example(SerializedError {
+            message: "An error has occurred".to_owned(),
+            causes: vec![],
+        })
+    })
+}
+
+async fn start_server(app: IntoMakeService<axum::Router>, config: &ServerConfig) -> Result<()> {
+    let address = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(address.clone())
         .await
         .with_context(|| format!("Failed to bind to address: {address}"))?;
@@ -161,17 +181,6 @@ pub async fn create_server() -> Result<()> {
         .tcp_nodelay(true)
         .await
         .context("Failed to start server")
-}
-
-async fn serve_api(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse { Json(api) }
-
-fn api_docs(api: TransformOpenApi<'_>) -> TransformOpenApi<'_> {
-    api.default_response_with::<Json<SerializedError>, _>(|res| {
-        res.example(SerializedError {
-            message: "An error has occurred".to_owned(),
-            causes: vec![],
-        })
-    })
 }
 
 async fn shutdown_signal() {
@@ -193,8 +202,8 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 }
 

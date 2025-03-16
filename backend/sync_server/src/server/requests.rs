@@ -1,24 +1,27 @@
 use aide_axum_typed_multipart::FieldData;
 use axum::body::Bytes;
 use axum_typed_multipart::TryFromMultipart;
-use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{self, Deserialize};
 
-use crate::database::models::VaultUpdateId;
+use crate::database::models::{DocumentId, VaultUpdateId};
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateDocumentVersion {
+    /// The client can decide the document id (if it wishes to) in order
+    /// to help with syncing. If the client does not provide a document id,
+    /// the server will generate one. If the client provides a document id
+    /// it must not already exist in the database.
+    pub document_id: Option<DocumentId>,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     pub content_base64: String,
 }
 
 #[derive(Debug, TryFromMultipart, JsonSchema)]
 pub struct CreateDocumentVersionMultipart {
+    pub document_id: Option<DocumentId>,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
 }
@@ -28,7 +31,6 @@ pub struct CreateDocumentVersionMultipart {
 pub struct UpdateDocumentVersion {
     pub parent_version_id: VaultUpdateId,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     pub content_base64: String,
 }
 
@@ -37,7 +39,6 @@ pub struct UpdateDocumentVersion {
 pub struct UpdateDocumentVersionMultipart {
     pub parent_version_id: VaultUpdateId,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
 }
@@ -46,5 +47,4 @@ pub struct UpdateDocumentVersionMultipart {
 #[serde(rename_all = "camelCase")]
 pub struct DeleteDocumentVersion {
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
 }

@@ -60,7 +60,6 @@ export class HistoryView extends ItemView {
 		}
 
 		element.createEl("span", {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			text: entry.relativePath
 		});
 

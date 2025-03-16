@@ -1,0 +1,4 @@
+[toolchain]
+channel = "nightly-2025-03-14"
+targets = [ "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl" ]
+profile = "default"

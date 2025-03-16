@@ -1,0 +1,6 @@
+---
+source: reconcile/src/tokenizer/word_tokenizer.rs
+expression: "word_tokenizer(\"\")"
+snapshot_kind: text
+---
+[]

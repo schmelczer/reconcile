@@ -15,20 +15,17 @@ pub struct ServerConfig {
 }
 
 fn default_host() -> String {
-    debug!("Using default server host: {}", DEFAULT_HOST);
+    debug!("Using default server host: {DEFAULT_HOST}");
     DEFAULT_HOST.to_owned()
 }
 
 fn default_port() -> u16 {
-    debug!("Using default server port: {}", DEFAULT_PORT);
+    debug!("Using default server port: {DEFAULT_PORT}");
     DEFAULT_PORT
 }
 
 fn default_max_body_size_mb() -> usize {
-    debug!(
-        "Using default max body size (MB): {}",
-        DEFAULT_MAX_BODY_SIZE_MB
-    );
+    debug!("Using default max body size (MB): {DEFAULT_MAX_BODY_SIZE_MB}");
     DEFAULT_MAX_BODY_SIZE_MB
 }
 

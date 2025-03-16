@@ -94,9 +94,6 @@ module.exports = (env, argv) => ({
 		alias: {
 			root: __dirname,
 			src: path.resolve(__dirname, "src")
-		},
-		fallback: {
-			url: require.resolve("url")
 		}
 	},
 	output: {

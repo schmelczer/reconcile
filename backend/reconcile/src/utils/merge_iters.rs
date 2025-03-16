@@ -46,8 +46,7 @@ where
         };
 
         match order {
-            Some(Ordering::Less) | None => self.left.next(),
-            Some(Ordering::Equal) => self.left.next(),
+            Some(Ordering::Less | Ordering::Equal) | None => self.left.next(),
             Some(Ordering::Greater) => self.right.next(),
         }
     }

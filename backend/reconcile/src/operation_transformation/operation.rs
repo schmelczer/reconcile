@@ -1,7 +1,5 @@
-use core::{
-    fmt::{Debug, Display},
-    ops::Range,
-};
+use core::fmt::{Debug, Display};
+use std::ops::Range;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -9,7 +7,10 @@ use serde::{Deserialize, Serialize};
 use super::merge_context::MergeContext;
 use crate::{
     Token,
-    utils::{find_common_overlap::find_common_overlap, string_builder::StringBuilder},
+    utils::{
+        find_longest_prefix_contained_within::find_longest_prefix_contained_within,
+        string_builder::StringBuilder,
+    },
 };
 
 /// Represents a change that can be applied to a text document.
@@ -19,7 +20,7 @@ use crate::{
 #[derive(Clone, PartialEq)]
 pub enum Operation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     Insert {
         index: usize,
@@ -37,7 +38,7 @@ where
 
 impl<T> Operation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     /// Creates an insert operation with the given index and text.
     /// If the text is empty (meaning that the operation would be a no-op),
@@ -81,15 +82,8 @@ where
         })
     }
 
-    /// Tries to apply the operation to the given `ropey::Rope` text, returning
-    /// the modified text.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `SyncLibError::OperationApplicationError` if the operation
-    /// cannot be applied.
-    ///
-    /// # Panics
+    /// Applies the operation to the given `StringBuilder`, returning the
+    /// modified `StringBuilder`.
     ///
     /// When compiled in debug mode, panics if a delete operation is attempted
     /// on a range of text that does not match the text to be deleted.
@@ -114,7 +108,7 @@ where
 
                 builder.delete(self.range());
             }
-        };
+        }
 
         builder
     }
@@ -122,8 +116,7 @@ where
     /// Returns the index of the first character that the operation affects.
     pub fn start_index(&self) -> usize {
         match self {
-            Operation::Insert { index, .. } => *index,
-            Operation::Delete { index, .. } => *index,
+            Operation::Insert { index, .. } | Operation::Delete { index, .. } => *index,
         }
     }
 
@@ -137,6 +130,7 @@ where
     }
 
     /// Returns the range of indices of characters that the operation affects.
+    #[allow(clippy::range_plus_one)]
     pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() + 1 }
 
     /// Returns the number of affected characters. It is always greater than 0
@@ -212,17 +206,20 @@ where
                     ..
                 }),
             ) => {
-                let offset_in_tokens = find_common_overlap(previous_inserted_text, &text);
-                let trimmed_length_in_tokens = previous_inserted_text.len() - offset_in_tokens;
-                let trimmed_length = previous_inserted_text
+                // In case the current insert's prefix appears in the previously inserted text,
+                // we can trim the current insert to only include the non-overlapping part.
+                // This way, we don't end up duplicating text.
+                let offset_in_tokens =
+                    find_longest_prefix_contained_within(previous_inserted_text, &text);
+                let offset_in_length = text
                     .iter()
-                    .skip(offset_in_tokens)
+                    .take(offset_in_tokens)
                     .map(Token::get_original_length)
                     .sum::<usize>();
                 let trimmed_operation =
-                    Operation::create_insert(index, text[trimmed_length_in_tokens..].to_vec());
+                    Operation::create_insert(index, text[offset_in_tokens..].to_vec());
 
-                affecting_context.shift -= trimmed_length as i64;
+                affecting_context.shift -= offset_in_length as i64;
                 produced_context.shift += trimmed_operation
                     .as_ref()
                     .map(Operation::len)
@@ -297,7 +294,7 @@ where
 
 impl<T> Display for Operation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -341,7 +338,7 @@ where
 
 impl<T> Debug for Operation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { write!(f, "{self}") }
 }
@@ -353,7 +350,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Shifted index must be non-negative")]
     fn test_shifting_error() {
         insta::assert_debug_snapshot!(
             Operation::create_insert(1, vec!["hi".into()])

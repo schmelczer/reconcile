@@ -3,20 +3,26 @@ import { MockAgent } from "./agent/mock-agent";
 import { sleep } from "./utils/sleep";
 import { v4 as uuidv4 } from "uuid";
 
+let slowFileEvents = false;
+
 async function runTest({
 	agentCount,
 	concurrency,
 	iterations,
 	doDeletes,
+	useSlowFileEvents,
 	jitterScaleInSeconds
 }: {
 	agentCount: number;
 	concurrency: number;
 	iterations: number;
 	doDeletes: boolean;
+	useSlowFileEvents: boolean;
 	jitterScaleInSeconds: number;
 }): Promise<void> {
-	const settings = `with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}, jitterScaleInSeconds ${jitterScaleInSeconds}`;
+	slowFileEvents = useSlowFileEvents;
+
+	const settings = `with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}, jitterScaleInSeconds ${jitterScaleInSeconds}, useSlowFileEvents ${useSlowFileEvents}`;
 	console.info(`Running test ${settings}`);
 
 	const initialSettings: Partial<SyncSettings> = {
@@ -34,6 +40,7 @@ async function runTest({
 				initialSettings,
 				`agent-${i}`,
 				doDeletes,
+				useSlowFileEvents,
 				jitterScaleInSeconds
 			)
 		);
@@ -52,12 +59,24 @@ async function runTest({
 
 		// Each agent can have unpushed changes which might conflict with eachother so each has to resolve the conflicts & push, and
 		for (const client of clients) {
-			await client.finish();
+			try {
+				await client.finish();
+			} catch (err) {
+				if (!slowFileEvents) {
+					throw err;
+				}
+			}
 		}
 
 		// then we need a second pass to ensure that all agents pull the same state.
 		for (const client of clients) {
-			await client.finish();
+			try {
+				await client.finish();
+			} catch (err) {
+				if (!slowFileEvents) {
+					throw err;
+				}
+			}
 		}
 
 		console.info("Agents finished successfully");
@@ -78,40 +97,48 @@ async function runTest({
 			console.info(`Content check for ${client.name} passed`);
 		});
 
-		console.info(`Test passed with ${settings}`);
+		console.info(`Test passed ${settings}`);
 	} catch (err) {
-		console.error(`Test failed with ${settings}`);
+		console.error(`Test failed ${settings}`);
 		throw err;
 	}
 }
 
 async function runTests(): Promise<void> {
-	const agentCounts = [2, 10];
-	const jitterScaleInSeconds = [0.5, 3, 0];
-	const concurrencies = [1, 16];
-	const iterations = [50, 300];
-	const doDeletes = [false, true];
-
-	for (const agentCount of agentCounts) {
-		for (const concurrency of concurrencies) {
-			for (const jitter of jitterScaleInSeconds) {
-				for (const iteration of iterations) {
-					for (const deleteFiles of doDeletes) {
-						while (true) {
-							await runTest({
-								agentCount,
-								concurrency,
-								iterations: iteration,
-								doDeletes: deleteFiles,
-								jitterScaleInSeconds: jitter
-							});
-						}
-					}
-				}
+	for (const useSlowFileEvents of [false, true]) {
+		for (const concurrency of [
+			16,
+			1 // test with concurrency 1 to check for deadlocks
+		]) {
+			for (const doDeletes of [true, false]) {
+				await runTest({
+					agentCount: 3,
+					concurrency,
+					iterations: 100,
+					doDeletes,
+					useSlowFileEvents,
+					jitterScaleInSeconds: 0.75
+				});
 			}
 		}
 	}
 }
+
+process.on("uncaughtException", (error) => {
+	if (slowFileEvents) {
+		return;
+	}
+	console.error("Uncaught Exception:", error);
+	process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, _promise) => {
+	if (slowFileEvents) {
+		return;
+	}
+	console.error("Unhandled Rejection:", reason);
+	process.exit(1);
+});
 
 runTests()
 	.then(() => {

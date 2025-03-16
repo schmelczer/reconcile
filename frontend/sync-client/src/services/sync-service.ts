@@ -6,20 +6,22 @@ import type {
 	RelativePath,
 	VaultUpdateId
 } from "../persistence/database";
-import type { Logger } from "src/tracing/logger";
-import { retriedFetchFactory } from "src/utils/retried-fetch";
-import type { Settings } from "src/persistence/settings";
+import type { Logger } from "../tracing/logger";
+import type { Settings } from "../persistence/settings";
+import type { ConnectedState } from "./connected-state";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
 	message: string;
 }
+
 export class SyncService {
 	private client!: Client<paths>;
 	private clientWithoutRetries!: Client<paths>;
 	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
+		private readonly connectedState: ConnectedState,
 		private readonly settings: Settings,
 		private readonly logger: Logger
 	) {
@@ -52,17 +54,19 @@ export class SyncService {
 	}
 
 	public async create({
+		documentId,
 		relativePath,
-		contentBytes,
-		createdDate
+		contentBytes
 	}: {
+		documentId?: DocumentId;
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
-		createdDate: Date;
-	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
+	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
 		const formData = new FormData();
+		if (documentId !== undefined) {
+			formData.append("document_id", documentId);
+		}
 		formData.append("relative_path", relativePath);
-		formData.append("created_date", createdDate.toISOString());
 		formData.append("content", new Blob([contentBytes]));
 
 		const response = await this.client.POST(
@@ -100,18 +104,18 @@ export class SyncService {
 		parentVersionId,
 		documentId,
 		relativePath,
-		contentBytes,
-		createdDate
+		contentBytes
 	}: {
 		parentVersionId: VaultUpdateId;
 		documentId: DocumentId;
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
-		createdDate: Date;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
+		this.logger.debug(
+			`Updating document ${documentId} with parent version ${parentVersionId} and relative path ${relativePath}`
+		);
 		const formData = new FormData();
 		formData.append("parent_version_id", parentVersionId.toString());
-		formData.append("created_date", createdDate.toISOString());
 		formData.append("relative_path", relativePath);
 		formData.append("content", new Blob([contentBytes]));
 
@@ -149,13 +153,11 @@ export class SyncService {
 
 	public async delete({
 		documentId,
-		relativePath,
-		createdDate
+		relativePath
 	}: {
 		documentId: DocumentId;
 		relativePath: RelativePath;
-		createdDate: Date;
-	}): Promise<void> {
+	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
 		const response = await this.client.DELETE(
 			"/vaults/{vault_id}/documents/{document_id}",
 			{
@@ -169,7 +171,6 @@ export class SyncService {
 					}
 				},
 				body: {
-					createdDate: createdDate.toISOString(),
 					relativePath
 				}
 			}
@@ -295,11 +296,17 @@ export class SyncService {
 	private createClient(remoteUri: string): void {
 		this.client = createClient<paths>({
 			baseUrl: remoteUri,
-			fetch: retriedFetchFactory(this.logger, this._fetchImplementation)
+			fetch: this.connectedState.getFetchImplementation(
+				this._fetchImplementation
+			)
 		});
 
 		this.clientWithoutRetries = createClient<paths>({
-			baseUrl: remoteUri
+			baseUrl: remoteUri,
+			fetch: this.connectedState.getFetchImplementation(
+				this._fetchImplementation,
+				{ doRetries: false }
+			)
 		});
 	}
 }

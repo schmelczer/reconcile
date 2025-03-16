@@ -18,9 +18,10 @@ export class MockAgent extends MockClient {
 		initialSettings: Partial<SyncSettings>,
 		public readonly name: string,
 		private readonly doDeletes: boolean,
+		useSlowFileEvents: boolean,
 		private readonly jitterScaleInSeconds: number
 	) {
-		super(initialSettings);
+		super(initialSettings, useSlowFileEvents);
 	}
 
 	public async init(): Promise<void> {
@@ -46,27 +47,33 @@ export class MockAgent extends MockClient {
 				? "(online) "
 				: "(offline)";
 			const formatted = `[${this.name} ${state}] ${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
+
+			// HACK: we have to ensure the file has been synced if we want to change it offline without data loss
+			const historyEntry = /.*History entry: (.*.md).*/.exec(
+				logLine.message
+			);
+
+			if (historyEntry) {
+				this.doNotTouchWhileOffline =
+					this.doNotTouchWhileOffline.filter(
+						(file) => file !== historyEntry[1]
+					);
+			}
 			switch (logLine.level) {
 				case LogLevel.ERROR:
 					console.error(formatted);
-					// Let's not ignore errors
-					process.exit(1);
+
+					if (!this.useSlowFileEvents) {
+						// Let's not ignore errors
+						// eslint-disable-next-line @typescript-eslint/no-floating-promises
+						sleep(100).then(() => process.exit(1));
+					}
+
 					break;
 				case LogLevel.WARNING:
 					console.warn(formatted);
 					break;
 				case LogLevel.INFO:
-					// HACK: we have to ensure the file has been synced if we want to change it offline without data loss
-					const result = /.*History entry: (.*.md).*/.exec(
-						logLine.message
-					);
-					if (result) {
-						this.doNotTouchWhileOffline =
-							this.doNotTouchWhileOffline.filter(
-								(file) => file !== result[1]
-							);
-					}
-
 					console.info(formatted);
 					break;
 				case LogLevel.DEBUG:
@@ -84,11 +91,10 @@ export class MockAgent extends MockClient {
 			this.changeFetchChangesUpdateIntervalMsAction.bind(this)
 		];
 
-		if (
-			this.client.settings.getSettings().isSyncEnabled &&
-			this.doNotTouchWhileOffline.length === 0
-		) {
-			options.push(this.disableSyncAction.bind(this));
+		if (this.client.settings.getSettings().isSyncEnabled) {
+			if (this.doNotTouchWhileOffline.length === 0) {
+				options.push(this.disableSyncAction.bind(this));
+			}
 		} else {
 			options.push(this.enableSyncAction.bind(this));
 		}
@@ -186,6 +192,14 @@ export class MockAgent extends MockClient {
 	}
 
 	public assertAllContentIsPresentOnce(): void {
+		if (this.useSlowFileEvents) {
+			this.client.logger.info(
+				// We can't ensure that we have seen every single update
+				`Skipping content check for ${this.name} because slow file events are enabled`
+			);
+			return;
+		}
+
 		for (const content of this.writtenContents) {
 			const found = Array.from(this.localFiles.keys()).filter((key) => {
 				return new TextDecoder()
@@ -215,7 +229,7 @@ export class MockAgent extends MockClient {
 				);
 				assert(
 					fileContent.split(content).length == 2,
-					`Content ${content} (of ${this.name}) found more than once in file ${file}. File content:\n${fileContent}`
+					`Content ${content} (of ${this.name}) found more than once in '${file}'. File content:\n${fileContent}`
 				);
 			}
 		}
@@ -237,10 +251,7 @@ export class MockAgent extends MockClient {
 			`Decided to create file ${file} with content ${content}`
 		);
 
-		return this.create(
-			file,
-			new TextEncoder().encode(`   |${content}|   `)
-		);
+		return this.create(file, new TextEncoder().encode(` ${content} `));
 	}
 
 	private async changeFetchChangesUpdateIntervalMsAction(): Promise<void> {
@@ -314,7 +325,7 @@ export class MockAgent extends MockClient {
 			`Decided to update file ${file} with ${content}`
 		);
 		this.doNotTouchWhileOffline.push(file);
-		await this.atomicUpdateText(file, (old) => old + `   |${content}|   `);
+		await this.atomicUpdateText(file, (old) => old + ` ${content} `);
 	}
 
 	private async deleteFileAction(files: RelativePath[]): Promise<void> {

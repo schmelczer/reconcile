@@ -9,30 +9,24 @@ pub type DocumentId = uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct StoredDocumentVersion {
-    pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
     pub document_id: DocumentId,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
     pub content: Vec<u8>,
     pub is_deleted: bool,
 }
 
 impl PartialEq<Self> for StoredDocumentVersion {
-    fn eq(&self, other: &Self) -> bool {
-        self.vault_id == other.vault_id && self.vault_update_id == other.vault_update_id
-    }
+    fn eq(&self, other: &Self) -> bool { self.vault_update_id == other.vault_update_id }
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentVersionWithoutContent {
-    pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
     pub document_id: DocumentId,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
     pub is_deleted: bool,
 }
@@ -40,11 +34,9 @@ pub struct DocumentVersionWithoutContent {
 impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
     fn from(value: StoredDocumentVersion) -> Self {
         Self {
-            vault_id: value.vault_id,
             vault_update_id: value.vault_update_id,
             document_id: value.document_id,
             relative_path: value.relative_path,
-            created_date: value.created_date,
             updated_date: value.updated_date,
             is_deleted: value.is_deleted,
         }
@@ -54,11 +46,9 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentVersion {
-    pub vault_id: VaultId,
     pub vault_update_id: VaultUpdateId,
     pub document_id: DocumentId,
     pub relative_path: String,
-    pub created_date: DateTime<Utc>,
     pub updated_date: DateTime<Utc>,
     pub content_base64: String,
     pub is_deleted: bool,
@@ -67,11 +57,9 @@ pub struct DocumentVersion {
 impl From<StoredDocumentVersion> for DocumentVersion {
     fn from(value: StoredDocumentVersion) -> Self {
         Self {
-            vault_id: value.vault_id,
             vault_update_id: value.vault_update_id,
             document_id: value.document_id,
             relative_path: value.relative_path,
-            created_date: value.created_date,
             updated_date: value.updated_date,
             content_base64: bytes_to_base64(&value.content),
             is_deleted: value.is_deleted,

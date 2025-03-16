@@ -9,10 +9,7 @@ export class ObsidianFileEventHandler {
 		if (file instanceof TFile) {
 			this.client.logger.info(`File created: ${file.path}`);
 
-			await this.client.syncer.syncLocallyCreatedFile(
-				file.path,
-				new Date(file.stat.ctime)
-			);
+			await this.client.syncer.syncLocallyCreatedFile(file.path);
 		} else {
 			this.client.logger.debug(`Folder created: ${file.path}, ignored`);
 		}
@@ -34,8 +31,7 @@ export class ObsidianFileEventHandler {
 
 			await this.client.syncer.syncLocallyUpdatedFile({
 				oldPath,
-				relativePath: file.path,
-				updateTime: new Date(file.stat.ctime)
+				relativePath: file.path
 			});
 		} else {
 			this.client.logger.debug(
@@ -53,8 +49,7 @@ export class ObsidianFileEventHandler {
 			this.client.logger.info(`File modified: ${file.path}`);
 
 			await this.client.syncer.syncLocallyUpdatedFile({
-				relativePath: file.path,
-				updateTime: new Date(file.stat.ctime)
+				relativePath: file.path
 			});
 		} else {
 			this.client.logger.debug(`Folder modified: ${file.path}, ignored`);

@@ -25,7 +25,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     text: &'a str,
     operations: Vec<OrderedOperation<T>>,
@@ -46,7 +46,7 @@ impl<'a> EditedText<'a, String> {
 
 impl<'a, T> EditedText<'a, T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     /// Create an `EditedText` from the given original (old) and updated (new)
     /// strings. The returned `EditedText` represents the changes from the
@@ -65,7 +65,6 @@ where
 
         Self::new(
             original,
-            // Self::cook_operations(diff),
             Self::cook_operations(Self::elongate_operations(diff)).collect(),
         )
     }
@@ -191,7 +190,7 @@ where
     pub fn merge(self, other: Self) -> Self {
         debug_assert_eq!(
             self.text, other.text,
-            "EditedText-s must be derived from the same text to be mergable"
+            "`EditedText`-s must be derived from the same text to be mergable"
         );
 
         let mut left_merge_context = MergeContext::default();
@@ -207,9 +206,21 @@ where
                     |(operation, _)| {
                         (
                             operation.order,
-                            // Operations on left and right must come in the same order so that
+                            // Operations on the left and right must come in the same order so that
                             // inserts can be merged with other inserts and deletes with deletes.
                             usize::from(matches!(operation.operation, Operation::Delete { .. })),
+                            // Make sure that the ordering is deterministic regardless which text
+                            // is left or right.
+                            match &operation.operation {
+                                Operation::Insert { text, .. } => text
+                                    .iter()
+                                    .map(super::super::tokenizer::token::Token::original)
+                                    .collect::<String>(),
+                                Operation::Delete {
+                                    deleted_character_count,
+                                    ..
+                                } => deleted_character_count.to_string(),
+                            },
                         )
                     },
                 )
@@ -232,6 +243,7 @@ where
     }
 
     /// Apply the operations to the text and return the resulting text.
+    #[must_use]
     pub fn apply(&self) -> String {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
@@ -282,7 +294,7 @@ mod tests {
         let original = "hello world! ...";
         let left = "Hello world! I'm Andras.";
         let right = "Hello world! How are you?";
-        let expected = "Hello world! I'm Andras.How are you?";
+        let expected = "Hello world! How are you? I'm Andras.";
 
         let operations_1 = EditedText::from_strings(original, left);
         let operations_2 = EditedText::from_strings(original, right);

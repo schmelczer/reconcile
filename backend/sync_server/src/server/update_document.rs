@@ -6,7 +6,6 @@ use axum_extra::{
     headers::{Authorization, authorization::Bearer},
 };
 use axum_jsonschema::Json;
-use chrono::{DateTime, Utc};
 use log::info;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -50,7 +49,6 @@ pub async fn update_document_multipart(
         document_id,
         request.parent_version_id,
         request.relative_path,
-        request.created_date,
         request.content.contents.to_vec(),
     )
     .await
@@ -77,21 +75,19 @@ pub async fn update_document_json(
         document_id,
         request.parent_version_id,
         request.relative_path,
-        request.created_date,
         content_bytes,
     )
     .await
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn internal_update_document(
     auth_header: Authorization<Bearer>,
-    state: AppState,
+    mut state: AppState,
     vault_id: VaultId,
     document_id: DocumentId,
     parent_version_id: VaultUpdateId,
     relative_path: String,
-    created_date: DateTime<Utc>,
     content: Vec<u8>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
@@ -114,7 +110,7 @@ async fn internal_update_document(
 
     let mut transaction = state
         .database
-        .create_write_transaction()
+        .create_write_transaction(&vault_id)
         .await
         .map_err(server_error)?;
 
@@ -137,6 +133,18 @@ async fn internal_update_document(
             },
             Ok,
         )?;
+
+    if latest_version.is_deleted {
+        transaction
+            .rollback()
+            .await
+            .context("Failed to roll back transaction")
+            .map_err(server_error)?;
+
+        return Ok(Json(DocumentUpdateResponse::FastForwardUpdate(
+            latest_version.into(),
+        )));
+    }
 
     let sanitized_relative_path = sanitize_path(&relative_path);
 
@@ -168,7 +176,7 @@ async fn internal_update_document(
     let new_relative_path = if parent_document.relative_path == latest_version.relative_path
         && latest_version.relative_path != sanitized_relative_path
     {
-        let mut new_relative_path = Default::default();
+        let mut new_relative_path = String::default();
         for candidate in deduped_file_paths(&sanitized_relative_path) {
             if state
                 .database
@@ -188,19 +196,17 @@ async fn internal_update_document(
     };
 
     let new_version = StoredDocumentVersion {
-        vault_id,
         document_id,
         vault_update_id: last_update_id + 1,
         relative_path: new_relative_path,
         content: merged_content,
-        created_date,
         updated_date: chrono::Utc::now(),
-        is_deleted: latest_version.is_deleted,
+        is_deleted: false,
     };
 
     state
         .database
-        .insert_document_version(&new_version, Some(&mut transaction))
+        .insert_document_version(&vault_id, &new_version, Some(&mut transaction))
         .await
         .map_err(server_error)?;
 

@@ -1,10 +1,6 @@
-import type { Logger } from "src/tracing/logger";
+import type { Logger } from "../tracing/logger";
 import type { FileSystemOperations } from "./filesystem-operations";
-import type {
-	Database,
-	DocumentId,
-	RelativePath
-} from "src/persistence/database";
+import type { Database, RelativePath } from "../persistence/database";
 import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
 import { SafeFileSystemOperations } from "./safe-filesystem-operations";
 
@@ -17,7 +13,7 @@ export class FileOperations {
 		private readonly database: Database,
 		fs: FileSystemOperations
 	) {
-		this.fs = new SafeFileSystemOperations(fs);
+		this.fs = new SafeFileSystemOperations(fs, logger);
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
@@ -35,7 +31,7 @@ export class FileOperations {
 
 		const decoder = new TextDecoder("utf-8");
 
-		// Normalize line endings to LF on Windows
+		// Normalize line-endings to LF on Windows
 		let text = decoder.decode(content);
 		text = text.replace(/\r\n/g, "\n");
 
@@ -44,10 +40,6 @@ export class FileOperations {
 
 	public async getFileSize(path: RelativePath): Promise<number> {
 		return this.fs.getFileSize(path);
-	}
-
-	public async getModificationTime(path: RelativePath): Promise<Date> {
-		return this.fs.getModificationTime(path);
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
@@ -60,18 +52,23 @@ export class FileOperations {
 		path: RelativePath,
 		newContent: Uint8Array
 	): Promise<void> {
+		this.logger.debug(`Creating file: ${path}`);
+
+		await this.fs.write(path, newContent);
+	}
+
+	public async ensureClearPath(path: RelativePath): Promise<void> {
 		if (await this.fs.exists(path)) {
 			const deconflictedPath = await this.deconflictPath(path);
 			this.logger.debug(
 				`Didn't expect ${path} to exist, deconflicting by moving it to '${deconflictedPath}'`
 			);
-			await this.database.updatePath(path, deconflictedPath);
+
+			this.database.move(path, deconflictedPath);
 			await this.fs.rename(path, deconflictedPath);
 		} else {
 			await this.createParentDirectories(path);
 		}
-
-		await this.fs.write(path, newContent);
 	}
 
 	// Update the file at the given path.
@@ -126,40 +123,25 @@ export class FileOperations {
 		return new TextEncoder().encode(resultText);
 	}
 
-	public async remove(path: RelativePath): Promise<void> {
-		this.logger.debug(`Deleting file: ${path}`);
-		return this.fs.delete(path);
+	public async delete(path: RelativePath): Promise<void> {
+		if (await this.exists(path)) {
+			this.logger.debug(`Deleting file: ${path}`);
+			return this.fs.delete(path);
+		} else {
+			this.logger.debug(`No need to delete '${path}', it doesn't exist`);
+		}
 	}
 
 	public async move(
 		oldPath: RelativePath,
-		newPath: RelativePath,
-		documentId?: DocumentId
+		newPath: RelativePath
 	): Promise<void> {
 		if (oldPath === newPath) {
 			return;
 		}
+		await this.ensureClearPath(newPath);
 
-		if (await this.fs.exists(newPath)) {
-			const deconflictedPath = await this.deconflictPath(newPath);
-			this.logger.debug(
-				`Conflict when moving '${oldPath}' to '${newPath}', the latter already exists, deconflicting by moving it to '${deconflictedPath}'`
-			);
-
-			const existingMetadata = this.database.getDocument(newPath);
-			if (
-				existingMetadata === undefined ||
-				existingMetadata.documentId !== documentId
-			) {
-				await this.database.updatePath(newPath, deconflictedPath);
-				await this.fs.rename(newPath, deconflictedPath);
-			} else {
-				await this.database.deleteDocument(newPath);
-			}
-		} else {
-			await this.createParentDirectories(newPath);
-		}
-
+		this.database.move(oldPath, newPath);
 		await this.fs.rename(oldPath, newPath);
 	}
 
@@ -201,17 +183,12 @@ export class FileOperations {
 		);
 		stem = stem.replace(FileOperations.PARENTHESES_REGEX, "");
 
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		while (true) {
-			const newName =
-				currentCount === 0
-					? `${directory}${stem}${extension}`
-					: `${directory}${stem} (${currentCount})${extension}`;
-			if (await this.fs.exists(newName)) {
-				currentCount++;
-			} else {
-				return newName;
-			}
-		}
+		let newName = path;
+		do {
+			currentCount++;
+			newName = `${directory}${stem} (${currentCount})${extension}`;
+		} while (await this.fs.exists(newName));
+
+		return newName;
 	}
 }

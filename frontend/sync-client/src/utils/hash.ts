@@ -6,7 +6,7 @@ export function hash(content: Uint8Array): string {
 		result = (result << 5) - result + content[i];
 		result |= 0; // Convert to 32bit integer
 	}
-	return Math.abs(result).toString(16);
+	return Math.abs(result).toString(16).padStart(8, "0");
 }
 
 export const EMPTY_HASH = hash(new Uint8Array(0));

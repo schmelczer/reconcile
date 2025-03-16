@@ -5,7 +5,7 @@ use crate::operation_transformation::Operation;
 #[derive(Clone)]
 pub struct MergeContext<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     last_operation: Option<Operation<T>>,
     pub shift: i64,
@@ -13,7 +13,7 @@ where
 
 impl<T> Default for MergeContext<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     fn default() -> Self {
         MergeContext {
@@ -25,7 +25,7 @@ where
 
 impl<T> Debug for MergeContext<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("MergeContext")
@@ -37,7 +37,7 @@ where
 
 impl<T> MergeContext<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     pub fn last_operation(&self) -> Option<&Operation<T>> { self.last_operation.as_ref() }
 

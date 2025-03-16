@@ -1,5 +1,5 @@
 import type { HistoryStats, SyncClient } from "sync-client";
-import type VaultLinkPlugin from "src/vault-link-plugin";
+import type VaultLinkPlugin from "../vault-link-plugin";
 
 export class StatusBar {
 	private readonly statusBarItem: HTMLElement;

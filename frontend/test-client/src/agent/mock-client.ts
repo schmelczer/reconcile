@@ -1,9 +1,10 @@
-import type {
-	RelativePath,
-	FileSystemOperations,
-	SyncSettings
+import { assert } from "../utils/assert";
+import {
+	type RelativePath,
+	type FileSystemOperations,
+	type SyncSettings,
+	SyncClient
 } from "sync-client";
-import { SyncClient } from "sync-client";
 
 export class MockClient implements FileSystemOperations {
 	protected readonly localFiles = new Map<string, Uint8Array>();
@@ -11,7 +12,8 @@ export class MockClient implements FileSystemOperations {
 	protected data: object | undefined = undefined;
 
 	public constructor(
-		private readonly initialSettings: Partial<SyncSettings>
+		private readonly initialSettings: Partial<SyncSettings>,
+		protected readonly useSlowFileEvents: boolean
 	) {}
 
 	public async init(): Promise<void> {
@@ -22,9 +24,10 @@ export class MockClient implements FileSystemOperations {
 
 		await Promise.all(
 			Object.keys(this.initialSettings).map(async (key) => {
+				const settingKey = key as keyof SyncSettings; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 				return this.client.settings.setSetting(
-					key as keyof SyncSettings, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-					this.initialSettings[key as keyof SyncSettings] // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+					settingKey,
+					this.initialSettings[settingKey]! // eslint-disable-line @typescript-eslint/no-non-null-assertion
 				);
 			})
 		);
@@ -46,13 +49,6 @@ export class MockClient implements FileSystemOperations {
 		return (await this.read(path)).length;
 	}
 
-	public async getModificationTime(path: RelativePath): Promise<Date> {
-		if (!this.localFiles.has(path)) {
-			throw new Error(`File ${path} does not exist`);
-		}
-		return new Date();
-	}
-
 	public async exists(path: RelativePath): Promise<boolean> {
 		return this.localFiles.has(path);
 	}
@@ -68,7 +64,10 @@ export class MockClient implements FileSystemOperations {
 			`Creating file ${path} with content ${new TextDecoder().decode(newContent)}`
 		);
 		this.localFiles.set(path, newContent);
-		void this.client.syncer.syncLocallyCreatedFile(path, new Date());
+
+		this.runCallback(() => {
+			void this.client.syncer.syncLocallyCreatedFile(path);
+		});
 	}
 
 	public async createDirectory(_path: RelativePath): Promise<void> {
@@ -88,28 +87,51 @@ export class MockClient implements FileSystemOperations {
 		const newContentUint8Array = new TextEncoder().encode(newContent);
 		this.localFiles.set(path, newContentUint8Array);
 
+		if (!this.useSlowFileEvents) {
+			const existingParts = currentContent
+				.split(" ")
+				.map((part) => part.trim());
+			const newParts = newContent.split(" ").map((part) => part.trim());
+			existingParts.forEach((part) =>
+				// all changes should be additive
+				{
+					assert(
+						newParts.includes(part),
+						`Part ${part} not found in new content`
+					);
+				}
+			);
+		}
+
 		this.client.logger.info(
 			`Updated file ${path} with:\n  current content: ${currentContent}\n  new content: ${newContent}`
 		);
 
-		void this.client.syncer.syncLocallyUpdatedFile({
-			relativePath: path,
-			updateTime: new Date()
+		this.runCallback(() => {
+			void this.client.syncer.syncLocallyUpdatedFile({
+				relativePath: path
+			});
 		});
 
 		return newContent;
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
+		const hasExisted = this.localFiles.has(path);
 		this.localFiles.set(path, content);
 
 		this.client.logger.info(
 			`Updated file ${path} with:\n  new content: ${new TextDecoder().decode(content)}`
 		);
 
-		void this.client.syncer.syncLocallyUpdatedFile({
-			relativePath: path,
-			updateTime: new Date()
+		this.runCallback(() => {
+			if (hasExisted) {
+				void this.client.syncer.syncLocallyUpdatedFile({
+					relativePath: path
+				});
+			} else {
+				void this.client.syncer.syncLocallyCreatedFile(path);
+			}
 		});
 	}
 
@@ -118,7 +140,10 @@ export class MockClient implements FileSystemOperations {
 			`Deleting file: ${path} with:\n  content ${new TextDecoder().decode(this.localFiles.get(path))}`
 		);
 		this.localFiles.delete(path);
-		void this.client.syncer.syncLocallyDeletedFile(path);
+
+		this.runCallback(() => {
+			void this.client.syncer.syncLocallyDeletedFile(path);
+		});
 	}
 
 	public async rename(
@@ -138,10 +163,20 @@ export class MockClient implements FileSystemOperations {
 			`Renamed file: ${oldPath} -> ${newPath} with:\n  content ${new TextDecoder().decode(file)}`
 		);
 
-		void this.client.syncer.syncLocallyUpdatedFile({
-			oldPath,
-			relativePath: newPath,
-			updateTime: new Date()
+		this.runCallback(() => {
+			void this.client.syncer.syncLocallyUpdatedFile({
+				oldPath,
+				relativePath: newPath
+			});
 		});
+	}
+
+	private runCallback(callback: () => void): void {
+		if (this.useSlowFileEvents) {
+			// we aren't the best client and it takes some time to notice changes
+			setTimeout(callback, 100);
+		} else {
+			callback();
+		}
 	}
 }

@@ -1,16 +1,27 @@
-import type { FileSystemOperations } from "sync-client";
-import type { Database, RelativePath } from "../persistence/database";
+import type {
+	Database,
+	DocumentRecord,
+	RelativePath
+} from "../persistence/database";
 import { FileOperations } from "./file-operations";
 import { Logger } from "../tracing/logger";
 import { assertSetContainsExactly } from "../utils/assert-set-contains-exactly";
+import type { FileSystemOperations } from "./filesystem-operations";
 
 describe("File operations", () => {
-	class MockDatabase {
-		public async updatePath(
+	class MockDatabase implements Partial<Database> {
+		public getLatestDocumentByRelativePath(
+			_find: RelativePath
+		): DocumentRecord | undefined {
+			// no-op
+			return undefined;
+		}
+
+		public move(
 			_oldRelativePath: RelativePath,
 			_newRelativePath: RelativePath
-		): Promise<void> {
-			// this is called but irrelevant for this mock
+		): void {
+			// no-op
 		}
 	}
 

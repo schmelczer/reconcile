@@ -1,65 +1,56 @@
-## VaultLink self-hosted Obsidian sync plugin
+# VaultLink self-hosted Obsidian plugin for file syncing
 
 [![Check](https://github.com/schmelczer/vault-link/actions/workflows/check.yml/badge.svg)](https://github.com/schmelczer/vault-link/actions/workflows/check.yml)
+[![E2E tests](https://github.com/schmelczer/vault-link/actions/workflows/e2e.yml/badge.svg)](https://github.com/schmelczer/vault-link/actions/workflows/e2e.yml)
 [![Publish server Docker image](https://github.com/schmelczer/vault-link/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/schmelczer/vault-link/actions/workflows/publish-docker.yml)
 [![Publish Obsidian plugin](https://github.com/schmelczer/vault-link/actions/workflows/publish-plugin.yml/badge.svg)](https://github.com/schmelczer/vault-link/actions/workflows/publish-plugin.yml)
 
 
-## Install [nvm](https://github.com/nvm-sh/nvm)
+## Develop
+
+### Install [nvm](https://github.com/nvm-sh/nvm)
 
 - `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash`
-- `nvm install 20`
-- `nvm use 20`
-- Optionally set the system-wide default: `nvm alias default 20`
+- `nvm install 22`
+- `nvm use 22`
+- Optionally set the system-wide default: `nvm alias default 22`
 
 
-## Set up Rust
+### Set up Rust
 
 - Install [`rustup`](https://rustup.rs): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- `sudo apt install llvm -y`
-- `rustup self update`
-- `rustup update`
-- `rustup install nightly`
-- `rustup default nightly`
-- `rustup component add llvm-tools-preview`
-- `cargo install cargo-generate cargo-fuzz cargo-insta rustfilt cargo-binutils`
 - Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer): `curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh`
 - `cargo install cargo-insta sqlx-cli cargo-edit`
 
-
-## Publish new version 
+### Install Obsidian on Linux
 
 ```sh
-./bump-version.sh patch
-```
-
-
-## Update HTTP API TS bindings
-
-```sh 
-npm install -g openapi-typescript
-openapi-typescript http://localhost:3030/api.json --output frontend/sync-client/src/services/types.ts
-```
-
-```
-
-todo: enable
-[workspace.lints.clippy]
-single_call_fn = { level = "allow", priority = 1 }
-absolute_paths = { level = "allow", priority = 1 }
-arithmetic_side_effects = { level = "allow", priority = 1 }
-similar_names = { level = "allow", priority = 1 }
-self_named_module_files = { level = "allow", priority = 1 }
-single_char_lifetime_names = { level = "allow", priority = 1 }
-missing_docs_in_private_items = { level = "allow", priority = 1 }
-question_mark_used =  { level = "allow", priority = 1 }
-implicit_return = { level = "allow", priority = 1 }
-pedantic = { level = "warn", priority = 0 }
-cargo = { level = "warn", priority = 0 }
-
-```
-
 apt install flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install flathub md.obsidian.Obsidian
 flatpak run md.obsidian.Obsidian
+```
+
+### Scripts
+
+#### Update HTTP API TS bindings
+
+```sh 
+scripts/update-api-types.sh
+```
+
+#### Publish new version 
+
+```sh
+scripts/bump-version.sh patch
+```
+
+
+#### Run E2E tests
+
+```sh 
+scripts/e2e.sh
+```
+
+And to clean up the logs & database files, run `scripts/clean-up.sh`
+```

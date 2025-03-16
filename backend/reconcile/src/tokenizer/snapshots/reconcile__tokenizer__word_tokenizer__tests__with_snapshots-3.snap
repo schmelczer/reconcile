@@ -1,0 +1,15 @@
+---
+source: reconcile/src/tokenizer/word_tokenizer.rs
+expression: "word_tokenizer(\" what? \")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "what?",
+        original: " what?",
+    },
+    Token {
+        normalised: "",
+        original: " ",
+    },
+]

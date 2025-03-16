@@ -30,7 +30,7 @@ pub async fn fetch_latest_documents(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(PathParams { vault_id }): Path<PathParams>,
     Query(QueryParams { since_update_id }): Query<QueryParams>,
-    State(state): State<AppState>,
+    State(mut state): State<AppState>,
 ) -> Result<Json<FetchLatestDocumentsResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
 

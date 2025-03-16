@@ -18,7 +18,20 @@ pub mod errors;
 
 /// Encode binary data for easy transport over HTTP. Inverse of
 /// `base64_to_bytes`.
+///
+/// # Arguments
+///
+/// - `input`: The binary data to encode.
+///
+/// # Returns
+///
+/// The base64-encoded string.
+///
+/// # Panics
+///
+/// If the input is not valid UTF-8.
 #[wasm_bindgen(js_name = bytesToBase64)]
+#[must_use]
 pub fn bytes_to_base64(input: &[u8]) -> String {
     set_panic_hook();
 
@@ -26,6 +39,19 @@ pub fn bytes_to_base64(input: &[u8]) -> String {
 }
 
 /// Inverse of `bytes_to_base64`.
+/// Decode base64-encoded data into binary data.
+///
+/// # Arguments
+///
+/// - `input`: The base64-encoded string.
+///
+/// # Returns
+///
+/// The decoded binary data.
+///
+/// # Errors
+///
+/// If the input is not valid base64.
 #[wasm_bindgen(js_name = base64ToBytes)]
 pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
     set_panic_hook();
@@ -36,7 +62,22 @@ pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
 /// Merge two documents with a common parent. Relies on `reconcile::reconcile`
 /// for texts and returns the right document as-is if either of the updated
 /// documents is binary.
+///
+/// # Arguments
+///
+/// - `parent`: The common parent document.
+/// - `left`: The left document updated by one user.
+/// - `right`: The right document updated by another user.
+///
+/// # Returns
+///
+/// The merged document.
+///
+/// # Panics
+///
+/// If any of the input documents are not valid UTF-8 strings.
 #[wasm_bindgen]
+#[must_use]
 pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
     set_panic_hook();
 
@@ -54,6 +95,7 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
 
 /// WASM wrapper around `reconcile::reconcile` for text merging.
 #[wasm_bindgen(js_name = mergeText)]
+#[must_use]
 pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
     set_panic_hook();
 
@@ -63,10 +105,11 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
 /// Heuristically determine if the given data is a binary or a text file's
 /// content.
 #[wasm_bindgen(js_name = isBinary)]
+#[must_use]
 pub fn is_binary(data: &[u8]) -> bool {
     set_panic_hook();
 
-    if data.iter().any(|&b| b == 0) {
+    if data.contains(&0) {
         // Even though the NUL character is valid in UTF-8, it's highly suspicious in
         // human-readable text.
         return true;
@@ -77,6 +120,7 @@ pub fn is_binary(data: &[u8]) -> bool {
 
 /// We don't want to support merging structured data like JSON, YAML, etc.
 #[wasm_bindgen(js_name = isFileTypeMergable)]
+#[must_use]
 pub fn is_file_type_mergable(path_or_file_name: &str) -> bool {
     set_panic_hook();
 

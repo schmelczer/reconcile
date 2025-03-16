@@ -1,0 +1,45 @@
+name: E2E tests
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.2.0
+        with:
+          node-version: "22.x"
+          check-latest: true
+
+      - name: Setup rust
+        run: |
+          cargo install sqlx-cli wasm-pack
+          cd backend
+          sqlx database create --database-url sqlite://db.sqlite3
+          sqlx migrate run --source sync_server/src/database/migrations --database-url sqlite://db.sqlite3
+
+      - name: Build wasm
+        run: |
+          cd backend
+          wasm-pack build --target web sync_lib
+
+      - name: E2E tests
+        run: |
+          cd backend
+          RUST_BACKTRACE=1 cargo run -p sync_server &
+          cd ../frontend
+          npm ci
+          cd ..
+          scripts/e2e.sh 32

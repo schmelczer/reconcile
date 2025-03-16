@@ -1,12 +1,15 @@
 {
 	"compilerOptions": {
-		"baseUrl": ".",
 		"module": "ESNext",
 		"target": "ESNext",
 		"strict": true,
-		"moduleResolution": "bundler",
 		"allowSyntheticDefaultImports": true,
-		"lib": ["DOM", "ESNext"]
+		"moduleResolution": "bundler",
+		"lib": [
+			"DOM" // to get "fetch"
+		],
+		"declaration": true,
+		"declarationDir": "./dist/types"
 	},
 	"exclude": ["./dist"]
 }

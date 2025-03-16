@@ -1,6 +1,9 @@
 import type { Logger } from "../tracing/logger";
 import type { RelativePath } from "../persistence/database";
 
+// Manages locks on documents to prevent concurrent modifications
+// allowing the client's FileOperations implementation to be simpler.
+// Locks are granted in a first-in-first-out order.
 export class DocumentLocks {
 	private readonly locked = new Set<RelativePath>();
 	private readonly waiters = new Map<RelativePath, (() => void)[]>();

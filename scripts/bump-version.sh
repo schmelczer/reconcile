@@ -27,20 +27,20 @@ cd backend
 cargo set-version --bump patch
 
 echo "Bumping frontend versions"
-cd ../plugin
-npm version patch
+cd ../frontend
+npm version patch --workspaces
 
 echo "Updating frontend dependencies to match the new backend versions"
 cd ../backend/sync_lib
 wasm-pack build --target web --features console_error_panic_hook
 
-cd ../../plugin
+cd ../../frontend
 npm install
 
 cd ..
-cp plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
+cp frontend/obsidian-plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
 
-# Commit and tag
+Commit and tag
 git add .
 TAG=$(node -p "require('./plugin/package.json').version")
 git commit -m "Bump versions to $TAG"

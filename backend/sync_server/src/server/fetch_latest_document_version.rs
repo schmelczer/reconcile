@@ -28,7 +28,7 @@ pub async fn fetch_latest_document_version(
         vault_id,
         document_id,
     }): Path<PathParams>,
-    State(state): State<AppState>,
+    State(mut state): State<AppState>,
 ) -> Result<Json<DocumentVersion>, SyncServerError> {
     auth(&state, auth_header.token())?;
 
@@ -37,12 +37,14 @@ pub async fn fetch_latest_document_version(
         .get_latest_document(&vault_id, &document_id, None)
         .await
         .map_err(server_error)?
-        .map(Ok)
-        .unwrap_or_else(|| {
-            Err(not_found_error(anyhow!(
-                "Document with id `{document_id}` not found",
-            )))
-        })?;
+        .map_or_else(
+            || {
+                Err(not_found_error(anyhow!(
+                    "Document with id `{document_id}` not found",
+                )))
+            },
+            Ok,
+        )?;
 
     Ok(Json(latest_version.into()))
 }

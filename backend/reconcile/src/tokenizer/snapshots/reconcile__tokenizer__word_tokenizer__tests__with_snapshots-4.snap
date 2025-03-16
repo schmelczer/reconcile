@@ -1,0 +1,23 @@
+---
+source: reconcile/src/tokenizer/word_tokenizer.rs
+expression: "word_tokenizer(\" hello, \\nwhere are you?\")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "hello,",
+        original: " hello,",
+    },
+    Token {
+        normalised: "where",
+        original: " \nwhere",
+    },
+    Token {
+        normalised: "are",
+        original: " are",
+    },
+    Token {
+        normalised: "you?",
+        original: " you?",
+    },
+]

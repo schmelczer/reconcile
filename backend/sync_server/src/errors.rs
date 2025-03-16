@@ -33,12 +33,12 @@ pub enum SyncServerError {
 impl SyncServerError {
     pub fn serialize(&self) -> SerializedError {
         match self {
-            Self::InitError(error) => error.into(),
-            Self::ClientError(error) => error.into(),
-            Self::ServerError(error) => error.into(),
-            Self::NotFound(error) => error.into(),
-            Self::Unauthorized(error) => error.into(),
-            Self::PermissionDeniedError(error) => error.into(),
+            Self::InitError(error)
+            | Self::ClientError(error)
+            | Self::ServerError(error)
+            | Self::NotFound(error)
+            | Self::Unauthorized(error)
+            | Self::PermissionDeniedError(error) => error.into(),
         }
     }
 }
@@ -48,9 +48,10 @@ impl IntoResponse for SyncServerError {
         let body = Json(self.serialize());
 
         match self {
-            Self::InitError(_) => (StatusCode::INTERNAL_SERVER_ERROR, body).into_response(),
+            Self::InitError(_) | Self::ServerError(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+            }
             Self::ClientError(_) => (StatusCode::BAD_REQUEST, body).into_response(),
-            Self::ServerError(_) => (StatusCode::INTERNAL_SERVER_ERROR, body).into_response(),
             Self::NotFound(_) => (StatusCode::NOT_FOUND, body).into_response(),
             Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, body).into_response(),
             Self::PermissionDeniedError(_) => (StatusCode::FORBIDDEN, body).into_response(),

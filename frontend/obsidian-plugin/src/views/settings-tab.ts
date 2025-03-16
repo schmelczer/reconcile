@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 import { Notice, PluginSettingTab, Setting } from "obsidian";
 
-import type VaultLinkPlugin from "src/vault-link-plugin";
+import type VaultLinkPlugin from "../vault-link-plugin";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";

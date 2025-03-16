@@ -274,12 +274,13 @@ export interface paths {
 				};
 			};
 			responses: {
-				/** @description no content */
 				200: {
 					headers: {
 						[name: string]: unknown;
 					};
-					content?: never;
+					content: {
+						"application/json": components["schemas"]["DocumentVersionWithoutContent"];
+					};
 				};
 				default: {
 					headers: {
@@ -451,26 +452,25 @@ export interface components {
 		Array_of_uint8: number[];
 		CreateDocumentVersion: {
 			contentBase64: string;
-			/** Format: date-time */
-			createdDate: string;
+			/**
+			 * Format: uuid
+			 * @description The client can decide the document id (if it wishes to) in order to help with syncing. If the client does not provide a document id, the server will generate one. If the client provides a document id it must not already exist in the database.
+			 */
+			documentId?: string | null;
 			relativePath: string;
 		};
 		CreateDocumentVersionMultipart: {
 			content: components["schemas"]["Array_of_uint8"];
-			/** Format: date-time */
-			created_date: string;
+			/** Format: uuid */
+			document_id?: string | null;
 			relative_path: string;
 		};
 		DeleteDocumentVersion: {
-			/** Format: date-time */
-			createdDate: string;
 			relativePath: string;
 		};
-		/** @description Response to a update document request. */
+		/** @description Response to an update document request. */
 		DocumentUpdateResponse:
 			| {
-					/** Format: date-time */
-					createdDate: string;
 					/** Format: uuid */
 					documentId: string;
 					isDeleted: boolean;
@@ -479,14 +479,11 @@ export interface components {
 					type: "FastForwardUpdate";
 					/** Format: date-time */
 					updatedDate: string;
-					vaultId: string;
 					/** Format: int64 */
 					vaultUpdateId: number;
 			  }
 			| {
 					contentBase64: string;
-					/** Format: date-time */
-					createdDate: string;
 					/** Format: uuid */
 					documentId: string;
 					isDeleted: boolean;
@@ -495,34 +492,27 @@ export interface components {
 					type: "MergingUpdate";
 					/** Format: date-time */
 					updatedDate: string;
-					vaultId: string;
 					/** Format: int64 */
 					vaultUpdateId: number;
 			  };
 		DocumentVersion: {
 			contentBase64: string;
-			/** Format: date-time */
-			createdDate: string;
 			/** Format: uuid */
 			documentId: string;
 			isDeleted: boolean;
 			relativePath: string;
 			/** Format: date-time */
 			updatedDate: string;
-			vaultId: string;
 			/** Format: int64 */
 			vaultUpdateId: number;
 		};
 		DocumentVersionWithoutContent: {
-			/** Format: date-time */
-			createdDate: string;
 			/** Format: uuid */
 			documentId: string;
 			isDeleted: boolean;
 			relativePath: string;
 			/** Format: date-time */
 			updatedDate: string;
-			vaultId: string;
 			/** Format: int64 */
 			vaultUpdateId: number;
 		};
@@ -587,16 +577,12 @@ export interface components {
 		};
 		UpdateDocumentVersion: {
 			contentBase64: string;
-			/** Format: date-time */
-			createdDate: string;
 			/** Format: int64 */
 			parentVersionId: number;
 			relativePath: string;
 		};
 		UpdateDocumentVersionMultipart: {
 			content: components["schemas"]["Array_of_uint8"];
-			/** Format: date-time */
-			createdDate: string;
 			/** Format: int64 */
 			parentVersionId: number;
 			relativePath: string;

@@ -38,7 +38,7 @@ use crate::{
 /// execution time permitted before it bails and falls back to an approximation.
 pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     let max_d = (old.len() + new.len()).div_ceil(2) + 1;
     let mut vb = V::new(max_d);
@@ -99,7 +99,6 @@ impl IndexMut<isize> for V {
     }
 }
 
-#[inline(always)]
 fn split_at(range: Range<usize>, at: usize) -> (Range<usize>, Range<usize>) {
     (range.start..at, at..range.end)
 }
@@ -124,7 +123,7 @@ fn find_middle_snake<T>(
     vb: &mut V,
 ) -> Option<(usize, usize)>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     let n = old_range.len();
     let m = new_range.len();
@@ -230,7 +229,7 @@ fn conquer<T>(
     vb: &mut V,
     result: &mut Vec<RawOperation<T>>,
 ) where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());

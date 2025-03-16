@@ -12,6 +12,7 @@ import { SyncService } from "./services/sync-service";
 import { Syncer } from "./sync-operations/syncer";
 import type { FileSystemOperations } from "./file-operations/filesystem-operations";
 import { FileOperations } from "./file-operations/file-operations";
+import { ConnectedState } from "./services/connected-state";
 
 export class SyncClient {
 	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
@@ -42,7 +43,7 @@ export class SyncClient {
 	}
 
 	public get documentCount(): number {
-		return this._database.getDocuments().size;
+		return this._database.length;
 	}
 
 	public set fetchImplementation(fetch: typeof globalThis.fetch) {
@@ -90,7 +91,9 @@ export class SyncClient {
 			}
 		);
 
-		const syncService = new SyncService(settings, logger);
+		const connectedState = new ConnectedState(settings, logger);
+
+		const syncService = new SyncService(connectedState, settings, logger);
 
 		const syncer = new Syncer(
 			logger,
@@ -117,18 +120,13 @@ export class SyncClient {
 		);
 
 		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
-			client.registerRemoteEventListener(
-				newSettings.fetchChangesUpdateIntervalMs
-			);
-
-			if (!oldSettings.isSyncEnabled && newSettings.isSyncEnabled) {
-				syncer
-					.scheduleSyncForOfflineChanges()
-					.catch((_error: unknown) => {
-						logger.error(
-							"Failed to schedule sync for offline changes"
-						);
-					});
+			if (
+				newSettings.fetchChangesUpdateIntervalMs !==
+				oldSettings.fetchChangesUpdateIntervalMs
+			) {
+				client.registerRemoteEventListener(
+					newSettings.fetchChangesUpdateIntervalMs
+				);
 			}
 		});
 
@@ -148,7 +146,7 @@ export class SyncClient {
 		this.stop();
 		await this._syncer.reset();
 		this._history.reset();
-		await this._database.resetSyncState();
+		this._database.resetSyncState();
 		this.logger.reset();
 	}
 

@@ -1,4 +1,4 @@
-import type { RelativePath } from "src/persistence/database";
+import type { RelativePath } from "../persistence/database";
 import type { Logger } from "./logger";
 
 export interface CommonHistoryEntry {

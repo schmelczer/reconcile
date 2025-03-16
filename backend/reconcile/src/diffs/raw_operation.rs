@@ -3,7 +3,7 @@ use crate::tokenizer::token::Token;
 #[derive(Debug, Clone, PartialEq)]
 pub enum RawOperation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     Insert(Vec<Token<T>>),
     Delete(Vec<Token<T>>),
@@ -12,13 +12,13 @@ where
 
 impl<T> RawOperation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     pub fn tokens(&self) -> &Vec<Token<T>> {
         match self {
-            RawOperation::Insert(tokens) => tokens,
-            RawOperation::Delete(tokens) => tokens,
-            RawOperation::Equal(tokens) => tokens,
+            RawOperation::Insert(tokens)
+            | RawOperation::Delete(tokens)
+            | RawOperation::Equal(tokens) => tokens,
         }
     }
 

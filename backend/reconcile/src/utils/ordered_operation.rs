@@ -7,7 +7,7 @@ use crate::operation_transformation::Operation;
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrderedOperation<T>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     pub order: usize,
     pub operation: Operation<T>,

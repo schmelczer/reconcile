@@ -37,7 +37,7 @@ pub fn reconcile_with_tokenizer<F, T>(
     tokenizer: &Tokenizer<T>,
 ) -> String
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + std::fmt::Debug,
 {
     let left_operations = EditedText::from_strings_with_tokenizer(original, left, tokenizer);
     let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);
@@ -73,7 +73,8 @@ mod test {
             "original_1 edit_1 original_3",
         );
 
-        // One deleted a large range, the other deleted subranges and inserted as well
+        // One deleted a large range, the other deleted subranges and inserted as
+        // well
         test_merge_both_ways(
             "original_1 original_2 original_3 original_4 original_5",
             "original_1 original_5",
@@ -120,9 +121,6 @@ mod test {
             "hi, my friend!",
         );
 
-        // test_merge_both_ways("hello world", "world !", "hi hello world", "hi world
-        // !");
-
         test_merge_both_ways(
             "both delete the same word",
             "both the same word",
@@ -147,7 +145,33 @@ mod test {
         );
     }
 
-    #[ignore = "it's too slow"]
+    #[test]
+    fn test_reconcile_idempotent_inserts() {
+        // Both inserted the same prefix; this should get deduped
+        test_merge_both_ways(
+            "hi ",
+            "hi there ",
+            "hi there my friend ",
+            "hi there my friend ",
+        );
+
+        // The prefix of the 2nd appears on the 1st so it shouldn't get duplicated
+        test_merge_both_ways(
+            "hi ",
+            "hi there you ",
+            "hi there my friend ",
+            "hi there my friend you ",
+        );
+
+        test_merge_both_ways("a", "a b c", "a b c d", "a b c d");
+
+        test_merge_both_ways(
+            "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|   ",
+              "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|   ",
+             "       |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |dup|   ",
+            "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|      |dup|   ");
+    }
+
     #[test_matrix( [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
