@@ -42,7 +42,7 @@ cp frontend/obsidian-plugin/manifest.json manifest.json  # for BRAT, otherwise i
 
 # Commit and tag
 git add .
-TAG=$(node -p "require('./plugin/package.json').version")
+TAG=$(node -p "require('./frontend/obsidian-plugin/package.json').version")
 git commit -m "Bump versions to $TAG"
 
 git push
