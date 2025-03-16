@@ -36,6 +36,7 @@ print_failed_log() {
             
             # Only consider non-zero exit codes as failures
             if [ $exit_code -ne 0 ]; then
+                cat "$(pwd)/logs/log_${i}.log"
                 echo "Process ${pids[$i-1]} failed with exit code $exit_code. Log file: $(pwd)/logs/log_${i}.log"
                 return 0
             else
