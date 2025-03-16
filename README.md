@@ -53,4 +53,3 @@ scripts/e2e.sh
 ```
 
 And to clean up the logs & database files, run `scripts/clean-up.sh`
-```
