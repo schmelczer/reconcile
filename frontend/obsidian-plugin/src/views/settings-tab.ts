@@ -121,7 +121,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.setTooltip("This is the URL of the server you want to sync with.")
 			.addText((text) =>
 				text
-					.setPlaceholder("https://example.com:3030")
+					.setPlaceholder("https://example.com:3000")
 					.setValue(this.syncClient.settings.getSettings().remoteUri)
 					.onChange(async (value) =>
 						this.syncClient.settings.setSetting("remoteUri", value)

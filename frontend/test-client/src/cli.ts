@@ -30,7 +30,7 @@ async function runTest({
 		token: "token",
 		vaultName: uuidv4(),
 		syncConcurrency: concurrency,
-		remoteUri: "http://localhost:3030"
+		remoteUri: "http://localhost:3000"
 	};
 
 	const clients: MockAgent[] = [];
