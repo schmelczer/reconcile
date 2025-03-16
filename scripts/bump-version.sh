@@ -40,7 +40,7 @@ npm install
 cd ..
 cp frontend/obsidian-plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
 
-Commit and tag
+# Commit and tag
 git add .
 TAG=$(node -p "require('./plugin/package.json').version")
 git commit -m "Bump versions to $TAG"
