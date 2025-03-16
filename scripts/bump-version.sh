@@ -24,11 +24,11 @@ fi
 
 echo "Bumping backend versions"
 cd backend
-cargo set-version --bump patch
+cargo set-version --bump $1
 
 echo "Bumping frontend versions"
 cd ../frontend
-npm version patch --workspaces
+npm version $1 --workspaces
 
 echo "Updating frontend dependencies to match the new backend versions"
 cd ../backend/sync_lib
