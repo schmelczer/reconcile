@@ -7,7 +7,7 @@ export {
 	type HistoryEntry
 } from "./tracing/sync-history";
 
-export { Logger, LogLevel } from "./tracing/logger";
+export { Logger, LogLevel, LogLine } from "./tracing/logger";
 
 export { SyncClient } from "./sync-client";
 export { Syncer } from "./sync-operations/syncer";
