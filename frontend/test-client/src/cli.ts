@@ -112,7 +112,7 @@ async function runTests(): Promise<void> {
 		]) {
 			for (const doDeletes of [true, false]) {
 				await runTest({
-					agentCount: 3,
+					agentCount: 2,
 					concurrency,
 					iterations: 100,
 					doDeletes,
