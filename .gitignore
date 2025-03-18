@@ -11,7 +11,6 @@ frontend/*/dist
 
 backend/db.sqlite3*
 backend/databases
-backend/config.yml
 
 *.log
 

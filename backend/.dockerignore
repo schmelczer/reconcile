@@ -1,9 +1,6 @@
 target
 Dockerfile
 .dockerignore
-db.sqlite3*
-*.log
+databases
 sync_lib/pkg
-fuzz/artifacts
-fuzz/corpus
-fuzz/coverage
+config.yml
