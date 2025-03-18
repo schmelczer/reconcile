@@ -2,15 +2,13 @@ import type { WorkspaceLeaf } from "obsidian";
 import { Plugin } from "obsidian";
 import "./styles.scss";
 import "../manifest.json";
-
 import { SyncSettingsTab } from "./views/settings-tab";
 import { HistoryView } from "./views/history-view";
 import { ObsidianFileEventHandler } from "./obisidan-event-handler";
 import { StatusBar } from "./views/status-bar";
-
 import { LogsView } from "./views/logs-view";
 import { StatusDescription } from "./views/status-description";
-import { SyncClient } from "sync-client";
+import { SyncClient, LogLevel, LogLine } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 
 export default class VaultLinkPlugin extends Plugin {
@@ -26,7 +24,7 @@ export default class VaultLinkPlugin extends Plugin {
 			}
 		);
 
-		this.client.logger.info("Starting plugin");
+		registerConsoleForLogging(this.client);
 
 		const statusDescription = new StatusDescription(this.client);
 
@@ -124,4 +122,25 @@ export default class VaultLinkPlugin extends Plugin {
 			await workspace.revealLeaf(leaf);
 		}
 	}
+}
+
+function registerConsoleForLogging(client: SyncClient) {
+	client.logger.addOnMessageListener((logLine: LogLine) => {
+		const formatted = `${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
+
+		switch (logLine.level) {
+			case LogLevel.ERROR:
+				console.error(formatted);
+				break;
+			case LogLevel.WARNING:
+				console.warn(formatted);
+				break;
+			case LogLevel.INFO:
+				console.info(formatted);
+				break;
+			case LogLevel.DEBUG:
+				console.debug(formatted);
+				break;
+		}
+	});
 }
