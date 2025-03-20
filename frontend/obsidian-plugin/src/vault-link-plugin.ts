@@ -62,6 +62,7 @@ export default class VaultLinkPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(async () => {
 			this.client.logger.info("Initialising sync handlers");
+
 			[
 				this.app.vault.on(
 					"create",
@@ -83,9 +84,9 @@ export default class VaultLinkPlugin extends Plugin {
 				this.registerEvent(event);
 			});
 
-			this.client.logger.info("Sync handlers initialised");
+			void this.client.start();
 
-			void this.client.syncer.scheduleSyncForOfflineChanges();
+			this.client.logger.info("Sync handlers initialised");
 		});
 	}
 

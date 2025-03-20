@@ -1,7 +1,11 @@
-import init from "sync_lib";
+import initWasm from "sync_lib";
 import wasmBin from "../../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import type { PersistenceProvider } from "./persistence/persistence";
-import { SyncHistory } from "./tracing/sync-history";
+import {
+	HistoryEntry,
+	HistoryStats,
+	SyncHistory
+} from "./tracing/sync-history";
 import { Logger } from "./tracing/logger";
 import type { StoredDatabase } from "./persistence/database";
 import { Database } from "./persistence/database";
@@ -12,7 +16,7 @@ import { SyncService } from "./services/sync-service";
 import { Syncer } from "./sync-operations/syncer";
 import type { FileSystemOperations } from "./file-operations/filesystem-operations";
 import { FileOperations } from "./file-operations/file-operations";
-import { ConnectedState } from "./services/connected-state";
+import { ConnectionStatus } from "./services/connection-status";
 
 export class SyncClient {
 	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
@@ -23,16 +27,9 @@ export class SyncClient {
 		private readonly _database: Database,
 		private readonly _syncer: Syncer,
 		private readonly _syncService: SyncService,
-		private readonly _logger: Logger
+		private readonly _logger: Logger,
+		private readonly _connectionStatus: ConnectionStatus
 	) {}
-
-	public get history(): SyncHistory {
-		return this._history;
-	}
-
-	public get settings(): Settings {
-		return this._settings;
-	}
 
 	public get syncer(): Syncer {
 		return this._syncer;
@@ -46,10 +43,6 @@ export class SyncClient {
 		return this._database.length;
 	}
 
-	public set fetchImplementation(fetch: typeof globalThis.fetch) {
-		this._syncService.fetchImplementation = fetch;
-	}
-
 	public static async create(
 		fs: FileSystemOperations,
 		persistence: PersistenceProvider<
@@ -57,13 +50,15 @@ export class SyncClient {
 				settings: Partial<SyncSettings>;
 				database: Partial<StoredDatabase>;
 			}>
-		>
+		>,
+		fetch: typeof globalThis.fetch = globalThis.fetch
 	): Promise<SyncClient> {
 		const logger = new Logger();
-		const history = new SyncHistory(logger);
 		logger.info("Starting SyncClient");
 
-		await init(
+		const history = new SyncHistory(logger);
+
+		await initWasm(
 			// eslint-disable-next-line
 			(wasmBin as any).default // it is loaded as a base64 string by webpack
 		);
@@ -91,10 +86,9 @@ export class SyncClient {
 			}
 		);
 
-		const connectedState = new ConnectedState(settings, logger);
-
-		const syncService = new SyncService(connectedState, settings, logger);
-
+		const connectionStatus = new ConnectionStatus(settings, logger);
+		const syncService = new SyncService(connectionStatus, settings, logger);
+		syncService.fetchImplementation = fetch;
 		const syncer = new Syncer(
 			logger,
 			database,
@@ -110,13 +104,8 @@ export class SyncClient {
 			database,
 			syncer,
 			syncService,
-			logger
-		);
-
-		void syncer.scheduleSyncForOfflineChanges();
-
-		client.registerRemoteEventListener(
-			settings.getSettings().fetchChangesUpdateIntervalMs
+			logger,
+			connectionStatus
 		);
 
 		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
@@ -124,13 +113,21 @@ export class SyncClient {
 				newSettings.fetchChangesUpdateIntervalMs !==
 				oldSettings.fetchChangesUpdateIntervalMs
 			) {
-				client.registerRemoteEventListener(
+				client.setRemoteEventListener(
 					newSettings.fetchChangesUpdateIntervalMs
 				);
 			}
+
+			if (
+				newSettings.vaultName !== oldSettings.vaultName ||
+				newSettings.token !== oldSettings.token ||
+				newSettings.remoteUri !== oldSettings.remoteUri
+			) {
+				client.reset();
+			}
 		});
 
-		logger.info("SyncClient loaded");
+		logger.info("SyncClient initialised");
 
 		return client;
 	}
@@ -139,25 +136,60 @@ export class SyncClient {
 		return this._syncService.checkConnection();
 	}
 
+	public getHistoryEntries(): HistoryEntry[] {
+		return this._history.getEntries();
+	}
+
+	public addSyncHistoryUpdateListener(
+		listener: (stats: HistoryStats) => void
+	): void {
+		this._history.addSyncHistoryUpdateListener(listener);
+	}
+
+	public async start(): Promise<void> {
+		await this._syncer.scheduleSyncForOfflineChanges();
+
+		this.setRemoteEventListener(
+			this._settings.getSettings().fetchChangesUpdateIntervalMs
+		);
+	}
+
+	/// Clear all global state that has been touched by SyncClient.
+	public stop(): void {
+		this.unsetRemoteEventListener();
+	}
+
 	/// Wait for the in-flight operations to finish, reset all tracking,
 	/// and the local database but retain the settings.
 	/// The SyncClient can be used again after calling this method.
 	public async reset(): Promise<void> {
 		this.stop();
+		this._connectionStatus.reset();
 		await this._syncer.reset();
 		this._history.reset();
-		this._database.resetSyncState();
-		this.logger.reset();
+		this._database.reset();
+		this._logger.reset();
+		void this.start();
 	}
 
-	/// Clear all global state that has been touched by SyncClient.
-	public stop(): void {
-		if (this.remoteListenerIntervalId !== null) {
-			clearInterval(this.remoteListenerIntervalId);
-		}
+	public getSettings(): SyncSettings {
+		return this._settings.getSettings();
 	}
 
-	private registerRemoteEventListener(intervalMs: number): void {
+	public async setSetting<T extends keyof SyncSettings>(
+		key: T,
+		value: SyncSettings[T]
+	): Promise<void> {
+		await this._settings.setSetting(key, value);
+	}
+
+	public addOnSettingsChangeHandlers(
+		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
+	): void {
+		this._settings.addOnSettingsChangeHandlers(handler);
+	}
+
+	private setRemoteEventListener(intervalMs: number): void {
 		if (this.remoteListenerIntervalId !== null) {
 			clearInterval(this.remoteListenerIntervalId);
 		}
@@ -166,5 +198,11 @@ export class SyncClient {
 			() => void this._syncer.applyRemoteChangesLocally(),
 			intervalMs
 		);
+	}
+
+	private unsetRemoteEventListener(): void {
+		if (this.remoteListenerIntervalId !== null) {
+			clearInterval(this.remoteListenerIntervalId);
+		}
 	}
 }
