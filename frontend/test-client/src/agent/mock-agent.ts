@@ -25,22 +25,23 @@ export class MockAgent extends MockClient {
 	}
 
 	public async init(): Promise<void> {
-		await super.init();
+		await super.init(
+			// flaky fetch implementation to use during testing
+			async (
+				input: string | URL | globalThis.Request,
+				init?: RequestInit
+			): Promise<Response> => {
+				await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
+				const response = await fetch(input, init);
+				await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
+				return response;
+			}
+		);
 
 		assert(
 			(await this.client.checkConnection()).isSuccessful,
 			"Connection check failed"
 		);
-
-		this.client.fetchImplementation = async (
-			input: string | URL | globalThis.Request,
-			init?: RequestInit
-		): Promise<Response> => {
-			await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
-			const response = await fetch(input, init);
-			await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
-			return response;
-		};
 
 		this.client.logger.addOnMessageListener((logLine: LogLine) => {
 			const state = this.client.getSettings().isSyncEnabled

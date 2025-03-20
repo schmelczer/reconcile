@@ -16,11 +16,17 @@ export class MockClient implements FileSystemOperations {
 		protected readonly useSlowFileEvents: boolean
 	) {}
 
-	public async init(): Promise<void> {
-		this.client = await SyncClient.create(this, {
-			load: async () => this.data,
-			save: async (data) => void (this.data = data)
-		});
+	public async init(
+		fetchImplementation: typeof globalThis.fetch
+	): Promise<void> {
+		this.client = await SyncClient.create(
+			this,
+			{
+				load: async () => this.data,
+				save: async (data) => void (this.data = data)
+			},
+			fetchImplementation
+		);
 
 		await Promise.all(
 			Object.keys(this.initialSettings).map(async (key) => {
