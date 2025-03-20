@@ -145,10 +145,6 @@ export class FileOperations {
 		await this.fs.rename(oldPath, newPath);
 	}
 
-	public isFileEligibleForSync(path: RelativePath): boolean {
-		return isFileTypeMergable(path);
-	}
-
 	private async createParentDirectories(path: string): Promise<void> {
 		const components = path.split("/");
 		if (components.length === 1) {

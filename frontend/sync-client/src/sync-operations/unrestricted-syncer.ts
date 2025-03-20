@@ -356,16 +356,6 @@ export class UnrestrictedSyncer {
 		syncSource: SyncSource,
 		fn: () => Promise<T>
 	): Promise<T | undefined> {
-		if (!this.operations.isFileEligibleForSync(relativePath)) {
-			this.history.addHistoryEntry({
-				status: SyncStatus.ERROR,
-				relativePath,
-				message: `File ${relativePath} is not eligible for syncing`,
-				type: syncType
-			});
-			return;
-		}
-
 		this.logger.debug(
 			`Syncing ${relativePath} (${syncSource} - ${syncType})`
 		);
