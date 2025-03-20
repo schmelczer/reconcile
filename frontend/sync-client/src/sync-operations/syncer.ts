@@ -10,7 +10,6 @@ import type { Settings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
 import { findMatchingFile } from "../utils/find-matching-file";
 import { UnrestrictedSyncer } from "./unrestricted-syncer";
-import { FileNotFoundError } from "../file-operations/safe-filesystem-operations";
 import { createPromise } from "../utils/create-promise";
 
 export class Syncer {
@@ -212,7 +211,7 @@ export class Syncer {
 	}
 
 	public async applyRemoteChangesLocally(): Promise<void> {
-		if (this.runningApplyRemoteChangesLocally != null) {
+		if (this.runningApplyRemoteChangesLocally !== undefined) {
 			this.logger.debug(
 				"Applying remote changes locally is already in progress"
 			);
@@ -237,11 +236,7 @@ export class Syncer {
 	}
 
 	public async reset(): Promise<void> {
-		this.syncQueue.clear();
 		await this.syncQueue.onEmpty();
-		this.remainingOperationsListeners.forEach((listener) => {
-			listener(0);
-		});
 		this.internalSyncer.reset();
 	}
 
