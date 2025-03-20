@@ -43,7 +43,7 @@ export class MockAgent extends MockClient {
 		};
 
 		this.client.logger.addOnMessageListener((logLine: LogLine) => {
-			const state = this.client.settings.getSettings().isSyncEnabled
+			const state = this.client.getSettings().isSyncEnabled
 				? "(online) "
 				: "(offline)";
 			const formatted = `[${this.name} ${state}] ${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
@@ -91,7 +91,7 @@ export class MockAgent extends MockClient {
 			this.changeFetchChangesUpdateIntervalMsAction.bind(this)
 		];
 
-		if (this.client.settings.getSettings().isSyncEnabled) {
+		if (this.client.getSettings().isSyncEnabled) {
 			if (this.doNotTouchWhileOffline.length === 0) {
 				options.push(this.disableSyncAction.bind(this));
 			}
@@ -131,7 +131,7 @@ export class MockAgent extends MockClient {
 	}
 
 	public async finish(): Promise<void> {
-		await this.client.settings.setSetting("isSyncEnabled", true);
+		await this.client.setSetting("isSyncEnabled", true);
 		await Promise.all(this.pendingActions);
 		this.client.stop();
 		await this.client.syncer.waitForSyncQueue();
@@ -239,7 +239,7 @@ export class MockAgent extends MockClient {
 		const file = this.getFileName();
 
 		if (
-			(!this.client.settings.getSettings().isSyncEnabled &&
+			(!this.client.getSettings().isSyncEnabled &&
 				this.doNotTouchWhileOffline.includes(file)) ||
 			(await this.exists(file))
 		) {
@@ -258,7 +258,7 @@ export class MockAgent extends MockClient {
 		this.client.logger.info(
 			`Decided to change fetchChangesUpdateIntervalMs`
 		);
-		return this.client.settings.setSetting(
+		return this.client.setSetting(
 			"fetchChangesUpdateIntervalMs",
 			Math.random() * 2000 + 100
 		);
@@ -266,12 +266,12 @@ export class MockAgent extends MockClient {
 
 	private async disableSyncAction(): Promise<void> {
 		this.client.logger.info(`Decided to disable sync`);
-		await this.client.settings.setSetting("isSyncEnabled", false);
+		await this.client.setSetting("isSyncEnabled", false);
 	}
 
 	private async enableSyncAction(): Promise<void> {
 		this.client.logger.info(`Decided to enable sync`);
-		await this.client.settings.setSetting("isSyncEnabled", true);
+		await this.client.setSetting("isSyncEnabled", true);
 	}
 
 	private async renameFileAction(files: RelativePath[]): Promise<void> {
@@ -280,7 +280,7 @@ export class MockAgent extends MockClient {
 		// We can't edit files offline that have been updated while offline.
 		// Otherwise, the resolution logic couldn't handle it.
 		if (
-			!this.client.settings.getSettings().isSyncEnabled &&
+			!this.client.getSettings().isSyncEnabled &&
 			this.doNotTouchWhileOffline.includes(file)
 		) {
 			this.client.logger.info(
@@ -292,7 +292,7 @@ export class MockAgent extends MockClient {
 		const newName = this.getFileName();
 
 		if (
-			(!this.client.settings.getSettings().isSyncEnabled &&
+			(!this.client.getSettings().isSyncEnabled &&
 				this.doNotTouchWhileOffline.includes(newName)) ||
 			(await this.exists(newName))
 		) {
@@ -311,7 +311,7 @@ export class MockAgent extends MockClient {
 		// We can't edit files offline that have been updated while offline.
 		// Otherwise, the resolution logic couldn't handle it.
 		if (
-			!this.client.settings.getSettings().isSyncEnabled &&
+			!this.client.getSettings().isSyncEnabled &&
 			this.doNotTouchWhileOffline.includes(file)
 		) {
 			this.client.logger.info(

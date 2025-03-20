@@ -25,7 +25,7 @@ export class MockClient implements FileSystemOperations {
 		await Promise.all(
 			Object.keys(this.initialSettings).map(async (key) => {
 				const settingKey = key as keyof SyncSettings; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-				return this.client.settings.setSetting(
+				return this.client.setSetting(
 					settingKey,
 					this.initialSettings[settingKey]! // eslint-disable-line @typescript-eslint/no-non-null-assertion
 				);

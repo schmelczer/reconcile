@@ -24,7 +24,7 @@ export class StatusBar {
 			}
 		);
 
-		this.syncClient.settings.addOnSettingsChangeHandlers(() => {
+		this.syncClient.addOnSettingsChangeHandlers(() => {
 			this.updateStatus();
 		});
 	}
@@ -57,7 +57,7 @@ export class StatusBar {
 		}
 
 		if (!hasShownMessage) {
-			if (this.syncClient.settings.getSettings().isSyncEnabled) {
+			if (this.syncClient.getSettings().isSyncEnabled) {
 				container.createSpan({ text: "VaultLink is idle" });
 			} else {
 				const button = container.createEl("button", {

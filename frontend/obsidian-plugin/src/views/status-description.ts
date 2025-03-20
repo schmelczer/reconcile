@@ -26,7 +26,7 @@ export class StatusDescription {
 			}
 		);
 
-		this.syncClient.settings.addOnSettingsChangeHandlers(() => {
+		this.syncClient.addOnSettingsChangeHandlers(() => {
 			void this.updateConnectionState();
 		});
 	}
@@ -67,8 +67,8 @@ export class StatusDescription {
 
 		container.createSpan({ text: "VaultLink is connected to the server " });
 		container.createEl("a", {
-			text: this.syncClient.settings.getSettings().remoteUri,
-			href: this.syncClient.settings.getSettings().remoteUri
+			text: this.syncClient.getSettings().remoteUri,
+			href: this.syncClient.getSettings().remoteUri
 		});
 
 		container.createSpan({
@@ -87,7 +87,7 @@ export class StatusDescription {
 			(this.lastHistoryStats?.success ?? 0) === 0 &&
 			(this.lastHistoryStats?.error ?? 0) === 0
 		) {
-			if (this.syncClient.settings.getSettings().isSyncEnabled) {
+			if (this.syncClient.getSettings().isSyncEnabled) {
 				container.createSpan({
 					text: "Syncing is enabled but VaultLink hasn't found anything to sync yet."
 				});

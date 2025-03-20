@@ -32,8 +32,8 @@ export class SyncSettingsTab extends PluginSettingTab {
 		this.syncClient = syncClient;
 		this.statusDescription = statusDescription;
 
-		this.editedVaultName = this.syncClient.settings.getSettings().vaultName;
-		this.syncClient.settings.addOnSettingsChangeHandlers(
+		this.editedVaultName = this.syncClient.getSettings().vaultName;
+		this.syncClient.addOnSettingsChangeHandlers(
 			(newSettings, oldSettings) => {
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					this.editedVaultName = newSettings.vaultName;
@@ -122,9 +122,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:3000")
-					.setValue(this.syncClient.settings.getSettings().remoteUri)
+					.setValue(this.syncClient.getSettings().remoteUri)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting("remoteUri", value)
+						this.syncClient.setSetting("remoteUri", value)
 					)
 			)
 			.addButton((button) =>
@@ -146,9 +146,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("ey...")
-					.setValue(this.syncClient.settings.getSettings().token)
+					.setValue(this.syncClient.getSettings().token)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting("token", value)
+						this.syncClient.setSetting("token", value)
 					)
 			);
 
@@ -161,22 +161,21 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("My Obsidian Vault")
-					.setValue(this.syncClient.settings.getSettings().vaultName)
+					.setValue(this.syncClient.getSettings().vaultName)
 					.onChange((value) => (this.editedVaultName = value))
 			)
 			.addButton((button) =>
 				button.setButtonText("Apply").onClick(async () => {
 					if (
 						this.editedVaultName ===
-						this.syncClient.settings.getSettings().vaultName
+						this.syncClient.getSettings().vaultName
 					) {
 						return;
 					}
-					await this.syncClient.settings.setSetting(
+					await this.syncClient.setSetting(
 						"vaultName",
 						this.editedVaultName
 					);
-					await this.syncClient.reset();
 					new Notice(
 						"Sync state has been reset, you will need to resync"
 					);
@@ -213,11 +212,11 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setDynamicTooltip()
 					.setInstant(false)
 					.setValue(
-						this.syncClient.settings.getSettings()
+						this.syncClient.getSettings()
 							.fetchChangesUpdateIntervalMs / 1000
 					)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
+						this.syncClient.setSetting(
 							"fetchChangesUpdateIntervalMs",
 							value * 1000
 						)
@@ -234,14 +233,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(1, 16, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(
-						this.syncClient.settings.getSettings().syncConcurrency
-					)
+					.setValue(this.syncClient.getSettings().syncConcurrency)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
-							"syncConcurrency",
-							value
-						)
+						this.syncClient.setSetting("syncConcurrency", value)
 					)
 			);
 
@@ -255,14 +249,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setLimits(0, 32, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
-					.setValue(
-						this.syncClient.settings.getSettings().maxFileSizeMB
-					)
+					.setValue(this.syncClient.getSettings().maxFileSizeMB)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
-							"maxFileSizeMB",
-							value
-						)
+						this.syncClient.setSetting("maxFileSizeMB", value)
 					)
 			);
 
@@ -276,14 +265,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(
-						this.syncClient.settings.getSettings().isSyncEnabled
-					)
+					.setValue(this.syncClient.getSettings().isSyncEnabled)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
-							"isSyncEnabled",
-							value
-						)
+						this.syncClient.setSetting("isSyncEnabled", value)
 					)
 			);
 	}
@@ -304,11 +288,9 @@ export class SyncSettingsTab extends PluginSettingTab {
 						[LogLevel.WARNING]: LogLevel.WARNING,
 						[LogLevel.ERROR]: LogLevel.ERROR
 					})
-					.setValue(
-						this.syncClient.settings.getSettings().minimumLogLevel
-					)
+					.setValue(this.syncClient.getSettings().minimumLogLevel)
 					.onChange(async (value) =>
-						this.syncClient.settings.setSetting(
+						this.syncClient.setSetting(
 							"minimumLogLevel",
 							// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 							value as LogLevel

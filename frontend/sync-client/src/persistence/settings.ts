@@ -50,15 +50,6 @@ export class Settings {
 		return this.settings;
 	}
 
-	public async setSettings(value: SyncSettings): Promise<void> {
-		const oldSettings = this.settings;
-		this.settings = value;
-		this.onSettingsChangeHandlers.forEach((handler) => {
-			handler(value, oldSettings);
-		});
-		await this.save();
-	}
-
 	public addOnSettingsChangeHandlers(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	): void {
@@ -72,6 +63,15 @@ export class Settings {
 		const newSettings = { ...this.settings, [key]: value };
 		this.logger.debug(`Setting '${key}' to '${value}'`);
 		await this.setSettings(newSettings);
+	}
+
+	private async setSettings(value: SyncSettings): Promise<void> {
+		const oldSettings = this.settings;
+		this.settings = value;
+		this.onSettingsChangeHandlers.forEach((handler) => {
+			handler(value, oldSettings);
+		});
+		await this.save();
 	}
 
 	private async save(): Promise<void> {

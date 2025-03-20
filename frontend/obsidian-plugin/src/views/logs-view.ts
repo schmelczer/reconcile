@@ -18,15 +18,11 @@ export class LogsView extends ItemView {
 			this.updateView();
 		});
 
-		this.client.settings.addOnSettingsChangeHandlers(
-			(newSettings, oldSettings) => {
-				if (
-					newSettings.minimumLogLevel !== oldSettings.minimumLogLevel
-				) {
-					this.updateView();
-				}
+		this.client.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+			if (newSettings.minimumLogLevel !== oldSettings.minimumLogLevel) {
+				this.updateView();
 			}
-		);
+		});
 	}
 
 	private static formatTimestamp(timestamp: Date): string {
@@ -82,7 +78,7 @@ export class LogsView extends ItemView {
 		);
 
 		const logs = this.client.logger.getMessages(
-			this.client.settings.getSettings().minimumLogLevel
+			this.client.getSettings().minimumLogLevel
 		);
 
 		if (logs.length === 0) {
