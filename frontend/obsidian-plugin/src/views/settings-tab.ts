@@ -51,7 +51,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 		this.renderSettingsHeader(containerEl);
 		this.renderConnectionSettings(containerEl);
 		this.renderSyncSettings(containerEl);
-		this.renderViewSettings(containerEl);
 	}
 
 	public hide(): void {
@@ -268,33 +267,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setValue(this.syncClient.getSettings().isSyncEnabled)
 					.onChange(async (value) =>
 						this.syncClient.setSetting("isSyncEnabled", value)
-					)
-			);
-	}
-
-	private renderViewSettings(containerEl: HTMLElement): void {
-		containerEl.createEl("h3", { text: "View" });
-
-		new Setting(containerEl)
-			.setName("Minimum log level")
-			.setDesc(
-				"Set the log level for the plugin. Lower levels will show more logs."
-			)
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions({
-						[LogLevel.DEBUG]: LogLevel.DEBUG,
-						[LogLevel.INFO]: LogLevel.INFO,
-						[LogLevel.WARNING]: LogLevel.WARNING,
-						[LogLevel.ERROR]: LogLevel.ERROR
-					})
-					.setValue(this.syncClient.getSettings().minimumLogLevel)
-					.onChange(async (value) =>
-						this.syncClient.setSetting(
-							"minimumLogLevel",
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-							value as LogLevel
-						)
 					)
 			);
 	}

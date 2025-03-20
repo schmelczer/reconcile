@@ -1,7 +1,7 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type VaultLinkPlugin from "../vault-link-plugin";
-import type { SyncClient } from "sync-client";
+import { LogLevel, type SyncClient } from "sync-client";
 
 export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
@@ -16,12 +16,6 @@ export class LogsView extends ItemView {
 		this.icon = LogsView.ICON;
 		this.client.logger.addOnMessageListener(() => {
 			this.updateView();
-		});
-
-		this.client.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
-			if (newSettings.minimumLogLevel !== oldSettings.minimumLogLevel) {
-				this.updateView();
-			}
 		});
 	}
 
@@ -77,9 +71,7 @@ export class LogsView extends ItemView {
 			}
 		);
 
-		const logs = this.client.logger.getMessages(
-			this.client.getSettings().minimumLogLevel
-		);
+		const logs = this.client.logger.getMessages(LogLevel.DEBUG);
 
 		if (logs.length === 0) {
 			container.createEl("p", { text: "No logs available yet." });
