@@ -114,7 +114,7 @@ export class Database {
 		this.save();
 	}
 
-	public resetSyncState(): void {
+	public reset(): void {
 		this.documents = [];
 		this.lastSeenUpdateId = 0;
 		this.save();
@@ -142,7 +142,9 @@ export class Database {
 		);
 
 		if (entry === undefined) {
-			throw new Error("Document not found by update promise");
+			// This method should be idempotent and tolerant of
+			// stragglers calling it after the databse has been reset.
+			return;
 		}
 
 		entry.updates = entry.updates.filter((update) => update !== promise);
