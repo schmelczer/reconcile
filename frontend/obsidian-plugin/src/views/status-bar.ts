@@ -12,7 +12,7 @@ export class StatusBar {
 		private readonly syncClient: SyncClient
 	) {
 		this.statusBarItem = plugin.addStatusBarItem();
-		this.syncClient.history.addSyncHistoryUpdateListener((status) => {
+		this.syncClient.addSyncHistoryUpdateListener((status) => {
 			this.lastHistoryStats = status;
 			this.updateStatus();
 		});

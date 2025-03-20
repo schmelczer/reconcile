@@ -14,7 +14,7 @@ export class StatusDescription {
 	public constructor(private readonly syncClient: SyncClient) {
 		void this.updateConnectionState();
 
-		syncClient.history.addSyncHistoryUpdateListener((status) => {
+		syncClient.addSyncHistoryUpdateListener((status) => {
 			this.lastHistoryStats = status;
 			this.updateDescription();
 		});

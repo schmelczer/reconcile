@@ -17,7 +17,7 @@ export class HistoryView extends ItemView {
 		super(leaf);
 		this.icon = HistoryView.ICON;
 
-		this.client.history.addSyncHistoryUpdateListener(() => {
+		this.client.addSyncHistoryUpdateListener(() => {
 			this.updateView().catch((_error: unknown) => {
 				this.client.logger.error("Failed to update history view");
 			});
@@ -93,7 +93,7 @@ export class HistoryView extends ItemView {
 		container.empty();
 		container.createEl("h4", { text: "VaultLink History" });
 
-		const entries = this.client.history.getEntries().reverse();
+		const entries = this.client.getHistoryEntries().reverse();
 		entries.forEach((entry) => {
 			container.createDiv(
 				{
