@@ -14,7 +14,6 @@
 	},
 	"dependencies": {
 		"byte-base64": "^1.1.0",
-		"fetch-retry": "^6.0.0",
 		"openapi-fetch": "0.13.5",
 		"openapi-typescript": "7.6.1",
 		"p-queue": "^8.1.0",

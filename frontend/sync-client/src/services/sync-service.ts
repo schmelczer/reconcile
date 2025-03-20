@@ -8,7 +8,7 @@ import type {
 } from "../persistence/database";
 import type { Logger } from "../tracing/logger";
 import type { Settings } from "../persistence/settings";
-import type { ConnectedState } from "./connected-state";
+import type { ConnectionStatus } from "./connection-status";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
@@ -21,7 +21,7 @@ export class SyncService {
 	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
-		private readonly connectedState: ConnectedState,
+		private readonly connectionStatus: ConnectionStatus,
 		private readonly settings: Settings,
 		private readonly logger: Logger
 	) {
@@ -296,14 +296,14 @@ export class SyncService {
 	private createClient(remoteUri: string): void {
 		this.client = createClient<paths>({
 			baseUrl: remoteUri,
-			fetch: this.connectedState.getFetchImplementation(
+			fetch: this.connectionStatus.getFetchImplementation(
 				this._fetchImplementation
 			)
 		});
 
 		this.clientWithoutRetries = createClient<paths>({
 			baseUrl: remoteUri,
-			fetch: this.connectedState.getFetchImplementation(
+			fetch: this.connectionStatus.getFetchImplementation(
 				this._fetchImplementation,
 				{ doRetries: false }
 			)
