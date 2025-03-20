@@ -151,6 +151,11 @@ export class Database {
 		// No need to save as Promises don't get serialized
 	}
 
+	public removeDocument(find: DocumentRecord): void {
+		this.documents = this.documents.filter((document) => document !== find);
+		this.save();
+	}
+
 	public getLatestDocumentByRelativePath(
 		find: RelativePath
 	): DocumentRecord | undefined {

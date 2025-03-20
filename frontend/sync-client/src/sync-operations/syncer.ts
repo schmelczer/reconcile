@@ -119,6 +119,8 @@ export class Syncer {
 			);
 
 			resolve();
+
+			this.database.removeDocument(document);
 		} catch (e) {
 			reject(e);
 		} finally {
@@ -263,7 +265,7 @@ export class Syncer {
 		const lastSeenUpdateId = this.database.getLastSeenUpdateId();
 		if (
 			lastSeenUpdateId === undefined ||
-			remote.lastUpdateId > lastSeenUpdateId
+			lastSeenUpdateId < remote.lastUpdateId
 		) {
 			this.database.setLastSeenUpdateId(remote.lastUpdateId);
 		}
