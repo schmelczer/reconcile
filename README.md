@@ -53,3 +53,11 @@ scripts/e2e.sh
 ```
 
 And to clean up the logs & database files, run `scripts/clean-up.sh`
+
+## Todos
+
+- Don't show server traces on auth failure
+- Better server logs
+- Allow setting config.yml path for server
+- Single apply button in settings
+- vritual list for logs view
