@@ -10,4 +10,4 @@ users:
   - name: admin
     token: test-token-change-me
   - name: test
-    token: token
+    token: other-test-token
