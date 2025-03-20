@@ -1,11 +1,8 @@
 import initWasm from "sync_lib";
 import wasmBin from "../../../backend/sync_lib/pkg/sync_lib_bg.wasm";
 import type { PersistenceProvider } from "./persistence/persistence";
-import {
-	HistoryEntry,
-	HistoryStats,
-	SyncHistory
-} from "./tracing/sync-history";
+import type { HistoryEntry, HistoryStats } from "./tracing/sync-history";
+import { SyncHistory } from "./tracing/sync-history";
 import { Logger } from "./tracing/logger";
 import type { StoredDatabase } from "./persistence/database";
 import { Database } from "./persistence/database";
@@ -123,7 +120,7 @@ export class SyncClient {
 				newSettings.token !== oldSettings.token ||
 				newSettings.remoteUri !== oldSettings.remoteUri
 			) {
-				client.reset();
+				void client.reset();
 			}
 		});
 

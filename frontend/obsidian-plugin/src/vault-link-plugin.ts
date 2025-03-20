@@ -8,12 +8,33 @@ import { ObsidianFileEventHandler } from "./obisidan-event-handler";
 import { StatusBar } from "./views/status-bar";
 import { LogsView } from "./views/logs-view";
 import { StatusDescription } from "./views/status-description";
-import { SyncClient, LogLevel, LogLine } from "sync-client";
+import type { LogLine } from "sync-client";
+import { SyncClient, LogLevel } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 
 export default class VaultLinkPlugin extends Plugin {
 	private settingsTab: SyncSettingsTab | undefined;
 	private client!: SyncClient;
+	private static registerConsoleForLogging(client: SyncClient): void {
+		client.logger.addOnMessageListener((logLine: LogLine) => {
+			const formatted = `${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
+
+			switch (logLine.level) {
+				case LogLevel.ERROR:
+					console.error(formatted);
+					break;
+				case LogLevel.WARNING:
+					console.warn(formatted);
+					break;
+				case LogLevel.INFO:
+					console.info(formatted);
+					break;
+				case LogLevel.DEBUG:
+					console.debug(formatted);
+					break;
+			}
+		});
+	}
 
 	public async onload(): Promise<void> {
 		this.client = await SyncClient.create(
@@ -24,7 +45,7 @@ export default class VaultLinkPlugin extends Plugin {
 			}
 		);
 
-		registerConsoleForLogging(this.client);
+		VaultLinkPlugin.registerConsoleForLogging(this.client);
 
 		const statusDescription = new StatusDescription(this.client);
 
@@ -123,25 +144,4 @@ export default class VaultLinkPlugin extends Plugin {
 			await workspace.revealLeaf(leaf);
 		}
 	}
-}
-
-function registerConsoleForLogging(client: SyncClient) {
-	client.logger.addOnMessageListener((logLine: LogLine) => {
-		const formatted = `${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
-
-		switch (logLine.level) {
-			case LogLevel.ERROR:
-				console.error(formatted);
-				break;
-			case LogLevel.WARNING:
-				console.warn(formatted);
-				break;
-			case LogLevel.INFO:
-				console.info(formatted);
-				break;
-			case LogLevel.DEBUG:
-				console.debug(formatted);
-				break;
-		}
-	});
 }
