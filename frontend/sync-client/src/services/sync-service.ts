@@ -10,6 +10,7 @@ import type { Logger } from "../tracing/logger";
 import type { Settings } from "../persistence/settings";
 import type { ConnectionStatus } from "./connection-status";
 import { sleep } from "../utils/sleep";
+import { SyncResetError } from "./sync-reset-error";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
@@ -69,6 +70,8 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
+		const vaultName = this.settings.getSettings().vaultName;
+
 		return this.withRetries(async () => {
 			const formData = new FormData();
 			if (documentId !== undefined) {
@@ -82,7 +85,7 @@ export class SyncService {
 				{
 					params: {
 						path: {
-							vault_id: this.settings.getSettings().vaultName
+							vault_id: vaultName
 						},
 						header: {
 							authorization: `Bearer ${this.settings.getSettings().token}`
@@ -120,6 +123,8 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
+		const vaultName = this.settings.getSettings().vaultName;
+
 		return this.withRetries(async () => {
 			this.logger.debug(
 				`Updating document ${documentId} with parent version ${parentVersionId} and relative path ${relativePath}`
@@ -134,7 +139,7 @@ export class SyncService {
 				{
 					params: {
 						path: {
-							vault_id: this.settings.getSettings().vaultName,
+							vault_id: vaultName,
 							document_id: documentId
 						},
 						header: {
@@ -170,12 +175,14 @@ export class SyncService {
 		relativePath: RelativePath;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
 		return this.withRetries(async () => {
+			const vaultName = this.settings.getSettings().vaultName;
+
 			const response = await this.client.DELETE(
 				"/vaults/{vault_id}/documents/{document_id}",
 				{
 					params: {
 						path: {
-							vault_id: this.settings.getSettings().vaultName,
+							vault_id: vaultName,
 							document_id: documentId
 						},
 						header: {
@@ -205,13 +212,15 @@ export class SyncService {
 	}: {
 		documentId: DocumentId;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
+		const vaultName = this.settings.getSettings().vaultName;
+
 		return this.withRetries(async () => {
 			const response = await this.client.GET(
 				"/vaults/{vault_id}/documents/{document_id}",
 				{
 					params: {
 						path: {
-							vault_id: this.settings.getSettings().vaultName,
+							vault_id: vaultName,
 							document_id: documentId
 						},
 						header: {
@@ -239,12 +248,14 @@ export class SyncService {
 		since?: VaultUpdateId
 	): Promise<components["schemas"]["FetchLatestDocumentsResponse"]> {
 		return this.withRetries(async () => {
+			const vaultName = this.settings.getSettings().vaultName;
+
 			const response = await this.client.GET(
 				"/vaults/{vault_id}/documents",
 				{
 					params: {
 						path: {
-							vault_id: this.settings.getSettings().vaultName
+							vault_id: vaultName
 						},
 						header: {
 							authorization: `Bearer ${this.settings.getSettings().token}`
@@ -339,6 +350,11 @@ export class SyncService {
 			try {
 				return await fn();
 			} catch (e) {
+				// We must not retry errors coming from reset
+				if (e instanceof SyncResetError) {
+					throw e;
+				}
+
 				this.logger.error(`Failed network call (${e}), retrying`);
 				await sleep(1000);
 			}
