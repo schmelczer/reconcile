@@ -13,9 +13,9 @@ import type { components } from "../services/types";
 import { deserialize } from "../utils/deserialize";
 import type { Settings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
-import { FileNotFoundError } from "../file-operations/safe-filesystem-operations";
 import { DocumentLocks } from "../file-operations/document-locks";
 import { createPromise } from "../utils/create-promise";
+import { FileNotFoundError } from "../file-operations/file-not-found-error";
 
 export class UnrestrictedSyncer {
 	private readonly locks: DocumentLocks;
@@ -106,6 +106,8 @@ export class UnrestrictedSyncer {
 	public async unrestrictedSyncLocallyUpdatedFile({
 		oldPath,
 		document,
+		// We use the same code path for both local and remote updates. We need to force the update
+		// if there are no local changes but we know that the remote version is newer.
 		force = false
 	}: {
 		oldPath?: RelativePath;
@@ -131,23 +133,31 @@ export class UnrestrictedSyncer {
 				); // this can throw FileNotFoundError
 				let contentHash = hash(contentBytes);
 
+				let response:
+					| components["schemas"]["DocumentVersion"]
+					| components["schemas"]["DocumentUpdateResponse"];
 				if (
 					document.metadata.hash === contentHash &&
-					oldPath === undefined &&
-					!force
+					oldPath === undefined
 				) {
-					this.logger.debug(
-						`File hash of ${document.relativePath} matches with last synced version and the path hasn't changed; no need to sync`
-					);
-					return;
-				}
+					if (!force) {
+						this.logger.debug(
+							`File hash of ${document.relativePath} matches with last synced version and the path hasn't changed; no need to sync`
+						);
+						return;
+					}
 
-				const response = await this.syncService.put({
-					documentId: document.documentId,
-					parentVersionId: document.metadata.parentVersionId,
-					relativePath: document.relativePath,
-					contentBytes
-				});
+					response = await this.syncService.get({
+						documentId: document.documentId
+					});
+				} else {
+					response = await this.syncService.put({
+						documentId: document.documentId,
+						parentVersionId: document.metadata.parentVersionId,
+						relativePath: document.relativePath,
+						contentBytes
+					});
+				}
 
 				// `document` is mutable and reflects the latest state in the local database
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -226,7 +236,10 @@ export class UnrestrictedSyncer {
 					document
 				);
 
-				if (response.type === "MergingUpdate") {
+				if (
+					!("type" in response) ||
+					response.type === "MergingUpdate"
+				) {
 					const responseBytes = deserialize(response.contentBase64);
 					contentHash = hash(responseBytes);
 
