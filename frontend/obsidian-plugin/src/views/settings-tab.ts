@@ -292,7 +292,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addSlider((slider) =>
 				slider
-					.setLimits(0, 32, 1)
+					.setLimits(1, 64, 1)
 					.setDynamicTooltip()
 					.setInstant(false)
 					.setValue(this.syncClient.getSettings().maxFileSizeMB)
@@ -304,7 +304,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Danger zone")
 			.setDesc(
-				"How many concurrent sync operations to run. Setting this value higher may increase the overall performance, however, it will require more memory as well. If you notice frequent crashes, especially on mobile, set this to 1."
+				"Delete the local metadata database while leaving the local and remote files intact."
 			)
 			.addButton((button) =>
 				button.setButtonText("Reset sync state").onClick(async () => {
