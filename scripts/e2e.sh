@@ -17,7 +17,7 @@ mkdir -p logs
 cd frontend
 npm run build
 
-../scripts/wait-for-server.sh
+../scripts/utils/wait-for-server.sh
 
 pids=()
 for i in $(seq 1 $process_count); do

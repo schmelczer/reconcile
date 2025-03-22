@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 SERVER_URL="http://localhost:3000"
 MAX_RETRIES=30
 RETRY_INTERVAL_IN_SECONDS=5
