@@ -20,13 +20,13 @@ export class SyncClient {
 
 	// eslint-disable-next-line @typescript-eslint/max-params
 	private constructor(
-		private readonly _history: SyncHistory,
-		private readonly _settings: Settings,
-		private readonly _database: Database,
-		private readonly _syncer: Syncer,
-		private readonly _syncService: SyncService,
+		private readonly history: SyncHistory,
+		private readonly settings: Settings,
+		private readonly database: Database,
+		private readonly syncer: Syncer,
+		private readonly syncService: SyncService,
 		private readonly _logger: Logger,
-		private readonly _connectionStatus: ConnectionStatus
+		private readonly connectionStatus: ConnectionStatus
 	) {}
 
 	public get logger(): Logger {
@@ -34,7 +34,7 @@ export class SyncClient {
 	}
 
 	public get documentCount(): number {
-		return this._database.length;
+		return this.database.length;
 	}
 
 	public static async create({
@@ -114,21 +114,21 @@ export class SyncClient {
 	}
 
 	public async checkConnection(): Promise<CheckConnectionResult> {
-		return this._syncService.checkConnection();
+		return this.syncService.checkConnection();
 	}
 
 	public getHistoryEntries(): HistoryEntry[] {
-		return this._history.getEntries();
+		return this.history.getEntries();
 	}
 
 	public addSyncHistoryUpdateListener(
 		listener: (stats: HistoryStats) => void
 	): void {
-		this._history.addSyncHistoryUpdateListener(listener);
+		this.history.addSyncHistoryUpdateListener(listener);
 	}
 
 	public async start(): Promise<void> {
-		this._settings.addOnSettingsChangeListener(
+		this.settings.addOnSettingsChangeListener(
 			(newSettings, oldSettings) => {
 				if (
 					newSettings.fetchChangesUpdateIntervalMs !==
@@ -149,10 +149,10 @@ export class SyncClient {
 			}
 		);
 
-		await this._syncer.scheduleSyncForOfflineChanges();
+		await this.syncer.scheduleSyncForOfflineChanges();
 
 		this.setRemoteEventListener(
-			this._settings.getSettings().fetchChangesUpdateIntervalMs
+			this.settings.getSettings().fetchChangesUpdateIntervalMs
 		);
 	}
 
@@ -162,8 +162,8 @@ export class SyncClient {
 	}
 
 	public async waitAndStop(): Promise<void> {
-		await this._syncer.waitForSyncQueue();
-		await this._syncer.applyRemoteChangesLocally();
+		await this.syncer.waitForSyncQueue();
+		await this.syncer.applyRemoteChangesLocally();
 		this.stop();
 	}
 
@@ -172,47 +172,47 @@ export class SyncClient {
 	/// The SyncClient can be used again after calling this method.
 	public async reset(): Promise<void> {
 		this.stop();
-		this._connectionStatus.reset();
-		await this._syncer.reset();
-		this._history.reset();
-		this._database.reset();
+		this.connectionStatus.reset();
+		await this.syncer.reset();
+		this.history.reset();
+		this.database.reset();
 		this._logger.reset();
 		void this.start();
 	}
 
 	public getSettings(): SyncSettings {
-		return this._settings.getSettings();
+		return this.settings.getSettings();
 	}
 
 	public async setSetting<T extends keyof SyncSettings>(
 		key: T,
 		value: SyncSettings[T]
 	): Promise<void> {
-		await this._settings.setSetting(key, value);
+		await this.settings.setSetting(key, value);
 	}
 
 	public addOnSettingsChangeListener(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	): void {
-		this._settings.addOnSettingsChangeListener(handler);
+		this.settings.addOnSettingsChangeListener(handler);
 	}
 
 	public addRemainingSyncOperationsListener(
 		listener: (remainingOperations: number) => void
 	): void {
-		this._syncer.addRemainingOperationsListener(listener);
+		this.syncer.addRemainingOperationsListener(listener);
 	}
 
 	public async syncLocallyCreatedFile(
 		relativePath: RelativePath
 	): Promise<void> {
-		return this._syncer.syncLocallyCreatedFile(relativePath);
+		return this.syncer.syncLocallyCreatedFile(relativePath);
 	}
 
 	public async syncLocallyDeletedFile(
 		relativePath: RelativePath
 	): Promise<void> {
-		return this._syncer.syncLocallyDeletedFile(relativePath);
+		return this.syncer.syncLocallyDeletedFile(relativePath);
 	}
 
 	public async syncLocallyUpdatedFile({
@@ -222,7 +222,7 @@ export class SyncClient {
 		oldPath?: RelativePath;
 		relativePath: RelativePath;
 	}): Promise<void> {
-		return this._syncer.syncLocallyUpdatedFile({
+		return this.syncer.syncLocallyUpdatedFile({
 			oldPath,
 			relativePath
 		});
@@ -234,7 +234,7 @@ export class SyncClient {
 		}
 
 		this.remoteListenerIntervalId = setInterval(
-			() => void this._syncer.applyRemoteChangesLocally(),
+			() => void this.syncer.applyRemoteChangesLocally(),
 			intervalMs
 		);
 	}
