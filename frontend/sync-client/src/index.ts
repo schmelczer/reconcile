@@ -7,7 +7,7 @@ export {
 export { Logger, LogLevel, LogLine } from "./tracing/logger";
 export type { CheckConnectionResult } from "./services/sync-service";
 export { type SyncSettings } from "./persistence/settings";
-export type { RelativePath } from "./persistence/database";
+export type { RelativePath, StoredDatabase } from "./persistence/database";
 export type { FileSystemOperations } from "./file-operations/filesystem-operations";
 export type { PersistenceProvider } from "./persistence/persistence";
 

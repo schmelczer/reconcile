@@ -1,3 +1,4 @@
+import type { StoredDatabase } from "sync-client/dist/types/persistence/database";
 import { assert } from "../utils/assert";
 import {
 	type RelativePath,
@@ -9,7 +10,17 @@ import {
 export class MockClient implements FileSystemOperations {
 	protected readonly localFiles = new Map<string, Uint8Array>();
 	protected client!: SyncClient;
-	protected data: object | undefined = undefined;
+
+	protected data: Partial<{
+		settings: Partial<SyncSettings>;
+		database: Partial<StoredDatabase>;
+	}> = {
+		database: {
+			// Assume all clients start at the same time so there's no need to fetch
+			// any shared state.
+			hasInitialSyncCompleted: true
+		}
+	};
 
 	public constructor(
 		private readonly initialSettings: Partial<SyncSettings>,
@@ -37,6 +48,8 @@ export class MockClient implements FileSystemOperations {
 				);
 			})
 		);
+
+		await this.client.start();
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {

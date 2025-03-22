@@ -173,8 +173,7 @@ export class SyncClient {
 	}
 
 	public async waitAndStop(): Promise<void> {
-		await this.syncer.applyRemoteChangesLocally();
-		await this.syncer.waitForSyncQueue();
+		await this.syncer.waitUntilFinished();
 		this.stop();
 	}
 

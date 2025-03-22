@@ -1,7 +1,6 @@
 import type { Database, RelativePath } from "../persistence/database";
 import type { SyncService } from "../services/sync-service";
 import type { Logger } from "../tracing/logger";
-import type { SyncHistory } from "../tracing/sync-history";
 import PQueue from "p-queue";
 import { hash } from "../utils/hash";
 import { v4 as uuidv4 } from "uuid";
@@ -9,7 +8,7 @@ import type { components } from "../services/types";
 import type { Settings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
 import { findMatchingFile } from "../utils/find-matching-file";
-import { UnrestrictedSyncer } from "./unrestricted-syncer";
+import type { UnrestrictedSyncer } from "./unrestricted-syncer";
 import { createPromise } from "../utils/create-promise";
 import { SyncResetError } from "../services/sync-reset-error";
 
@@ -17,13 +16,10 @@ export class Syncer {
 	private readonly remainingOperationsListeners: ((
 		remainingOperations: number
 	) => void)[] = [];
-
 	private readonly syncQueue: PQueue;
 
 	private runningScheduleSyncForOfflineChanges: Promise<void> | undefined;
 	private runningApplyRemoteChangesLocally: Promise<void> | undefined;
-
-	private readonly internalSyncer: UnrestrictedSyncer;
 
 	public constructor(
 		private readonly logger: Logger,
@@ -31,7 +27,7 @@ export class Syncer {
 		settings: Settings,
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
-		history: SyncHistory
+		private readonly internalSyncer: UnrestrictedSyncer
 	) {
 		this.syncQueue = new PQueue({
 			concurrency: settings.getSettings().syncConcurrency
@@ -49,15 +45,6 @@ export class Syncer {
 				listener(this.syncQueue.size);
 			});
 		});
-
-		this.internalSyncer = new UnrestrictedSyncer(
-			logger,
-			database,
-			settings,
-			syncService,
-			operations,
-			history
-		);
 	}
 
 	public addRemainingOperationsListener(
@@ -246,13 +233,17 @@ export class Syncer {
 		}
 	}
 
-	public async waitForSyncQueue(): Promise<void> {
-		return this.syncQueue.onEmpty();
+	public async reset(): Promise<void> {
+		await this.waitUntilFinished();
+		this.internalSyncer.reset();
 	}
 
-	public async reset(): Promise<void> {
-		await this.syncQueue.onEmpty();
-		this.internalSyncer.reset();
+	public async waitUntilFinished(): Promise<void> {
+		await Promise.allSettled([
+			this.runningScheduleSyncForOfflineChanges,
+			this.runningApplyRemoteChangesLocally
+		]);
+		return this.syncQueue.onEmpty();
 	}
 
 	private async internalApplyRemoteChangesLocally(): Promise<void> {
