@@ -44,6 +44,7 @@ jobs:
           scripts/update-api-types.sh
           cd frontend
           npm ci
+          npm run build
           npm run lint
           if [[ $(git status --porcelain) ]]; then
               git status --porcelain
