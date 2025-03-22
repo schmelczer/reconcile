@@ -39,65 +39,53 @@ export class ConnectionStatus {
 		return input.url;
 	}
 
-	public getFetchImplementation(
-		fetch: typeof globalThis.fetch,
-		{ doRetries = true }: { doRetries: boolean } = { doRetries: true }
-	): typeof globalThis.fetch {
-		return doRetries ? this.retriedFetchFactory(this.logger, fetch) : fetch;
-	}
-
 	public reset(): void {
 		this.rejectUntil(new Error("Sync was reset"));
 		[this.until, this.resolveUntil, this.rejectUntil] = createPromise();
 	}
 
-	private retriedFetchFactory(
+	public getFetchImplementation(
 		logger: Logger,
 		fetch: typeof globalThis.fetch = globalThis.fetch
 	): typeof globalThis.fetch {
 		return async (input: RequestInfo | URL): Promise<Response> => {
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-			while (true) {
-				while (!this.canFetch) {
-					await this.until;
-				}
+			while (!this.canFetch) {
+				await this.until;
+			}
 
-				try {
-					// https://github.com/jonbern/fetch-retry/blob/8684ef4e688375f623bd76f13add76dbc1d67cfb/index.js#L67C1-L70C21
-					const _input =
-						typeof Request !== "undefined" &&
-						input instanceof Request
-							? input.clone()
-							: input;
+			try {
+				// https://github.com/jonbern/fetch-retry/blob/8684ef4e688375f623bd76f13add76dbc1d67cfb/index.js#L67C1-L70C21
+				const _input =
+					typeof Request !== "undefined" && input instanceof Request
+						? input.clone()
+						: input;
 
-					const fetchPromise = fetch(_input);
+				const fetchPromise = fetch(_input);
 
-					// We only want to catch rejections from `this.until`
-					let result: symbol | Response | undefined = undefined;
-					do {
-						result = await Promise.race([this.until, fetchPromise]);
-					} while (result === ConnectionStatus.UNTIL_RESOLUTION);
+				// We only want to catch rejections from `this.until`
+				let result: symbol | Response | undefined = undefined;
+				do {
+					result = await Promise.race([this.until, fetchPromise]);
+				} while (result === ConnectionStatus.UNTIL_RESOLUTION);
 
-					const fetchResult: Response = result as Response; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+				const fetchResult: Response = result as Response; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 
-					if (!fetchResult.ok) {
-						this.logger.warn(
-							`Retrying fetch for ${ConnectionStatus.getUrlFromInput(
-								input
-							)}, got status ${fetchResult.status}`
-						);
-					}
-
-					return fetchResult;
-				} catch (error) {
-					logger.warn(
-						`Retrying fetch for ${ConnectionStatus.getUrlFromInput(
+				if (!fetchResult.ok) {
+					this.logger.warn(
+						`Fetch for ${ConnectionStatus.getUrlFromInput(
 							input
-						)}, got error: ${error}`
+						)}, got status ${fetchResult.status}`
 					);
 				}
 
-				await Promise.race([this.until, sleep(1000)]);
+				return fetchResult;
+			} catch (error) {
+				logger.warn(
+					`Fetch for ${ConnectionStatus.getUrlFromInput(
+						input
+					)}, got error: ${error}`
+				);
+				throw error;
 			}
 		};
 	}

@@ -9,6 +9,7 @@ import type {
 import type { Logger } from "../tracing/logger";
 import type { Settings } from "../persistence/settings";
 import type { ConnectionStatus } from "./connection-status";
+import { sleep } from "../utils/sleep";
 
 export interface CheckConnectionResult {
 	isSuccessful: boolean;
@@ -16,8 +17,8 @@ export interface CheckConnectionResult {
 }
 
 export class SyncService {
-	private client!: Client<paths>;
-	private clientWithoutRetries!: Client<paths>;
+	private client: Client<paths>;
+	private pingClient: Client<paths>;
 	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
@@ -25,20 +26,26 @@ export class SyncService {
 		private readonly settings: Settings,
 		private readonly logger: Logger
 	) {
-		this.createClient(this.settings.getSettings().remoteUri);
+		[this.client, this.pingClient] = this.createClient(
+			this.settings.getSettings().remoteUri
+		);
 
 		settings.addOnSettingsChangeListener((newSettings, oldSettings) => {
 			if (newSettings.remoteUri === oldSettings.remoteUri) {
 				return;
 			}
 
-			this.createClient(newSettings.remoteUri);
+			[this.client, this.pingClient] = this.createClient(
+				newSettings.remoteUri
+			);
 		});
 	}
 
 	public set fetchImplementation(fetch: typeof globalThis.fetch) {
 		this._fetchImplementation = fetch;
-		this.createClient(this.settings.getSettings().remoteUri);
+		[this.client, this.pingClient] = this.createClient(
+			this.settings.getSettings().remoteUri
+		);
 	}
 
 	private static formatError(
@@ -62,42 +69,44 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
-		const formData = new FormData();
-		if (documentId !== undefined) {
-			formData.append("document_id", documentId);
-		}
-		formData.append("relative_path", relativePath);
-		formData.append("content", new Blob([contentBytes]));
-
-		const response = await this.client.POST(
-			"/vaults/{vault_id}/documents",
-			{
-				params: {
-					path: {
-						vault_id: this.settings.getSettings().vaultName
-					},
-					header: {
-						authorization: `Bearer ${this.settings.getSettings().token}`
-					}
-				},
-				// eslint-disable-next-line
-				body: formData as any // FormData is not supported by openapi-fetch
+		return this.withRetries(async () => {
+			const formData = new FormData();
+			if (documentId !== undefined) {
+				formData.append("document_id", documentId);
 			}
-		);
+			formData.append("relative_path", relativePath);
+			formData.append("content", new Blob([contentBytes]));
 
-		if (!response.data) {
-			throw new Error(
-				`Failed to create document: ${SyncService.formatError(response.error)}`
+			const response = await this.client.POST(
+				"/vaults/{vault_id}/documents",
+				{
+					params: {
+						path: {
+							vault_id: this.settings.getSettings().vaultName
+						},
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						}
+					},
+					// eslint-disable-next-line
+					body: formData as any // FormData is not supported by openapi-fetch
+				}
 			);
-		}
 
-		this.logger.debug(
-			`Created document ${JSON.stringify(response.data)} with id ${
-				response.data.documentId
-			}`
-		);
+			if (!response.data) {
+				throw new Error(
+					`Failed to create document: ${SyncService.formatError(response.error)}`
+				);
+			}
 
-		return response.data;
+			this.logger.debug(
+				`Created document ${JSON.stringify(response.data)} with id ${
+					response.data.documentId
+				}`
+			);
+
+			return response.data;
+		});
 	}
 
 	public async put({
@@ -111,44 +120,46 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
-		this.logger.debug(
-			`Updating document ${documentId} with parent version ${parentVersionId} and relative path ${relativePath}`
-		);
-		const formData = new FormData();
-		formData.append("parent_version_id", parentVersionId.toString());
-		formData.append("relative_path", relativePath);
-		formData.append("content", new Blob([contentBytes]));
-
-		const response = await this.client.PUT(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
-				params: {
-					path: {
-						vault_id: this.settings.getSettings().vaultName,
-						document_id: documentId
-					},
-					header: {
-						authorization: `Bearer ${this.settings.getSettings().token}`
-					}
-				},
-				// eslint-disable-next-line
-				body: formData as any // FormData is not supported by openapi-fetch
-			}
-		);
-
-		if (!response.data) {
-			throw new Error(
-				`Failed to update document: ${SyncService.formatError(response.error)}`
+		return this.withRetries(async () => {
+			this.logger.debug(
+				`Updating document ${documentId} with parent version ${parentVersionId} and relative path ${relativePath}`
 			);
-		}
+			const formData = new FormData();
+			formData.append("parent_version_id", parentVersionId.toString());
+			formData.append("relative_path", relativePath);
+			formData.append("content", new Blob([contentBytes]));
 
-		this.logger.debug(
-			`Updated document ${JSON.stringify(response.data)} with id ${
-				response.data.documentId
-			}`
-		);
+			const response = await this.client.PUT(
+				"/vaults/{vault_id}/documents/{document_id}",
+				{
+					params: {
+						path: {
+							vault_id: this.settings.getSettings().vaultName,
+							document_id: documentId
+						},
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						}
+					},
+					// eslint-disable-next-line
+					body: formData as any // FormData is not supported by openapi-fetch
+				}
+			);
 
-		return response.data;
+			if (!response.data) {
+				throw new Error(
+					`Failed to update document: ${SyncService.formatError(response.error)}`
+				);
+			}
+
+			this.logger.debug(
+				`Updated document ${JSON.stringify(response.data)} with id ${
+					response.data.documentId
+				}`
+			);
+
+			return response.data;
+		});
 	}
 
 	public async delete({
@@ -158,33 +169,35 @@ export class SyncService {
 		documentId: DocumentId;
 		relativePath: RelativePath;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
-		const response = await this.client.DELETE(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
-				params: {
-					path: {
-						vault_id: this.settings.getSettings().vaultName,
-						document_id: documentId
+		return this.withRetries(async () => {
+			const response = await this.client.DELETE(
+				"/vaults/{vault_id}/documents/{document_id}",
+				{
+					params: {
+						path: {
+							vault_id: this.settings.getSettings().vaultName,
+							document_id: documentId
+						},
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						}
 					},
-					header: {
-						authorization: `Bearer ${this.settings.getSettings().token}`
+					body: {
+						relativePath
 					}
-				},
-				body: {
-					relativePath
 				}
+			);
+
+			if (response.error) {
+				throw new Error(`Failed to delete document`);
 			}
-		);
 
-		if (response.error) {
-			throw new Error(`Failed to delete document`);
-		}
+			this.logger.debug(
+				`Deleted document ${relativePath} with id ${documentId}`
+			);
 
-		this.logger.debug(
-			`Deleted document ${relativePath} with id ${documentId}`
-		);
-
-		return response.data;
+			return response.data;
+		});
 	}
 
 	public async get({
@@ -192,63 +205,70 @@ export class SyncService {
 	}: {
 		documentId: DocumentId;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const response = await this.client.GET(
-			"/vaults/{vault_id}/documents/{document_id}",
-			{
-				params: {
-					path: {
-						vault_id: this.settings.getSettings().vaultName,
-						document_id: documentId
-					},
-					header: {
-						authorization: `Bearer ${this.settings.getSettings().token}`
+		return this.withRetries(async () => {
+			const response = await this.client.GET(
+				"/vaults/{vault_id}/documents/{document_id}",
+				{
+					params: {
+						path: {
+							vault_id: this.settings.getSettings().vaultName,
+							document_id: documentId
+						},
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						}
 					}
 				}
-			}
-		);
-
-		if (!response.data) {
-			throw new Error(
-				`Failed to get document: ${SyncService.formatError(response.error)}`
 			);
-		}
 
-		this.logger.debug(
-			`Get document ${response.data.relativePath} with id ${response.data.documentId}`
-		);
+			if (!response.data) {
+				throw new Error(
+					`Failed to get document: ${SyncService.formatError(response.error)}`
+				);
+			}
 
-		return response.data;
+			this.logger.debug(
+				`Get document ${response.data.relativePath} with id ${response.data.documentId}`
+			);
+
+			return response.data;
+		});
 	}
 
 	public async getAll(
 		since?: VaultUpdateId
 	): Promise<components["schemas"]["FetchLatestDocumentsResponse"]> {
-		const response = await this.client.GET("/vaults/{vault_id}/documents", {
-			params: {
-				path: {
-					vault_id: this.settings.getSettings().vaultName
-				},
-				header: {
-					authorization: `Bearer ${this.settings.getSettings().token}`
-				},
-				query: {
-					since_update_id: since
+		return this.withRetries(async () => {
+			const response = await this.client.GET(
+				"/vaults/{vault_id}/documents",
+				{
+					params: {
+						path: {
+							vault_id: this.settings.getSettings().vaultName
+						},
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						},
+						query: {
+							since_update_id: since
+						}
+					}
 				}
-			}
-		});
-
-		const { error } = response;
-		if (error) {
-			throw new Error(
-				`Failed to get documents: ${SyncService.formatError(response.error)}`
 			);
-		}
 
-		this.logger.debug(
-			`Got ${response.data.latestDocuments.length} document metadata`
-		);
+			const { error } = response;
+			if (error) {
+				throw new Error(
+					`Failed to get documents: ${SyncService.formatError(response.error)}`
+				);
+			}
 
-		return response.data;
+			this.logger.debug(
+				`Got ${response.data.latestDocuments.length} document metadata`
+			);
+
+			return response.data;
+		});
 	}
 
 	public async checkConnection(): Promise<CheckConnectionResult> {
@@ -273,8 +293,9 @@ export class SyncService {
 		}
 	}
 
+	// No retries
 	private async ping(): Promise<components["schemas"]["PingResponse"]> {
-		const response = await this.clientWithoutRetries.GET("/ping", {
+		const response = await this.pingClient.GET("/ping", {
 			params: {
 				header: {
 					authorization: `Bearer ${this.settings.getSettings().token}`
@@ -293,20 +314,34 @@ export class SyncService {
 		return response.data;
 	}
 
-	private createClient(remoteUri: string): void {
-		this.client = createClient<paths>({
-			baseUrl: remoteUri,
-			fetch: this.connectionStatus.getFetchImplementation(
-				this._fetchImplementation
-			)
-		});
+	/**
+	 * Create a client and a ping client for the given remote URI.
+	 */
+	private createClient(remoteUri: string): [Client<paths>, Client<paths>] {
+		return [
+			createClient<paths>({
+				baseUrl: remoteUri,
+				fetch: this.connectionStatus.getFetchImplementation(
+					this.logger,
+					this._fetchImplementation
+				)
+			}),
+			createClient<paths>({
+				baseUrl: remoteUri,
+				fetch: this._fetchImplementation
+			})
+		];
+	}
 
-		this.clientWithoutRetries = createClient<paths>({
-			baseUrl: remoteUri,
-			fetch: this.connectionStatus.getFetchImplementation(
-				this._fetchImplementation,
-				{ doRetries: false }
-			)
-		});
+	private async withRetries<T>(fn: () => Promise<T>): Promise<T> {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		while (true) {
+			try {
+				return await fn();
+			} catch (e) {
+				this.logger.error(`Failed network call (${e}), retrying`);
+				await sleep(1000);
+			}
+		}
 	}
 }

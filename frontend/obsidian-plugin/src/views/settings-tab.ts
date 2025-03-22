@@ -211,6 +211,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 						new Notice(
 							"The changes have been applied successfully!"
 						);
+						await this.statusDescription.updateConnectionState();
 					} else {
 						new Notice("No changes to apply");
 					}

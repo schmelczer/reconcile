@@ -177,7 +177,9 @@ export class UnrestrictedSyncer {
 				}
 
 				if (
-					document.metadata.parentVersionId >= response.vaultUpdateId
+					// `Syncer` creates fake local document metadata for all remote docs with invalid hashes. The parent IDs will likely match
+					// the latest versions so we still need to update the local versions to turn the fakes into real metadata.
+					document.metadata.parentVersionId > response.vaultUpdateId
 				) {
 					this.logger.debug(
 						`Document ${document.relativePath} is already more up to date than the fetched version`
@@ -281,7 +283,7 @@ export class UnrestrictedSyncer {
 						remoteVersion.vaultUpdateId
 					) {
 						this.logger.debug(
-							`Document ${remoteVersion.relativePath} is already more up to date than the fetched version`
+							`Document ${remoteVersion.relativePath} is already at least as up to date as the fetched version`
 						);
 						return;
 					}
