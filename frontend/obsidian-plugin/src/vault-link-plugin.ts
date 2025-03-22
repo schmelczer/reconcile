@@ -1,5 +1,5 @@
 import type { WorkspaceLeaf } from "obsidian";
-import { Plugin } from "obsidian";
+import { Platform, Plugin } from "obsidian";
 import "./styles.scss";
 import "../manifest.json";
 import { SyncSettingsTab } from "./views/settings-tab";
@@ -37,13 +37,14 @@ export default class VaultLinkPlugin extends Plugin {
 	}
 
 	public async onload(): Promise<void> {
-		this.client = await SyncClient.create(
-			new ObsidianFileSystemOperations(this.app.vault),
-			{
+		this.client = await SyncClient.create({
+			fs: new ObsidianFileSystemOperations(this.app.vault),
+			persistence: {
 				load: this.loadData.bind(this),
 				save: this.saveData.bind(this)
-			}
-		);
+			},
+			nativeLineEndings: Platform.isWin ? "\r\n" : "\n"
+		});
 
 		VaultLinkPlugin.registerConsoleForLogging(this.client);
 

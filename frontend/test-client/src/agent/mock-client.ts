@@ -19,14 +19,14 @@ export class MockClient implements FileSystemOperations {
 	public async init(
 		fetchImplementation: typeof globalThis.fetch
 	): Promise<void> {
-		this.client = await SyncClient.create(
-			this,
-			{
+		this.client = await SyncClient.create({
+			fs: this,
+			persistence: {
 				load: async () => this.data,
 				save: async (data) => void (this.data = data)
 			},
-			fetchImplementation
-		);
+			fetch: fetchImplementation
+		});
 
 		await Promise.all(
 			Object.keys(this.initialSettings).map(async (key) => {

@@ -40,16 +40,22 @@ export class SyncClient {
 		return this._database.length;
 	}
 
-	public static async create(
-		fs: FileSystemOperations,
+	public static async create({
+		fs,
+		persistence,
+		fetch = globalThis.fetch,
+		nativeLineEndings = "\n"
+	}: {
+		fs: FileSystemOperations;
 		persistence: PersistenceProvider<
 			Partial<{
 				settings: Partial<SyncSettings>;
 				database: Partial<StoredDatabase>;
 			}>
-		>,
-		fetch: typeof globalThis.fetch = globalThis.fetch
-	): Promise<SyncClient> {
+		>;
+		fetch?: typeof globalThis.fetch;
+		nativeLineEndings?: string;
+	}): Promise<SyncClient> {
 		const logger = new Logger();
 		logger.info("Starting SyncClient");
 
@@ -91,7 +97,7 @@ export class SyncClient {
 			database,
 			settings,
 			syncService,
-			new FileOperations(logger, database, fs),
+			new FileOperations(logger, database, fs, nativeLineEndings),
 			history
 		);
 
