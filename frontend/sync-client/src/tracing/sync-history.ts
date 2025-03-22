@@ -33,7 +33,7 @@ export interface HistoryStats {
 }
 
 export class SyncHistory {
-	private static readonly MAX_ENTRIES = 5000;
+	private static readonly MAX_ENTRIES = 500;
 
 	private readonly entries: HistoryEntry[] = [];
 

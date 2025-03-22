@@ -27,7 +27,29 @@ export class SyncClient {
 		private readonly syncService: SyncService,
 		private readonly _logger: Logger,
 		private readonly connectionStatus: ConnectionStatus
-	) {}
+	) {
+		this.settings.addOnSettingsChangeListener(
+			(newSettings, oldSettings) => {
+				if (
+					newSettings.fetchChangesUpdateIntervalMs !==
+					oldSettings.fetchChangesUpdateIntervalMs
+				) {
+					this.setRemoteEventListener(
+						newSettings.fetchChangesUpdateIntervalMs
+					);
+				}
+
+				if (newSettings.vaultName !== oldSettings.vaultName) {
+					void this.reset();
+				} else if (
+					newSettings.isSyncEnabled &&
+					!oldSettings.isSyncEnabled
+				) {
+					void this.start();
+				}
+			}
+		);
+	}
 
 	public get logger(): Logger {
 		return this._logger;
@@ -128,27 +150,6 @@ export class SyncClient {
 	}
 
 	public async start(): Promise<void> {
-		this.settings.addOnSettingsChangeListener(
-			(newSettings, oldSettings) => {
-				if (
-					newSettings.fetchChangesUpdateIntervalMs !==
-					oldSettings.fetchChangesUpdateIntervalMs
-				) {
-					this.setRemoteEventListener(
-						newSettings.fetchChangesUpdateIntervalMs
-					);
-				}
-
-				if (
-					newSettings.vaultName !== oldSettings.vaultName ||
-					newSettings.token !== oldSettings.token ||
-					newSettings.remoteUri !== oldSettings.remoteUri
-				) {
-					void this.reset();
-				}
-			}
-		);
-
 		await this.syncer.scheduleSyncForOfflineChanges();
 
 		this.setRemoteEventListener(

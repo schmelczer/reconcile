@@ -102,6 +102,7 @@
 			margin-bottom: var(--size-2-1);
 			overflow-wrap: break-word;
 			white-space: pre-wrap;
+			user-select: all;
 
 			.timestamp {
 				@include number-card;
