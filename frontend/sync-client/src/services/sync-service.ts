@@ -70,7 +70,7 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
-		const vaultName = this.settings.getSettings().vaultName;
+		const { vaultName } = this.settings.getSettings();
 
 		return this.withRetries(async () => {
 			const formData = new FormData();
@@ -123,7 +123,7 @@ export class SyncService {
 		relativePath: RelativePath;
 		contentBytes: Uint8Array;
 	}): Promise<components["schemas"]["DocumentUpdateResponse"]> {
-		const vaultName = this.settings.getSettings().vaultName;
+		const { vaultName } = this.settings.getSettings();
 
 		return this.withRetries(async () => {
 			this.logger.debug(
@@ -175,7 +175,7 @@ export class SyncService {
 		relativePath: RelativePath;
 	}): Promise<components["schemas"]["DocumentVersionWithoutContent"]> {
 		return this.withRetries(async () => {
-			const vaultName = this.settings.getSettings().vaultName;
+			const { vaultName } = this.settings.getSettings();
 
 			const response = await this.client.DELETE(
 				"/vaults/{vault_id}/documents/{document_id}",
@@ -212,7 +212,7 @@ export class SyncService {
 	}: {
 		documentId: DocumentId;
 	}): Promise<components["schemas"]["DocumentVersion"]> {
-		const vaultName = this.settings.getSettings().vaultName;
+		const { vaultName } = this.settings.getSettings();
 
 		return this.withRetries(async () => {
 			const response = await this.client.GET(
@@ -248,7 +248,7 @@ export class SyncService {
 		since?: VaultUpdateId
 	): Promise<components["schemas"]["FetchLatestDocumentsResponse"]> {
 		return this.withRetries(async () => {
-			const vaultName = this.settings.getSettings().vaultName;
+			const { vaultName } = this.settings.getSettings();
 
 			const response = await this.client.GET(
 				"/vaults/{vault_id}/documents",

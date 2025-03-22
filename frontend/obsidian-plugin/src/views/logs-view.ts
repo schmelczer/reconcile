@@ -1,13 +1,14 @@
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
-import { LogLevel, LogLine, type SyncClient } from "sync-client";
+import type { LogLine } from "sync-client";
+import { LogLevel, type SyncClient } from "sync-client";
 
 export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
 	public static readonly ICON = "logs";
 
 	private logsContainer: HTMLElement | undefined;
-	private logLineToElement: Map<LogLine, HTMLElement> = new Map();
+	private readonly logLineToElement = new Map<LogLine, HTMLElement>();
 
 	public constructor(
 		private readonly client: SyncClient,
