@@ -6,8 +6,8 @@ import { sleep } from "../utils/sleep";
 export class ConnectionStatus {
 	private static readonly UNTIL_RESOLUTION = Symbol();
 	private canFetch = true;
-	private until: Promise<Symbol>;
-	private resolveUntil: (result: Symbol) => void;
+	private until: Promise<symbol>;
+	private resolveUntil: (result: symbol) => void;
 	private rejectUntil: (reason: any) => void;
 
 	public constructor(
@@ -15,14 +15,14 @@ export class ConnectionStatus {
 		private readonly logger: Logger
 	) {
 		[this.until, this.resolveUntil, this.rejectUntil] =
-			createPromise<Symbol>();
+			createPromise<symbol>();
 
 		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
 			if (oldSettings.isSyncEnabled != newSettings.isSyncEnabled) {
 				this.canFetch = newSettings.isSyncEnabled;
 				this.resolveUntil(ConnectionStatus.UNTIL_RESOLUTION);
 				[this.until, this.resolveUntil, this.rejectUntil] =
-					createPromise<Symbol>();
+					createPromise<symbol>();
 			}
 		});
 	}
@@ -45,13 +45,13 @@ export class ConnectionStatus {
 	) {
 		return async (input: RequestInfo | URL): Promise<Response> => {
 			while (true) {
-				while (this.canFetch === false) {
+				while (!this.canFetch) {
 					await this.until;
 				}
 
 				try {
 					// https://github.com/jonbern/fetch-retry/blob/8684ef4e688375f623bd76f13add76dbc1d67cfb/index.js#L67C1-L70C21
-					let _input =
+					const _input =
 						typeof Request !== "undefined" &&
 						input instanceof Request
 							? input.clone()
@@ -65,7 +65,7 @@ export class ConnectionStatus {
 						result = await Promise.race([this.until, fetchPromise]);
 					} while (result === ConnectionStatus.UNTIL_RESOLUTION);
 
-					let fetchResult: Response = result as Response;
+					const fetchResult: Response = result as Response;
 
 					if (!fetchResult.ok) {
 						this.logger.warn(
