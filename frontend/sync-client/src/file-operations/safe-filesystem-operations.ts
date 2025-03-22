@@ -2,18 +2,13 @@ import type { RelativePath } from "../persistence/database";
 import type { FileSystemOperations } from "./filesystem-operations";
 import type { Logger } from "../tracing/logger";
 import { DocumentLocks } from "./document-locks";
+import { FileNotFoundError } from "./file-not-found-error";
 
-export class FileNotFoundError extends Error {
-	public constructor(message: string) {
-		super(message);
-		this.name = "FileNotFoundError";
-	}
-}
-
-// Decorate FileSystemOperations replacing errors with FileNotFoundError
-// if the accessed file doesn't exist. It also ensures that there's only
-// ever a single request in-flight for any one file through the use of
-// DocumentLocks.
+/**
+ * Decorates `FileSystemOperations` to replace errors with `FileNotFoundError`
+ * if the accessed file doesn't exist. It also ensures that there's at most a
+ * single request in-flight for any one file through the use of locks.
+ */
 export class SafeFileSystemOperations implements FileSystemOperations {
 	private readonly locks: DocumentLocks;
 
@@ -25,11 +20,14 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
-		return this.fs.listAllFiles();
+		this.logger.debug("Listing all files");
+		const result = await this.fs.listAllFiles();
+		this.logger.debug(`Listed ${result.length} files`);
+		return result;
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		this.logger.debug(`Reading file: ${path}`);
+		this.logger.debug(`Reading file '${path}'`);
 		return this.safeOperation(
 			path,
 			this.decorateToHoldLock(path, async () => this.fs.read(path)),
@@ -38,7 +36,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
-		this.logger.debug(`Writing file: ${path}`);
+		this.logger.debug(`Writing to file '${path}'`);
 		return this.decorateToHoldLock(path, async () =>
 			this.fs.write(path, content)
 		)();
@@ -48,7 +46,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		path: RelativePath,
 		updater: (currentContent: string) => string
 	): Promise<string> {
-		this.logger.debug(`Atomic update of file: ${path}`);
+		this.logger.debug(`Atomically updating file '${path}'`);
 		return this.safeOperation(
 			path,
 			this.decorateToHoldLock(path, async () =>
@@ -59,7 +57,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		this.logger.debug(`Getting file size: ${path}`);
+		this.logger.debug(`Getting size of file '${path}'`);
 		return this.safeOperation(
 			path,
 			this.decorateToHoldLock(path, async () =>
@@ -70,21 +68,21 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 	}
 
 	public async exists(path: RelativePath): Promise<boolean> {
-		this.logger.debug(`Checking if file exists: ${path}`);
+		this.logger.debug(`Checking if file '${path}' exists`);
 		return this.decorateToHoldLock(path, async () =>
 			this.fs.exists(path)
 		)();
 	}
 
 	public async createDirectory(path: RelativePath): Promise<void> {
-		this.logger.debug(`Creating directory: ${path}`);
+		this.logger.debug(`Creating directory '${path}'`);
 		return this.decorateToHoldLock(path, async () =>
 			this.fs.createDirectory(path)
 		)();
 	}
 
 	public async delete(path: RelativePath): Promise<void> {
-		this.logger.debug(`Deleting file: ${path}`);
+		this.logger.debug(`Deleting file '${path}'`);
 		return this.decorateToHoldLock(path, async () =>
 			this.fs.delete(path)
 		)();
@@ -94,7 +92,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		oldPath: RelativePath,
 		newPath: RelativePath
 	): Promise<void> {
-		this.logger.debug(`Renaming file: ${oldPath} to ${newPath}`);
+		this.logger.debug(`Renaming file '${oldPath}' to '${newPath}'`);
 		return this.safeOperation(
 			oldPath,
 			this.decorateToHoldLock([oldPath, newPath], async () =>
@@ -104,6 +102,11 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		);
 	}
 
+	/**
+	 * Decorate an operation to ensure that the file is locked before running it
+	 * and that the lock is released afterwards. This results in at-most one
+	 * concurrent operation running per file.
+	 */
 	private decorateToHoldLock<T>(
 		pathOrPaths: RelativePath | RelativePath[],
 		operation: () => Promise<T>
@@ -112,9 +115,11 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 			const paths = Array.isArray(pathOrPaths)
 				? pathOrPaths
 				: [pathOrPaths];
+
 			await Promise.all(
 				paths.map(async (path) => this.locks.waitForDocumentLock(path))
 			);
+
 			try {
 				return await operation();
 			} finally {
@@ -127,27 +132,33 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 		};
 	}
 
+	/**
+	 * Decorate an operation to ensure that the file exists before running it.
+	 * If the operation fails, it will check if the file still exists and throw
+	 * a FileNotFoundError if it doesn't
+	 */
 	private async safeOperation<T>(
 		path: RelativePath,
 		operation: () => Promise<T>,
 		operationName: string
 	): Promise<T> {
-		// Without locking the file, this isn't atomic, however, it's good enough practicaly.
-		// This will only break if the file exists, gets deleted and then immediately
-		// recreated while `operation` is running.
 		if (!(await this.fs.exists(path))) {
 			throw new FileNotFoundError(
-				`File not found: ${path} before trying to ${operationName}`
+				`File '${path}' not found before trying to ${operationName}`
 			);
 		}
+
 		try {
 			return await operation();
 		} catch (error) {
+			// Without locking the file, this isn't atomic, however, it's good enough in practice.
+			// This will only break if the file exists, gets deleted and then immediately
+			// recreated while `operation` is running.
 			if (await this.fs.exists(path)) {
 				throw error;
 			} else {
 				throw new FileNotFoundError(
-					`File not found: ${path} when trying to ${operationName}`
+					`File '${path}' not found when trying to ${operationName}`
 				);
 			}
 		}
