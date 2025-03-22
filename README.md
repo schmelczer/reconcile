@@ -57,11 +57,11 @@ And to clean up the logs & database files, run `scripts/clean-up.sh`
 ## Todos
 
 - Don't show server traces on auth failure
+- vritual list for logs view
+
 - Better server logs
 - Allow setting config.yml path for server
-- Single apply button in settings
 - history tab for going back
-- vritual list for logs view
 - show cursors
 - use websocket
 - fix docker publish
