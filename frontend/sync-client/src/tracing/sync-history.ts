@@ -6,18 +6,12 @@ export interface CommonHistoryEntry {
 	relativePath: RelativePath;
 	message: string;
 	type?: SyncType;
-	source?: SyncSource;
 }
 
 export enum SyncType {
 	CREATE = "CREATE",
 	UPDATE = "UPDATE",
 	DELETE = "DELETE"
-}
-
-export enum SyncSource {
-	PUSH = "PUSH",
-	PULL = "PULL"
 }
 
 export enum SyncStatus {
@@ -35,7 +29,7 @@ export interface HistoryStats {
 export class SyncHistory {
 	private static readonly MAX_ENTRIES = 500;
 
-	private readonly entries: HistoryEntry[] = [];
+	private entries: HistoryEntry[] = [];
 
 	private readonly syncHistoryUpdateListeners: ((
 		status: HistoryStats
@@ -75,6 +69,18 @@ export class SyncHistory {
 			...entry,
 			timestamp: new Date()
 		};
+
+		const candidate = this.entries.find(
+			(e) => e.relativePath === historyEntry.relativePath
+		);
+		if (
+			candidate !== undefined &&
+			(this.entries.slice(-1)[0] === candidate ||
+				candidate.timestamp.getTime() + 10 * 1000 >
+					historyEntry.timestamp.getTime())
+		) {
+			this.entries = this.entries.filter((e) => e !== candidate);
+		}
 		this.entries.push(historyEntry);
 
 		if (entry.status === SyncStatus.SUCCESS) {

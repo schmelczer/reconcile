@@ -164,6 +164,7 @@
 		.history-card-title {
 			font: var(--font-monospace);
 			display: flex;
+			align-items: center;
 			gap: var(--size-4-2);
 			word-break: break-all;
 			margin: 0;

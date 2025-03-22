@@ -21,6 +21,26 @@ export class LogsView extends ItemView {
 		});
 	}
 
+	private static createLogLineElement(
+		container: HTMLElement,
+		logLine: LogLine
+	): HTMLElement {
+		return container.createDiv(
+			{
+				cls: ["log-message", logLine.level]
+			},
+			(messageContainer) => {
+				messageContainer.createEl("span", {
+					text: LogsView.formatTimestamp(logLine.timestamp),
+					cls: "timestamp"
+				});
+				messageContainer.createEl("span", {
+					text: logLine.message
+				});
+			}
+		);
+	}
+
 	private static formatTimestamp(timestamp: Date): string {
 		return timestamp.toTimeString().split(" ")[0];
 	}
@@ -34,12 +54,12 @@ export class LogsView extends ItemView {
 	}
 
 	public async onOpen(): Promise<void> {
-		this.updateView();
-
 		const container = this.containerEl.children[1];
 		container.addClass("logs-view");
 		container.createEl("h4", { text: "VaultLink logs" });
 		this.logsContainer = container.createDiv({ cls: "logs-container" });
+
+		this.updateView();
 	}
 
 	private updateView(): void {
@@ -60,20 +80,7 @@ export class LogsView extends ItemView {
 				return;
 			}
 
-			const element = container.createDiv(
-				{
-					cls: ["log-message", message.level]
-				},
-				(messageContainer) => {
-					messageContainer.createEl("span", {
-						text: LogsView.formatTimestamp(message.timestamp),
-						cls: "timestamp"
-					});
-					messageContainer.createEl("span", {
-						text: message.message
-					});
-				}
-			);
+			const element = LogsView.createLogLineElement(container, message);
 
 			this.logLineToElement.set(message, element);
 		});
@@ -87,6 +94,7 @@ export class LogsView extends ItemView {
 		}
 
 		if (logs.length === 0) {
+			container.empty();
 			container.createEl("p", {
 				text: "No logs available yet."
 			});

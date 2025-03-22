@@ -3,12 +3,18 @@ import { ItemView, setIcon } from "obsidian";
 
 import { intlFormatDistance } from "date-fns";
 import type { HistoryEntry, SyncClient } from "sync-client";
-import { SyncType, SyncSource, SyncStatus } from "sync-client";
+import { SyncType } from "sync-client";
 
 export class HistoryView extends ItemView {
 	public static readonly TYPE = "history-view";
 	public static readonly ICON = "square-stack";
 	private timer: NodeJS.Timeout | null = null;
+
+	private historyContainer: HTMLElement | undefined;
+	private readonly historyEntryToElement = new Map<
+		HistoryEntry,
+		HTMLElement
+	>();
 
 	public constructor(
 		leaf: WorkspaceLeaf,
@@ -38,18 +44,6 @@ export class HistoryView extends ItemView {
 		}
 	}
 
-	private static getSyncSourceIcon(source: SyncSource | undefined): IconName {
-		switch (source) {
-			case SyncSource.PUSH:
-				return "upload";
-			case SyncSource.PULL:
-				return "download";
-			case undefined:
-			default:
-				return "";
-		}
-	}
-
 	private static renderSyncItemTitle(
 		element: HTMLElement,
 		entry: HistoryEntry
@@ -62,11 +56,6 @@ export class HistoryView extends ItemView {
 		element.createEl("span", {
 			text: entry.relativePath
 		});
-
-		const syncSourceIcon = HistoryView.getSyncSourceIcon(entry.source);
-		if (syncSourceIcon) {
-			setIcon(element.createDiv(), syncSourceIcon);
-		}
 	}
 
 	public getViewType(): string {
@@ -78,6 +67,11 @@ export class HistoryView extends ItemView {
 	}
 
 	public async onOpen(): Promise<void> {
+		const container = this.containerEl.children[1];
+		container.createEl("h4", { text: "VaultLink history" });
+
+		this.historyContainer = container.createDiv({ cls: "logs-container" });
+
 		await this.updateView();
 		this.timer = setInterval(() => void this.updateView(), 1000);
 	}
@@ -89,66 +83,105 @@ export class HistoryView extends ItemView {
 	}
 
 	private async updateView(): Promise<void> {
-		const container = this.containerEl.children[1];
-		container.empty();
-		container.createEl("h4", { text: "VaultLink History" });
+		const container = this.historyContainer;
+		if (container === undefined) {
+			return;
+		}
 
 		const entries = this.client.getHistoryEntries().reverse();
+
+		if (this.historyEntryToElement.size === 0 && entries.length > 0) {
+			// Clear the "No update has happened yet" message
+			container.empty();
+		}
+
 		entries.forEach((entry) => {
-			container.createDiv(
-				{
-					cls: ["history-card", entry.status.toLocaleLowerCase()]
-				},
-				(card) => {
-					if (
-						this.app.vault.getFileByPath(entry.relativePath) !==
-						null
-					) {
-						card.addEventListener("click", () => {
-							void this.app.workspace.openLinkText(
-								entry.relativePath,
-								entry.relativePath,
-								false
-							);
-						});
-
-						card.addClass("clickable");
-					}
-
-					card.createDiv(
-						{
-							cls: "history-card-header"
-						},
-						(header) => {
-							header.createEl(
-								"h5",
-								{
-									cls: "history-card-title"
-								},
-								(title) => {
-									HistoryView.renderSyncItemTitle(
-										title,
-										entry
-									);
-								}
-							);
-
-							header.createSpan({
-								text: intlFormatDistance(
-									entry.timestamp,
-									new Date()
-								),
-								cls: "history-card-timestamp"
-							});
-						}
+			const element = this.historyEntryToElement.get(entry);
+			if (element !== undefined) {
+				const timestampElement = element.querySelector(
+					".history-card-timestamp"
+				);
+				if (timestampElement != null) {
+					timestampElement.textContent = intlFormatDistance(
+						entry.timestamp,
+						new Date()
 					);
-
-					card.createEl("p", {
-						text: `${entry.message}.`,
-						cls: "history-card-message"
-					});
 				}
-			);
+				return;
+			}
+
+			const newElement = this.createHistoryCard(container, entry);
+			container.prepend(newElement);
+			this.historyEntryToElement.set(entry, newElement);
 		});
+
+		const newEntries = new Set(entries);
+		for (const [entry, element] of this.historyEntryToElement) {
+			if (!newEntries.has(entry)) {
+				element.remove();
+				this.historyEntryToElement.delete(entry);
+			}
+		}
+
+		if (entries.length === 0) {
+			container.empty();
+			container.createEl("p", {
+				text: "No update has happened yet."
+			});
+		}
+	}
+
+	private createHistoryCard(
+		container: HTMLElement,
+		entry: HistoryEntry
+	): HTMLElement {
+		return container.createDiv(
+			{
+				cls: ["history-card", entry.status.toLocaleLowerCase()]
+			},
+			(card) => {
+				if (this.app.vault.getFileByPath(entry.relativePath) !== null) {
+					card.addEventListener("click", () => {
+						void this.app.workspace.openLinkText(
+							entry.relativePath,
+							entry.relativePath,
+							false
+						);
+					});
+
+					card.addClass("clickable");
+				}
+
+				card.createDiv(
+					{
+						cls: "history-card-header"
+					},
+					(header) => {
+						header.createEl(
+							"h5",
+							{
+								cls: "history-card-title"
+							},
+							(title) => {
+								HistoryView.renderSyncItemTitle(title, entry);
+							}
+						);
+
+						header.createSpan({
+							text: intlFormatDistance(
+								entry.timestamp,
+								new Date()
+							),
+							cls: "history-card-timestamp"
+						});
+					}
+				);
+
+				card.createEl("p", {
+					text: `${entry.message}.`,
+					cls: "history-card-message"
+				});
+			}
+		);
 	}
 }

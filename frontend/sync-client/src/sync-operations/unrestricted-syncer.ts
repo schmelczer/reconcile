@@ -7,7 +7,7 @@ import type {
 import type { SyncService } from "../services/sync-service";
 import type { Logger } from "../tracing/logger";
 import type { SyncHistory } from "../tracing/sync-history";
-import { SyncSource, SyncStatus, SyncType } from "../tracing/sync-history";
+import { SyncStatus, SyncType } from "../tracing/sync-history";
 import { EMPTY_HASH, hash } from "../utils/hash";
 import type { components } from "../services/types";
 import { deserialize } from "../utils/deserialize";
@@ -38,7 +38,6 @@ export class UnrestrictedSyncer {
 		return this.executeSync(
 			document.relativePath,
 			SyncType.CREATE,
-			SyncSource.PUSH,
 			async () => {
 				const contentBytes = await this.operations.read(
 					document.relativePath
@@ -53,7 +52,6 @@ export class UnrestrictedSyncer {
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
-					source: SyncSource.PUSH,
 					relativePath: document.relativePath,
 					message: `Successfully uploaded locally created file`,
 					type: SyncType.CREATE
@@ -78,7 +76,6 @@ export class UnrestrictedSyncer {
 		await this.executeSync(
 			document.relativePath,
 			SyncType.DELETE,
-			SyncSource.PUSH,
 			async () => {
 				const response = await this.syncService.delete({
 					documentId: document.documentId,
@@ -87,7 +84,6 @@ export class UnrestrictedSyncer {
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
-					source: SyncSource.PUSH,
 					relativePath: document.relativePath,
 					message: `Successfully deleted locally deleted file on the remote server`,
 					type: SyncType.DELETE
@@ -118,7 +114,6 @@ export class UnrestrictedSyncer {
 		await this.executeSync(
 			document.relativePath,
 			SyncType.UPDATE,
-			SyncSource.PUSH,
 			async () => {
 				const originalRelativePath = document.relativePath;
 
@@ -188,18 +183,18 @@ export class UnrestrictedSyncer {
 					return;
 				}
 
-				this.history.addHistoryEntry({
-					status: SyncStatus.SUCCESS,
-					source: SyncSource.PUSH,
-					relativePath: document.relativePath,
-					message: `Successfully uploaded locally updated file to the remote server`,
-					type: SyncType.UPDATE
-				});
+				if (!force) {
+					this.history.addHistoryEntry({
+						status: SyncStatus.SUCCESS,
+						relativePath: document.relativePath,
+						message: `Successfully uploaded locally updated file to the remote server`,
+						type: SyncType.UPDATE
+					});
+				}
 
 				if (response.isDeleted) {
 					this.history.addHistoryEntry({
 						status: SyncStatus.SUCCESS,
-						source: SyncSource.PULL,
 						relativePath: document.relativePath,
 						message:
 							"The file we tried to update had been deleted remotely, therefore, we have deleted it locally",
@@ -253,13 +248,14 @@ export class UnrestrictedSyncer {
 						responseBytes
 					);
 
-					this.history.addHistoryEntry({
-						status: SyncStatus.SUCCESS,
-						source: SyncSource.PULL,
-						relativePath: document.relativePath,
-						message: `The file we updated had been updated remotely, so we downloaded the merged version`,
-						type: SyncType.UPDATE
-					});
+					if (!force) {
+						this.history.addHistoryEntry({
+							status: SyncStatus.SUCCESS,
+							relativePath: document.relativePath,
+							message: `The file we updated had been updated remotely, so we downloaded the merged version`,
+							type: SyncType.UPDATE
+						});
+					}
 				}
 
 				this.tryIncrementVaultUpdateId(response.vaultUpdateId);
@@ -274,7 +270,6 @@ export class UnrestrictedSyncer {
 		await this.executeSync(
 			remoteVersion.relativePath,
 			SyncType.UPDATE,
-			SyncSource.PULL,
 			async () => {
 				if (document?.metadata !== undefined) {
 					// If the file exists locally, let's pretend the user has updated it
@@ -358,7 +353,6 @@ export class UnrestrictedSyncer {
 
 				this.history.addHistoryEntry({
 					status: SyncStatus.SUCCESS,
-					source: SyncSource.PULL,
 					relativePath: remoteVersion.relativePath,
 					message: `Successfully downloaded remote file which hadn't existed locally`,
 					type: SyncType.CREATE
@@ -370,12 +364,9 @@ export class UnrestrictedSyncer {
 	public async executeSync<T>(
 		relativePath: RelativePath,
 		syncType: SyncType,
-		syncSource: SyncSource,
 		fn: () => Promise<T>
 	): Promise<T | undefined> {
-		this.logger.debug(
-			`Syncing ${relativePath} (${syncSource} - ${syncType})`
-		);
+		this.logger.debug(`Syncing ${relativePath} (${syncType})`);
 
 		try {
 			if (
@@ -401,7 +392,7 @@ export class UnrestrictedSyncer {
 			if (e instanceof FileNotFoundError) {
 				// A subsequent sync operation must have been creating to deal with this
 				this.logger.info(
-					`Skip ${syncSource.toLocaleLowerCase()} file because it no longer exists when trying to ${syncType.toLocaleLowerCase()} it`
+					`Skiping file '${relativePath}' because it no longer exists when trying to ${syncType.toLocaleLowerCase()} it`
 				);
 				return;
 			}
@@ -414,9 +405,8 @@ export class UnrestrictedSyncer {
 				this.history.addHistoryEntry({
 					status: SyncStatus.ERROR,
 					relativePath,
-					message: `Failed to ${syncSource.toLocaleLowerCase()} file because of ${e} when trying to ${syncType.toLocaleLowerCase()} it`,
-					type: syncType,
-					source: syncSource
+					message: `Failed to sync file '${relativePath}' because of ${e} when trying to ${syncType.toLocaleLowerCase()} it`,
+					type: syncType
 				});
 				throw e;
 			}

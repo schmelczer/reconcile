@@ -1,6 +1,5 @@
 export {
 	SyncType,
-	SyncSource,
 	SyncStatus,
 	type HistoryStats,
 	type HistoryEntry
