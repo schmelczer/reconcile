@@ -36,7 +36,7 @@ export class Syncer {
 			concurrency: settings.getSettings().syncConcurrency
 		});
 
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+		settings.addOnSettingsChangeListener((newSettings, oldSettings) => {
 			if (newSettings.syncConcurrency === oldSettings.syncConcurrency) {
 				return;
 			}
@@ -310,6 +310,8 @@ export class Syncer {
 	}
 
 	private async internalScheduleSyncForOfflineChanges(): Promise<void> {
+		await this.createFakeDocumentsFromRemoteState();
+
 		const allLocalFiles = await this.operations.listAllFiles();
 
 		let locallyPossiblyDeletedFiles = [
@@ -386,5 +388,39 @@ export class Syncer {
 		);
 
 		await Promise.all([updates, deletes]);
+	}
+
+	/**
+	 * Create fake documents in the database for all files that are present locally
+	 * and also exist remotely. This will stop the subequent syncs from duplicating
+	 * the documents by creating the same documents from multiple clients.
+	 */
+	private async createFakeDocumentsFromRemoteState(): Promise<void> {
+		if (this.database.getHasInitialSyncCompleted()) {
+			return;
+		}
+
+		const [allLocalFiles, remote] = await Promise.all([
+			this.operations.listAllFiles(),
+			this.syncQueue.add(async () => this.syncService.getAll())
+		]);
+
+		if (remote !== undefined) {
+			remote.latestDocuments
+				.filter(
+					(remoteDocument) =>
+						allLocalFiles.includes(remoteDocument.relativePath) &&
+						!remoteDocument.isDeleted
+				)
+				.forEach((remoteDocument) => {
+					this.database.createNewEmptyDocument(
+						remoteDocument.documentId,
+						remoteDocument.vaultUpdateId,
+						remoteDocument.relativePath
+					);
+				});
+		}
+
+		this.database.setHasInitialSyncCompleted(true);
 	}
 }

@@ -1,4 +1,5 @@
 import type { Logger } from "../tracing/logger";
+import { EMPTY_HASH } from "../utils/hash";
 
 export type VaultUpdateId = number;
 export type DocumentId = string;
@@ -19,6 +20,7 @@ export interface StoredDocumentMetadata {
 export interface StoredDatabase {
 	documents: StoredDocumentMetadata[];
 	lastSeenUpdateId: VaultUpdateId | undefined;
+	hasInitialSyncCompleted: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export interface DocumentRecord {
 export class Database {
 	private documents: DocumentRecord[];
 	private lastSeenUpdateId: VaultUpdateId | undefined;
+	private hasInitialSyncCompleted: boolean;
 
 	public constructor(
 		private readonly logger: Logger,
@@ -65,6 +68,12 @@ export class Database {
 		this.lastSeenUpdateId = initialState.lastSeenUpdateId;
 		this.logger.debug(
 			`Loaded last seen update id: ${this.lastSeenUpdateId}`
+		);
+
+		this.hasInitialSyncCompleted =
+			initialState.hasInitialSyncCompleted ?? false;
+		this.logger.debug(
+			`Loaded hasInitialSyncCompleted: ${this.hasInitialSyncCompleted}`
 		);
 	}
 
@@ -103,21 +112,6 @@ export class Database {
 			}
 			return records[0];
 		});
-	}
-
-	public getLastSeenUpdateId(): VaultUpdateId | undefined {
-		return this.lastSeenUpdateId;
-	}
-
-	public setLastSeenUpdateId(value: VaultUpdateId | undefined): void {
-		this.lastSeenUpdateId = value;
-		this.save();
-	}
-
-	public reset(): void {
-		this.documents = [];
-		this.lastSeenUpdateId = 0;
-		this.save();
 	}
 
 	public updateDocumentMetadata(
@@ -215,6 +209,29 @@ export class Database {
 		return entry;
 	}
 
+	public createNewEmptyDocument(
+		documentId: DocumentId,
+		parentVersionId: VaultUpdateId,
+		relativePath: RelativePath
+	): DocumentRecord {
+		const entry = {
+			relativePath,
+			documentId,
+			metadata: {
+				parentVersionId,
+				hash: EMPTY_HASH
+			},
+			isDeleted: false,
+			updates: [],
+			parallelVersion: 0
+		};
+
+		this.documents.push(entry);
+		this.save();
+
+		return entry;
+	}
+
 	public getDocumentByDocumentId(
 		find: DocumentId
 	): DocumentRecord | undefined {
@@ -260,6 +277,31 @@ export class Database {
 		candidate.isDeleted = true;
 	}
 
+	public getHasInitialSyncCompleted(): boolean {
+		return this.hasInitialSyncCompleted;
+	}
+
+	public setHasInitialSyncCompleted(value: boolean): void {
+		this.hasInitialSyncCompleted = value;
+		this.save();
+	}
+
+	public getLastSeenUpdateId(): VaultUpdateId | undefined {
+		return this.lastSeenUpdateId;
+	}
+
+	public setLastSeenUpdateId(value: VaultUpdateId | undefined): void {
+		this.lastSeenUpdateId = value;
+		this.save();
+	}
+
+	public reset(): void {
+		this.documents = [];
+		this.lastSeenUpdateId = 0;
+		this.hasInitialSyncCompleted = false;
+		this.save();
+	}
+
 	private save(): void {
 		this.ensureConsistency();
 		void this.saveData({
@@ -268,10 +310,11 @@ export class Database {
 					documentId,
 					relativePath,
 					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-					...metadata! // resolvedDocuments only returns docs with metadata set
+					...metadata! // `resolvedDocuments` only returns docs with metadata set
 				})
 			),
-			lastSeenUpdateId: this.lastSeenUpdateId
+			lastSeenUpdateId: this.lastSeenUpdateId,
+			hasInitialSyncCompleted: this.hasInitialSyncCompleted
 		});
 	}
 
