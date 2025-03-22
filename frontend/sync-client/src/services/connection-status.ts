@@ -17,7 +17,7 @@ export class ConnectionStatus {
 		[this.until, this.resolveUntil, this.rejectUntil] =
 			createPromise<symbol>();
 
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+		settings.addOnSettingsChangeListener((newSettings, oldSettings) => {
 			if (oldSettings.isSyncEnabled != newSettings.isSyncEnabled) {
 				this.canFetch = newSettings.isSyncEnabled;
 				this.resolveUntil(ConnectionStatus.UNTIL_RESOLUTION);

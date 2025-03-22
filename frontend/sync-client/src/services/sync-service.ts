@@ -27,7 +27,7 @@ export class SyncService {
 	) {
 		this.createClient(this.settings.getSettings().remoteUri);
 
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
+		settings.addOnSettingsChangeListener((newSettings, oldSettings) => {
 			if (newSettings.remoteUri === oldSettings.remoteUri) {
 				return;
 			}

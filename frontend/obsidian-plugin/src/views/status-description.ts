@@ -19,14 +19,14 @@ export class StatusDescription {
 			this.updateDescription();
 		});
 
-		this.syncClient.syncer.addRemainingOperationsListener(
+		this.syncClient.addRemainingSyncOperationsListener(
 			(remainingOperations) => {
 				this.lastRemaining = remainingOperations;
 				this.updateDescription();
 			}
 		);
 
-		this.syncClient.addOnSettingsChangeHandlers(() => {
+		this.syncClient.addOnSettingsChangeListener(() => {
 			void this.updateConnectionState();
 		});
 	}

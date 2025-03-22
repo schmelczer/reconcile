@@ -9,7 +9,7 @@ export class ObsidianFileEventHandler {
 		if (file instanceof TFile) {
 			this.client.logger.info(`File created: ${file.path}`);
 
-			await this.client.syncer.syncLocallyCreatedFile(file.path);
+			await this.client.syncLocallyCreatedFile(file.path);
 		} else {
 			this.client.logger.debug(`Folder created: ${file.path}, ignored`);
 		}
@@ -19,7 +19,7 @@ export class ObsidianFileEventHandler {
 		if (file instanceof TFile) {
 			this.client.logger.info(`File deleted: ${file.path}`);
 
-			await this.client.syncer.syncLocallyDeletedFile(file.path);
+			await this.client.syncLocallyDeletedFile(file.path);
 		} else {
 			this.client.logger.debug(`Folder deleted: ${file.path}, ignored`);
 		}
@@ -29,7 +29,7 @@ export class ObsidianFileEventHandler {
 		if (file instanceof TFile) {
 			this.client.logger.info(`File renamed: ${oldPath} -> ${file.path}`);
 
-			await this.client.syncer.syncLocallyUpdatedFile({
+			await this.client.syncLocallyUpdatedFile({
 				oldPath,
 				relativePath: file.path
 			});
@@ -48,7 +48,7 @@ export class ObsidianFileEventHandler {
 
 			this.client.logger.info(`File modified: ${file.path}`);
 
-			await this.client.syncer.syncLocallyUpdatedFile({
+			await this.client.syncLocallyUpdatedFile({
 				relativePath: file.path
 			});
 		} else {

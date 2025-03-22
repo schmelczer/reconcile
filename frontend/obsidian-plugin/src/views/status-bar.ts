@@ -17,14 +17,14 @@ export class StatusBar {
 			this.updateStatus();
 		});
 
-		this.syncClient.syncer.addRemainingOperationsListener(
+		this.syncClient.addRemainingSyncOperationsListener(
 			(remainingOperations) => {
 				this.lastRemaining = remainingOperations;
 				this.updateStatus();
 			}
 		);
 
-		this.syncClient.addOnSettingsChangeHandlers(() => {
+		this.syncClient.addOnSettingsChangeListener(() => {
 			this.updateStatus();
 		});
 	}

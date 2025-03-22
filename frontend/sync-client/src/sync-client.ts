@@ -4,7 +4,7 @@ import type { PersistenceProvider } from "./persistence/persistence";
 import type { HistoryEntry, HistoryStats } from "./tracing/sync-history";
 import { SyncHistory } from "./tracing/sync-history";
 import { Logger } from "./tracing/logger";
-import type { StoredDatabase } from "./persistence/database";
+import type { RelativePath, StoredDatabase } from "./persistence/database";
 import { Database } from "./persistence/database";
 import type { SyncSettings } from "./persistence/settings";
 import { Settings } from "./persistence/settings";
@@ -28,10 +28,6 @@ export class SyncClient {
 		private readonly _logger: Logger,
 		private readonly _connectionStatus: ConnectionStatus
 	) {}
-
-	public get syncer(): Syncer {
-		return this._syncer;
-	}
 
 	public get logger(): Logger {
 		return this._logger;
@@ -58,7 +54,7 @@ export class SyncClient {
 		nativeLineEndings?: string;
 	}): Promise<SyncClient> {
 		const logger = new Logger();
-		logger.info("Starting SyncClient");
+		logger.info("Initialising SyncClient");
 
 		const history = new SyncHistory(logger);
 
@@ -112,25 +108,6 @@ export class SyncClient {
 			connectionStatus
 		);
 
-		settings.addOnSettingsChangeHandlers((newSettings, oldSettings) => {
-			if (
-				newSettings.fetchChangesUpdateIntervalMs !==
-				oldSettings.fetchChangesUpdateIntervalMs
-			) {
-				client.setRemoteEventListener(
-					newSettings.fetchChangesUpdateIntervalMs
-				);
-			}
-
-			if (
-				newSettings.vaultName !== oldSettings.vaultName ||
-				newSettings.token !== oldSettings.token ||
-				newSettings.remoteUri !== oldSettings.remoteUri
-			) {
-				void client.reset();
-			}
-		});
-
 		logger.info("SyncClient initialised");
 
 		return client;
@@ -151,6 +128,27 @@ export class SyncClient {
 	}
 
 	public async start(): Promise<void> {
+		this._settings.addOnSettingsChangeListener(
+			(newSettings, oldSettings) => {
+				if (
+					newSettings.fetchChangesUpdateIntervalMs !==
+					oldSettings.fetchChangesUpdateIntervalMs
+				) {
+					this.setRemoteEventListener(
+						newSettings.fetchChangesUpdateIntervalMs
+					);
+				}
+
+				if (
+					newSettings.vaultName !== oldSettings.vaultName ||
+					newSettings.token !== oldSettings.token ||
+					newSettings.remoteUri !== oldSettings.remoteUri
+				) {
+					void this.reset();
+				}
+			}
+		);
+
 		await this._syncer.scheduleSyncForOfflineChanges();
 
 		this.setRemoteEventListener(
@@ -161,6 +159,12 @@ export class SyncClient {
 	/// Clear all global state that has been touched by SyncClient.
 	public stop(): void {
 		this.unsetRemoteEventListener();
+	}
+
+	public async waitAndStop(): Promise<void> {
+		await this._syncer.waitForSyncQueue();
+		await this._syncer.applyRemoteChangesLocally();
+		this.stop();
 	}
 
 	/// Wait for the in-flight operations to finish, reset all tracking,
@@ -187,10 +191,41 @@ export class SyncClient {
 		await this._settings.setSetting(key, value);
 	}
 
-	public addOnSettingsChangeHandlers(
+	public addOnSettingsChangeListener(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	): void {
-		this._settings.addOnSettingsChangeHandlers(handler);
+		this._settings.addOnSettingsChangeListener(handler);
+	}
+
+	public addRemainingSyncOperationsListener(
+		listener: (remainingOperations: number) => void
+	): void {
+		this._syncer.addRemainingOperationsListener(listener);
+	}
+
+	public async syncLocallyCreatedFile(
+		relativePath: RelativePath
+	): Promise<void> {
+		return this._syncer.syncLocallyCreatedFile(relativePath);
+	}
+
+	public async syncLocallyDeletedFile(
+		relativePath: RelativePath
+	): Promise<void> {
+		return this._syncer.syncLocallyDeletedFile(relativePath);
+	}
+
+	public async syncLocallyUpdatedFile({
+		oldPath,
+		relativePath
+	}: {
+		oldPath?: RelativePath;
+		relativePath: RelativePath;
+	}): Promise<void> {
+		return this._syncer.syncLocallyUpdatedFile({
+			oldPath,
+			relativePath
+		});
 	}
 
 	private setRemoteEventListener(intervalMs: number): void {

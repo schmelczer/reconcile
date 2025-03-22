@@ -134,9 +134,7 @@ export class MockAgent extends MockClient {
 	public async finish(): Promise<void> {
 		await this.client.setSetting("isSyncEnabled", true);
 		await Promise.all(this.pendingActions);
-		this.client.stop();
-		await this.client.syncer.waitForSyncQueue();
-		await this.client.syncer.applyRemoteChangesLocally();
+		await this.client.waitAndStop();
 	}
 
 	public assertFileSystemsAreConsistent(otherAgent: MockAgent): void {

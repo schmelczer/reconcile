@@ -72,7 +72,7 @@ export class MockClient implements FileSystemOperations {
 		this.localFiles.set(path, newContent);
 
 		this.runCallback(() => {
-			void this.client.syncer.syncLocallyCreatedFile(path);
+			void this.client.syncLocallyCreatedFile(path);
 		});
 	}
 
@@ -114,7 +114,7 @@ export class MockClient implements FileSystemOperations {
 		);
 
 		this.runCallback(() => {
-			void this.client.syncer.syncLocallyUpdatedFile({
+			void this.client.syncLocallyUpdatedFile({
 				relativePath: path
 			});
 		});
@@ -132,11 +132,11 @@ export class MockClient implements FileSystemOperations {
 
 		this.runCallback(() => {
 			if (hasExisted) {
-				void this.client.syncer.syncLocallyUpdatedFile({
+				void this.client.syncLocallyUpdatedFile({
 					relativePath: path
 				});
 			} else {
-				void this.client.syncer.syncLocallyCreatedFile(path);
+				void this.client.syncLocallyCreatedFile(path);
 			}
 		});
 	}
@@ -148,7 +148,7 @@ export class MockClient implements FileSystemOperations {
 		this.localFiles.delete(path);
 
 		this.runCallback(() => {
-			void this.client.syncer.syncLocallyDeletedFile(path);
+			void this.client.syncLocallyDeletedFile(path);
 		});
 	}
 
@@ -170,7 +170,7 @@ export class MockClient implements FileSystemOperations {
 		);
 
 		this.runCallback(() => {
-			void this.client.syncer.syncLocallyUpdatedFile({
+			void this.client.syncLocallyUpdatedFile({
 				oldPath,
 				relativePath: newPath
 			});

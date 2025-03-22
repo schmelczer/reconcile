@@ -48,7 +48,7 @@ export class Settings {
 		return this.settings;
 	}
 
-	public addOnSettingsChangeHandlers(
+	public addOnSettingsChangeListener(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	): void {
 		this.onSettingsChangeHandlers.push(handler);
