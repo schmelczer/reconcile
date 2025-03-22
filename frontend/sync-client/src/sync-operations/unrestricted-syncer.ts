@@ -369,22 +369,25 @@ export class UnrestrictedSyncer {
 		this.logger.debug(`Syncing ${relativePath} (${syncType})`);
 
 		try {
-			if (
-				(await this.operations.exists(relativePath)) &&
-				(await this.operations.getFileSize(relativePath)) / // this can throw FileNotFoundError
-					1024 /
-					1024 >
-					this.settings.getSettings().maxFileSizeMB
-			) {
-				this.history.addHistoryEntry({
-					status: SyncStatus.ERROR,
-					relativePath,
-					message: `File size exceeds the maximum file size limit of ${
-						this.settings.getSettings().maxFileSizeMB
-					}MB`,
-					type: syncType
-				});
-				return;
+			if (await this.operations.exists(relativePath)) {
+				const sizeInMB = Math.round(
+					(await this.operations.getFileSize(relativePath)) /
+						1024 /
+						1024
+				);
+
+				if (sizeInMB > this.settings.getSettings().maxFileSizeMB) {
+					this.history.addHistoryEntry({
+						status: SyncStatus.ERROR,
+						relativePath,
+						message: `File size of ${sizeInMB} MB exceeds the maximum file size limit of ${
+							this.settings.getSettings().maxFileSizeMB
+						} MB`,
+						type: syncType
+					});
+
+					return;
+				}
 			}
 
 			return await fn();
