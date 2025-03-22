@@ -25,7 +25,7 @@ jobs:
 
       - name: Setup rust
         run: |
-          cargo install sqlx-cli
+          cargo install sqlx-cli wasm-pack
           cd backend
           sqlx database create --database-url sqlite://db.sqlite3
           sqlx migrate run --source sync_server/src/database/migrations --database-url sqlite://db.sqlite3
@@ -33,7 +33,6 @@ jobs:
       - name: Build wasm
         run: |
           cd backend
-          cargo install wasm-pack
           wasm-pack build --target web sync_lib
 
       - name: Lint backend
@@ -57,7 +56,7 @@ jobs:
           npm run lint
           if [[ $(git status --porcelain) ]]; then
               git status --porcelain
-              echo "Failing CI because the working directory is not clean after linting."
+              echo "Failing CI because the working directory is not clean after linting"
               exit 1
           fi
 
