@@ -23,7 +23,7 @@ use crate::{
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
-pub struct PathParams {
+pub struct CreateDocumentPathParams {
     vault_id: VaultId,
 }
 
@@ -33,7 +33,7 @@ pub struct PathParams {
 #[axum::debug_handler]
 pub async fn create_document_multipart(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
-    Path(PathParams { vault_id }): Path<PathParams>,
+    Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         CreateDocumentVersionMultipart,
@@ -56,7 +56,7 @@ pub async fn create_document_multipart(
 #[axum::debug_handler]
 pub async fn create_document_json(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
-    Path(PathParams { vault_id }): Path<PathParams>,
+    Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {

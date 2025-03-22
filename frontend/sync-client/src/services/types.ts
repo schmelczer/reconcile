@@ -450,6 +450,9 @@ export type webhooks = Record<string, never>;
 export interface components {
 	schemas: {
 		Array_of_uint8: number[];
+		CreateDocumentPathParams: {
+			vault_id: string;
+		};
 		CreateDocumentVersion: {
 			contentBase64: string;
 			/**
@@ -464,6 +467,11 @@ export interface components {
 			/** Format: uuid */
 			document_id?: string | null;
 			relative_path: string;
+		};
+		DeleteDocumentPathParams: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
 		};
 		DeleteDocumentVersion: {
 			relativePath: string;
@@ -516,6 +524,28 @@ export interface components {
 			/** Format: int64 */
 			vaultUpdateId: number;
 		};
+		FetchDocumentVersionContentPathParams: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+			/** Format: int64 */
+			vault_update_id: number;
+		};
+		FetchDocumentVersionPathParams: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+			/** Format: int64 */
+			vault_update_id: number;
+		};
+		FetchLatestDocumentVersionPathParams: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
+		};
+		FetchLatestDocumentsPathParams: {
+			vault_id: string;
+		};
 		/** @description Response to a fetch latest documents request. */
 		FetchLatestDocumentsResponse: {
 			/**
@@ -524,41 +554,6 @@ export interface components {
 			 */
 			lastUpdateId: number;
 			latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
-		};
-		PathParams: {
-			vault_id: string;
-		};
-		PathParams2: {
-			vault_id: string;
-		};
-		PathParams3: {
-			/** Format: uuid */
-			document_id: string;
-			vault_id: string;
-		};
-		PathParams4: {
-			/** Format: uuid */
-			document_id: string;
-			vault_id: string;
-		};
-		PathParams5: {
-			/** Format: uuid */
-			document_id: string;
-			vault_id: string;
-			/** Format: int64 */
-			vault_update_id: number;
-		};
-		PathParams6: {
-			/** Format: uuid */
-			document_id: string;
-			vault_id: string;
-			/** Format: int64 */
-			vault_update_id: number;
-		};
-		PathParams7: {
-			/** Format: uuid */
-			document_id: string;
-			vault_id: string;
 		};
 		/** @description Response to a ping request. */
 		PingResponse: {
@@ -574,6 +569,11 @@ export interface components {
 		SerializedError: {
 			causes: string[];
 			message: string;
+		};
+		UpdateDocumentPathParams: {
+			/** Format: uuid */
+			document_id: string;
+			vault_id: string;
 		};
 		UpdateDocumentVersion: {
 			contentBase64: string;

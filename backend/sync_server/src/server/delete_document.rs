@@ -17,7 +17,7 @@ use crate::{
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
-pub struct PathParams {
+pub struct DeleteDocumentPathParams {
     vault_id: VaultId,
     document_id: DocumentId,
 }
@@ -25,10 +25,10 @@ pub struct PathParams {
 #[axum::debug_handler]
 pub async fn delete_document(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
-    Path(PathParams {
+    Path(DeleteDocumentPathParams {
         vault_id,
         document_id,
-    }): Path<PathParams>,
+    }): Path<DeleteDocumentPathParams>,
     State(mut state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {

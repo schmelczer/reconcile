@@ -18,7 +18,7 @@ use crate::{
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
-pub struct PathParams {
+pub struct FetchDocumentVersionContentPathParams {
     vault_id: VaultId,
     document_id: DocumentId,
     vault_update_id: VaultUpdateId,
@@ -27,11 +27,11 @@ pub struct PathParams {
 #[axum::debug_handler]
 pub async fn fetch_document_version_content(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
-    Path(PathParams {
+    Path(FetchDocumentVersionContentPathParams {
         vault_id,
         document_id,
         vault_update_id,
-    }): Path<PathParams>,
+    }): Path<FetchDocumentVersionContentPathParams>,
     State(mut state): State<AppState>,
 ) -> Result<Bytes, SyncServerError> {
     auth(&state, auth_header.token())?;
