@@ -14,6 +14,7 @@ import { Syncer } from "./sync-operations/syncer";
 import type { FileSystemOperations } from "./file-operations/filesystem-operations";
 import { FileOperations } from "./file-operations/file-operations";
 import { ConnectionStatus } from "./services/connection-status";
+import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
 
 export class SyncClient {
 	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
@@ -41,11 +42,6 @@ export class SyncClient {
 
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					void this.reset();
-				} else if (
-					newSettings.isSyncEnabled &&
-					!oldSettings.isSyncEnabled
-				) {
-					void this.start();
 				}
 			}
 		);
@@ -111,13 +107,27 @@ export class SyncClient {
 		const connectionStatus = new ConnectionStatus(settings, logger);
 		const syncService = new SyncService(connectionStatus, settings, logger);
 		syncService.fetchImplementation = fetch;
+		const fileOperations = new FileOperations(
+			logger,
+			database,
+			fs,
+			nativeLineEndings
+		);
+		const unrestrictedSyncer = new UnrestrictedSyncer(
+			logger,
+			database,
+			settings,
+			syncService,
+			fileOperations,
+			history
+		);
 		const syncer = new Syncer(
 			logger,
 			database,
 			settings,
 			syncService,
-			new FileOperations(logger, database, fs, nativeLineEndings),
-			history
+			fileOperations,
+			unrestrictedSyncer
 		);
 
 		const client = new SyncClient(
