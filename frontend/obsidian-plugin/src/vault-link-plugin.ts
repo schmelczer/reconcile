@@ -66,7 +66,7 @@ export default class VaultLinkPlugin extends Plugin {
 		);
 		this.registerView(
 			LogsView.TYPE,
-			(leaf) => new LogsView(this, this.client, leaf)
+			(leaf) => new LogsView(this.client, leaf)
 		);
 
 		this.addRibbonIcon(
