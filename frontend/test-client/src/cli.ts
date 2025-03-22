@@ -132,11 +132,16 @@ process.on("uncaughtException", (error) => {
 	process.exit(1);
 });
 
-process.on("unhandledRejection", (reason, _promise) => {
+process.on("unhandledRejection", (error, _promise) => {
+	if (error instanceof Error && error.message === "Sync was reset") {
+		return;
+	}
+
 	if (slowFileEvents) {
 		return;
 	}
-	console.error("Unhandled Rejection:", reason);
+
+	console.error("Unhandled Rejection:", error);
 	process.exit(1);
 });
 
