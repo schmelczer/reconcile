@@ -12,7 +12,7 @@ export class FileOperations {
 		private readonly logger: Logger,
 		private readonly database: Database,
 		fs: FileSystemOperations,
-		private readonly nativeLineEndings: string = "\n"
+		private readonly nativeLineEndings = "\n"
 	) {
 		this.fs = new SafeFileSystemOperations(fs, logger);
 	}

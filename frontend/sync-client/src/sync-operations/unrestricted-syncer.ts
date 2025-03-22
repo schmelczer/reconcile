@@ -135,7 +135,8 @@ export class UnrestrictedSyncer {
 
 				let response:
 					| components["schemas"]["DocumentVersion"]
-					| components["schemas"]["DocumentUpdateResponse"];
+					| components["schemas"]["DocumentUpdateResponse"]
+					| undefined = undefined;
 				if (
 					document.metadata.hash === contentHash &&
 					oldPath === undefined

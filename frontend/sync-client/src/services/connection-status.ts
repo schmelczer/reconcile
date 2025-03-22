@@ -8,7 +8,7 @@ export class ConnectionStatus {
 	private canFetch = true;
 	private until: Promise<symbol>;
 	private resolveUntil: (result: symbol) => void;
-	private rejectUntil: (reason: any) => void;
+	private rejectUntil: (reason: unknown) => void;
 
 	public constructor(
 		settings: Settings,
@@ -27,6 +27,16 @@ export class ConnectionStatus {
 		});
 	}
 
+	private static getUrlFromInput(input: RequestInfo | URL): string {
+		if (input instanceof URL) {
+			return input.href;
+		}
+		if (typeof input === "string") {
+			return input;
+		}
+		return input.url;
+	}
+
 	public getFetchImplementation(
 		fetch: typeof globalThis.fetch,
 		{ doRetries = true }: { doRetries: boolean } = { doRetries: true }
@@ -34,7 +44,7 @@ export class ConnectionStatus {
 		return doRetries ? this.retriedFetchFactory(this.logger, fetch) : fetch;
 	}
 
-	public reset() {
+	public reset(): void {
 		this.rejectUntil(new Error("Sync was reset"));
 		[this.until, this.resolveUntil, this.rejectUntil] = createPromise();
 	}
@@ -42,8 +52,9 @@ export class ConnectionStatus {
 	private retriedFetchFactory(
 		logger: Logger,
 		fetch: typeof globalThis.fetch = globalThis.fetch
-	) {
+	): typeof globalThis.fetch {
 		return async (input: RequestInfo | URL): Promise<Response> => {
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 			while (true) {
 				while (!this.canFetch) {
 					await this.until;
@@ -60,12 +71,12 @@ export class ConnectionStatus {
 					const fetchPromise = fetch(_input);
 
 					// We only want to catch rejections from `this.until`
-					let result;
+					let result: symbol | Response | undefined = undefined;
 					do {
 						result = await Promise.race([this.until, fetchPromise]);
 					} while (result === ConnectionStatus.UNTIL_RESOLUTION);
 
-					const fetchResult: Response = result as Response;
+					const fetchResult: Response = result as Response; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 
 					if (!fetchResult.ok) {
 						this.logger.warn(
@@ -87,15 +98,5 @@ export class ConnectionStatus {
 				await Promise.race([this.until, sleep(1000)]);
 			}
 		};
-	}
-
-	private static getUrlFromInput(input: RequestInfo | URL): string {
-		if (input instanceof URL) {
-			return input.href;
-		}
-		if (typeof input === "string") {
-			return input;
-		}
-		return input.url;
 	}
 }

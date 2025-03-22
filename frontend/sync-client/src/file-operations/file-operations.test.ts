@@ -109,27 +109,36 @@ describe("File operations", () => {
 	});
 
 	it("should deconflict renames with file extension", async () => {
-		const fs = new FakeFileSystemOperations();
+		const fileSystemOperations = new FakeFileSystemOperations();
 		const fileOperations = new FileOperations(
 			new Logger(),
 			new MockDatabase() as Database, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-			fs
+			fileSystemOperations
 		);
 
 		await fileOperations.create("b.md", new Uint8Array());
 		await fileOperations.create("c.md", new Uint8Array());
 		await fileOperations.move("c.md", "b.md");
-		assertSetContainsExactly(fs.names, "b.md", "b (1).md");
+		assertSetContainsExactly(
+			fileSystemOperations.names,
+			"b.md",
+			"b (1).md"
+		);
 
 		await fileOperations.create("d.md", new Uint8Array());
 		await fileOperations.move("d.md", "b.md");
-		assertSetContainsExactly(fs.names, "b.md", "b (1).md", "b (2).md");
+		assertSetContainsExactly(
+			fileSystemOperations.names,
+			"b.md",
+			"b (1).md",
+			"b (2).md"
+		);
 
 		await fileOperations.create("file-23.md", new Uint8Array());
 		await fileOperations.create("file-23 (1).md", new Uint8Array());
 		await fileOperations.move("file-23.md", "file-23 (1).md");
 		assertSetContainsExactly(
-			fs.names,
+			fileSystemOperations.names,
 			"b.md",
 			"b (1).md",
 			"b (2).md",
@@ -139,16 +148,20 @@ describe("File operations", () => {
 	});
 
 	it("should deconflict renames with paths", async () => {
-		const fs = new FakeFileSystemOperations();
+		const fileSystemOperations = new FakeFileSystemOperations();
 		const fileOperations = new FileOperations(
 			new Logger(),
 			new MockDatabase() as Database, // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-			fs
+			fileSystemOperations
 		);
 
 		await fileOperations.create("a/b.c/d", new Uint8Array());
 		await fileOperations.create("a/b.c/e", new Uint8Array());
 		await fileOperations.move("a/b.c/d", "a/b.c/e");
-		assertSetContainsExactly(fs.names, "a/b.c/e", "a/b.c/e (1)");
+		assertSetContainsExactly(
+			fileSystemOperations.names,
+			"a/b.c/e",
+			"a/b.c/e (1)"
+		);
 	});
 });

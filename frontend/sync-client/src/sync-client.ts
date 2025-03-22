@@ -18,6 +18,7 @@ import { ConnectionStatus } from "./services/connection-status";
 export class SyncClient {
 	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
 
+	// eslint-disable-next-line @typescript-eslint/max-params
 	private constructor(
 		private readonly _history: SyncHistory,
 		private readonly _settings: Settings,
