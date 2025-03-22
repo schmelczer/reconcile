@@ -5,7 +5,7 @@ import { sleep } from "../utils/sleep";
 
 export class ConnectionStatus {
 	private static readonly UNTIL_RESOLUTION = Symbol();
-	private canFetch = true;
+	private canFetch: boolean;
 	private until: Promise<symbol>;
 	private resolveUntil: (result: symbol) => void;
 	private rejectUntil: (reason: unknown) => void;
@@ -14,6 +14,8 @@ export class ConnectionStatus {
 		settings: Settings,
 		private readonly logger: Logger
 	) {
+		this.canFetch = settings.getSettings().isSyncEnabled;
+
 		[this.until, this.resolveUntil, this.rejectUntil] =
 			createPromise<symbol>();
 
