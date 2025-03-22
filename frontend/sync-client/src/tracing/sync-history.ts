@@ -91,7 +91,7 @@ export class SyncHistory {
 		} else {
 			this.status.error++;
 			this.logger.error(
-				`Error syncing file: ${entry.relativePath} - ${entry.message}`
+				`Cannot sync file: ${entry.relativePath} - ${entry.message}`
 			);
 		}
 
