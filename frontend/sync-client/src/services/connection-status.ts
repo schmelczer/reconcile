@@ -1,7 +1,7 @@
 import type { Settings } from "../persistence/settings";
 import type { Logger } from "../tracing/logger";
 import { createPromise } from "../utils/create-promise";
-import { sleep } from "../utils/sleep";
+import { SyncResetError } from "./sync-reset-error";
 
 export class ConnectionStatus {
 	private static readonly UNTIL_RESOLUTION = Symbol();
@@ -40,7 +40,7 @@ export class ConnectionStatus {
 	}
 
 	public reset(): void {
-		this.rejectUntil(new Error("Sync was reset"));
+		this.rejectUntil(new SyncResetError());
 		[this.until, this.resolveUntil, this.rejectUntil] = createPromise();
 	}
 
