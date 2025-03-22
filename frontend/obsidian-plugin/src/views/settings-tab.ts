@@ -1,14 +1,14 @@
 import type { App } from "obsidian";
 import { Notice, PluginSettingTab, Setting } from "obsidian";
-
 import type VaultLinkPlugin from "../vault-link-plugin";
 import type { StatusDescription } from "./status-description";
 import { LogsView } from "./logs-view";
 import { HistoryView } from "./history-view";
-import type { SyncClient } from "sync-client";
-import { LogLevel } from "sync-client";
+import type { SyncClient, SyncSettings } from "sync-client";
 
 export class SyncSettingsTab extends PluginSettingTab {
+	private editedServerUri: string;
+	private editedToken: string;
 	private editedVaultName: string;
 
 	private readonly plugin: VaultLinkPlugin;
@@ -32,11 +32,30 @@ export class SyncSettingsTab extends PluginSettingTab {
 		this.syncClient = syncClient;
 		this.statusDescription = statusDescription;
 
+		this.editedServerUri = this.syncClient.getSettings().remoteUri;
+		this.editedToken = this.syncClient.getSettings().token;
 		this.editedVaultName = this.syncClient.getSettings().vaultName;
+
 		this.syncClient.addOnSettingsChangeListener(
 			(newSettings, oldSettings) => {
+				let hasChanged = false;
+
+				if (newSettings.remoteUri !== oldSettings.remoteUri) {
+					this.editedServerUri = newSettings.remoteUri;
+					hasChanged = true;
+				}
+
+				if (newSettings.token !== oldSettings.token) {
+					this.editedToken = newSettings.token;
+					hasChanged = true;
+				}
+
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					this.editedVaultName = newSettings.vaultName;
+					hasChanged = true;
+				}
+
+				if (hasChanged) {
 					this.display();
 				}
 			}
@@ -112,8 +131,13 @@ export class SyncSettingsTab extends PluginSettingTab {
 	private renderConnectionSettings(containerEl: HTMLElement): void {
 		containerEl.createEl("h3", { text: "Connection" });
 
+		const [title, updateTitle] = this.unsavedAwareSettingName(
+			"Server address",
+			"remoteUri"
+		);
+
 		new Setting(containerEl)
-			.setName("Server address")
+			.setName(title)
 			.setDesc(
 				"Your VaultLink server's URL including the protocol and full path."
 			)
@@ -121,10 +145,76 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:3000")
-					.setValue(this.syncClient.getSettings().remoteUri)
-					.onChange(async (value) =>
-						this.syncClient.setSetting("remoteUri", value)
-					)
+					.setValue(this.editedServerUri)
+					.onChange((value) => {
+						this.editedServerUri = value;
+						updateTitle(value);
+					})
+			);
+
+		const [tokenTitle, updateTokenTitle] = this.unsavedAwareSettingName(
+			"Access token",
+			"token"
+		);
+
+		new Setting(containerEl)
+			.setName(tokenTitle)
+			.setClass("sync-settings-access-token")
+			.setDesc(
+				"Set the access token for the server that you can get from the server"
+			)
+			.setTooltip("todo, links to dcocs")
+			.addTextArea((text) =>
+				text
+					.setPlaceholder("ey...")
+					.setValue(this.editedToken)
+					.onChange((value) => {
+						this.editedToken = value;
+						updateTokenTitle(value);
+					})
+			);
+
+		const [vaultNameTitle, updateVaultNameTitle] =
+			this.unsavedAwareSettingName("Vault name", "vaultName");
+
+		new Setting(containerEl)
+			.setName(vaultNameTitle)
+			.setDesc(
+				"Set the name of the remote vault that you want to sync with"
+			)
+			.setTooltip("todo, links to dcocs")
+			.addText((text) =>
+				text
+					.setPlaceholder("My Obsidian Vault")
+					.setValue(this.editedVaultName)
+					.onChange((value) => {
+						this.editedVaultName = value;
+						updateVaultNameTitle(value);
+					})
+			);
+
+		new Setting(containerEl)
+			.addButton((button) =>
+				button.setButtonText("Apply").onClick(async () => {
+					if (
+						this.editedVaultName !==
+							this.syncClient.getSettings().vaultName ||
+						this.editedServerUri !==
+							this.syncClient.getSettings().remoteUri ||
+						this.editedToken !== this.syncClient.getSettings().token
+					) {
+						await this.syncClient.setSettings({
+							vaultName: this.editedVaultName,
+							remoteUri: this.editedServerUri,
+							token: this.editedToken
+						});
+						new Notice(
+							"The changes have been applied successfully!"
+						);
+					} else {
+						new Notice("No changes to apply");
+					}
+				})
 			)
 			.addButton((button) =>
 				button.setButtonText("Test connection").onClick(async () => {
@@ -134,69 +224,25 @@ export class SyncSettingsTab extends PluginSettingTab {
 					await this.statusDescription.updateConnectionState();
 				})
 			);
-
-		new Setting(containerEl)
-			.setName("Access token")
-			.setClass("sync-settings-access-token")
-			.setDesc(
-				"Set the access token for the server that you can get from the server"
-			)
-			.setTooltip("todo, links to dcocs")
-			.addTextArea((text) =>
-				text
-					.setPlaceholder("ey...")
-					.setValue(this.syncClient.getSettings().token)
-					.onChange(async (value) =>
-						this.syncClient.setSetting("token", value)
-					)
-			);
-
-		new Setting(containerEl)
-			.setName("Vault name")
-			.setDesc(
-				"Set the name of the remote vault that you want to sync with"
-			)
-			.setTooltip("todo, links to dcocs")
-			.addText((text) =>
-				text
-					.setPlaceholder("My Obsidian Vault")
-					.setValue(this.syncClient.getSettings().vaultName)
-					.onChange((value) => (this.editedVaultName = value))
-			)
-			.addButton((button) =>
-				button.setButtonText("Apply").onClick(async () => {
-					if (
-						this.editedVaultName ===
-						this.syncClient.getSettings().vaultName
-					) {
-						return;
-					}
-					await this.syncClient.setSetting(
-						"vaultName",
-						this.editedVaultName
-					);
-					new Notice(
-						"Sync state has been reset, you will need to resync"
-					);
-				})
-			);
 	}
 
 	private renderSyncSettings(containerEl: HTMLElement): void {
 		containerEl.createEl("h3", { text: "Sync" });
 
 		new Setting(containerEl)
-			.setName("Danger zone")
+			.setName("Enable sync")
 			.setDesc(
-				"How many concurrent sync operations to run. Setting this value higher may increase the overall performance, however, it will require more memory as well. If you notice frequent crashes, especially on mobile, set this to 1."
+				"Enable pulling and pushing changes to the remote server. The first time it's enabled, or after the sync state has been reset, all local files will be pushed to the server."
 			)
-			.addButton((button) =>
-				button.setButtonText("Reset sync state").onClick(async () => {
-					await this.syncClient.reset();
-					new Notice(
-						"Sync state has been reset, you will need to resync"
-					);
-				})
+			.setTooltip(
+				"Enable pulling and pushing changes to the remote server."
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.syncClient.getSettings().isSyncEnabled)
+					.onChange(async (value) =>
+						this.syncClient.setSetting("isSyncEnabled", value)
+					)
 			);
 
 		new Setting(containerEl)
@@ -255,19 +301,17 @@ export class SyncSettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Enable sync")
+			.setName("Danger zone")
 			.setDesc(
-				"Enable pulling and pushing changes to the remote server. The first time it's enabled, or after the sync state has been reset, all local files will be pushed to the server."
+				"How many concurrent sync operations to run. Setting this value higher may increase the overall performance, however, it will require more memory as well. If you notice frequent crashes, especially on mobile, set this to 1."
 			)
-			.setTooltip(
-				"Enable pulling and pushing changes to the remote server."
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.syncClient.getSettings().isSyncEnabled)
-					.onChange(async (value) =>
-						this.syncClient.setSetting("isSyncEnabled", value)
-					)
+			.addButton((button) =>
+				button.setButtonText("Reset sync state").onClick(async () => {
+					await this.syncClient.reset();
+					new Notice(
+						"Sync state has been reset, you will need to resync"
+					);
+				})
 			);
 	}
 
@@ -286,5 +330,31 @@ export class SyncSettingsTab extends PluginSettingTab {
 				this.statusDescriptionSubscription
 			);
 		}
+	}
+
+	private unsavedAwareSettingName(
+		name: string,
+		settingName: keyof SyncSettings
+	): [
+		DocumentFragment,
+		(newValue: SyncSettings[keyof SyncSettings]) => void
+	] {
+		const titleContainer = document.createDocumentFragment();
+		const title = titleContainer.createEl("div", {
+			text: name,
+			cls: "setting-item-name"
+		});
+
+		const updateTitle = (
+			currentValue: SyncSettings[keyof SyncSettings]
+		): void => {
+			title.innerText = `${name}${
+				currentValue !== this.syncClient.getSettings()[settingName]
+					? " (unsaved)"
+					: ""
+			}`;
+		};
+
+		return [titleContainer, updateTitle];
 	}
 }

@@ -58,16 +58,21 @@ export class Settings {
 		key: T,
 		value: SyncSettings[T]
 	): Promise<void> {
-		const newSettings = { ...this.settings, [key]: value };
 		this.logger.debug(`Setting '${key}' to '${value}'`);
-		await this.setSettings(newSettings);
+		await this.setSettings({
+			[key]: value
+		});
 	}
 
-	private async setSettings(value: SyncSettings): Promise<void> {
+	public async setSettings(value: Partial<SyncSettings>): Promise<void> {
 		const oldSettings = this.settings;
-		this.settings = value;
+		this.settings = {
+			...this.settings,
+			...value
+		};
+
 		this.onSettingsChangeHandlers.forEach((handler) => {
-			handler(value, oldSettings);
+			handler(this.settings, oldSettings);
 		});
 		await this.save();
 	}

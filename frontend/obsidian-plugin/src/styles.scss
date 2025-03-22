@@ -63,9 +63,13 @@
 		cursor: pointer;
 	}
 
+	input[type="text"],
+	textarea {
+		width: 250px;
+	}
+
 	textarea {
 		resize: none;
-		width: 100%;
 		height: 60px;
 	}
 }

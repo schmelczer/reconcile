@@ -191,6 +191,10 @@ export class SyncClient {
 		await this.settings.setSetting(key, value);
 	}
 
+	public async setSettings(value: Partial<SyncSettings>): Promise<void> {
+		await this.settings.setSettings(value);
+	}
+
 	public addOnSettingsChangeListener(
 		handler: (settings: SyncSettings, oldSettings: SyncSettings) => void
 	): void {
