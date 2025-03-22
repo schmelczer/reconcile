@@ -28,12 +28,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Debug
-        run: |
-          echo "github.ref: ${{ github.ref }}"
-          echo "github.ref_type: ${{ github.ref_type }}"
-          echo "github.event_name: ${{ github.event_name }}"
-
       # Install the cosign tool
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
