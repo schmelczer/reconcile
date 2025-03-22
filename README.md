@@ -60,4 +60,11 @@ And to clean up the logs & database files, run `scripts/clean-up.sh`
 - Better server logs
 - Allow setting config.yml path for server
 - Single apply button in settings
+- history tab for going back
 - vritual list for logs view
+- show cursors
+- use websocket
+- fix docker publish
+- add self-hosted runner protection
+- change default branch
+- split repo
