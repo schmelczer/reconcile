@@ -162,8 +162,8 @@ export class SyncClient {
 	}
 
 	public async waitAndStop(): Promise<void> {
-		await this.syncer.waitForSyncQueue();
 		await this.syncer.applyRemoteChangesLocally();
+		await this.syncer.waitForSyncQueue();
 		this.stop();
 	}
 
@@ -172,11 +172,12 @@ export class SyncClient {
 	/// The SyncClient can be used again after calling this method.
 	public async reset(): Promise<void> {
 		this.stop();
-		this.connectionStatus.reset();
+		this.connectionStatus.startReset();
 		await this.syncer.reset();
 		this.history.reset();
 		this.database.reset();
 		this._logger.reset();
+		this.connectionStatus.finishReset();
 		void this.start();
 	}
 

@@ -39,8 +39,11 @@ export class ConnectionStatus {
 		return input.url;
 	}
 
-	public reset(): void {
+	public startReset(): void {
 		this.rejectUntil(new SyncResetError());
+	}
+
+	public finishReset(): void {
 		[this.until, this.resolveUntil, this.rejectUntil] = createPromise();
 	}
 

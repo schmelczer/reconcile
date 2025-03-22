@@ -11,6 +11,7 @@ import type { FileOperations } from "../file-operations/file-operations";
 import { findMatchingFile } from "../utils/find-matching-file";
 import { UnrestrictedSyncer } from "./unrestricted-syncer";
 import { createPromise } from "../utils/create-promise";
+import { SyncResetError } from "../services/sync-reset-error";
 
 export class Syncer {
 	private readonly remainingOperationsListeners: ((
@@ -203,6 +204,12 @@ export class Syncer {
 			await this.runningScheduleSyncForOfflineChanges;
 			this.logger.info(`All local changes have been applied remotely`);
 		} catch (e) {
+			if (e instanceof SyncResetError) {
+				this.logger.info(
+					"Failed to apply local changes remotely due to a reset"
+				);
+				return;
+			}
 			this.logger.error(
 				`Not all local changes have been applied remotely: ${e}`
 			);
@@ -226,6 +233,12 @@ export class Syncer {
 			await this.runningApplyRemoteChangesLocally;
 			this.logger.info("All remote changes have been applied locally");
 		} catch (e) {
+			if (e instanceof SyncResetError) {
+				this.logger.info(
+					"Failed to apply remote changes locally due to a reset"
+				);
+				return;
+			}
 			this.logger.error(`Failed to apply remote changes locally: ${e}`);
 			throw e;
 		} finally {

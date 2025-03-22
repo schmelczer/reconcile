@@ -16,6 +16,7 @@ import type { FileOperations } from "../file-operations/file-operations";
 import { DocumentLocks } from "../file-operations/document-locks";
 import { createPromise } from "../utils/create-promise";
 import { FileNotFoundError } from "../file-operations/file-not-found-error";
+import { SyncResetError } from "../services/sync-reset-error";
 
 export class UnrestrictedSyncer {
 	private readonly locks: DocumentLocks;
@@ -402,6 +403,13 @@ export class UnrestrictedSyncer {
 				this.logger.info(
 					`Skip ${syncSource.toLocaleLowerCase()} file because it no longer exists when trying to ${syncType.toLocaleLowerCase()} it`
 				);
+				return;
+			}
+			if (e instanceof SyncResetError) {
+				this.logger.info(
+					`Interrupting sync operation because of a reset`
+				);
+				return;
 			} else {
 				this.history.addHistoryEntry({
 					status: SyncStatus.ERROR,
