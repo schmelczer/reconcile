@@ -35,6 +35,18 @@ export class StatusBar {
 			cls: ["sync-status"]
 		});
 
+		if (!this.syncClient.getSettings().isSyncEnabled) {
+			const button = container.createEl("button", {
+				text: "VaultLink is disabled, click to configure",
+				cls: "initialize-button"
+			});
+			button.onclick = (): void => {
+				this.plugin.openSettings();
+			};
+
+			return;
+		}
+
 		let hasShownMessage = false;
 
 		if ((this.lastRemaining ?? 0) > 0) {
@@ -57,17 +69,7 @@ export class StatusBar {
 		}
 
 		if (!hasShownMessage) {
-			if (this.syncClient.getSettings().isSyncEnabled) {
-				container.createSpan({ text: "VaultLink is idle" });
-			} else {
-				const button = container.createEl("button", {
-					text: "VaultLink is disabled, click to configure",
-					cls: "initialize-button"
-				});
-				button.onclick = (): void => {
-					this.plugin.openSettings();
-				};
-			}
+			container.createSpan({ text: "VaultLink is idle" });
 		}
 	}
 }
