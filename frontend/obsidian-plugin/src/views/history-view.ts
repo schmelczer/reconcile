@@ -54,7 +54,7 @@ export class HistoryView extends ItemView {
 		}
 
 		element.createEl("span", {
-			text: entry.relativePath
+			text: entry.relativePath.split("/").pop()
 		});
 	}
 
