@@ -23,11 +23,14 @@ export class HistoryView extends ItemView {
 		super(leaf);
 		this.icon = HistoryView.ICON;
 
-		this.client.addSyncHistoryUpdateListener(() => {
-			this.updateView().catch((_error: unknown) => {
-				this.client.logger.error("Failed to update history view");
-			});
-		});
+		this.client.addSyncHistoryUpdateListener(
+			() =>
+				void this.updateView().catch((error: unknown) => {
+					this.client.logger.error(
+						`Failed to update history view: ${error}`
+					);
+				})
+		);
 	}
 
 	private static getSyncTypeIcon(type: SyncType | undefined): IconName {
@@ -56,6 +59,21 @@ export class HistoryView extends ItemView {
 		element.createEl("span", {
 			text: entry.relativePath.split("/").pop()
 		});
+	}
+
+	private static updateTimeSince(
+		element: HTMLElement,
+		entry: HistoryEntry
+	): void {
+		const timestampElement = element.querySelector(
+			".history-card-timestamp"
+		);
+		if (timestampElement != null) {
+			timestampElement.textContent = intlFormatDistance(
+				entry.timestamp,
+				new Date()
+			);
+		}
 	}
 
 	public getViewType(): string {
@@ -88,7 +106,7 @@ export class HistoryView extends ItemView {
 			return;
 		}
 
-		const entries = this.client.getHistoryEntries().reverse();
+		const entries = this.client.getHistoryEntries();
 
 		if (this.historyEntryToElement.size === 0 && entries.length > 0) {
 			// Clear the "No update has happened yet" message
@@ -98,15 +116,7 @@ export class HistoryView extends ItemView {
 		entries.forEach((entry) => {
 			const element = this.historyEntryToElement.get(entry);
 			if (element !== undefined) {
-				const timestampElement = element.querySelector(
-					".history-card-timestamp"
-				);
-				if (timestampElement != null) {
-					timestampElement.textContent = intlFormatDistance(
-						entry.timestamp,
-						new Date()
-					);
-				}
+				HistoryView.updateTimeSince(element, entry);
 				return;
 			}
 

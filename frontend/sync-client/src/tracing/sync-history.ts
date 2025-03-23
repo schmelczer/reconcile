@@ -28,8 +28,9 @@ export interface HistoryStats {
 
 export class SyncHistory {
 	private static readonly MAX_ENTRIES = 500;
+	private static readonly TIMEOUT_FOR_MERGING_ENTRIES_IN_SECONDS = 15;
 
-	private entries: HistoryEntry[] = [];
+	private _entries: HistoryEntry[] = [];
 
 	private readonly syncHistoryUpdateListeners: ((
 		status: HistoryStats
@@ -42,19 +43,35 @@ export class SyncHistory {
 
 	public constructor(private readonly logger: Logger) {}
 
-	public getEntries(): HistoryEntry[] {
-		return [...this.entries];
+	public get entries(): readonly HistoryEntry[] {
+		return this._entries;
 	}
 
-	public reset(): void {
-		this.entries.length = 0;
-		this.status = {
-			success: 0,
-			error: 0
+	/**
+	 * Insert the entry at the beginning of the history list. If the entry
+	 * already in the list, it will get moved to the beginning and updated.
+	 *
+	 * If the entry list is too long, the oldest entry will be removed.
+	 */
+	public addHistoryEntry(entry: CommonHistoryEntry): void {
+		const historyEntry = {
+			...entry,
+			timestamp: new Date()
 		};
-		this.syncHistoryUpdateListeners.forEach((listener) => {
-			listener(this.status);
-		});
+
+		const candidate = this.findSimilarRecentEntry(historyEntry);
+		if (candidate !== undefined) {
+			this._entries = this._entries.filter((e) => e !== candidate);
+		}
+
+		// Insert the entry at the beginning
+		this._entries.unshift(historyEntry);
+
+		if (this._entries.length > SyncHistory.MAX_ENTRIES) {
+			this._entries.pop();
+		}
+
+		this.updateSuccessCount(historyEntry);
 	}
 
 	public addSyncHistoryUpdateListener(
@@ -64,25 +81,35 @@ export class SyncHistory {
 		listener({ ...this.status });
 	}
 
-	public addHistoryEntry(entry: CommonHistoryEntry): void {
-		const historyEntry = {
-			...entry,
-			timestamp: new Date()
+	public reset(): void {
+		this._entries.length = 0;
+		this.status = {
+			success: 0,
+			error: 0
 		};
+		this.syncHistoryUpdateListeners.forEach((listener) => {
+			listener(this.status);
+		});
+	}
 
-		const candidate = this.entries.find(
-			(e) => e.relativePath === historyEntry.relativePath
+	private findSimilarRecentEntry(
+		entry: HistoryEntry
+	): HistoryEntry | undefined {
+		const candidate = this._entries.find(
+			(e) => e.relativePath === entry.relativePath
 		);
 		if (
 			candidate !== undefined &&
-			(this.entries.slice(-1)[0] === candidate ||
-				candidate.timestamp.getTime() + 10 * 1000 >
-					historyEntry.timestamp.getTime())
+			(this._entries[0] === candidate ||
+				candidate.timestamp.getTime() +
+					SyncHistory.TIMEOUT_FOR_MERGING_ENTRIES_IN_SECONDS * 1000 >
+					entry.timestamp.getTime())
 		) {
-			this.entries = this.entries.filter((e) => e !== candidate);
+			return candidate;
 		}
-		this.entries.push(historyEntry);
+	}
 
+	private updateSuccessCount(entry: HistoryEntry): void {
 		if (entry.status === SyncStatus.SUCCESS) {
 			this.status.success++;
 			this.logger.info(
@@ -94,13 +121,8 @@ export class SyncHistory {
 				`Cannot sync file: ${entry.relativePath} - ${entry.message}`
 			);
 		}
-
 		this.syncHistoryUpdateListeners.forEach((listener) => {
 			listener(this.status);
 		});
-
-		if (this.entries.length > SyncHistory.MAX_ENTRIES) {
-			this.entries.shift();
-		}
 	}
 }

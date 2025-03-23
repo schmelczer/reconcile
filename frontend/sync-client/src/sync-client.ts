@@ -149,8 +149,8 @@ export class SyncClient {
 		return this.syncService.checkConnection();
 	}
 
-	public getHistoryEntries(): HistoryEntry[] {
-		return this.history.getEntries();
+	public getHistoryEntries(): readonly HistoryEntry[] {
+		return this.history.entries;
 	}
 
 	public addSyncHistoryUpdateListener(
