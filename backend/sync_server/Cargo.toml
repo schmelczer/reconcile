@@ -33,6 +33,7 @@ rand = "0.8.5"
 sanitize-filename = "0.6.0"
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 regex = "1.11.1"
+clap = { version = "4.5.32", features = ["derive"] }
 
 [lints]
 workspace = true
