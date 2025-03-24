@@ -1,3 +1,4 @@
+mod cli;
 mod config;
 mod consts;
 mod database;
@@ -6,6 +7,8 @@ mod server;
 mod utils;
 
 use anyhow::{Context as _, Result};
+use clap::Parser;
+use cli::args::Args;
 use errors::{SyncServerError, init_error};
 use log::info;
 use server::create_server;
@@ -13,6 +16,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), SyncServerError> {
+    let args = Args::parse();
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -33,7 +38,7 @@ async fn main() -> Result<(), SyncServerError> {
         env!("CARGO_PKG_VERSION")
     );
 
-    create_server()
+    create_server(args.config_path)
         .await
         .context("Failed to start server")
         .map_err(init_error)

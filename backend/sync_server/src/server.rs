@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ffi::OsString, sync::Arc};
 
 use aide::{
     axum::{
@@ -48,11 +48,11 @@ mod requests;
 mod responses;
 mod update_document;
 
-pub async fn create_server() -> Result<()> {
+pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
     aide::r#gen::on_error(|err| error!("{err}"));
     aide::r#gen::extract_schemas(true);
 
-    let app_state = AppState::try_new()
+    let app_state = AppState::try_new(config_path)
         .await
         .context("Failed to initialise app state")?;
 
