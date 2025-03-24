@@ -2,10 +2,13 @@ use std::ffi::OsString;
 
 use clap::{Parser, ValueEnum};
 
-/// Simple program to greet a person
+/// Server for backing the VaultLink plugin
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+    #[arg(index = 1)]
+    pub config_path: Option<OsString>,
+
     #[arg(
             long,
             require_equals = true,
@@ -16,9 +19,6 @@ pub struct Args {
             value_enum
         )]
     pub color: ColorWhen,
-
-    #[arg(last = true)]
-    pub config_path: Option<OsString>,
 }
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
