@@ -53,16 +53,3 @@ scripts/e2e.sh
 ```
 
 And to clean up the logs & database files, run `scripts/clean-up.sh`
-
-## Todos
-
-- Don't show server traces on auth failure
-- Better server logs
-- Allow setting config.yml path for server
-- history tab for going back
-- show cursors
-- use websocket
-- fix docker publish
-- add self-hosted runner protection
-- change default branch
-- split repo
