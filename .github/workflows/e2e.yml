@@ -38,7 +38,7 @@ jobs:
       - name: E2E tests
         run: |
           cd backend
-          RUST_BACKTRACE=1 cargo run -p sync_server &
+          RUST_BACKTRACE=1 cargo run -p sync_server config-e2e.yml &
           cd ..
 
           scripts/update-api-types.sh

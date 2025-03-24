@@ -3,4 +3,4 @@ Dockerfile
 .dockerignore
 databases
 sync_lib/pkg
-config.yml
+*.yml

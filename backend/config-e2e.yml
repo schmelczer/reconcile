@@ -9,5 +9,11 @@ users:
   user_tokens:
   - name: admin
     token: test-token-change-me
+    vaults: 
+      all: true
+
   - name: test
     token: other-test-token
+    vaults: 
+      allowed:
+       - default

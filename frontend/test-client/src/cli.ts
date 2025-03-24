@@ -27,7 +27,7 @@ async function runTest({
 
 	const initialSettings: Partial<SyncSettings> = {
 		isSyncEnabled: true,
-		token: "test-token-change-me", // same as in backend/config.yml
+		token: "test-token-change-me", // same as in backend/config-e2e.yml
 		vaultName: uuidv4(),
 		syncConcurrency: concurrency,
 		remoteUri: "http://localhost:3000"
