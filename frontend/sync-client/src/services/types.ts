@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-	"/ping": {
+	"/vaults/{vault_id}/ping": {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -17,7 +17,9 @@ export interface paths {
 				header?: {
 					authorization?: string;
 				};
-				path?: never;
+				path: {
+					vault_id: string;
+				};
 				cookie?: never;
 			};
 			requestBody?: never;
@@ -554,6 +556,9 @@ export interface components {
 			 */
 			lastUpdateId: number;
 			latestDocuments: components["schemas"]["DocumentVersionWithoutContent"][];
+		};
+		PingPathParams: {
+			vault_id: string;
 		};
 		/** @description Response to a ping request. */
 		PingResponse: {

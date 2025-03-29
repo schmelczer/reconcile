@@ -284,14 +284,22 @@ export class SyncService {
 	}
 
 	public async checkConnection(): Promise<CheckConnectionResult> {
+		const { vaultName } = this.settings.getSettings();
+
 		try {
-			const response = await this.pingClient.GET("/ping", {
-				params: {
-					header: {
-						authorization: `Bearer ${this.settings.getSettings().token}`
+			const response = await this.pingClient.GET(
+				"/vaults/{vault_id}/ping",
+				{
+					params: {
+						header: {
+							authorization: `Bearer ${this.settings.getSettings().token}`
+						},
+						path: {
+							vault_id: vaultName
+						}
 					}
 				}
-			});
+			);
 
 			this.logger.debug(
 				`Ping response: ${JSON.stringify(response.data)}`
