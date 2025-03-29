@@ -14,6 +14,7 @@ import type { FileSystemOperations } from "./file-operations/filesystem-operatio
 import { FileOperations } from "./file-operations/file-operations";
 import { ConnectionStatus } from "./services/connection-status";
 import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
+import { rateLimit } from "./utils/rate-limit";
 
 export interface NetworkConnectionStatus {
 	isSuccessful: boolean;
@@ -22,6 +23,8 @@ export interface NetworkConnectionStatus {
 }
 
 export class SyncClient {
+	private static readonly MINIMUM_SAVE_INTERVAL_MS = 1000;
+
 	// eslint-disable-next-line @typescript-eslint/max-params
 	private constructor(
 		private readonly history: SyncHistory,
@@ -80,12 +83,17 @@ export class SyncClient {
 			database: undefined
 		};
 
+		const rateLimitedSave = rateLimit(
+			persistence.save,
+			SyncClient.MINIMUM_SAVE_INTERVAL_MS
+		);
+
 		const database = new Database(
 			logger,
 			state.database,
 			async (data): Promise<void> => {
 				state = { ...state, database: data };
-				return persistence.save(state);
+				await rateLimitedSave(state);
 			}
 		);
 
@@ -94,7 +102,7 @@ export class SyncClient {
 			state.settings,
 			async (data): Promise<void> => {
 				state = { ...state, settings: data };
-				return persistence.save(state);
+				await rateLimitedSave(state);
 			}
 		);
 
