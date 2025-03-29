@@ -354,7 +354,7 @@ export class SyncService {
 				}
 
 				this.logger.error(
-					`Failed network call (${e}), retryingin ${SyncService.NETWORK_RETRY_INTERVAL_MS}ms`
+					`Failed network call (${e}), retrying in ${SyncService.NETWORK_RETRY_INTERVAL_MS}ms`
 				);
 				await sleep(SyncService.NETWORK_RETRY_INTERVAL_MS);
 			}
