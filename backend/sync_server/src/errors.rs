@@ -43,6 +43,25 @@ impl SyncServerError {
     }
 }
 
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+pub struct SerializedError {
+    pub message: String,
+    pub causes: Vec<String>,
+}
+
+impl ToString for SerializedError {
+    fn to_string(&self) -> String {
+        let mut result = self.message.clone();
+        if !self.causes.is_empty() {
+            result.push_str("\nCauses:\n");
+            for cause in &self.causes {
+                result.push_str(&format!("- {}\n", cause));
+            }
+        }
+        result
+    }
+}
+
 impl IntoResponse for SyncServerError {
     fn into_response(self) -> Response {
         let body = Json(self.serialize());
@@ -57,12 +76,6 @@ impl IntoResponse for SyncServerError {
             Self::PermissionDeniedError(_) => (StatusCode::FORBIDDEN, body).into_response(),
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, JsonSchema)]
-pub struct SerializedError {
-    pub message: String,
-    pub causes: Vec<String>,
 }
 
 impl From<&anyhow::Error> for SerializedError {

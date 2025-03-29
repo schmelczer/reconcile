@@ -29,7 +29,7 @@ async fn main() -> ExitCode {
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("Failed to set up logging: {e}");
+            eprintln!("{}", e.serialize().to_string());
             ExitCode::FAILURE
         }
     }
