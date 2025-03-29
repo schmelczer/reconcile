@@ -13,7 +13,7 @@ sync_lib = { path = "../sync_lib" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
-tokio = { version = "1.42.0", features = ["full"]}
+tokio = { version = "1.44.1", features = ["full"]}
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
 log = { version = "0.4.22" }
 anyhow =  { version = "1.0.97", features = ["backtrace"] }
