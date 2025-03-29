@@ -27,7 +27,9 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 
 		const view = this.workspace.getActiveViewOfType(MarkdownView);
 		if (view?.file?.path === path) {
+			const position = view.editor.getCursor();
 			view.editor.setValue(new TextDecoder().decode(content));
+			view.editor.setCursor(position);
 			return;
 		}
 
@@ -47,7 +49,9 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 		const view = this.workspace.getActiveViewOfType(MarkdownView);
 		if (view?.file?.path === path) {
 			const result = updater(view.editor.getValue());
+			const position = view.editor.getCursor();
 			view.editor.setValue(result);
+			view.editor.setCursor(position);
 			return result;
 		}
 

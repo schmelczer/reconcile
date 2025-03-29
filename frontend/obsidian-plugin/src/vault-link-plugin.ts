@@ -167,6 +167,6 @@ export default class VaultLinkPlugin extends Plugin {
 				)
 			);
 		}
-		await this.rateLimitedUpdatesPerFile.get(path)();
+		await this.rateLimitedUpdatesPerFile.get(path)?.();
 	}
 }
