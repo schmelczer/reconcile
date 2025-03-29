@@ -12,13 +12,15 @@ use serde::Deserialize;
 use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
 
 use super::{
-    app_state::AppState,
     auth::auth,
     requests::{UpdateDocumentVersion, UpdateDocumentVersionMultipart},
     responses::DocumentUpdateResponse,
 };
 use crate::{
-    database::models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+    app_state::{
+        AppState,
+        database::models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+    },
     errors::{SyncServerError, client_error, not_found_error, server_error},
     utils::{deduped_file_paths, sanitize_path},
 };
@@ -83,7 +85,7 @@ pub async fn update_document_json(
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn internal_update_document(
     auth_header: Authorization<Bearer>,
-    mut state: AppState,
+    state: AppState,
     vault_id: VaultId,
     document_id: DocumentId,
     parent_version_id: VaultUpdateId,
@@ -215,6 +217,11 @@ async fn internal_update_document(
         .await
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
+
+    state
+        .broadcasts
+        .send(vault_id, new_version.clone().into())
+        .await;
 
     Ok(Json(if is_different_from_request_content {
         DocumentUpdateResponse::MergingUpdate(new_version.into())

@@ -18,6 +18,7 @@ export interface CheckConnectionResult {
 }
 
 export class SyncService {
+	private static readonly NETWORK_RETRY_INTERVAL_MS = 1000;
 	private client: Client<paths>;
 	private pingClient: Client<paths>;
 	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
@@ -284,17 +285,35 @@ export class SyncService {
 
 	public async checkConnection(): Promise<CheckConnectionResult> {
 		try {
-			const result = await this.ping();
+			const response = await this.pingClient.GET("/ping", {
+				params: {
+					header: {
+						authorization: `Bearer ${this.settings.getSettings().token}`
+					}
+				}
+			});
+
+			this.logger.debug(
+				`Ping response: ${JSON.stringify(response.data)}`
+			);
+
+			if (!response.data) {
+				throw new Error(
+					`Failed to ping server: ${SyncService.formatError(response.error)}`
+				);
+			}
+
+			const result = response.data;
 			if (result.isAuthenticated) {
 				return {
 					isSuccessful: true,
-					message: `Successfully connected to server (version: ${result.serverVersion}) and authenticated.`
+					message: `Successfully connected to server (version: ${result.serverVersion}) and authenticated`
 				};
 			}
 
 			return {
 				isSuccessful: false,
-				message: `Successfully connected to server (version: ${result.serverVersion}) but failed to authenticate.`
+				message: `Successfully connected to server (version: ${result.serverVersion}) but failed to authenticate`
 			};
 		} catch (e) {
 			return {
@@ -302,27 +321,6 @@ export class SyncService {
 				message: `Failed to connect to server: ${e}`
 			};
 		}
-	}
-
-	// No retries
-	private async ping(): Promise<components["schemas"]["PingResponse"]> {
-		const response = await this.pingClient.GET("/ping", {
-			params: {
-				header: {
-					authorization: `Bearer ${this.settings.getSettings().token}`
-				}
-			}
-		});
-
-		this.logger.debug(`Ping response: ${JSON.stringify(response.data)}`);
-
-		if (!response.data) {
-			throw new Error(
-				`Failed to ping server: ${SyncService.formatError(response.error)}`
-			);
-		}
-
-		return response.data;
 	}
 
 	/**
@@ -355,8 +353,10 @@ export class SyncService {
 					throw e;
 				}
 
-				this.logger.error(`Failed network call (${e}), retrying`);
-				await sleep(1000);
+				this.logger.error(
+					`Failed network call (${e}), retryingin ${SyncService.NETWORK_RETRY_INTERVAL_MS}ms`
+				);
+				await sleep(SyncService.NETWORK_RETRY_INTERVAL_MS);
 			}
 		}
 	}

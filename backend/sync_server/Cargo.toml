@@ -34,6 +34,9 @@ sanitize-filename = "0.6.0"
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 regex = "1.11.1"
 clap = { version = "4.5.32", features = ["derive"] }
+futures = "0.3.31"
+serde_json = "1.0.140"
+clap-verbosity-flag = "3.0.2"
 
 [lints]
 workspace = true

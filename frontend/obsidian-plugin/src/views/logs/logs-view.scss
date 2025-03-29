@@ -1,0 +1,60 @@
+.logs-view {
+	display: flex;
+	flex-direction: column;
+
+	.verbosity-selector {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-weight: normal;
+		gap: var(--size-4-2);
+		margin: var(--size-4-4) var(--size-4-2);
+
+		h4 {
+			margin: 0;
+		}
+
+		select {
+			cursor: pointer;
+		}
+	}
+
+	.logs-container {
+		max-width: 100%;
+		overflow-y: auto;
+
+		.log-message {
+			font: var(--font-monospace);
+			margin-bottom: var(--size-2-1);
+			overflow-wrap: break-word;
+			white-space: pre-wrap;
+			user-select: all;
+
+			.timestamp {
+				padding: var(--size-2-1) var(--size-4-1);
+				border-radius: var(--radius-s);
+				background-color: var(--color-base-30);
+				font-size: var(--font-ui-small);
+				font-family: var(--font-monospace);
+				font-weight: var(--bold-weight);
+				margin-right: var(--size-4-1);
+			}
+
+			&.DEBUG {
+				color: var(--color-base-50);
+			}
+
+			&.INFO {
+				color: var(--color-base-100);
+			}
+
+			&.WARNING {
+				color: rgb(var(--color-yellow-rgb));
+			}
+
+			&.ERROR {
+				color: rgb(var(--color-red-rgb));
+			}
+		}
+	}
+}

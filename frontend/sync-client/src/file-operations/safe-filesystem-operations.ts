@@ -1,7 +1,7 @@
 import type { RelativePath } from "../persistence/database";
 import type { FileSystemOperations } from "./filesystem-operations";
 import type { Logger } from "../tracing/logger";
-import { DocumentLocks } from "./document-locks";
+import { Locks } from "../utils/locks";
 import { FileNotFoundError } from "./file-not-found-error";
 
 /**
@@ -10,13 +10,13 @@ import { FileNotFoundError } from "./file-not-found-error";
  * single request in-flight for any one file through the use of locks.
  */
 export class SafeFileSystemOperations implements FileSystemOperations {
-	private readonly locks: DocumentLocks;
+	private readonly locks: Locks<RelativePath>;
 
 	public constructor(
 		private readonly fs: FileSystemOperations,
 		private readonly logger: Logger
 	) {
-		this.locks = new DocumentLocks(logger);
+		this.locks = new Locks(logger);
 	}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
@@ -117,7 +117,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 				: [pathOrPaths];
 
 			await Promise.all(
-				paths.map(async (path) => this.locks.waitForDocumentLock(path))
+				paths.map(async (path) => this.locks.waitForLock(path))
 			);
 
 			try {
@@ -125,7 +125,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 			} finally {
 				await Promise.all(
 					paths.map((path) => {
-						this.locks.unlockDocument(path);
+						this.locks.unlock(path);
 					})
 				);
 			}

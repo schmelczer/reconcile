@@ -22,6 +22,7 @@ thiserror = { version = "1.0.66", default-features = false  }
 codegen-units = 1
 lto = true
 opt-level = 3
+strip="debuginfo"  # Keep some info for better panics
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -1,3 +1,5 @@
+import "./logs-view.scss";
+
 import type { WorkspaceLeaf } from "obsidian";
 import { ItemView } from "obsidian";
 import type { LogLine } from "sync-client";
@@ -7,8 +9,11 @@ export class LogsView extends ItemView {
 	public static readonly TYPE = "logs-view";
 	public static readonly ICON = "logs";
 
+	private static readonly MAX_OFFSET_FROM_BOTTOM_WITH_AUTO_SCROLL_PX = 300;
+
 	private logsContainer: HTMLElement | undefined;
 	private readonly logLineToElement = new Map<LogLine, HTMLElement>();
+	private minLogLevel: LogLevel = LogLevel.INFO;
 
 	public constructor(
 		private readonly client: SyncClient,
@@ -56,10 +61,43 @@ export class LogsView extends ItemView {
 	public async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.addClass("logs-view");
-		container.createEl("h4", { text: "VaultLink logs" });
-		this.logsContainer = container.createDiv({ cls: "logs-container" });
 
-		this.updateView();
+		const logLevels = [
+			{ label: "Debug", value: LogLevel.DEBUG },
+			{ label: "Info", value: LogLevel.INFO },
+			{ label: "Warn", value: LogLevel.WARNING },
+			{ label: "Error", value: LogLevel.ERROR }
+		];
+
+		container.createDiv(
+			{
+				cls: "verbosity-selector"
+			},
+			(verbositySection) => {
+				verbositySection.createEl("h4", {
+					text: "VaultLink logs"
+				});
+
+				verbositySection.createEl("select", {}, (dropdown) => {
+					logLevels.forEach(({ label, value }) =>
+						dropdown.createEl("option", { text: label, value })
+					);
+
+					dropdown.value = this.minLogLevel;
+
+					dropdown.addEventListener("change", () => {
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+						this.minLogLevel = dropdown.value as LogLevel;
+
+						this.logsContainer?.empty();
+						this.logLineToElement.clear();
+						this.updateView();
+					});
+				});
+			}
+		);
+
+		this.logsContainer = container.createDiv({ cls: "logs-container" });
 	}
 
 	private updateView(): void {
@@ -68,12 +106,19 @@ export class LogsView extends ItemView {
 			return;
 		}
 
-		const logs = this.client.logger.getMessages(LogLevel.DEBUG);
+		const logs = this.client.logger.getMessages(this.minLogLevel);
 
 		if (this.logLineToElement.size === 0 && logs.length > 0) {
 			// Clear the "No logs available yet" message
 			container.empty();
 		}
+
+		const shouldScroll =
+			container.scrollTop == 0 ||
+			container.scrollHeight -
+				container.clientHeight -
+				container.scrollTop <
+				LogsView.MAX_OFFSET_FROM_BOTTOM_WITH_AUTO_SCROLL_PX;
 
 		logs.forEach((message) => {
 			if (this.logLineToElement.has(message)) {
@@ -98,6 +143,8 @@ export class LogsView extends ItemView {
 			container.createEl("p", {
 				text: "No logs available yet."
 			});
+		} else if (shouldScroll) {
+			container.scrollTop = container.scrollHeight;
 		}
 	}
 }

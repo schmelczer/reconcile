@@ -11,12 +11,16 @@ use serde::Deserialize;
 use sync_lib::base64_to_bytes;
 
 use super::{
-    app_state::AppState,
     auth::auth,
     requests::{CreateDocumentVersion, CreateDocumentVersionMultipart},
 };
 use crate::{
-    database::models::{DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId},
+    app_state::{
+        AppState,
+        database::models::{
+            DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
+        },
+    },
     errors::{SyncServerError, client_error, server_error},
     utils::sanitize_path,
 };
@@ -77,7 +81,7 @@ pub async fn create_document_json(
 
 async fn internal_create_document(
     auth_header: Authorization<Bearer>,
-    mut state: AppState,
+    state: AppState,
     vault_id: VaultId,
     document_id: Option<DocumentId>,
     relative_path: String,
@@ -138,6 +142,11 @@ async fn internal_create_document(
         .await
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
+
+    state
+        .broadcasts
+        .send(vault_id, new_version.clone().into())
+        .await;
 
     Ok(Json(new_version.into()))
 }

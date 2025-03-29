@@ -1,0 +1,53 @@
+.history-card {
+	padding: var(--size-4-4);
+	margin: var(--size-4-2);
+	background-color: var(--color-base-00);
+	border-radius: var(--radius-l);
+	container-type: inline-size;
+
+	&.clickable {
+		cursor: pointer;
+	}
+
+	&.success {
+		background-color: rgba(var(--color-green-rgb), 0.2);
+	}
+
+	&.error {
+		background-color: rgba(var(--color-red-rgb), 0.2);
+	}
+
+	.history-card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: var(--size-4-2);
+		gap: var(--size-4-2);
+
+		@container (max-width: 300px) {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.history-card-title {
+			font: var(--font-monospace);
+			display: flex;
+			align-items: center;
+			gap: var(--size-4-2);
+			word-break: break-all;
+			margin: 0;
+		}
+
+		.history-card-timestamp {
+			font-size: var(--font-ui-small);
+			font-style: italic;
+			color: var(--italic-color);
+		}
+	}
+
+	.history-card-message {
+		font-size: var(--font-ui-medium);
+		color: var(--color-base-70);
+		margin: 0;
+	}
+}

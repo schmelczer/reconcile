@@ -4,8 +4,8 @@ use axum_extra::{
     headers::{Authorization, authorization::Bearer},
 };
 
-use super::{app_state::AppState, auth::auth, responses::PingResponse};
-use crate::errors::SyncServerError;
+use super::{auth::auth, responses::PingResponse};
+use crate::{app_state::AppState, errors::SyncServerError};
 
 #[axum::debug_handler]
 pub async fn ping(

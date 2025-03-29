@@ -85,13 +85,13 @@ impl Database {
     }
 
     async fn run_migrations(pool: &Pool<Sqlite>) -> Result<()> {
-        sqlx::migrate!("src/database/migrations")
+        sqlx::migrate!("src/app_state/database/migrations")
             .run(pool)
             .await
             .context("Cannot check for pending migrations")
     }
 
-    async fn get_connection_pool(&mut self, vault: &VaultId) -> Result<Pool<Sqlite>> {
+    async fn get_connection_pool(&self, vault: &VaultId) -> Result<Pool<Sqlite>> {
         let mut pools = self.connection_pools.lock().await;
         if !pools.contains_key(vault) {
             let pool = Self::create_vault_database(&self.config, vault).await?;
@@ -108,7 +108,7 @@ impl Database {
     /// Attempting to write from this transaction might result in a
     /// database locked error. Use this transaction for read-only operations.
     pub async fn create_readonly_transaction(
-        &mut self,
+        &self,
         vault: &VaultId,
     ) -> Result<Transaction<'static>> {
         self.get_connection_pool(vault)
@@ -118,10 +118,7 @@ impl Database {
             .context("Cannot create transaction")
     }
 
-    pub async fn create_write_transaction(
-        &mut self,
-        vault: &VaultId,
-    ) -> Result<Transaction<'static>> {
+    pub async fn create_write_transaction(&self, vault: &VaultId) -> Result<Transaction<'static>> {
         let mut transaction = self.create_readonly_transaction(vault).await?;
 
         // sqlx doesn't support immediate transactions for sqlite: https://github.com/launchbadge/sqlx/issues/481
@@ -134,7 +131,7 @@ impl Database {
 
     /// Return the latest state of all documents in the vault
     pub async fn get_latest_documents(
-        &mut self,
+        &self,
         vault: &VaultId,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<Vec<DocumentVersionWithoutContent>> {
@@ -165,7 +162,7 @@ impl Database {
     /// Return the latest state of all documents (including deleted) in the
     /// vault which have changed since the given update id
     pub async fn get_latest_documents_since(
-        &mut self,
+        &self,
         vault: &VaultId,
         vault_update_id: VaultUpdateId,
         transaction: Option<&mut Transaction<'_>>,
@@ -199,7 +196,7 @@ impl Database {
     }
 
     pub async fn get_max_update_id_in_vault(
-        &mut self,
+        &self,
         vault: &VaultId,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<i64> {
@@ -222,7 +219,7 @@ impl Database {
     }
 
     pub async fn get_latest_document_by_path(
-        &mut self,
+        &self,
         vault: &VaultId,
         relative_path: &str,
         transaction: Option<&mut Transaction<'_>>,
@@ -258,7 +255,7 @@ impl Database {
     }
 
     pub async fn get_latest_document(
-        &mut self,
+        &self,
         vault: &VaultId,
         document_id: &DocumentId,
         transaction: Option<&mut Transaction<'_>>,
@@ -291,7 +288,7 @@ impl Database {
     }
 
     pub async fn get_document_version(
-        &mut self,
+        &self,
         vault: &VaultId,
         vault_update_id: VaultUpdateId,
         transaction: Option<&mut Transaction<'_>>,
@@ -322,7 +319,7 @@ impl Database {
     }
 
     pub async fn insert_document_version(
-        &mut self,
+        &self,
         vault: &VaultId,
         version: &StoredDocumentVersion,
         transaction: Option<&mut Transaction<'_>>,

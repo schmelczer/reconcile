@@ -7,9 +7,12 @@ use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{app_state::AppState, auth::auth, responses::FetchLatestDocumentsResponse};
+use super::{auth::auth, responses::FetchLatestDocumentsResponse};
 use crate::{
-    database::models::{VaultId, VaultUpdateId},
+    app_state::{
+        AppState,
+        database::models::{VaultId, VaultUpdateId},
+    },
     errors::{SyncServerError, server_error},
 };
 
@@ -30,7 +33,7 @@ pub async fn fetch_latest_documents(
     TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(FetchLatestDocumentsPathParams { vault_id }): Path<FetchLatestDocumentsPathParams>,
     Query(QueryParams { since_update_id }): Query<QueryParams>,
-    State(mut state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<FetchLatestDocumentsResponse>, SyncServerError> {
     auth(&state, auth_header.token())?;
 

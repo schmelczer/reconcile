@@ -8,9 +8,12 @@ use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{app_state::AppState, auth::auth};
+use super::auth::auth;
 use crate::{
-    database::models::{DocumentId, DocumentVersion, VaultId, VaultUpdateId},
+    app_state::{
+        AppState,
+        database::models::{DocumentId, DocumentVersion, VaultId, VaultUpdateId},
+    },
     errors::{SyncServerError, not_found_error, server_error},
 };
 
@@ -30,7 +33,7 @@ pub async fn fetch_document_version(
         document_id,
         vault_update_id,
     }): Path<FetchDocumentVersionPathParams>,
-    State(mut state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<DocumentVersion>, SyncServerError> {
     auth(&state, auth_header.token())?;
 

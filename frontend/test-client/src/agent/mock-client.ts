@@ -1,4 +1,4 @@
-import type { StoredDatabase } from "sync-client/dist/types/persistence/database";
+import type { StoredDatabase } from "sync-client";
 import { assert } from "../utils/assert";
 import {
 	type RelativePath,
@@ -23,9 +23,11 @@ export class MockClient implements FileSystemOperations {
 	};
 
 	public constructor(
-		private readonly initialSettings: Partial<SyncSettings>,
+		initialSettings: Partial<SyncSettings>,
 		protected readonly useSlowFileEvents: boolean
-	) {}
+	) {
+		this.data.settings = initialSettings;
+	}
 
 	public async init(
 		fetchImplementation: typeof globalThis.fetch
@@ -38,16 +40,6 @@ export class MockClient implements FileSystemOperations {
 			},
 			fetch: fetchImplementation
 		});
-
-		await Promise.all(
-			Object.keys(this.initialSettings).map(async (key) => {
-				const settingKey = key as keyof SyncSettings; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-				return this.client.setSetting(
-					settingKey,
-					this.initialSettings[settingKey]! // eslint-disable-line @typescript-eslint/no-non-null-assertion
-				);
-			})
-		);
 
 		await this.client.start();
 	}

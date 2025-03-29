@@ -566,6 +566,10 @@ export interface components {
 			/** Format: int64 */
 			since_update_id?: number | null;
 		};
+		QueryParams2: {
+			/** Format: int64 */
+			since_update_id?: number | null;
+		};
 		SerializedError: {
 			causes: string[];
 			message: string;
@@ -586,6 +590,9 @@ export interface components {
 			/** Format: int64 */
 			parentVersionId: number;
 			relativePath: string;
+		};
+		WebsocketPathParams: {
+			vault_id: string;
 		};
 	};
 	responses: never;

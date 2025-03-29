@@ -1,7 +1,9 @@
 use schemars::JsonSchema;
 use serde::{self, Serialize};
 
-use crate::database::models::{DocumentVersion, DocumentVersionWithoutContent, VaultUpdateId};
+use crate::app_state::database::models::{
+    DocumentVersion, DocumentVersionWithoutContent, VaultUpdateId,
+};
 
 /// Response to a ping request.
 #[derive(Debug, Clone, Serialize, JsonSchema)]

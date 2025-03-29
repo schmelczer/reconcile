@@ -1,23 +1,38 @@
-import type { Stat, Vault } from "obsidian";
-import { normalizePath } from "obsidian";
+import type { Stat, Vault, Workspace } from "obsidian";
+import { MarkdownView, normalizePath } from "obsidian";
 import type { FileSystemOperations, RelativePath } from "sync-client";
 
 export class ObsidianFileSystemOperations implements FileSystemOperations {
-	public constructor(private readonly vault: Vault) {}
+	public constructor(
+		private readonly vault: Vault,
+		private readonly workspace: Workspace
+	) {}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
 		return this.vault.getFiles().map((file) => file.path);
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {
-		return new Uint8Array(
-			await this.vault.adapter.readBinary(normalizePath(path))
-		);
+		path = normalizePath(path);
+		const view = this.workspace.getActiveViewOfType(MarkdownView);
+		if (view?.file?.path === path) {
+			return new TextEncoder().encode(view.editor.getValue());
+		}
+
+		return new Uint8Array(await this.vault.adapter.readBinary(path));
 	}
 
 	public async write(path: RelativePath, content: Uint8Array): Promise<void> {
+		path = normalizePath(path);
+
+		const view = this.workspace.getActiveViewOfType(MarkdownView);
+		if (view?.file?.path === path) {
+			view.editor.setValue(new TextDecoder().decode(content));
+			return;
+		}
+
 		return this.vault.adapter.writeBinary(
-			normalizePath(path),
+			path,
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			content.buffer as ArrayBuffer
 		);
@@ -27,7 +42,16 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 		path: RelativePath,
 		updater: (currentContent: string) => string
 	): Promise<string> {
-		return this.vault.adapter.process(normalizePath(path), updater);
+		path = normalizePath(path);
+
+		const view = this.workspace.getActiveViewOfType(MarkdownView);
+		if (view?.file?.path === path) {
+			const result = updater(view.editor.getValue());
+			view.editor.setValue(result);
+			return result;
+		}
+
+		return this.vault.adapter.process(path, updater);
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {

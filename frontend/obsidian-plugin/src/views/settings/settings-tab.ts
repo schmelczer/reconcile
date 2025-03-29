@@ -1,10 +1,12 @@
+import "./settings-tab.scss";
+
 import type { App } from "obsidian";
 import { Notice, PluginSettingTab, Setting } from "obsidian";
-import type VaultLinkPlugin from "../vault-link-plugin";
-import type { StatusDescription } from "./status-description";
-import { LogsView } from "./logs-view";
-import { HistoryView } from "./history-view";
+import type VaultLinkPlugin from "src/vault-link-plugin";
 import type { SyncClient, SyncSettings } from "sync-client";
+import { HistoryView } from "../history/history-view";
+import { LogsView } from "../logs/logs-view";
+import type { StatusDescription } from "../status-description/status-description";
 
 export class SyncSettingsTab extends PluginSettingTab {
 	private editedServerUri: string;
@@ -220,7 +222,7 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addButton((button) =>
 				button.setButtonText("Test connection").onClick(async () => {
 					new Notice(
-						(await this.syncClient.checkConnection()).message
+						(await this.syncClient.checkConnection()).serverMessage
 					);
 					await this.statusDescription.updateConnectionState();
 				})
@@ -243,29 +245,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 					.setValue(this.syncClient.getSettings().isSyncEnabled)
 					.onChange(async (value) =>
 						this.syncClient.setSetting("isSyncEnabled", value)
-					)
-			);
-
-		new Setting(containerEl)
-			.setName("Remote fetching frequency (seconds)")
-			.setDesc(
-				"Set how often should the plugin check for changes on the server. Lower values will increase the frequency of the checks making it easier to collaborate with others."
-			)
-			.setTooltip("todo, links to docs")
-			.addSlider((text) =>
-				text
-					.setLimits(0.5, 60, 0.5)
-					.setDynamicTooltip()
-					.setInstant(false)
-					.setValue(
-						this.syncClient.getSettings()
-							.fetchChangesUpdateIntervalMs / 1000
-					)
-					.onChange(async (value) =>
-						this.syncClient.setSetting(
-							"fetchChangesUpdateIntervalMs",
-							value * 1000
-						)
 					)
 			);
 

@@ -88,8 +88,7 @@ export class MockAgent extends MockClient {
 
 	public async act(): Promise<void> {
 		const options: (() => Promise<unknown>)[] = [
-			this.createFileAction.bind(this),
-			this.changeFetchChangesUpdateIntervalMsAction.bind(this)
+			this.createFileAction.bind(this)
 		];
 
 		if (this.client.getSettings().isSyncEnabled) {
@@ -251,16 +250,6 @@ export class MockAgent extends MockClient {
 		);
 
 		return this.create(file, new TextEncoder().encode(` ${content} `));
-	}
-
-	private async changeFetchChangesUpdateIntervalMsAction(): Promise<void> {
-		this.client.logger.info(
-			`Decided to change fetchChangesUpdateIntervalMs`
-		);
-		return this.client.setSetting(
-			"fetchChangesUpdateIntervalMs",
-			Math.random() * 2000 + 100
-		);
 	}
 
 	private async disableSyncAction(): Promise<void> {

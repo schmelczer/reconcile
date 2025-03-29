@@ -1,0 +1,14 @@
+.sync-status {
+	display: flex;
+	gap: var(--size-4-2);
+
+	* {
+		display: block;
+	}
+
+	.initialize-button {
+		padding: 0 var(--size-4-2);
+		background: rgba(var(--color-red-rgb), 0.4);
+		cursor: pointer;
+	}
+}

@@ -1,3 +1,16 @@
+mod auth;
+mod create_document;
+mod delete_document;
+mod fetch_document_version;
+mod fetch_document_version_content;
+mod fetch_latest_document_version;
+mod fetch_latest_documents;
+mod ping;
+mod requests;
+mod responses;
+mod update_document;
+mod websocket;
+
 use std::{ffi::OsString, sync::Arc};
 
 use aide::{
@@ -10,7 +23,6 @@ use aide::{
     transform::TransformOpenApi,
 };
 use anyhow::{Context as _, Result, anyhow};
-use app_state::AppState;
 use axum::{
     Extension, Json,
     extract::{DefaultBodyLimit, Request},
@@ -32,21 +44,10 @@ use tower_http::{
 use tracing::{Level, info_span};
 
 use crate::{
+    app_state::AppState,
     config::server_config::ServerConfig,
     errors::{SerializedError, not_found_error},
 };
-mod app_state;
-mod auth;
-mod create_document;
-mod delete_document;
-mod fetch_document_version;
-mod fetch_document_version_content;
-mod fetch_latest_document_version;
-mod fetch_latest_documents;
-mod ping;
-mod requests;
-mod responses;
-mod update_document;
 
 pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
     aide::r#gen::on_error(|err| error!("{err}"));
@@ -65,6 +66,7 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
             "/vaults/:vault_id/documents",
             get(fetch_latest_documents::fetch_latest_documents),
         )
+        .route("/vaults/:vault_id/ws", get(websocket::websocket_handler))
         .api_route(
             "/vaults/:vault_id/documents",
             post(create_document::create_document_multipart),

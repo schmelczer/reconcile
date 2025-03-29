@@ -1,9 +1,10 @@
-use super::app_state::AppState;
 use crate::{
+    app_state::AppState,
     config::user_config::User,
     errors::{SyncServerError, unauthorized_error},
 };
 
+// TODO: turn this into a middleware
 pub fn auth(app_state: &AppState, token: &str) -> Result<User, SyncServerError> {
     app_state
         .config

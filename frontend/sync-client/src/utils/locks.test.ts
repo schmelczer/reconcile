@@ -1,92 +1,88 @@
 import { Logger } from "../tracing/logger";
 import type { RelativePath } from "../persistence/database";
-import { DocumentLocks } from "./document-locks";
+import { Locks } from "./locks";
 
 describe("Document lock", () => {
 	const testPath: RelativePath = "test/document/path";
 	const logger = new Logger();
-	let locks = new DocumentLocks(logger);
+
+	// eslint-disable-next-line @typescript-eslint/init-declarations
+	let locks: Locks<RelativePath>;
 
 	beforeEach(() => {
-		locks = new DocumentLocks(logger);
+		locks = new Locks<RelativePath>(logger);
 	});
 
 	test("should lock a document successfully", () => {
-		const result = locks.tryLockDocument(testPath);
+		const result = locks.tryLock(testPath);
 		expect(result).toBe(true);
 	});
 
 	test("should not lock a document that is already locked", () => {
-		locks.tryLockDocument(testPath);
-		const result = locks.tryLockDocument(testPath);
+		locks.tryLock(testPath);
+		const result = locks.tryLock(testPath);
 		expect(result).toBe(false);
 	});
 
 	test("should unlock a locked document", () => {
-		locks.tryLockDocument(testPath);
-		locks.unlockDocument(testPath);
-		const result = locks.tryLockDocument(testPath);
+		locks.tryLock(testPath);
+		locks.unlock(testPath);
+		const result = locks.tryLock(testPath);
 		expect(result).toBe(true);
-		locks.unlockDocument(testPath);
+		locks.unlock(testPath);
 	});
 
 	test("should throw an error when unlocking a document that is not locked", () => {
 		expect(() => {
-			locks.unlockDocument(testPath);
+			locks.unlock(testPath);
 		}).toThrow(`Document ${testPath} is not locked, cannot unlock`);
 	});
 
 	test("should wait for a document lock and resolve when unlocked", async () => {
-		locks.tryLockDocument(testPath);
+		locks.tryLock(testPath);
 
 		let resolved = false;
-		const waitPromise = locks.waitForDocumentLock(testPath).then(() => {
+		const waitPromise = locks.waitForLock(testPath).then(() => {
 			resolved = true;
 		});
 
-		locks.unlockDocument(testPath);
+		locks.unlock(testPath);
 		await waitPromise;
 
 		expect(resolved).toBe(true);
 	});
 
 	test("should resolve multiple waiters in FIFO order", async () => {
-		locks.tryLockDocument(testPath);
+		locks.tryLock(testPath);
 
 		let firstResolved = false;
 		let secondResolved = false;
 		let thirdResolved = false;
 
-		const firstWaitPromise = locks
-			.waitForDocumentLock(testPath)
-			.then(() => {
-				firstResolved = true;
-			});
+		const firstWaitPromise = locks.waitForLock(testPath).then(() => {
+			firstResolved = true;
+		});
 
-		const secondWaitPromise = locks
-			.waitForDocumentLock(testPath)
-			.then(() => {
-				secondResolved = true;
-			});
+		const secondWaitPromise = locks.waitForLock(testPath).then(() => {
+			secondResolved = true;
+		});
 
-		const thirdWaitPromise = locks
-			.waitForDocumentLock(testPath)
-			.then(() => {
-				thirdResolved = true;
-			});
+		const thirdWaitPromise = locks.waitForLock(testPath).then(() => {
+			thirdResolved = true;
+		});
 
-		locks.unlockDocument(testPath);
+		locks.unlock(testPath);
 		await firstWaitPromise;
 		expect(firstResolved).toBe(true);
 		expect(secondResolved).toBe(false);
 		expect(thirdResolved).toBe(false);
 
-		locks.unlockDocument(testPath);
+		locks.unlock(testPath);
 		await secondWaitPromise;
 		expect(secondResolved).toBe(true);
 		expect(thirdResolved).toBe(false);
 
-		locks.unlockDocument(testPath);
+		locks.unlock(testPath);
 		await thirdWaitPromise;
 		expect(thirdResolved).toBe(true);
 	});

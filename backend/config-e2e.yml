@@ -1,10 +1,13 @@
 database:
   databases_directory_path: databases
   max_connections: 12
+
 server:
   host: 0.0.0.0
   port: 3000
   max_body_size_mb: 512
+  max_clients_per_vault: 256
+
 users:
   user_tokens:
   - name: admin

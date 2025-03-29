@@ -6,10 +6,12 @@
 		"allowSyntheticDefaultImports": true,
 		"moduleResolution": "bundler",
 		"lib": [
-			"DOM" // to get "fetch"
+			"DOM" // to get `fetch` & `WebSocket`
 		],
 		"declaration": true,
 		"declarationDir": "./dist/types"
 	},
-	"exclude": ["./dist"]
+	"exclude": [
+		"./dist"
+	]
 }

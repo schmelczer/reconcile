@@ -4,7 +4,7 @@ use axum_typed_multipart::TryFromMultipart;
 use schemars::JsonSchema;
 use serde::{self, Deserialize};
 
-use crate::database::models::{DocumentId, VaultUpdateId};
+use crate::app_state::database::models::{DocumentId, VaultUpdateId};
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

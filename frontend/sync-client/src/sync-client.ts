@@ -8,7 +8,6 @@ import type { RelativePath, StoredDatabase } from "./persistence/database";
 import { Database } from "./persistence/database";
 import type { SyncSettings } from "./persistence/settings";
 import { Settings } from "./persistence/settings";
-import type { CheckConnectionResult } from "./services/sync-service";
 import { SyncService } from "./services/sync-service";
 import { Syncer } from "./sync-operations/syncer";
 import type { FileSystemOperations } from "./file-operations/filesystem-operations";
@@ -16,9 +15,13 @@ import { FileOperations } from "./file-operations/file-operations";
 import { ConnectionStatus } from "./services/connection-status";
 import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
 
-export class SyncClient {
-	private remoteListenerIntervalId: NodeJS.Timeout | null = null;
+export interface NetworkConnectionStatus {
+	isSuccessful: boolean;
+	serverMessage: string;
+	isWebSocketConnected: boolean;
+}
 
+export class SyncClient {
 	// eslint-disable-next-line @typescript-eslint/max-params
 	private constructor(
 		private readonly history: SyncHistory,
@@ -31,15 +34,6 @@ export class SyncClient {
 	) {
 		this.settings.addOnSettingsChangeListener(
 			(newSettings, oldSettings) => {
-				if (
-					newSettings.fetchChangesUpdateIntervalMs !==
-					oldSettings.fetchChangesUpdateIntervalMs
-				) {
-					this.setRemoteEventListener(
-						newSettings.fetchChangesUpdateIntervalMs
-					);
-				}
-
 				if (newSettings.vaultName !== oldSettings.vaultName) {
 					void this.reset();
 				}
@@ -145,8 +139,13 @@ export class SyncClient {
 		return client;
 	}
 
-	public async checkConnection(): Promise<CheckConnectionResult> {
-		return this.syncService.checkConnection();
+	public async checkConnection(): Promise<NetworkConnectionStatus> {
+		const server = await this.syncService.checkConnection();
+		return {
+			isSuccessful: server.isSuccessful,
+			serverMessage: server.message,
+			isWebSocketConnected: this.syncer.isWebSocketConnected
+		};
 	}
 
 	public getHistoryEntries(): readonly HistoryEntry[] {
@@ -161,20 +160,15 @@ export class SyncClient {
 
 	public async start(): Promise<void> {
 		await this.syncer.scheduleSyncForOfflineChanges();
-
-		this.setRemoteEventListener(
-			this.settings.getSettings().fetchChangesUpdateIntervalMs
-		);
 	}
 
-	/// Clear all global state that has been touched by SyncClient.
 	public stop(): void {
-		this.unsetRemoteEventListener();
+		this.syncer.stop();
 	}
 
 	public async waitAndStop(): Promise<void> {
-		await this.syncer.waitUntilFinished();
 		this.stop();
+		await this.syncer.waitUntilFinished();
 	}
 
 	/// Wait for the in-flight operations to finish, reset all tracking,
@@ -218,6 +212,10 @@ export class SyncClient {
 		this.syncer.addRemainingOperationsListener(listener);
 	}
 
+	public addWebSocketStatusChangeListener(listener: () => void): void {
+		this.syncer.addWebSocketStatusChangeListener(listener);
+	}
+
 	public async syncLocallyCreatedFile(
 		relativePath: RelativePath
 	): Promise<void> {
@@ -241,22 +239,5 @@ export class SyncClient {
 			oldPath,
 			relativePath
 		});
-	}
-
-	private setRemoteEventListener(intervalMs: number): void {
-		if (this.remoteListenerIntervalId !== null) {
-			clearInterval(this.remoteListenerIntervalId);
-		}
-
-		this.remoteListenerIntervalId = setInterval(
-			() => void this.syncer.applyRemoteChangesLocally(),
-			intervalMs
-		);
-	}
-
-	private unsetRemoteEventListener(): void {
-		if (this.remoteListenerIntervalId !== null) {
-			clearInterval(this.remoteListenerIntervalId);
-		}
 	}
 }

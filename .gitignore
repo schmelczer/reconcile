@@ -14,4 +14,4 @@ backend/databases
 
 *.log
 
-plugin/coverage
+*.sqlx

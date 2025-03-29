@@ -1,13 +1,15 @@
+import "./status-description.scss";
+
 import type {
 	HistoryStats,
-	CheckConnectionResult,
+	NetworkConnectionStatus,
 	SyncClient
 } from "sync-client";
 
 export class StatusDescription {
 	private lastHistoryStats: HistoryStats | undefined;
 	private lastRemaining: number | undefined;
-	private lastConnectionState: CheckConnectionResult | undefined;
+	private lastConnectionState: NetworkConnectionStatus | undefined;
 
 	private statusChangeListeners: (() => void)[] = [];
 
@@ -26,9 +28,13 @@ export class StatusDescription {
 			}
 		);
 
-		this.syncClient.addOnSettingsChangeListener(() => {
-			void this.updateConnectionState();
-		});
+		this.syncClient.addWebSocketStatusChangeListener(
+			() => void this.updateConnectionState()
+		);
+
+		this.syncClient.addOnSettingsChangeListener(
+			() => void this.updateConnectionState()
+		);
 	}
 
 	public async updateConnectionState(): Promise<void> {
@@ -59,7 +65,15 @@ export class StatusDescription {
 
 		if (!this.lastConnectionState.isSuccessful) {
 			container.createSpan({
-				text: `VaultLink failed to connect to the remote server with the error "${this.lastConnectionState.message}"`,
+				text: `VaultLink failed to connect to the remote server with error '${this.lastConnectionState.serverMessage}'`,
+				cls: "error"
+			});
+			return;
+		}
+
+		if (!this.lastConnectionState.isWebSocketConnected) {
+			container.createSpan({
+				text: `${this.lastConnectionState.serverMessage} but the WebSocket connection could not be established.`,
 				cls: "error"
 			});
 			return;

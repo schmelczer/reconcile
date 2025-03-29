@@ -13,14 +13,11 @@ import type { components } from "../services/types";
 import { deserialize } from "../utils/deserialize";
 import type { Settings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
-import { DocumentLocks } from "../file-operations/document-locks";
 import { createPromise } from "../utils/create-promise";
 import { FileNotFoundError } from "../file-operations/file-not-found-error";
 import { SyncResetError } from "../services/sync-reset-error";
 
 export class UnrestrictedSyncer {
-	private readonly locks: DocumentLocks;
-
 	public constructor(
 		private readonly logger: Logger,
 		private readonly database: Database,
@@ -28,10 +25,7 @@ export class UnrestrictedSyncer {
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
 		private readonly history: SyncHistory
-	) {
-		this.locks = new DocumentLocks(logger);
-	}
-
+	) {}
 	public async unrestrictedSyncLocallyCreatedFile(
 		document: DocumentRecord
 	): Promise<void> {
@@ -414,10 +408,6 @@ export class UnrestrictedSyncer {
 				throw e;
 			}
 		}
-	}
-
-	public reset(): void {
-		this.locks.reset();
 	}
 
 	private tryIncrementVaultUpdateId(responseVaultUpdateId: number): void {

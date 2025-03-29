@@ -6,7 +6,12 @@
 		"strict": true,
 		"moduleResolution": "bundler",
 		"allowSyntheticDefaultImports": true,
-		"lib": ["DOM", "ESNext"]
+		"lib": [
+			"DOM",
+			"ESNext"
+		]
 	},
-	"exclude": ["./dist"]
+	"exclude": [
+		"./dist"
+	]
 }

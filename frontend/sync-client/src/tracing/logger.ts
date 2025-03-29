@@ -21,7 +21,7 @@ export class LogLine {
 }
 
 export class Logger {
-	private static readonly MAX_MESSAGES = 2000;
+	private static readonly MAX_MESSAGES = 100000;
 	private readonly messages: LogLine[] = [];
 	private readonly onMessageListeners: ((message: LogLine) => void)[] = [];
 
