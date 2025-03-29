@@ -11,35 +11,18 @@ import { HistoryView } from "./views/history/history-view";
 import { StatusBar } from "./views/status-bar/status-bar";
 import { LogsView } from "./views/logs/logs-view";
 import { StatusDescription } from "./views/status-description/status-description";
-import type { LogLine } from "sync-client";
-import { SyncClient, LogLevel } from "sync-client";
+import { SyncClient, rateLimit } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 import { SyncSettingsTab } from "./views/settings/settings-tab";
+import { registerConsoleForLogging } from "./utils/register-console-for-logging";
 
 export default class VaultLinkPlugin extends Plugin {
 	private settingsTab: SyncSettingsTab | undefined;
 	private client!: SyncClient;
-
-	private static registerConsoleForLogging(client: SyncClient): void {
-		client.logger.addOnMessageListener((logLine: LogLine) => {
-			const formatted = `${logLine.timestamp.toISOString()} ${logLine.level} ${logLine.message}`;
-
-			switch (logLine.level) {
-				case LogLevel.ERROR:
-					console.error(formatted);
-					break;
-				case LogLevel.WARNING:
-					console.warn(formatted);
-					break;
-				case LogLevel.INFO:
-					console.info(formatted);
-					break;
-				case LogLevel.DEBUG:
-					console.debug(formatted);
-					break;
-			}
-		});
-	}
+	private readonly rateLimitedUpdatesPerFile = new Map<
+		string,
+		() => Promise<unknown>
+	>();
 
 	public async onload(): Promise<void> {
 		this.client = await SyncClient.create({
@@ -54,7 +37,7 @@ export default class VaultLinkPlugin extends Plugin {
 			nativeLineEndings: Platform.isWin ? "\r\n" : "\n"
 		});
 
-		VaultLinkPlugin.registerConsoleForLogging(this.client);
+		registerConsoleForLogging(this.client);
 
 		const statusDescription = new StatusDescription(this.client);
 
@@ -138,9 +121,7 @@ export default class VaultLinkPlugin extends Plugin {
 				) => {
 					const { file } = info;
 					if (file) {
-						await this.client.syncLocallyUpdatedFile({
-							relativePath: file.path
-						});
+						await this.rateLimitedUpdate(file.path);
 					}
 				}
 			),
@@ -151,9 +132,7 @@ export default class VaultLinkPlugin extends Plugin {
 			}),
 			this.app.vault.on("modify", async (file: TAbstractFile) => {
 				if (file instanceof TFile) {
-					await this.client.syncLocallyUpdatedFile({
-						relativePath: file.path
-					});
+					await this.rateLimitedUpdate(file.path);
 				}
 			}),
 			this.app.vault.on("delete", async (file: TAbstractFile) => {
@@ -173,5 +152,21 @@ export default class VaultLinkPlugin extends Plugin {
 		].forEach((event) => {
 			this.registerEvent(event);
 		});
+	}
+
+	private async rateLimitedUpdate(path: string): Promise<void> {
+		if (!this.rateLimitedUpdatesPerFile.has(path)) {
+			this.rateLimitedUpdatesPerFile.set(
+				path,
+				rateLimit(
+					async () =>
+						this.client.syncLocallyUpdatedFile({
+							relativePath: path
+						}),
+					250
+				)
+			);
+		}
+		await this.rateLimitedUpdatesPerFile.get(path)();
 	}
 }
