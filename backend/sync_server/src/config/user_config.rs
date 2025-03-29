@@ -1,5 +1,3 @@
-use std::default;
-
 use rand::{Rng as _, distributions::Alphanumeric, thread_rng};
 use serde::{Deserialize, Serialize};
 

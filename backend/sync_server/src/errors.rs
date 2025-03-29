@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use aide::OperationOutput;
 use axum::{
     Json,
@@ -49,16 +51,16 @@ pub struct SerializedError {
     pub causes: Vec<String>,
 }
 
-impl ToString for SerializedError {
-    fn to_string(&self) -> String {
-        let mut result = self.message.clone();
+impl Display for SerializedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if !self.causes.is_empty() {
-            result.push_str("\nCauses:\n");
+            write!(f, "\nCauses:\n")?;
             for cause in &self.causes {
-                result.push_str(&format!("- {}\n", cause));
+                write!(f, "{}", &format!("- {cause}\n"))?;
             }
         }
-        result
+
+        Ok(())
     }
 }
 
