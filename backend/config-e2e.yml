@@ -12,11 +12,12 @@ users:
   user_tokens:
   - name: admin
     token: test-token-change-me
-    vaults: 
-      allow_access_to_all: true
+    vault_access: 
+      type: allow_access_to_all
 
   - name: test
     token: other-test-token
-    vaults: 
-      allowed:
+    vault_access:
+      type: allow_list
+      allowed: 
        - default
