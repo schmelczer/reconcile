@@ -37,7 +37,7 @@ pub async fn fetch_document_version_content(
     }): Path<FetchDocumentVersionContentPathParams>,
     State(state): State<AppState>,
 ) -> Result<Bytes, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     let result = state
         .database

@@ -37,7 +37,7 @@ pub async fn delete_document(
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     let mut transaction = state
         .database

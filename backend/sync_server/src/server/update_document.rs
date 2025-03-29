@@ -92,7 +92,7 @@ async fn internal_update_document(
     relative_path: String,
     content: Vec<u8>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     // No need for a transaction as document versions are immutable
     let parent_document = state

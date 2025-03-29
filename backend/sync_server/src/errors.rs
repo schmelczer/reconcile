@@ -24,7 +24,7 @@ pub enum SyncServerError {
     NotFound(#[source] anyhow::Error),
 
     #[error("Unauthorized: {0}")]
-    Unauthorized(#[source] anyhow::Error),
+    Unauthenticated(#[source] anyhow::Error),
 
     #[error("Permission denied error: {0}")]
     PermissionDeniedError(#[source] anyhow::Error),
@@ -37,7 +37,7 @@ impl SyncServerError {
             | Self::ClientError(error)
             | Self::ServerError(error)
             | Self::NotFound(error)
-            | Self::Unauthorized(error)
+            | Self::Unauthenticated(error)
             | Self::PermissionDeniedError(error) => error.into(),
         }
     }
@@ -53,7 +53,7 @@ impl IntoResponse for SyncServerError {
             }
             Self::ClientError(_) => (StatusCode::BAD_REQUEST, body).into_response(),
             Self::NotFound(_) => (StatusCode::NOT_FOUND, body).into_response(),
-            Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, body).into_response(),
+            Self::Unauthenticated(_) => (StatusCode::UNAUTHORIZED, body).into_response(),
             Self::PermissionDeniedError(_) => (StatusCode::FORBIDDEN, body).into_response(),
         }
     }
@@ -100,17 +100,16 @@ pub fn client_error(error: anyhow::Error) -> SyncServerError {
 }
 
 pub fn not_found_error(error: anyhow::Error) -> SyncServerError {
-    info!("Not found error: {:?}", error);
+    info!("Not found: {:?}", error);
     SyncServerError::NotFound(error)
 }
 
-pub fn unauthorized_error(error: anyhow::Error) -> SyncServerError {
-    info!("Unauthorized error: {:?}", error);
-    SyncServerError::Unauthorized(error)
+pub fn unauthenticated_error(error: anyhow::Error) -> SyncServerError {
+    info!("Unauthenticated user: {:?}", error);
+    SyncServerError::Unauthenticated(error)
 }
 
-#[allow(dead_code)]
 pub fn permission_denied_error(error: anyhow::Error) -> SyncServerError {
-    info!("Permission denied error: {:?}", error);
+    info!("Permission denied: {:?}", error);
     SyncServerError::PermissionDeniedError(error)
 }

@@ -87,7 +87,7 @@ async fn internal_create_document(
     relative_path: String,
     content: Vec<u8>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     let mut transaction = state
         .database

@@ -33,7 +33,7 @@ pub async fn fetch_latest_document_version(
     }): Path<FetchLatestDocumentVersionPathParams>,
     State(state): State<AppState>,
 ) -> Result<Json<DocumentVersion>, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     let latest_version = state
         .database

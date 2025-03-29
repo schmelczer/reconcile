@@ -61,7 +61,7 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
 
     let mut api = create_open_api();
     let app = ApiRouter::new()
-        .api_route("/ping", get(ping::ping))
+        .api_route("/vaults/:vault_id/ping", get(ping::ping))
         .api_route(
             "/vaults/:vault_id/documents",
             get(fetch_latest_documents::fetch_latest_documents),

@@ -1,6 +1,6 @@
 database:
   databases_directory_path: databases
-  max_connections: 12
+  max_connections_per_vault: 12
 
 server:
   host: 0.0.0.0
@@ -13,7 +13,7 @@ users:
   - name: admin
     token: test-token-change-me
     vaults: 
-      all: true
+      allow_access_to_all: true
 
   - name: test
     token: other-test-token

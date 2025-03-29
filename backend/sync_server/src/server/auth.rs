@@ -1,15 +1,26 @@
 use crate::{
-    app_state::AppState,
-    config::user_config::User,
-    errors::{SyncServerError, unauthorized_error},
+    app_state::{AppState, database::models::VaultId},
+    config::user_config::{AllowListedVaults, User, VaultAccess},
+    errors::{SyncServerError, permission_denied_error, unauthenticated_error},
 };
 
 // TODO: turn this into a middleware
-pub fn auth(app_state: &AppState, token: &str) -> Result<User, SyncServerError> {
-    app_state
+pub fn auth(app_state: &AppState, token: &str, vault: &VaultId) -> Result<User, SyncServerError> {
+    let user = app_state
         .config
         .users
         .get_user(token)
         .cloned()
-        .ok_or_else(|| unauthorized_error(anyhow::anyhow!("Invalid token")))
+        .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Invalid token")))?;
+
+    if match user.vault_access {
+        VaultAccess::AllowAccessToAll => true,
+        VaultAccess::AllowList(AllowListedVaults { ref allowed }) => allowed.contains(vault),
+    } {
+        Ok(user)
+    } else {
+        Err(permission_denied_error(anyhow::anyhow!(
+            "Permission denied for vault `{vault}`"
+        )))
+    }
 }

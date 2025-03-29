@@ -35,7 +35,7 @@ pub async fn fetch_latest_documents(
     Query(QueryParams { since_update_id }): Query<QueryParams>,
     State(state): State<AppState>,
 ) -> Result<Json<FetchLatestDocumentsResponse>, SyncServerError> {
-    auth(&state, auth_header.token())?;
+    auth(&state, auth_header.token(), &vault_id)?;
 
     let documents = if let Some(since_update_id) = since_update_id {
         state

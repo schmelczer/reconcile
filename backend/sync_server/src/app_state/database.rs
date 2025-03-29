@@ -73,7 +73,7 @@ impl Database {
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
         let pool = SqlitePoolOptions::new()
-            .max_connections(config.max_connections)
+            .max_connections(config.max_connections_per_vault)
             .test_before_acquire(true)
             .connect_with(connection_options)
             .await

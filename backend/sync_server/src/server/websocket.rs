@@ -20,7 +20,7 @@ use crate::{
         AppState,
         database::models::{DocumentVersionWithoutContent, VaultId, VaultUpdateId},
     },
-    errors::{SyncServerError, server_error, unauthorized_error},
+    errors::{SyncServerError, server_error, unauthenticated_error},
 };
 
 // This is required for aide to infer the path parameter types and names
@@ -73,9 +73,9 @@ async fn websocket(
     let (mut sender, mut receiver) = stream.split();
 
     if let Some(Ok(Message::Text(token))) = receiver.next().await {
-        auth(&state, &token)?;
+        auth(&state, &token, &vault_id)?;
     } else {
-        return Err(unauthorized_error(anyhow::anyhow!(
+        return Err(unauthenticated_error(anyhow::anyhow!(
             "Failed to authenticate"
         )));
     }
