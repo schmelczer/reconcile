@@ -1,41 +1,42 @@
+mod cursor;
 mod edited_text;
 mod merge_context;
 mod operation;
 
+pub use cursor::{CursorPosition, TextWithCursors};
 pub use edited_text::EditedText;
 pub use operation::Operation;
 
-use crate::tokenizer::Tokenizer;
+use crate::Tokenizer;
 
 #[must_use]
 pub fn reconcile(original: &str, left: &str, right: &str) -> String {
-    // Common trivial cases
-    if left == right {
-        return left.to_owned();
-    }
+    reconcile_with_cursors(original, left.into(), right.into())
+        .text
+        .to_string()
+}
 
-    if original == left {
-        return right.to_owned();
-    }
-
-    if original == right {
-        return left.to_owned();
-    }
-
-    // 3-way merge
+#[must_use]
+pub fn reconcile_with_cursors<'a>(
+    original: &'a str,
+    left: TextWithCursors<'a>,
+    right: TextWithCursors<'a>,
+) -> TextWithCursors<'static> {
     let left_operations = EditedText::from_strings(original, left);
     let right_operations = EditedText::from_strings(original, right);
 
     let merged_operations = left_operations.merge(right_operations);
-    merged_operations.apply()
+
+    TextWithCursors::new_owned(merged_operations.apply(), merged_operations.cursors)
 }
 
-pub fn reconcile_with_tokenizer<F, T>(
+#[must_use]
+pub fn reconcile_with_tokenizer<'a, F, T>(
     original: &str,
-    left: &str,
-    right: &str,
+    left: TextWithCursors<'a>,
+    right: TextWithCursors<'a>,
     tokenizer: &Tokenizer<T>,
-) -> String
+) -> TextWithCursors<'static>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
@@ -43,7 +44,8 @@ where
     let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);
 
     let merged_operations = left_operations.merge(right_operations);
-    merged_operations.apply()
+
+    TextWithCursors::new_owned(merged_operations.apply(), merged_operations.cursors)
 }
 
 #[cfg(test)]
@@ -54,6 +56,7 @@ mod test {
     use test_case::test_matrix;
 
     use super::*;
+    use crate::CursorPosition;
 
     #[test]
     fn test_merges() {
@@ -172,6 +175,188 @@ mod test {
             "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|      |dup|   ");
     }
 
+    #[test]
+    fn test_cursor_position_no_updates() {
+        let original = "hello world";
+        let left = TextWithCursors::new(
+            "hello world",
+            vec![CursorPosition {
+                id: 0,
+                char_index: 0,
+            }],
+        );
+        let right = TextWithCursors::new(
+            "hello world",
+            vec![CursorPosition {
+                id: 1,
+                char_index: 5,
+            }],
+        );
+
+        let merged = reconcile_with_cursors(original, left, right);
+
+        assert_eq!(
+            merged,
+            TextWithCursors::new(
+                "hello world",
+                vec![
+                    CursorPosition {
+                        id: 0,
+                        char_index: 0
+                    },
+                    CursorPosition {
+                        id: 1,
+                        char_index: 5
+                    }
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_cursor_position_updates_with_inserts() {
+        let original = "hi";
+        let left = TextWithCursors::new(
+            "hi there",
+            vec![CursorPosition {
+                id: 0,
+                char_index: 7,
+            }],
+        );
+        let right = TextWithCursors::new(
+            "hi world!",
+            vec![
+                CursorPosition {
+                    id: 1,
+                    char_index: 9,
+                },
+                CursorPosition {
+                    id: 2,
+                    char_index: 1,
+                },
+            ],
+        );
+
+        let merged = reconcile_with_cursors(original, left, right);
+
+        assert_eq!(
+            merged,
+            TextWithCursors::new(
+                "hi there world!",
+                vec![
+                    CursorPosition {
+                        id: 2,
+                        char_index: 1,
+                    },
+                    CursorPosition {
+                        id: 0,
+                        char_index: 7
+                    },
+                    CursorPosition {
+                        id: 1,
+                        char_index: 15
+                    },
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_cursor_position_updates_with_deleted() {
+        let original = "a b c d";
+        let left = TextWithCursors::new(
+            "a b d",
+            vec![CursorPosition {
+                id: 0,
+                char_index: 1, // after a
+            }],
+        );
+        let right = TextWithCursors::new(
+            "c d",
+            vec![CursorPosition {
+                id: 1,
+                char_index: 1, // after c
+            }],
+        );
+
+        let merged = reconcile_with_cursors(original, left, right);
+
+        assert_eq!(
+            merged,
+            TextWithCursors::new(
+                " d",
+                vec![
+                    CursorPosition {
+                        id: 0,
+                        char_index: 0
+                    },
+                    CursorPosition {
+                        id: 1,
+                        char_index: 1
+                    }
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_cursor_complex() {
+        let original = "this is some complex text to test cursor positions";
+        let left = TextWithCursors::new(
+            "this is really complex text for testing cursor positions",
+            vec![
+                CursorPosition {
+                    id: 0,
+                    char_index: 8,
+                }, // after "this is "
+                CursorPosition {
+                    id: 1,
+                    char_index: 22,
+                }, // after "this is really complex text"
+            ],
+        );
+        let right = TextWithCursors::new(
+            "that was some complex sample to test cursor movements",
+            vec![
+                CursorPosition {
+                    id: 2,
+                    char_index: 5,
+                }, // after "that "
+                CursorPosition {
+                    id: 3,
+                    char_index: 29,
+                }, // after "some complex sample "
+            ],
+        );
+
+        let merged = reconcile_with_cursors(original, left, right);
+
+        assert_eq!(
+            merged,
+            TextWithCursors::new(
+                "that was really complex sample for testing cursor movements",
+                vec![
+                    CursorPosition {
+                        id: 2,
+                        char_index: 5
+                    }, // unchanged
+                    CursorPosition {
+                        id: 0,
+                        char_index: 9
+                    }, // before "really"
+                    CursorPosition {
+                        id: 1,
+                        char_index: 23
+                    }, // inside of "s|ample" because "text" got replaced by "sample"
+                    CursorPosition {
+                        id: 3,
+                        char_index: 31
+                    }, // before "for"
+                ]
+            )
+        );
+    }
+
     #[test_matrix( [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
@@ -200,7 +385,7 @@ mod test {
         let files = [file_name_1, file_name_2, file_name_3];
         let permutations = [range_1, range_2, range_3];
 
-        let root = Path::new("test/resources/");
+        let root = Path::new("tests/resources/");
 
         let contents = files
             .iter()

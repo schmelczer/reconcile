@@ -1,0 +1,6 @@
+# The `|` characters denote cursor positions which are stripped before the actual reconcile logic is run
+---
+parent: You're Annual Savings Statement is available in our online portal
+left: Your| annual record is available in our online portal|
+right: You're Annual Savings information| is available online
+expected: Your| annual record information| is available online|

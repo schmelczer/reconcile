@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-serde = { version = "1.0.219", optional = true }
+serde = { version = "1.0.219", optional = true, features = ["derive"] }
 
 [features]
 serde = [ "dep:serde" ]
@@ -15,6 +15,8 @@ serde = [ "dep:serde" ]
 [dev-dependencies]
 insta = "1.42.2"
 pretty_assertions = "1.4.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_yaml ="0.9.34"
 test-case = "3.3.1"
 
 [lints]

@@ -23,4 +23,5 @@ EditedText {
             operation: <delete ' you?  Adam' from index 43>,
         },
     ],
+    cursors: [],
 }

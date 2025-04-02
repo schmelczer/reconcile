@@ -1,4 +1,4 @@
-import type { StoredDatabase } from "sync-client";
+import type { StoredDatabase, TextWithCursors } from "sync-client";
 import { assert } from "../utils/assert";
 import {
 	type RelativePath,
@@ -87,14 +87,14 @@ export class MockClient implements FileSystemOperations {
 
 	public async atomicUpdateText(
 		path: RelativePath,
-		updater: (currentContent: string) => string
+		updater: (currentContent: TextWithCursors) => TextWithCursors
 	): Promise<string> {
 		const file = this.localFiles.get(path);
 		if (!file) {
 			throw new Error(`File ${path} does not exist`);
 		}
 		const currentContent = new TextDecoder().decode(file);
-		const newContent = updater(currentContent);
+		const newContent = updater({ text: currentContent, cursors: [] }).text;
 		const newContentUint8Array = new TextEncoder().encode(newContent);
 		this.localFiles.set(path, newContentUint8Array);
 

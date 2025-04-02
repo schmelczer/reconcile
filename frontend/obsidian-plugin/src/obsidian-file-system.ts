@@ -1,6 +1,12 @@
 import type { Stat, Vault, Workspace } from "obsidian";
 import { MarkdownView, normalizePath } from "obsidian";
-import type { FileSystemOperations, RelativePath } from "sync-client";
+import type {
+	FileSystemOperations,
+	RelativePath,
+	TextWithCursors
+} from "sync-client";
+import { lineAndColumnToPosition } from "./utils/line-and-column-to-position";
+import { positionToLineAndColumn } from "./utils/position-to-line-and-column";
 
 export class ObsidianFileSystemOperations implements FileSystemOperations {
 	public constructor(
@@ -42,20 +48,50 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 
 	public async atomicUpdateText(
 		path: RelativePath,
-		updater: (currentContent: string) => string
+		updater: (current: TextWithCursors) => TextWithCursors
 	): Promise<string> {
 		path = normalizePath(path);
 
 		const view = this.workspace.getActiveViewOfType(MarkdownView);
+
 		if (view?.file?.path === path) {
-			const result = updater(view.editor.getValue());
-			const position = view.editor.getCursor();
-			view.editor.setValue(result);
-			view.editor.setCursor(position);
-			return result;
+			const cursor = view.editor.getCursor();
+			const text = view.editor.getValue();
+			const result = updater({
+				text,
+				cursors: [
+					{
+						id: 0,
+						characterPosition: lineAndColumnToPosition(
+							text,
+							cursor.line,
+							cursor.ch
+						)
+					}
+				]
+			});
+
+			view.editor.setValue(result.text);
+
+			result.cursors.forEach((movedCursor) => {
+				const { line, column } = positionToLineAndColumn(
+					result.text,
+					movedCursor.characterPosition
+				);
+				view.editor.setCursor(line, column);
+			});
+
+			return result.text;
 		}
 
-		return this.vault.adapter.process(path, updater);
+		return this.vault.adapter.process(
+			path,
+			(text) =>
+				updater({
+					text,
+					cursors: []
+				}).text
+		);
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {

@@ -1,5 +1,15 @@
 import type { RelativePath } from "../persistence/database";
 
+export interface Cursor {
+	id: number;
+	characterPosition: number;
+}
+
+export interface TextWithCursors {
+	text: string;
+	cursors: Cursor[];
+}
+
 export interface FileSystemOperations {
 	// List all files that should be synced.
 	listAllFiles: () => Promise<RelativePath[]>;
@@ -13,7 +23,7 @@ export interface FileSystemOperations {
 	// Atomically update the content of a text file.
 	atomicUpdateText: (
 		path: RelativePath,
-		updater: (currentContent: string) => string
+		updater: (current: TextWithCursors) => TextWithCursors
 	) => Promise<string>;
 
 	// Get the size of a file in bytes.

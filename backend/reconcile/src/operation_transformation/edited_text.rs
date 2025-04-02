@@ -3,7 +3,7 @@ use core::iter;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::Operation;
+use super::{CursorPosition, Operation, TextWithCursors};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
     operation_transformation::merge_context::MergeContext,
@@ -29,6 +29,7 @@ where
 {
     text: &'a str,
     operations: Vec<OrderedOperation<T>>,
+    pub(crate) cursors: Vec<CursorPosition>,
 }
 
 impl<'a> EditedText<'a, String> {
@@ -39,7 +40,7 @@ impl<'a> EditedText<'a, String> {
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
     #[must_use]
-    pub fn from_strings(original: &'a str, updated: &str) -> Self {
+    pub fn from_strings(original: &'a str, updated: TextWithCursors<'a>) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
     }
 }
@@ -55,17 +56,18 @@ where
     /// function is used to tokenize the text.
     pub fn from_strings_with_tokenizer(
         original: &'a str,
-        updated: &str,
+        updated: TextWithCursors<'a>,
         tokenizer: &Tokenizer<T>,
     ) -> Self {
         let original_tokens = (tokenizer)(original);
-        let updated_tokens = (tokenizer)(updated);
+        let updated_tokens = (tokenizer)(&updated.text);
 
         let diff: Vec<RawOperation<T>> = diff(&original_tokens, &updated_tokens);
 
         Self::new(
             original,
             Self::cook_operations(Self::elongate_operations(diff)).collect(),
+            updated.cursors,
         )
     }
 
@@ -170,7 +172,11 @@ where
     /// Create a new `EditedText` with the given operations.
     /// The operations must be in the order in which they are meant to be
     /// applied. The operations must not overlap.
-    fn new(text: &'a str, operations: Vec<OrderedOperation<T>>) -> Self {
+    fn new(
+        text: &'a str,
+        operations: Vec<OrderedOperation<T>>,
+        mut cursors: Vec<CursorPosition>,
+    ) -> Self {
         operations
             .iter()
             .zip(operations.iter().skip(1))
@@ -183,7 +189,13 @@ where
                 );
             });
 
-        Self { text, operations }
+        cursors.sort_by_key(|cursor| cursor.char_index);
+
+        Self {
+            text,
+            operations,
+            cursors,
+        }
     }
 
     #[must_use]
@@ -196,50 +208,110 @@ where
         let mut left_merge_context = MergeContext::default();
         let mut right_merge_context = MergeContext::default();
 
-        Self::new(
-            self.text,
-            self.operations
-                .into_iter()
-                .map(|op| (op, Side::Left))
-                .merge_sorted_by_key(
-                    other.operations.into_iter().map(|op| (op, Side::Right)),
-                    |(operation, _)| {
-                        (
-                            operation.order,
-                            // Operations on the left and right must come in the same order so that
-                            // inserts can be merged with other inserts and deletes with deletes.
-                            usize::from(matches!(operation.operation, Operation::Delete { .. })),
-                            // Make sure that the ordering is deterministic regardless which text
-                            // is left or right.
-                            match &operation.operation {
-                                Operation::Insert { text, .. } => text
-                                    .iter()
-                                    .map(super::super::tokenizer::token::Token::original)
-                                    .collect::<String>(),
-                                Operation::Delete {
-                                    deleted_character_count,
-                                    ..
-                                } => deleted_character_count.to_string(),
-                            },
+        let mut merged_cursors = Vec::with_capacity(self.cursors.len() + other.cursors.len());
+        let mut left_cursors = self.cursors.iter().peekable();
+        let mut right_cursors = other.cursors.iter().peekable();
+
+        let merged_operations = self
+            .operations
+            .into_iter()
+            // The current text is always the left; the other operation is the right side.
+            .map(|op| (op, Side::Left))
+            .merge_sorted_by_key(
+                other.operations.into_iter().map(|op| (op, Side::Right)),
+                |(operation, _)| {
+                    (
+                        operation.order,
+                        // Operations on the left and right must come in the same order so that
+                        // inserts can be merged with other inserts and deletes with deletes.
+                        usize::from(matches!(operation.operation, Operation::Delete { .. })),
+                        // Make sure that the ordering is deterministic regardless which text
+                        // is left or right.
+                        match &operation.operation {
+                            Operation::Insert { text, .. } => text
+                                .iter()
+                                .map(super::super::tokenizer::token::Token::original)
+                                .collect::<String>(),
+                            Operation::Delete {
+                                deleted_character_count,
+                                ..
+                            } => deleted_character_count.to_string(),
+                        },
+                    )
+                },
+            )
+            .flat_map(|(OrderedOperation { order, operation }, side)| {
+                match side {
+                    Side::Left => {
+                        while let Some(cursor) = left_cursors
+                            .next_if(|cursor| cursor.char_index <= operation.start_index())
+                        {
+                            right_merge_context.consume_last_operation_if_it_is_too_behind(
+                                cursor.char_index as i64,
+                            );
+                            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
+                        }
+
+                        while let Some(cursor) = right_cursors.next_if(|cursor| {
+                            cursor.char_index as i64
+                                <= operation.start_index() as i64 + right_merge_context.shift
+                                    - left_merge_context.shift
+                        }) {
+                            left_merge_context.consume_last_operation_if_it_is_too_behind(
+                                cursor.char_index as i64,
+                            );
+                            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
+                        }
+
+                        operation.merge_operations_with_context(
+                            &mut right_merge_context,
+                            &mut left_merge_context,
                         )
-                    },
-                )
-                .flat_map(|(OrderedOperation { order, operation }, side)| {
-                    match side {
-                        Side::Left => operation.merge_operations_with_context(
-                            &mut right_merge_context,
-                            &mut left_merge_context,
-                        ),
-                        Side::Right => operation.merge_operations_with_context(
-                            &mut left_merge_context,
-                            &mut right_merge_context,
-                        ),
                     }
-                    .map(|operation| OrderedOperation { order, operation })
-                    .into_iter()
-                })
-                .collect(),
-        )
+                    Side::Right => {
+                        while let Some(cursor) = right_cursors
+                            .next_if(|cursor| cursor.char_index <= operation.start_index())
+                        {
+                            left_merge_context.consume_last_operation_if_it_is_too_behind(
+                                cursor.char_index as i64,
+                            );
+                            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
+                        }
+
+                        while let Some(cursor) = left_cursors.next_if(|cursor| {
+                            cursor.char_index as i64
+                                <= operation.start_index() as i64 + left_merge_context.shift
+                                    - right_merge_context.shift
+                        }) {
+                            right_merge_context.consume_last_operation_if_it_is_too_behind(
+                                cursor.char_index as i64,
+                            );
+                            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
+                        }
+
+                        operation.merge_operations_with_context(
+                            &mut left_merge_context,
+                            &mut right_merge_context,
+                        )
+                    }
+                }
+                .map(|operation| OrderedOperation { order, operation })
+                .into_iter()
+            })
+            .collect();
+
+        for cursor in left_cursors {
+            right_merge_context
+                .consume_last_operation_if_it_is_too_behind(cursor.char_index as i64);
+            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
+        }
+
+        for cursor in right_cursors {
+            left_merge_context.consume_last_operation_if_it_is_too_behind(cursor.char_index as i64);
+            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
+        }
+
+        Self::new(self.text, merged_operations, merged_cursors)
     }
 
     /// Apply the operations to the text and return the resulting text.
@@ -268,7 +340,7 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = EditedText::from_strings(left, right);
+        let operations = EditedText::from_strings(left, right.into());
 
         insta::assert_debug_snapshot!(operations);
 
@@ -280,7 +352,7 @@ mod tests {
     fn test_calculate_operations_with_no_diff() {
         let text = "hello world!";
 
-        let operations = EditedText::from_strings(text, text);
+        let operations = EditedText::from_strings(text, text.into());
 
         assert_eq!(operations.operations.len(), 0);
 
@@ -296,8 +368,8 @@ mod tests {
         let right = "Hello world! How are you?";
         let expected = "Hello world! How are you? I'm Andras.";
 
-        let operations_1 = EditedText::from_strings(original, left);
-        let operations_2 = EditedText::from_strings(original, right);
+        let operations_1 = EditedText::from_strings(original, left.into());
+        let operations_2 = EditedText::from_strings(original, right.into());
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply(), expected);

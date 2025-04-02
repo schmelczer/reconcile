@@ -1,0 +1,4 @@
+parent: Party A shall pay Party B
+left: Party C shall pay Party B
+right: Party A shall receive from Party B
+expected: Party C shall receive from Party B

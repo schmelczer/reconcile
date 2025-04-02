@@ -8,12 +8,15 @@
 //! # Modules
 //!
 //! - `errors`: Contains error types used in this crate.
+
 use core::str;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+use cursor::TextWithCursors;
 use errors::SyncLibError;
 use wasm_bindgen::prelude::*;
 
+pub mod cursor;
 pub mod errors;
 
 /// Encode binary data for easy transport over HTTP. Inverse of
@@ -93,13 +96,26 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
     }
 }
 
-/// WASM wrapper around `reconcile::reconcile` for text merging.
+/// WASM wrapper around `reconcile::reconcile` for merging text.
 #[wasm_bindgen(js_name = mergeText)]
 #[must_use]
 pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
     set_panic_hook();
 
     reconcile::reconcile(parent, left, right)
+}
+
+/// WASM wrapper around `reconcile::reconcile_with_cursors` for merging text.
+#[wasm_bindgen(js_name = mergeTextWithCursors)]
+#[must_use]
+pub fn merge_text_with_cursors(
+    parent: &str,
+    left: TextWithCursors,
+    right: TextWithCursors,
+) -> TextWithCursors {
+    set_panic_hook();
+
+    reconcile::reconcile_with_cursors(parent, left.into(), right.into()).into()
 }
 
 /// Heuristically determine if the given data is a binary or a text file's

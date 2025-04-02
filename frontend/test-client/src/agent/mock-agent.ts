@@ -313,7 +313,10 @@ export class MockAgent extends MockClient {
 			`Decided to update file ${file} with ${content}`
 		);
 		this.doNotTouchWhileOffline.push(file);
-		await this.atomicUpdateText(file, (old) => old + ` ${content} `);
+		await this.atomicUpdateText(file, (old) => ({
+			text: old.text + ` ${content} `,
+			cursors: []
+		}));
 	}
 
 	private async deleteFileAction(files: RelativePath[]): Promise<void> {

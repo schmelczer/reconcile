@@ -266,6 +266,8 @@ export class Syncer {
 		wsUri.protocol = wsUri.protocol === "https" ? "wss" : "ws";
 		wsUri.pathname = `/vaults/${settings.vaultName}/ws`;
 
+		this.logger.info(`Connecting to WebSocket at ${wsUri.toString()}`);
+
 		if (
 			typeof globalThis !== "undefined" &&
 			typeof globalThis.WebSocket === "undefined"
@@ -288,6 +290,7 @@ export class Syncer {
 
 		// The JS WebSocket API doesn't support setting headers, so we have to send the token as a message
 		this.applyRemoteChangesWebSocket.onopen = (): void => {
+			this.logger.info("WebSocket connection opened");
 			this.applyRemoteChangesWebSocket?.send(settings.token);
 			this.webSocketStatusChangeListeners.forEach((listener) => {
 				listener();
@@ -476,7 +479,10 @@ export class Syncer {
 				.filter(
 					(remoteDocument) =>
 						allLocalFiles.includes(remoteDocument.relativePath) &&
-						!remoteDocument.isDeleted
+						!remoteDocument.isDeleted &&
+						this.database.getDocumentByDocumentId(
+							remoteDocument.documentId
+						) === undefined
 				)
 				.forEach((remoteDocument) => {
 					this.database.createNewEmptyDocument(

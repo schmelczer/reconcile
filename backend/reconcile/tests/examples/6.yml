@@ -1,0 +1,4 @@
+parent: Ready, Set go
+left: Ready! Set go|
+right: Ready, Set, go!|
+expected: Ready! Set, go!||

@@ -1,7 +1,16 @@
 import type { Logger } from "../tracing/logger";
-import type { FileSystemOperations } from "./filesystem-operations";
+import type {
+	FileSystemOperations,
+	TextWithCursors
+} from "./filesystem-operations";
 import type { Database, RelativePath } from "../persistence/database";
-import { isBinary, isFileTypeMergable, mergeText } from "sync_lib";
+import {
+	CursorPosition,
+	isBinary,
+	isFileTypeMergable,
+	mergeTextWithCursors,
+	TextWithCursors as RustTextWithCursors
+} from "sync_lib";
 import { SafeFileSystemOperations } from "./safe-filesystem-operations";
 
 export class FileOperations {
@@ -90,18 +99,45 @@ export class FileOperations {
 		const expectedText = new TextDecoder().decode(expectedContent); // this comes from a previous read which must only have \n line endings
 		const newText = new TextDecoder().decode(newContent); // this comes from the server which stores text with \n line endings
 
-		await this.fs.atomicUpdateText(path, (currentText) => {
-			currentText = currentText.replace(this.nativeLineEndings, "\n");
+		await this.fs.atomicUpdateText(
+			path,
+			({ text, cursors }: TextWithCursors): TextWithCursors => {
+				text = text.replace(this.nativeLineEndings, "\n");
 
-			this.logger.debug(
-				`Performing a 3-way merge for ${path} with the expected content`
-			);
+				this.logger.debug(
+					`Performing a 3-way merge for ${path} with the expected content`
+				);
 
-			return mergeText(expectedText, currentText, newText).replace(
-				"\n",
-				this.nativeLineEndings
-			);
-		});
+				const left = new RustTextWithCursors(
+					text,
+					cursors.map(
+						(cursor) =>
+							new CursorPosition(
+								cursor.id,
+								cursor.characterPosition
+							)
+					)
+				);
+				const right = new RustTextWithCursors(newText, []);
+				const merged = mergeTextWithCursors(expectedText, left, right);
+
+				const resultText = merged
+					.text()
+					.replace("\n", this.nativeLineEndings);
+
+				const resultCursors = merged.cursors().map((cursor) => ({
+					id: cursor.id(),
+					characterPosition: cursor.characterPosition()
+				}));
+
+				merged.free();
+
+				return {
+					text: resultText,
+					cursors: resultCursors
+				};
+			}
+		);
 	}
 
 	public async delete(path: RelativePath): Promise<void> {

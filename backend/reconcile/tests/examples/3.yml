@@ -1,0 +1,4 @@
+parent: Buy milk and eggs
+left: Buy organic milk| and eggs|
+right: Buy milk and eggs| and bread
+expected: Buy organic milk| and eggs|| and bread

@@ -189,7 +189,7 @@ where
         affecting_context: &mut MergeContext<T>,
         produced_context: &mut MergeContext<T>,
     ) -> Option<Operation<T>> {
-        affecting_context.consume_last_operation_if_it_is_too_behind(&self);
+        affecting_context.consume_last_operation_if_it_is_too_behind(self.start_index() as i64);
         let operation = self.with_shifted_index(affecting_context.shift);
 
         match (operation, affecting_context.last_operation()) {

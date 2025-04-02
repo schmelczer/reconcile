@@ -6,7 +6,10 @@ import type {
 import { FileOperations } from "./file-operations";
 import { Logger } from "../tracing/logger";
 import { assertSetContainsExactly } from "../utils/assert-set-contains-exactly";
-import type { FileSystemOperations } from "./filesystem-operations";
+import type {
+	FileSystemOperations,
+	TextWithCursors
+} from "./filesystem-operations";
 import init, { base64ToBytes } from "sync_lib";
 import fs from "fs";
 
@@ -43,7 +46,7 @@ class FakeFileSystemOperations implements FileSystemOperations {
 	}
 	public async atomicUpdateText(
 		_path: RelativePath,
-		_updater: (currentContent: string) => string
+		_updater: (current: TextWithCursors) => TextWithCursors
 	): Promise<string> {
 		throw new Error("Method not implemented.");
 	}

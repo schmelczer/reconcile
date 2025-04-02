@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::{
     app_state::{AppState, database::models::VaultId},
     config::user_config::{AllowListedVaults, User, VaultAccess},
@@ -13,10 +15,16 @@ pub fn auth(app_state: &AppState, token: &str, vault: &VaultId) -> Result<User, 
         .cloned()
         .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Invalid token")))?;
 
+    info!("User `{}` authenticated", user.name);
+
     if match user.vault_access {
         VaultAccess::AllowAccessToAll => true,
         VaultAccess::AllowList(AllowListedVaults { ref allowed }) => allowed.contains(vault),
     } {
+        info!(
+            "User `{}` is authorised to access to vault `{}`",
+            user.name, vault
+        );
         Ok(user)
     } else {
         Err(permission_denied_error(anyhow::anyhow!(

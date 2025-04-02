@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "webpack watch --mode development",
 		"build": "webpack --mode production",
-		"test": "jest --passWithNoTests",
+		"test": "jest",
 		"version": "node version-bump.mjs"
 	},
 	"keywords": [],

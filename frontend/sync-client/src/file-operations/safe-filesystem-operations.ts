@@ -1,5 +1,8 @@
 import type { RelativePath } from "../persistence/database";
-import type { FileSystemOperations } from "./filesystem-operations";
+import type {
+	FileSystemOperations,
+	TextWithCursors
+} from "./filesystem-operations";
 import type { Logger } from "../tracing/logger";
 import { Locks } from "../utils/locks";
 import { FileNotFoundError } from "./file-not-found-error";
@@ -44,7 +47,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 
 	public async atomicUpdateText(
 		path: RelativePath,
-		updater: (currentContent: string) => string
+		updater: (current: TextWithCursors) => TextWithCursors
 	): Promise<string> {
 		this.logger.debug(`Atomically updating file '${path}'`);
 		return this.safeOperation(

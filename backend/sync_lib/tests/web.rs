@@ -1,5 +1,8 @@
 use insta::assert_debug_snapshot;
-use sync_lib::*;
+use sync_lib::{
+    cursor::{CursorPosition, TextWithCursors},
+    *,
+};
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test(unsupported = test)]
@@ -23,11 +26,44 @@ fn test_base64_to_bytes_error() {
 }
 
 #[wasm_bindgen_test(unsupported = test)]
-fn merge_text() {
+fn test_merge() {
     let left = b"hello ";
     let right = b"world";
     let result = merge(b"", left, right);
     assert_eq!(result, b"hello world");
+
+    let left = b"\0binary";
+    let right = b"other";
+    let result = merge(b"", left, right);
+    assert_eq!(result, right);
+}
+
+#[wasm_bindgen_test(unsupported = test)]
+fn test_merge_text() {
+    let left = "hello ";
+    let right = "world";
+    let result = merge_text("", left, right);
+    assert_eq!(result, "hello world");
+}
+
+#[wasm_bindgen_test(unsupported = test)]
+fn test_merge_text_with_cursors() {
+    let result = merge_text_with_cursors(
+        "hi",
+        TextWithCursors::new("hi world".to_owned(), vec![]),
+        TextWithCursors::new(
+            "hi".to_owned(),
+            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)],
+        ),
+    );
+
+    assert_eq!(
+        result,
+        TextWithCursors::new(
+            "hi world".to_owned(),
+            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)]
+        ),
+    );
 }
 
 #[wasm_bindgen_test(unsupported = test)]
