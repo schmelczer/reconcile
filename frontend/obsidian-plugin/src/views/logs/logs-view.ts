@@ -98,6 +98,8 @@ export class LogsView extends ItemView {
 		);
 
 		this.logsContainer = container.createDiv({ cls: "logs-container" });
+
+		this.updateView();
 	}
 
 	private updateView(): void {
