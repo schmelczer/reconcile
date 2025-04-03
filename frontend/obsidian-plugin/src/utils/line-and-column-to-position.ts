@@ -13,7 +13,7 @@ export function lineAndColumnToPosition(
 	line: number,
 	column: number
 ): number {
-	const lines = text.split("\n");
+	const lines = text.replace("\r", "").split("\n");
 
 	if (line >= lines.length) {
 		throw new Error(`Line number ${line} is out of range.`);

@@ -3,7 +3,7 @@
  *
  * @param text The text content to analyze
  * @param position The character position to convert
- * @returns An object containing line and column numbers (0-based index for line, 1-based index for column)
+ * @returns An object containing line and column numbers
  * @throws Will throw an error if the position is negative or exceeds the text length
  */
 export function positionToLineAndColumn(
@@ -20,11 +20,12 @@ export function positionToLineAndColumn(
 		);
 	}
 
+	text = text.replace("\r", "");
 	const textUpToPosition = text.substring(0, position);
 	const lines = textUpToPosition.split("\n");
 
-	const line = lines.length - 1; // 0-based index
-	const column = lines[lines.length - 1].length + 1; // 1-based index
+	const line = lines.length - 1;
+	const column = lines[lines.length - 1].length;
 
 	return { line, column };
 }

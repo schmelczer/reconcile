@@ -19,10 +19,9 @@ describe("lineAndColumnToPosition", () => {
 		expect(position).toBe(0);
 	});
 
-	it("should handle a single-line string correctly", () => {
-		const text = "SingleLine";
-		const position = lineAndColumnToPosition(text, 0, 5);
-		expect(position).toBe(5);
+	it("with carrige return", () => {
+		expect(lineAndColumnToPosition("a\nb", 1, 1)).toBe(3);
+		expect(lineAndColumnToPosition("a\r\nb", 1, 1)).toBe(3);
 	});
 
 	it("should handle multi-line strings with varying lengths", () => {
