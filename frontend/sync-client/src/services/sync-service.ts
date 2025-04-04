@@ -87,9 +87,6 @@ export class SyncService {
 					params: {
 						path: {
 							vault_id: vaultName
-						},
-						header: {
-							authorization: `Bearer ${this.settings.getSettings().token}`
 						}
 					},
 					// eslint-disable-next-line
@@ -142,9 +139,6 @@ export class SyncService {
 						path: {
 							vault_id: vaultName,
 							document_id: documentId
-						},
-						header: {
-							authorization: `Bearer ${this.settings.getSettings().token}`
 						}
 					},
 					// eslint-disable-next-line
@@ -185,9 +179,6 @@ export class SyncService {
 						path: {
 							vault_id: vaultName,
 							document_id: documentId
-						},
-						header: {
-							authorization: `Bearer ${this.settings.getSettings().token}`
 						}
 					},
 					body: {
@@ -223,9 +214,6 @@ export class SyncService {
 						path: {
 							vault_id: vaultName,
 							document_id: documentId
-						},
-						header: {
-							authorization: `Bearer ${this.settings.getSettings().token}`
 						}
 					}
 				}
@@ -257,9 +245,6 @@ export class SyncService {
 					params: {
 						path: {
 							vault_id: vaultName
-						},
-						header: {
-							authorization: `Bearer ${this.settings.getSettings().token}`
 						},
 						query: {
 							since_update_id: since
@@ -341,11 +326,17 @@ export class SyncService {
 				fetch: this.connectionStatus.getFetchImplementation(
 					this.logger,
 					this._fetchImplementation
-				)
+				),
+				headers: {
+					authorization: `Bearer ${this.settings.getSettings().token}`
+				}
 			}),
 			createClient<paths>({
 				baseUrl: remoteUri,
-				fetch: this._fetchImplementation
+				fetch: this._fetchImplementation,
+				headers: {
+					authorization: `Bearer ${this.settings.getSettings().token}`
+				}
 			})
 		];
 	}

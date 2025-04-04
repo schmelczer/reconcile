@@ -4,52 +4,6 @@
  */
 
 export interface paths {
-	"/vaults/{vault_id}/ping": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get: {
-			parameters: {
-				query?: never;
-				header?: {
-					authorization?: string;
-				};
-				path: {
-					vault_id: string;
-				};
-				cookie?: never;
-			};
-			requestBody?: never;
-			responses: {
-				200: {
-					headers: {
-						[name: string]: unknown;
-					};
-					content: {
-						"application/json": components["schemas"]["PingResponse"];
-					};
-				};
-				default: {
-					headers: {
-						[name: string]: unknown;
-					};
-					content: {
-						"application/json": components["schemas"]["SerializedError"];
-					};
-				};
-			};
-		};
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
 	"/vaults/{vault_id}/documents": {
 		parameters: {
 			query?: never;
@@ -62,9 +16,7 @@ export interface paths {
 				query?: {
 					since_update_id?: number | null;
 				};
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					vault_id: string;
 				};
@@ -94,9 +46,7 @@ export interface paths {
 		post: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					vault_id: string;
 				};
@@ -144,9 +94,7 @@ export interface paths {
 		post: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					vault_id: string;
 				};
@@ -192,9 +140,7 @@ export interface paths {
 		get: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -224,9 +170,7 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -261,9 +205,7 @@ export interface paths {
 		delete: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -310,9 +252,7 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -361,9 +301,7 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -409,9 +347,7 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header: {
-					authorization: string;
-				};
+				header?: never;
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -440,6 +376,52 @@ export interface paths {
 				};
 			};
 		};
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/vaults/{vault_id}/ping": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: {
+					authorization?: string;
+				};
+				path: {
+					vault_id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["PingResponse"];
+					};
+				};
+				default: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["SerializedError"];
+					};
+				};
+			};
+		};
+		put?: never;
 		post?: never;
 		delete?: never;
 		options?: never;
