@@ -1,24 +1,24 @@
 database:
-    databases_directory_path: databases
-    max_connections_per_vault: 12
+  databases_directory_path: databases
+  max_connections_per_vault: 12
 
 server:
-    host: 0.0.0.0
-    port: 3000
-    max_body_size_mb: 512
-    max_clients_per_vault: 256
-    response_timeout_seconds: 60
+  host: 0.0.0.0
+  port: 3000
+  max_body_size_mb: 512
+  max_clients_per_vault: 256
+  response_timeout_seconds: 60
 
 users:
-    user_tokens:
-        - name: admin
-          token: test-token-change-me
-          vault_access:
-              type: allow_access_to_all
+  user_tokens:
+    - name: admin
+      token: test-token-change-me
+      vault_access:
+        type: allow_access_to_all
 
-        - name: test
-          token: other-test-token
-          vault_access:
-              type: allow_list
-              allowed:
-                  - default
+    - name: test
+      token: other-test-token
+      vault_access:
+        type: allow_list
+        allowed:
+          - default
