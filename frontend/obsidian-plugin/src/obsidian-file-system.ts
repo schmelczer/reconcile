@@ -71,6 +71,10 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 				]
 			});
 
+			if (result.text === text) {
+				return text;
+			}
+
 			view.editor.setValue(result.text);
 
 			result.cursors.forEach((movedCursor) => {
