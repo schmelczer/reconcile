@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::consts::{
     DEFAULT_HOST, DEFAULT_MAX_BODY_SIZE_MB, DEFAULT_MAX_CLIENTS_PER_VAULT, DEFAULT_PORT,
+    DEFAULT_RESPONSE_TIMEOUT_SECONDS,
 };
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct ServerConfig {
     #[serde(default = "default_host")]
     pub host: String,
@@ -18,6 +19,9 @@ pub struct ServerConfig {
 
     #[serde(default = "default_max_clients_per_vault")]
     pub max_clients_per_vault: usize,
+
+    #[serde(default = "default_response_timeout_seconds")]
+    pub response_timeout_seconds: u64,
 }
 
 fn default_host() -> String {
@@ -40,13 +44,7 @@ fn default_max_clients_per_vault() -> usize {
     DEFAULT_MAX_CLIENTS_PER_VAULT
 }
 
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            host: default_host(),
-            port: default_port(),
-            max_body_size_mb: default_max_body_size_mb(),
-            max_clients_per_vault: default_max_clients_per_vault(),
-        }
-    }
+fn default_response_timeout_seconds() -> u64 {
+    debug!("Using default response timeout (seconds): {DEFAULT_RESPONSE_TIMEOUT_SECONDS}");
+    DEFAULT_RESPONSE_TIMEOUT_SECONDS
 }
