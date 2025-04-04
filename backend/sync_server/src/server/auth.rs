@@ -1,3 +1,14 @@
+use std::collections::HashMap;
+
+use axum::{
+    extract::{Path, Request, State},
+    middleware::Next,
+    response::Response,
+};
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, authorization::Bearer},
+};
 use log::info;
 
 use crate::{
@@ -6,9 +17,32 @@ use crate::{
     errors::{SyncServerError, permission_denied_error, unauthenticated_error},
 };
 
-// TODO: turn this into a middleware
-pub fn auth(app_state: &AppState, token: &str, vault: &VaultId) -> Result<User, SyncServerError> {
-    let user = app_state
+
+pub async fn auth_middleware(
+    State(state): State<AppState>,
+    Path(path_params): Path<HashMap<String, String>>,
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
+    mut req: Request,
+    next: Next,
+) -> Result<Response, SyncServerError> {
+    let token = auth_header.token();
+    let vault_id = path_params
+        .get("vault_id")
+        .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Missing vault_id")))?;
+
+    let user = auth(&state, token, vault_id)?;
+
+    req.extensions_mut().insert(user);
+
+    Ok(next.run(req).await)
+}
+
+pub fn auth(
+    state: &AppState,
+    token: &str,
+    vault_id: &VaultId,
+) -> Result<User, SyncServerError> {
+    let user = state
         .config
         .users
         .get_user(token)
@@ -19,16 +53,17 @@ pub fn auth(app_state: &AppState, token: &str, vault: &VaultId) -> Result<User, 
 
     if match user.vault_access {
         VaultAccess::AllowAccessToAll => true,
-        VaultAccess::AllowList(AllowListedVaults { ref allowed }) => allowed.contains(vault),
+        VaultAccess::AllowList(AllowListedVaults { ref allowed }) => allowed.contains(vault_id),
     } {
         info!(
             "User `{}` is authorised to access to vault `{}`",
-            user.name, vault
+            user.name, vault_id
         );
+
         Ok(user)
     } else {
         Err(permission_denied_error(anyhow::anyhow!(
-            "Permission denied for vault `{vault}`"
+            "Permission denied for vault `{vault_id}`"
         )))
     }
 }
