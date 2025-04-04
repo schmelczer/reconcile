@@ -26,16 +26,16 @@ impl Config {
     pub async fn read_or_create(path: &Path) -> Result<Self> {
         if path.exists() {
             info!(
-                "Loading configuration from {:?}",
-                path.canonicalize().unwrap()
+                "Loading configuration from '{}'",
+                path.canonicalize().unwrap().display()
             );
             Self::load_from_file(path).await
         } else {
             let config = Self::default();
             config.write(path).await?;
             warn!(
-                "Configuration file not found, wrote default configuration to {:?}",
-                path.canonicalize().unwrap()
+                "Configuration file not found, wrote default configuration to '{}'",
+                path.canonicalize().unwrap().display()
             );
             Ok(config)
         }

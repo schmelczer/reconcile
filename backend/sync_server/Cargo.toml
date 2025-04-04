@@ -7,7 +7,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-reconcile = { path = "../reconcile" }
 sync_lib = { path = "../sync_lib" }
 
 serde = { workspace = true }
@@ -15,7 +14,7 @@ thiserror = { workspace = true }
 
 tokio = { version = "1.44.1", features = ["full"]}
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
-log = { version = "0.4.22" }
+log = { version = "0.4.27" }
 anyhow =  { version = "1.0.97", features = ["backtrace"] }
 axum = { version = "0.7.4", features = ["ws", "macros", "tracing", "multipart"]}
 axum-extra = { version = "0.9.6", features = ["typed-header"] }
@@ -29,7 +28,7 @@ chrono = { version = "0.4.40", features = ["serde"] }
 aide = { version = "0.13.4", features = ["axum", "axum-ws", "scalar", "axum-headers"] }
 schemars = { version = "0.8.21", features = ["chrono", "uuid1", "bytes"] }
 tracing = "0.1.41"
-rand = "0.8.5"
+rand = "0.9.0"
 sanitize-filename = "0.6.0"
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 regex = "1.11.1"

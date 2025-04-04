@@ -1,4 +1,4 @@
-use rand::{Rng as _, distributions::Alphanumeric, thread_rng};
+use rand::{Rng, distr::Alphanumeric, rng};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::database::models::VaultId;
@@ -53,7 +53,7 @@ fn default_users() -> Vec<User> {
 }
 
 pub fn get_random_token() -> String {
-    thread_rng()
+    rng()
         .sample_iter(&Alphanumeric)
         .take(64)
         .map(char::from)

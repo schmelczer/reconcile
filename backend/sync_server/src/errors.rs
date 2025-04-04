@@ -105,26 +105,26 @@ pub const fn init_error(error: anyhow::Error) -> SyncServerError {
 }
 
 pub fn server_error(error: anyhow::Error) -> SyncServerError {
-    error!("Server error: {:?}", error);
+    error!("Server error: {error:?}");
     SyncServerError::ServerError(error)
 }
 
 pub fn client_error(error: anyhow::Error) -> SyncServerError {
-    info!("Client error: {:?}", error);
+    info!("Client error: {error:?}");
     SyncServerError::ClientError(error)
 }
 
 pub fn not_found_error(error: anyhow::Error) -> SyncServerError {
-    info!("Not found: {:?}", error);
+    info!("Not found: {error:?}");
     SyncServerError::NotFound(error)
 }
 
 pub fn unauthenticated_error(error: anyhow::Error) -> SyncServerError {
-    info!("Unauthenticated user: {:?}", error);
+    info!("Unauthenticated user: {error:?}");
     SyncServerError::Unauthenticated(error)
 }
 
 pub fn permission_denied_error(error: anyhow::Error) -> SyncServerError {
-    info!("Permission denied: {:?}", error);
+    info!("Permission denied: {error:?}");
     SyncServerError::PermissionDeniedError(error)
 }

@@ -50,18 +50,15 @@ async fn websocket_wrapped(
     vault_id: VaultId,
     since_update_id: Option<VaultUpdateId>,
 ) {
-    info!("Websocket connection opened on vault '{}'", vault_id);
+    info!("Websocket connection opened on vault '{vault_id}'");
 
     let result = websocket(state, stream, vault_id.clone(), since_update_id).await;
 
     if let Err(err) = result {
-        error!(
-            "Websocket connection error on vault '{}': {}",
-            vault_id, err
-        );
+        error!("Websocket connection error on vault '{vault_id}': {err}");
     }
 
-    warn!("Websocket connection closed on vault '{}'", vault_id);
+    warn!("Websocket connection closed on vault '{vault_id}'");
 }
 
 async fn websocket(
