@@ -439,6 +439,7 @@ export interface components {
 		};
 		CreateDocumentVersion: {
 			contentBase64: string;
+			deviceId?: string | null;
 			/**
 			 * Format: uuid
 			 * @description The client can decide the document id (if it wishes to) in order to help with syncing. If the client does not provide a document id, the server will generate one. If the client provides a document id it must not already exist in the database.
@@ -448,6 +449,7 @@ export interface components {
 		};
 		CreateDocumentVersionMultipart: {
 			content: components["schemas"]["Array_of_uint8"];
+			device_id?: string | null;
 			/** Format: uuid */
 			document_id?: string | null;
 			relative_path: string;
@@ -458,6 +460,7 @@ export interface components {
 			vault_id: string;
 		};
 		DeleteDocumentVersion: {
+			deviceId?: string | null;
 			relativePath: string;
 		};
 		/** @description Response to an update document request. */
@@ -568,12 +571,14 @@ export interface components {
 		};
 		UpdateDocumentVersion: {
 			contentBase64: string;
+			deviceId?: string | null;
 			/** Format: int64 */
 			parentVersionId: number;
 			relativePath: string;
 		};
 		UpdateDocumentVersionMultipart: {
 			content: components["schemas"]["Array_of_uint8"];
+			deviceId?: string | null;
 			/** Format: int64 */
 			parentVersionId: number;
 			relativePath: string;

@@ -31,7 +31,9 @@ export class Syncer {
 		| undefined;
 	private applyRemoteChangesWebSocket: WebSocket | undefined;
 
+	// eslint-disable-next-line @typescript-eslint/max-params
 	public constructor(
+		private readonly deviceId: string,
 		private readonly logger: Logger,
 		private readonly database: Database,
 		private readonly settings: Settings,
@@ -291,7 +293,12 @@ export class Syncer {
 		// The JS WebSocket API doesn't support setting headers, so we have to send the token as a message
 		this.applyRemoteChangesWebSocket.onopen = (): void => {
 			this.logger.info("WebSocket connection opened");
-			this.applyRemoteChangesWebSocket?.send(settings.token);
+			this.applyRemoteChangesWebSocket?.send(
+				JSON.stringify({
+					deviceId: this.deviceId,
+					token: settings.token
+				})
+			);
 			this.webSocketStatusChangeListeners.forEach((listener) => {
 				listener();
 			});

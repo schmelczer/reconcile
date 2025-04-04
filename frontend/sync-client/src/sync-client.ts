@@ -15,6 +15,7 @@ import { FileOperations } from "./file-operations/file-operations";
 import { ConnectionStatus } from "./services/connection-status";
 import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
 import { rateLimit } from "./utils/rate-limit";
+import { v4 as uuidv4 } from "uuid";
 
 export interface NetworkConnectionStatus {
 	isSuccessful: boolean;
@@ -105,9 +106,15 @@ export class SyncClient {
 				await rateLimitedSave(state);
 			}
 		);
+		const deviceId = uuidv4();
 
 		const connectionStatus = new ConnectionStatus(settings, logger);
-		const syncService = new SyncService(connectionStatus, settings, logger);
+		const syncService = new SyncService(
+			deviceId,
+			connectionStatus,
+			settings,
+			logger
+		);
 		syncService.fetchImplementation = fetch;
 		const fileOperations = new FileOperations(
 			logger,
@@ -124,6 +131,7 @@ export class SyncClient {
 			history
 		);
 		const syncer = new Syncer(
+			deviceId,
 			logger,
 			database,
 			settings,

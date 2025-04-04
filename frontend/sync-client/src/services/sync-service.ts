@@ -24,6 +24,7 @@ export class SyncService {
 	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
+		private readonly deviceId: string,
 		private readonly connectionStatus: ConnectionStatus,
 		private readonly settings: Settings,
 		private readonly logger: Logger
@@ -79,6 +80,7 @@ export class SyncService {
 				formData.append("document_id", documentId);
 			}
 			formData.append("relative_path", relativePath);
+			formData.append("device_id", this.deviceId);
 			formData.append("content", new Blob([contentBytes]));
 
 			const response = await this.client.POST(
@@ -130,6 +132,7 @@ export class SyncService {
 			const formData = new FormData();
 			formData.append("parent_version_id", parentVersionId.toString());
 			formData.append("relative_path", relativePath);
+			formData.append("device_id", this.deviceId);
 			formData.append("content", new Blob([contentBytes]));
 
 			const response = await this.client.PUT(
@@ -182,7 +185,8 @@ export class SyncService {
 						}
 					},
 					body: {
-						relativePath
+						relativePath,
+						deviceId: this.deviceId
 					}
 				}
 			);
