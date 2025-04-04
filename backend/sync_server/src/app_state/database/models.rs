@@ -6,6 +6,7 @@ use sync_lib::bytes_to_base64;
 pub type VaultId = String;
 pub type VaultUpdateId = i64;
 pub type DocumentId = uuid::Uuid;
+pub type DeviceId = String;
 
 #[derive(Debug, Clone)]
 pub struct StoredDocumentVersion {

@@ -18,7 +18,7 @@ use super::auth::auth;
 use crate::{
     app_state::{
         AppState,
-        database::models::{DocumentVersionWithoutContent, VaultId, VaultUpdateId},
+        database::models::{DeviceId, DocumentVersionWithoutContent, VaultId, VaultUpdateId},
     },
     errors::{SyncServerError, server_error, unauthenticated_error},
 };
@@ -61,6 +61,13 @@ async fn websocket_wrapped(
     warn!("Websocket connection closed on vault '{vault_id}'");
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WebsocketHandshake {
+    pub token: String,
+    pub device_id: DeviceId,
+}
+
 async fn websocket(
     state: AppState,
     stream: WebSocket,
@@ -69,13 +76,19 @@ async fn websocket(
 ) -> Result<(), SyncServerError> {
     let (mut sender, mut receiver) = stream.split();
 
-    if let Some(Ok(Message::Text(token))) = receiver.next().await {
-        auth(&state, &token, &vault_id)?;
+    let handshake = if let Some(Ok(Message::Text(token))) = receiver.next().await {
+        let handshake: WebsocketHandshake = serde_json::from_str(&token)
+            .context("Failed to parse token")
+            .map_err(server_error)?;
+
+        auth(&state, &handshake.token, &vault_id)?;
+
+        handshake
     } else {
         return Err(unauthenticated_error(anyhow::anyhow!(
             "Failed to authenticate"
         )));
-    }
+    };
 
     let mut rx = state.broadcasts.get_receiver(vault_id.clone()).await;
 
@@ -99,7 +112,11 @@ async fn websocket(
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(update) = rx.recv().await {
-            send_document_over_websocket(update, &mut sender).await?;
+            if Some(&handshake.device_id) == update.origin_device_id.as_ref() {
+                continue;
+            }
+
+            send_document_over_websocket(update.document, &mut sender).await?;
         }
 
         Ok::<(), SyncServerError>(())

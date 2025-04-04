@@ -4,7 +4,7 @@ use axum_typed_multipart::TryFromMultipart;
 use schemars::JsonSchema;
 use serde::{self, Deserialize};
 
-use crate::app_state::database::models::{DocumentId, VaultUpdateId};
+use crate::app_state::database::models::{DeviceId, DocumentId, VaultUpdateId};
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -16,6 +16,7 @@ pub struct CreateDocumentVersion {
     pub document_id: Option<DocumentId>,
     pub relative_path: String,
     pub content_base64: String,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, TryFromMultipart, JsonSchema)]
@@ -24,6 +25,7 @@ pub struct CreateDocumentVersionMultipart {
     pub relative_path: String,
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -32,6 +34,7 @@ pub struct UpdateDocumentVersion {
     pub parent_version_id: VaultUpdateId,
     pub relative_path: String,
     pub content_base64: String,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, TryFromMultipart, JsonSchema)]
@@ -41,10 +44,12 @@ pub struct UpdateDocumentVersionMultipart {
     pub relative_path: String,
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
+    pub device_id: Option<DeviceId>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteDocumentVersion {
     pub relative_path: String,
+    pub device_id: Option<DeviceId>,
 }

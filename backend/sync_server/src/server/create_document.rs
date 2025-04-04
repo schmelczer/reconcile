@@ -10,8 +10,9 @@ use super::requests::{CreateDocumentVersion, CreateDocumentVersionMultipart};
 use crate::{
     app_state::{
         AppState,
+        broadcasts::VaultUpdate,
         database::models::{
-            DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
+            DeviceId, DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
         },
     },
     errors::{SyncServerError, client_error, server_error},
@@ -40,6 +41,7 @@ pub async fn create_document_multipart(
         vault_id,
         request.document_id,
         request.relative_path,
+        request.device_id,
         request.content.contents.to_vec(),
     )
     .await
@@ -63,6 +65,7 @@ pub async fn create_document_json(
         vault_id,
         request.document_id,
         request.relative_path,
+        request.device_id,
         content_bytes,
     )
     .await
@@ -73,6 +76,7 @@ async fn internal_create_document(
     vault_id: VaultId,
     document_id: Option<DocumentId>,
     relative_path: String,
+    device_id: Option<DeviceId>,
     content: Vec<u8>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     let mut transaction = state
@@ -131,7 +135,13 @@ async fn internal_create_document(
 
     state
         .broadcasts
-        .send(vault_id, new_version.clone().into())
+        .send(
+            vault_id,
+            VaultUpdate {
+                origin_device_id: device_id,
+                document: new_version.clone().into(),
+            },
+        )
         .await;
 
     Ok(Json(new_version.into()))

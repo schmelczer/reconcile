@@ -8,6 +8,7 @@ use super::requests::DeleteDocumentVersion;
 use crate::{
     app_state::{
         AppState,
+        broadcasts::VaultUpdate,
         database::models::{
             DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
         },
@@ -67,7 +68,13 @@ pub async fn delete_document(
 
     state
         .broadcasts
-        .send(vault_id, new_version.clone().into())
+        .send(
+            vault_id,
+            VaultUpdate {
+                origin_device_id: request.device_id,
+                document: new_version.clone().into(),
+            },
+        )
         .await;
 
     Ok(Json(new_version.into()))

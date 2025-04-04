@@ -86,7 +86,7 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
                     info_span!(
-                        "http_request",
+                        "http",
                         method = ?request.method(),
                         uri = ?request.uri(),
                     )

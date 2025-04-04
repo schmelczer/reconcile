@@ -14,7 +14,8 @@ use super::{
 use crate::{
     app_state::{
         AppState,
-        database::models::{DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+        broadcasts::VaultUpdate,
+        database::models::{DeviceId, DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
     },
     errors::{SyncServerError, client_error, not_found_error, server_error},
     utils::{deduped_file_paths, sanitize_path},
@@ -44,6 +45,7 @@ pub async fn update_document_multipart(
         document_id,
         request.parent_version_id,
         request.relative_path,
+        request.device_id,
         request.content.contents.to_vec(),
     )
     .await
@@ -68,6 +70,7 @@ pub async fn update_document_json(
         document_id,
         request.parent_version_id,
         request.relative_path,
+        request.device_id,
         content_bytes,
     )
     .await
@@ -80,6 +83,7 @@ async fn internal_update_document(
     document_id: DocumentId,
     parent_version_id: VaultUpdateId,
     relative_path: String,
+    device_id: Option<DeviceId>,
     content: Vec<u8>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     // No need for a transaction as document versions are immutable
@@ -97,6 +101,34 @@ async fn internal_update_document(
             },
             Ok,
         )?;
+
+    let sanitized_relative_path = sanitize_path(&relative_path);
+
+    // Return the latest version if the update is a no-op from the client's
+    // perspective
+    if content == parent_document.content
+        && sanitized_relative_path == parent_document.relative_path
+    {
+        info!("Document content is the same as the parent version, skipping update");
+
+        let latest_version = state
+            .database
+            .get_latest_document(&vault_id, &document_id, None)
+            .await
+            .map_err(server_error)?
+            .map_or_else(
+                || {
+                    Err(not_found_error(anyhow!(
+                        "Document with id `{document_id}` not found",
+                    )))
+                },
+                Ok,
+            )?;
+
+        return Ok(Json(DocumentUpdateResponse::FastForwardUpdate(
+            latest_version.into(),
+        )));
+    }
 
     let mut transaction = state
         .database
@@ -135,8 +167,6 @@ async fn internal_update_document(
             latest_version.into(),
         )));
     }
-
-    let sanitized_relative_path = sanitize_path(&relative_path);
 
     // Return the latest version if the content and path are the same as the latest
     // version
@@ -208,7 +238,13 @@ async fn internal_update_document(
 
     state
         .broadcasts
-        .send(vault_id, new_version.clone().into())
+        .send(
+            vault_id,
+            VaultUpdate {
+                origin_device_id: device_id,
+                document: new_version.clone().into(),
+            },
+        )
         .await;
 
     Ok(Json(if is_different_from_request_content {
