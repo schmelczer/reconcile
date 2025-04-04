@@ -1,14 +1,9 @@
 use anyhow::anyhow;
 use axum::extract::{Path, State};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::auth::auth;
 use crate::{
     app_state::{
         AppState,
@@ -26,15 +21,12 @@ pub struct FetchLatestDocumentVersionPathParams {
 
 #[axum::debug_handler]
 pub async fn fetch_latest_document_version(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(FetchLatestDocumentVersionPathParams {
         vault_id,
         document_id,
     }): Path<FetchLatestDocumentVersionPathParams>,
     State(state): State<AppState>,
 ) -> Result<Json<DocumentVersion>, SyncServerError> {
-    auth(&state, auth_header.token(), &vault_id)?;
-
     let latest_version = state
         .database
         .get_latest_document(&vault_id, &document_id, None)

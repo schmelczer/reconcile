@@ -1,14 +1,10 @@
 use anyhow::Context as _;
 use axum::extract::{Path, State};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{auth::auth, requests::DeleteDocumentVersion};
+use super::requests::DeleteDocumentVersion;
 use crate::{
     app_state::{
         AppState,
@@ -29,7 +25,6 @@ pub struct DeleteDocumentPathParams {
 
 #[axum::debug_handler]
 pub async fn delete_document(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(DeleteDocumentPathParams {
         vault_id,
         document_id,
@@ -37,8 +32,6 @@ pub async fn delete_document(
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
-    auth(&state, auth_header.token(), &vault_id)?;
-
     let mut transaction = state
         .database
         .create_write_transaction(&vault_id)

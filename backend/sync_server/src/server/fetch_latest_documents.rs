@@ -1,13 +1,9 @@
 use axum::extract::{Path, Query, State};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::{auth::auth, responses::FetchLatestDocumentsResponse};
+use super::responses::FetchLatestDocumentsResponse;
 use crate::{
     app_state::{
         AppState,
@@ -30,13 +26,10 @@ pub struct QueryParams {
 
 #[axum::debug_handler]
 pub async fn fetch_latest_documents(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(FetchLatestDocumentsPathParams { vault_id }): Path<FetchLatestDocumentsPathParams>,
     Query(QueryParams { since_update_id }): Query<QueryParams>,
     State(state): State<AppState>,
 ) -> Result<Json<FetchLatestDocumentsResponse>, SyncServerError> {
-    auth(&state, auth_header.token(), &vault_id)?;
-
     let documents = if let Some(since_update_id) = since_update_id {
         state
             .database

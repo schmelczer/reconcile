@@ -1,19 +1,12 @@
 use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::Context as _;
 use axum::extract::{Path, State};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::base64_to_bytes;
 
-use super::{
-    auth::auth,
-    requests::{CreateDocumentVersion, CreateDocumentVersionMultipart},
-};
+use super::requests::{CreateDocumentVersion, CreateDocumentVersionMultipart};
 use crate::{
     app_state::{
         AppState,
@@ -36,7 +29,6 @@ pub struct CreateDocumentPathParams {
 /// with their content merged.
 #[axum::debug_handler]
 pub async fn create_document_multipart(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
@@ -44,7 +36,6 @@ pub async fn create_document_multipart(
     >,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     internal_create_document(
-        auth_header,
         state,
         vault_id,
         request.document_id,
@@ -59,7 +50,6 @@ pub async fn create_document_multipart(
 /// with their content merged.
 #[axum::debug_handler]
 pub async fn create_document_json(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
@@ -69,7 +59,6 @@ pub async fn create_document_json(
         .map_err(client_error)?;
 
     internal_create_document(
-        auth_header,
         state,
         vault_id,
         request.document_id,
@@ -80,15 +69,12 @@ pub async fn create_document_json(
 }
 
 async fn internal_create_document(
-    auth_header: Authorization<Bearer>,
     state: AppState,
     vault_id: VaultId,
     document_id: Option<DocumentId>,
     relative_path: String,
     content: Vec<u8>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
-    auth(&state, auth_header.token(), &vault_id)?;
-
     let mut transaction = state
         .database
         .create_write_transaction(&vault_id)

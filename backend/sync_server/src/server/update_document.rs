@@ -1,10 +1,6 @@
 use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::{Context as _, anyhow};
 use axum::extract::{Path, State};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
 use axum_jsonschema::Json;
 use log::info;
 use schemars::JsonSchema;
@@ -12,7 +8,6 @@ use serde::Deserialize;
 use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
 
 use super::{
-    auth::auth,
     requests::{UpdateDocumentVersion, UpdateDocumentVersionMultipart},
     responses::DocumentUpdateResponse,
 };
@@ -34,7 +29,6 @@ pub struct UpdateDocumentPathParams {
 
 #[axum::debug_handler]
 pub async fn update_document_multipart(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(UpdateDocumentPathParams {
         vault_id,
         document_id,
@@ -45,7 +39,6 @@ pub async fn update_document_multipart(
     >,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     internal_update_document(
-        auth_header,
         state,
         vault_id,
         document_id,
@@ -58,7 +51,6 @@ pub async fn update_document_multipart(
 
 #[axum::debug_handler]
 pub async fn update_document_json(
-    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>,
     Path(UpdateDocumentPathParams {
         vault_id,
         document_id,
@@ -71,7 +63,6 @@ pub async fn update_document_json(
         .map_err(client_error)?;
 
     internal_update_document(
-        auth_header,
         state,
         vault_id,
         document_id,
@@ -84,7 +75,6 @@ pub async fn update_document_json(
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn internal_update_document(
-    auth_header: Authorization<Bearer>,
     state: AppState,
     vault_id: VaultId,
     document_id: DocumentId,
@@ -92,8 +82,6 @@ async fn internal_update_document(
     relative_path: String,
     content: Vec<u8>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
-    auth(&state, auth_header.token(), &vault_id)?;
-
     // No need for a transaction as document versions are immutable
     let parent_document = state
         .database
