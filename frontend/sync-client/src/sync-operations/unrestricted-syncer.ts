@@ -236,6 +236,14 @@ export class UnrestrictedSyncer {
 					const responseBytes = deserialize(response.contentBase64);
 					contentHash = hash(responseBytes);
 
+					this.database.updateDocumentMetadata(
+						{
+							parentVersionId: response.vaultUpdateId,
+							hash: contentHash
+						},
+						document
+					);
+
 					await this.operations.write(
 						actualPath,
 						contentBytes,
@@ -250,6 +258,14 @@ export class UnrestrictedSyncer {
 							type: SyncType.UPDATE
 						});
 					}
+				} else {
+					this.database.updateDocumentMetadata(
+						{
+							parentVersionId: response.vaultUpdateId,
+							hash: contentHash
+						},
+						document
+					);
 				}
 
 				this.tryIncrementVaultUpdateId(response.vaultUpdateId);
