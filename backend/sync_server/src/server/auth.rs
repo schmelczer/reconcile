@@ -17,7 +17,6 @@ use crate::{
     errors::{SyncServerError, permission_denied_error, unauthenticated_error},
 };
 
-
 pub async fn auth_middleware(
     State(state): State<AppState>,
     Path(path_params): Path<HashMap<String, String>>,
@@ -37,11 +36,7 @@ pub async fn auth_middleware(
     Ok(next.run(req).await)
 }
 
-pub fn auth(
-    state: &AppState,
-    token: &str,
-    vault_id: &VaultId,
-) -> Result<User, SyncServerError> {
+pub fn auth(state: &AppState, token: &str, vault_id: &VaultId) -> Result<User, SyncServerError> {
     let user = state
         .config
         .users
