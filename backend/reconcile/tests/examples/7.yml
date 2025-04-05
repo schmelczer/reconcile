@@ -1,4 +1,0 @@
-parent: "Total: $100"
-left: "Total: |$150"
-right: "Total: |€100"
-expected: "Total: |$150 |€100"

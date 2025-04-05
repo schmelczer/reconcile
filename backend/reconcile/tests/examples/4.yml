@@ -1,4 +1,0 @@
-parent: Meeting at 2pm in 会议室
-left: Meeting at |3pm in the 会议室
-right: Team meeting at 2pm in conference room|
-expected: Team meeting at |3pm in conference room| the

@@ -1,4 +1,0 @@
-parent:
-left: hi my friend|
-right: hi there|
-expected: hi my friend| there|

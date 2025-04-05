@@ -1,0 +1,28 @@
+# Both delete the same range
+parent: original_1 original_2 original_3 original_4 original_5
+left: original_1 original_5|
+right: "|original_1 original_5"
+expected: "|original_1 original_5|"
+
+---
+
+# Both delete a range and one range contains the other
+parent: original_1 original_2 original_3 original_4 original_5
+left: original_1 original_5
+right: original_1 original_4 original_5
+expected: original_1 original_5
+
+---
+
+# Deleting overlapping ranges
+parent: original_1 original_2 original_3 original_4 original_5
+left: original_1 original_4| original_5
+right: original_1 original_2| original_5
+expected: original_1| original_5|
+
+---
+
+parent: long text with one big delete and many small
+left: long small
+right: long with big and small
+expected: long small

@@ -55,11 +55,11 @@ parent: |
   a
   a
 left: |
-  a
+  a|
     a
 right: |
-  a
+  a|
   a
 expected: |
-  a
+  a||
     a

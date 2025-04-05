@@ -1,4 +1,0 @@
-parent: A B C D
-left: A X B D|
-right: A B Y|
-expected: A X B Y||

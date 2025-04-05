@@ -1,0 +1,13 @@
+# One deleted a large range, the other deleted subranges and inserted as well
+parent: original_1 original_2 original_3 original_4 original_5
+left: original_1 original_5
+right: original_1 edit_1 original_3 edit_2 original_5
+expected: original_1 edit_1 edit_2 original_5
+
+---
+
+# One deleted a large range, the other inserted and deleted a partially overlapping range
+parent: original_1 original_2 original_3 original_4 original_5
+left: original_1 original_5
+right: original_1 edit_1 original_3 edit_2
+expected: original_1 edit_1 edit_2

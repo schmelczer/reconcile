@@ -1,0 +1,27 @@
+# Both inserted the same prefix; this should get deduplicateed
+parent: "hi "
+left: "hi there "
+right: "hi there my friend "
+expected: "hi there my friend "
+
+---
+
+# The prefix of the 2nd appears on the 1st so it shouldn't get duplicatelicated
+parent: "hi "
+left: "hi there you "
+right: "hi there my friend "
+expected: "hi there my friend you "
+
+---
+
+parent: a
+left: a b c
+right: a b c d
+expected: a b c d
+
+---
+
+parent: a
+left: abc
+right: abcd
+expected: abcabcd

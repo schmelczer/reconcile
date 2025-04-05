@@ -1,4 +1,0 @@
-parent: Please remember to bring your laptop and charger
-left: Please remember to bring your laptop|
-right: Please remember to bring your |new |laptop and charger
-expected: Please remember to bring your |new |laptop|

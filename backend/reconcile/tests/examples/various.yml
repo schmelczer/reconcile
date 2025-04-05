@@ -1,0 +1,130 @@
+parent: You're Annual Savings Statement is available in our online portal
+left: Your| annual record is available in our online portal|
+right: You're Annual Savings information| is available online
+expected: Your| annual record information| is available online|
+
+---
+
+parent: Party A shall pay Party B
+left: Party C shall pay Party B
+right: Party A shall receive from Party B
+expected: Party C shall receive from Party B
+
+---
+
+parent:
+left: hi my friend|
+right: hi there|
+expected: hi my friend| there|
+
+---
+
+parent: Buy milk and eggs
+left: Buy organic milk| and eggs|
+right: Buy milk and eggs| and bread
+expected: Buy organic milk| and eggs|| and bread
+
+---
+
+parent: Send the report to the team
+left: Send the |detailed report to the |entire |team
+right: Send the |quarterly |detailed report to the team
+expected: Send the |detailed |quarterly |detailed report to the |entire |team
+
+---
+
+parent: Ready, Set go
+left: Ready! Set go|
+right: Ready, Set, go!|
+expected: Ready! Set, go!||
+
+---
+
+parent: "Total: $100"
+left: "Total: |$150"
+right: "Total: |€100"
+expected: "Total: |$150 |€100"
+
+---
+
+parent: Start middle end
+left: Start [important] middle end|
+right: Start middle [critical] end|
+expected: Start [important] middle [critical] end||
+
+---
+
+parent: marketplace
+left: market| place
+right: market|space
+expected: market| placemarket|space
+
+---
+
+parent: A B C D
+left: A X B D|
+right: A B Y|
+expected: A X B Y||
+
+---
+
+parent: Please submit your assignment by Friday
+left: Please submit your |completed |assignment by Friday
+right: Please submit your assignment |online |by Friday
+expected: Please submit your |completed |assignment |online |by Friday
+
+---
+
+parent: "a b "
+left: "c d "
+right: "a b c d "
+expected: "c d c d "
+
+---
+
+parent: a b c d e
+left: a e|
+right: a c e|
+expected: a e||
+
+---
+
+parent: a 0 1 2 b
+left: a 0 1| 2 b
+right: a b|
+expected: a| b|
+
+---
+
+parent: a 0 1 2 b
+left: "|a b"
+right: "|a E 1 F b"
+expected: "||a E F b"
+
+---
+
+parent: a this one delete b
+left: a b|
+right: a my one change b|
+expected: a my change b||
+
+---
+
+parent: this stays, this is one big delete, don't touch this
+left: this stays, don't touch this|
+right: this stays, my one change, don't touch this|
+expected: this stays, my change, don't touch this||
+
+---
+
+parent: 1 2 3 4 5 6
+left: 1| 6
+right: 1 2 4|
+expected: 1||
+
+---
+
+parent: hello world
+left: hi, world
+right: hello my friend!
+expected: hi, my friend!
