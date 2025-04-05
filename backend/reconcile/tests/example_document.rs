@@ -40,8 +40,8 @@ impl ExampleDocument {
     pub fn assert_eq(&self, result: &TextWithCursors<'static>) {
         let result_str = ExampleDocument::text_with_cursors_to_string(result);
         assert_eq!(
-            result_str, self.expected,
-            "Left (actual) isn't equal to right (expected). Actual: ```\n{result_str}```",
+            self.expected, result_str,
+            "Left (expected) isn't equal to right (actual). Actual: ```\n{result_str}```",
         );
     }
 
@@ -55,8 +55,8 @@ impl ExampleDocument {
     pub fn assert_eq_without_cursors(&self, result: &str) {
         let expected = ExampleDocument::string_to_text_with_cursors(&self.expected).text;
         assert_eq!(
-            result, expected,
-            "Left (actual) isn't equal to right (expected), Actual: ```\n{result}```",
+            expected, result,
+            "Left (expected) isn't equal to right (actual), Actual: ```\n{result}```",
         );
     }
 
