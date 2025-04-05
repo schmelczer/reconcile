@@ -132,7 +132,7 @@ mod test {
             "both the same word",
         );
 
-        test_merge_both_ways("    ", "it’s utf-8!", "   ", "it’s utf-8!");
+        test_merge_both_ways("    ", "it’s utf-8!", "    ", "it’s utf-8!");
 
         test_merge_both_ways(
             "both delete the same word but one a bit more",
@@ -173,7 +173,7 @@ mod test {
             "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|   ",
               "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|   ",
              "       |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |dup|   ",
-            "      |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|      |dup|   ");
+            "       |7ca2b36d-6ee7-49eb-8eb1-d77e4cc1a001|      |cd9195cc-103a-4f13-90c8-4fba0ba421ee|      |d39156cc-cfd6-42a8-b70a-75020896069d|      |fbad794c-9c47-41f2-a343-490284ecb5a0|      |dup|      |dup|   ");
     }
 
     #[test]
@@ -358,23 +358,26 @@ mod test {
         );
     }
 
+    #[ignore = "expensive to run, only run in CI"]
     #[test_matrix( [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
         "room_with_a_view.txt",
         "kun_lu.txt",
-
+        "blns.txt"
     ],  [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
         "room_with_a_view.txt",
-        "kun_lu.txt"
+        "kun_lu.txt",
+        "blns.txt"
     ],  [
         "pride_and_prejudice.txt",
         "romeo_and_juliet.txt",
         "room_with_a_view.txt",
-        "kun_lu.txt"
-    ], [0..10000, 10000..20000], [0..10000, 10000..20000], [0..10000, 10000..20000])]
+        "kun_lu.txt",
+        "blns.txt"
+    ], [0..10000, 10000..20000, 20000..50000], [0..10000, 10000..20000, 20000..50000], [0..10000, 10000..20000, 20000..50000])]
     fn test_merge_files_without_panic(
         file_name_1: &str,
         file_name_2: &str,

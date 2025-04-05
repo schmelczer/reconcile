@@ -45,7 +45,7 @@ jobs:
       - name: Test backend
         run: |
           cd backend
-          cargo test --verbose
+          cargo test --verbose -- --include-ignored
           cd sync_lib
           wasm-pack test --node
 
