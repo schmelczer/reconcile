@@ -9,14 +9,20 @@ snapshot_kind: text
             Token {
                 normalised: "a",
                 original: "a",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
             Token {
                 normalised: "b",
                 original: "b",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
             Token {
                 normalised: "c",
                 original: "c",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),

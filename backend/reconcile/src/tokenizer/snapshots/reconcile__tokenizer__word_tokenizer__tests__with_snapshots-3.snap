@@ -5,11 +5,21 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "what?",
-        original: " what?",
+        normalised: " what?",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
     Token {
-        normalised: "",
+        normalised: "what?",
+        original: "what?",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " ",
         original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
 ]

@@ -9,6 +9,8 @@ snapshot_kind: text
             Token {
                 normalised: "a",
                 original: "a",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),
@@ -17,6 +19,8 @@ snapshot_kind: text
             Token {
                 normalised: "x",
                 original: "x",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),
@@ -25,6 +29,8 @@ snapshot_kind: text
             Token {
                 normalised: "b",
                 original: "b",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),
@@ -33,6 +39,8 @@ snapshot_kind: text
             Token {
                 normalised: "c",
                 original: "c",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),
@@ -41,6 +49,8 @@ snapshot_kind: text
             Token {
                 normalised: "y",
                 original: "y",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),
@@ -49,6 +59,8 @@ snapshot_kind: text
             Token {
                 normalised: "d",
                 original: "d",
+                is_left_joinable: true,
+                is_right_joinable: true,
             },
         ],
     ),

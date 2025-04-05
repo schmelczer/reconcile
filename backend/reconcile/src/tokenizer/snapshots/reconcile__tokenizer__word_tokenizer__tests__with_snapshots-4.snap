@@ -5,19 +5,51 @@ snapshot_kind: text
 ---
 [
     Token {
+        normalised: " hello,",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
         normalised: "hello,",
-        original: " hello,",
+        original: "hello,",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " \nwhere",
+        original: " \n",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
     Token {
         normalised: "where",
-        original: " \nwhere",
+        original: "where",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " are",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
     Token {
         normalised: "are",
-        original: " are",
+        original: "are",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " you?",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
     Token {
         normalised: "you?",
-        original: " you?",
+        original: "you?",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
 ]

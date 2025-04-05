@@ -3,15 +3,12 @@ use core::iter;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{CursorPosition, Operation, TextWithCursors};
+use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
     operation_transformation::merge_context::MergeContext,
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
-    utils::{
-        merge_iters::MergeSorted as _, ordered_operation::OrderedOperation, side::Side,
-        string_builder::StringBuilder,
-    },
+    utils::{merge_iters::MergeSorted as _, side::Side, string_builder::StringBuilder},
 };
 
 /// A sequence of operations that can be applied to a text document.
@@ -66,9 +63,91 @@ where
 
         Self::new(
             original,
-            Self::cook_operations(Self::elongate_operations(diff)).collect(),
+            Self::cook_operations(Self::elongate_operations(Self::break_up_raw_operations(
+                diff,
+            )))
+            .collect(),
             updated.cursors,
         )
+    }
+
+    fn break_up_raw_operations<I>(raw_operations: I) -> impl Iterator<Item = RawOperation<T>>
+    where
+        I: IntoIterator<Item = RawOperation<T>>,
+    {
+        raw_operations.into_iter().flat_map(|raw_operation| {
+            let mut result: Vec<RawOperation<T>> = Vec::new();
+            match raw_operation {
+                RawOperation::Insert(tokens) => {
+                    for token in tokens {
+                        result.push(RawOperation::Insert(vec![token]));
+                    }
+                }
+                RawOperation::Delete(tokens) => {
+                    for token in tokens {
+                        result.push(RawOperation::Delete(vec![token]));
+                    }
+                }
+                RawOperation::Equal(tokens) => {
+                    for token in tokens {
+                        result.push(RawOperation::Equal(vec![token]));
+                    }
+                }
+            }
+            result.into_iter()
+        })
+    }
+
+    fn elongate_operations<I>(raw_operations: I) -> Vec<RawOperation<T>>
+    where
+        I: IntoIterator<Item = RawOperation<T>>,
+    {
+        let mut maybe_previous_insert: Option<RawOperation<T>> = None;
+        let mut maybe_previous_delete: Option<RawOperation<T>> = None;
+
+        let mut result: Vec<RawOperation<T>> = raw_operations
+            .into_iter()
+            .flat_map(|next| match next {
+                RawOperation::Insert(..) => match maybe_previous_insert.take() {
+                    Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
+                        maybe_previous_insert = prev.extend(next);
+                        Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
+                    }
+                    prev => {
+                        maybe_previous_insert = Some(next);
+                        Box::new(prev.into_iter())
+                    }
+                },
+                RawOperation::Delete(..) => match maybe_previous_delete.take() {
+                    Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
+                        maybe_previous_delete = prev.extend(next);
+                        Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
+                    }
+                    prev => {
+                        maybe_previous_delete = Some(next);
+                        Box::new(prev.into_iter())
+                    }
+                },
+                RawOperation::Equal(..) => Box::new(
+                    maybe_previous_insert
+                        .take()
+                        .into_iter()
+                        .chain(maybe_previous_delete.take())
+                        .chain(iter::once(next)),
+                )
+                    as Box<dyn Iterator<Item = RawOperation<T>>>,
+            })
+            .collect();
+
+        if let Some(prev) = maybe_previous_insert {
+            result.push(prev);
+        }
+
+        if let Some(prev) = maybe_previous_delete {
+            result.push(prev);
+        }
+
+        result
     }
 
     // Turn raw operations into ordered operations while keeping track of old & new
@@ -117,56 +196,6 @@ where
 
             operation.into_iter()
         })
-    }
-
-    fn elongate_operations<I>(raw_operations: I) -> Vec<RawOperation<T>>
-    where
-        I: IntoIterator<Item = RawOperation<T>>,
-    {
-        let mut maybe_previous_insert: Option<RawOperation<T>> = None;
-        let mut maybe_previous_delete: Option<RawOperation<T>> = None;
-
-        let mut result: Vec<RawOperation<T>> = raw_operations
-            .into_iter()
-            .flat_map(|next| match next {
-                RawOperation::Insert(..) => {
-                    if let Some(prev) = maybe_previous_insert.take() {
-                        maybe_previous_insert = prev.extend(next);
-                    } else {
-                        maybe_previous_insert = Some(next);
-                    }
-
-                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                }
-                RawOperation::Delete(..) => {
-                    if let Some(prev) = maybe_previous_delete.take() {
-                        maybe_previous_delete = prev.extend(next);
-                    } else {
-                        maybe_previous_delete = Some(next);
-                    }
-
-                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                }
-                RawOperation::Equal(..) => Box::new(
-                    maybe_previous_insert
-                        .take()
-                        .into_iter()
-                        .chain(maybe_previous_delete.take())
-                        .chain(iter::once(next)),
-                )
-                    as Box<dyn Iterator<Item = RawOperation<T>>>,
-            })
-            .collect();
-
-        if let Some(prev) = maybe_previous_insert {
-            result.push(prev);
-        }
-
-        if let Some(prev) = maybe_previous_delete {
-            result.push(prev);
-        }
-
-        result
     }
 
     /// Create a new `EditedText` with the given operations.
@@ -225,6 +254,7 @@ where
                         // Operations on the left and right must come in the same order so that
                         // inserts can be merged with other inserts and deletes with deletes.
                         usize::from(matches!(operation.operation, Operation::Delete { .. })),
+                        operation.operation.start_index(),
                         // Make sure that the ordering is deterministic regardless which text
                         // is left or right.
                         match &operation.operation {

@@ -7,9 +7,19 @@ snapshot_kind: text
     Token {
         normalised: "Hi",
         original: "Hi",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " there!",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
     Token {
         normalised: "there!",
-        original: " there!",
+        original: "there!",
+        is_left_joinable: true,
+        is_right_joinable: true,
     },
 ]

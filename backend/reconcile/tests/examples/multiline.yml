@@ -7,14 +7,59 @@ left: |
 right: |
   Hello there!
 
-
   Best,
   Andras
 
 expected: |
   Hello there!
 
-  How are you?
-
   Best,
   Andras
+
+
+  How are you?
+
+---
+
+parent: |
+  - my list
+  - 2nd item
+  - 3rd item
+
+left: |
+  - my list
+  - 2nd item
+      - nested list
+        - very nested  list
+  - 3rd item
+
+right: |
+  - my list
+    - nested list
+  - 2nd item
+  - 3rd item
+    - another nested list
+
+expected: |
+  - my list
+    - nested list
+  - 2nd item
+      - nested list
+        - very nested  list
+  - 3rd item
+    - another nested list
+
+---
+
+parent: |
+  a
+  a
+left: |
+  a
+    a
+right: |
+  a
+  a
+expected: |
+  a
+    a
