@@ -9,6 +9,7 @@ updates:
     directories: ["**"]
     schedule:
       interval: "daily"
+    versioning-strategy: increase
 
   - package-ecosystem: "docker"
     directories: ["**"]
