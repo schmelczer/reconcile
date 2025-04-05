@@ -12,12 +12,20 @@ snapshot_kind: text
                 is_left_joinable: true,
                 is_right_joinable: true,
             },
+        ],
+    ),
+    Equal(
+        [
             Token {
                 normalised: "b",
                 original: "b",
                 is_left_joinable: true,
                 is_right_joinable: true,
             },
+        ],
+    ),
+    Equal(
+        [
             Token {
                 normalised: "c",
                 original: "c",

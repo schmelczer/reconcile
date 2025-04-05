@@ -1,4 +1,5 @@
 //! Taken from <https://github.com/mitsuhiko/similar/blob/7e15c44de11a1cd61e1149189929e189ef977fd8/src/algorithms/myers.rs>
+//!
 //! Myers' diff algorithm.
 //!
 //! * time: `O((N+M)D)`
@@ -34,8 +35,7 @@ use crate::{
 /// Diff `old`, between indices `old_range` and `new` between indices
 /// `new_range`.
 ///
-/// This diff is done with an optional deadline that defines the maximal
-/// execution time permitted before it bails and falls back to an approximation.
+/// The returned RawOperations all have a token count of 1.
 pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone + std::fmt::Debug,
@@ -44,6 +44,7 @@ where
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
     let mut result: Vec<RawOperation<T>> = vec![];
+
     conquer(
         old,
         0..old.len(),
@@ -53,6 +54,12 @@ where
         &mut vb,
         &mut result,
     );
+
+    debug_assert!(
+        result.iter().all(|op| op.tokens().len() == 1),
+        "All operations should be of length 1"
+    );
+
     result
 }
 
@@ -234,9 +241,11 @@ fn conquer<T>(
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
     if common_prefix_len > 0 {
-        result.push(RawOperation::Equal(
-            old[old_range.start..old_range.start + common_prefix_len].to_vec(),
-        ));
+        result.extend(
+            old[old_range.start..old_range.start + common_prefix_len]
+                .iter()
+                .map(|token| RawOperation::Equal(vec![token.clone()])),
+        )
     }
     old_range.start += common_prefix_len;
     new_range.start += common_prefix_len;
@@ -251,15 +260,19 @@ fn conquer<T>(
     new_range.end -= common_suffix_len;
 
     if old_range.is_empty() && new_range.is_empty() {
-        // Do nothing
+        // do nothing
     } else if new_range.is_empty() {
-        result.push(RawOperation::Delete(
-            old[old_range.start..old_range.start + old_range.len()].to_vec(),
-        ));
+        result.extend(
+            old[old_range.start..old_range.start + old_range.len()]
+                .iter()
+                .map(|token| RawOperation::Delete(vec![token.clone()])),
+        )
     } else if old_range.is_empty() {
-        result.push(RawOperation::Insert(
-            new[new_range.start..new_range.start + new_range.len()].to_vec(),
-        ));
+        result.extend(
+            new[new_range.start..new_range.start + new_range.len()]
+                .iter()
+                .map(|token| RawOperation::Insert(vec![token.clone()])),
+        )
     } else if let Some((x_start, y_start)) =
         find_middle_snake(old, old_range.clone(), new, new_range.clone(), vf, vb)
     {
@@ -268,18 +281,24 @@ fn conquer<T>(
         conquer(old, old_a, new, new_a, vf, vb, result);
         conquer(old, old_b, new, new_b, vf, vb, result);
     } else {
-        result.push(RawOperation::Delete(
-            old[old_range.start..old_range.end].to_vec(),
-        ));
-        result.push(RawOperation::Insert(
-            new[new_range.start..new_range.end].to_vec(),
-        ));
+        result.extend(
+            old[old_range.start..old_range.end]
+                .iter()
+                .map(|token| RawOperation::Delete(vec![token.clone()])),
+        );
+        result.extend(
+            new[new_range.start..new_range.end]
+                .iter()
+                .map(|token| RawOperation::Insert(vec![token.clone()])),
+        );
     }
 
     if common_suffix_len > 0 {
-        result.push(RawOperation::Equal(
-            old[common_suffix.0..common_suffix.0 + common_suffix_len].to_vec(),
-        ));
+        result.extend(
+            old[common_suffix.0..common_suffix.0 + common_suffix_len]
+                .iter()
+                .map(|token| RawOperation::Equal(vec![token.clone()])),
+        );
     }
 }
 

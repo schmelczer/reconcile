@@ -22,6 +22,10 @@ snapshot_kind: text
                 is_left_joinable: true,
                 is_right_joinable: true,
             },
+        ],
+    ),
+    Delete(
+        [
             Token {
                 normalised: "c",
                 original: "c",

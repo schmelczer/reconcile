@@ -63,39 +63,9 @@ where
 
         Self::new(
             original,
-            Self::cook_operations(Self::elongate_operations(Self::break_up_raw_operations(
-                diff,
-            )))
-            .collect(),
+            Self::cook_operations(Self::elongate_operations(diff)).collect(),
             updated.cursors,
         )
-    }
-
-    fn break_up_raw_operations<I>(raw_operations: I) -> impl Iterator<Item = RawOperation<T>>
-    where
-        I: IntoIterator<Item = RawOperation<T>>,
-    {
-        raw_operations.into_iter().flat_map(|raw_operation| {
-            let mut result: Vec<RawOperation<T>> = Vec::new();
-            match raw_operation {
-                RawOperation::Insert(tokens) => {
-                    for token in tokens {
-                        result.push(RawOperation::Insert(vec![token]));
-                    }
-                }
-                RawOperation::Delete(tokens) => {
-                    for token in tokens {
-                        result.push(RawOperation::Delete(vec![token]));
-                    }
-                }
-                RawOperation::Equal(tokens) => {
-                    for token in tokens {
-                        result.push(RawOperation::Equal(vec![token]));
-                    }
-                }
-            }
-            result.into_iter()
-        })
     }
 
     fn elongate_operations<I>(raw_operations: I) -> Vec<RawOperation<T>>
