@@ -63,7 +63,16 @@ impl ExampleDocument {
     fn text_with_cursors_to_string(text: &TextWithCursors<'_>) -> String {
         let mut result = text.text.clone().into_owned();
         for (i, cursor) in text.cursors.iter().enumerate() {
-            result.insert(cursor.char_index + i, '|');
+            result.insert(
+                result
+                    .char_indices()
+                    .skip(cursor.char_index + i)
+                    .next()
+                    .map(|(byte_index, _)| byte_index)
+                    .unwrap_or_else(|| result.len()), /* find the utf8 char index of the insert
+                                                       * in byte index */
+                '|',
+            );
         }
         result
     }
