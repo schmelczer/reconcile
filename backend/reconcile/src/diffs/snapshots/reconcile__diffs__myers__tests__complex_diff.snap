@@ -1,0 +1,55 @@
+---
+source: reconcile/src/diffs/myers.rs
+expression: result
+snapshot_kind: text
+---
+[
+    Equal(
+        [
+            Token {
+                normalised: "a",
+                original: "a",
+            },
+        ],
+    ),
+    Insert(
+        [
+            Token {
+                normalised: "x",
+                original: "x",
+            },
+        ],
+    ),
+    Delete(
+        [
+            Token {
+                normalised: "b",
+                original: "b",
+            },
+        ],
+    ),
+    Equal(
+        [
+            Token {
+                normalised: "c",
+                original: "c",
+            },
+        ],
+    ),
+    Insert(
+        [
+            Token {
+                normalised: "y",
+                original: "y",
+            },
+        ],
+    ),
+    Delete(
+        [
+            Token {
+                normalised: "d",
+                original: "d",
+            },
+        ],
+    ),
+]

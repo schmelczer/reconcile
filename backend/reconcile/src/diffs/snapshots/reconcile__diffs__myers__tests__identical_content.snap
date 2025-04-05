@@ -1,0 +1,23 @@
+---
+source: reconcile/src/diffs/myers.rs
+expression: result
+snapshot_kind: text
+---
+[
+    Equal(
+        [
+            Token {
+                normalised: "a",
+                original: "a",
+            },
+            Token {
+                normalised: "b",
+                original: "b",
+            },
+            Token {
+                normalised: "c",
+                original: "c",
+            },
+        ],
+    ),
+]

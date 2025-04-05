@@ -1,0 +1,20 @@
+parent: Hello!
+left: |
+  Hello there!
+
+  How are you?
+
+right: |
+  Hello there!
+
+
+  Best,
+  Andras
+
+expected: |
+  Hello there!
+
+  How are you?
+
+  Best,
+  Andras

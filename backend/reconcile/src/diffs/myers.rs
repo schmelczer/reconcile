@@ -282,3 +282,57 @@ fn conquer<T>(
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_debug_snapshot;
+
+    use super::*;
+
+    #[test]
+    fn test_empty_diff() {
+        let old: Vec<Token<String>> = vec![];
+        let new: Vec<Token<String>> = vec![];
+        let result = diff(&old, &new);
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_identical_content() {
+        let content = vec!["a".into(), "b".into(), "c".into()];
+        let result = diff(&content, &content);
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_insert_only() {
+        let old: Vec<Token<String>> = vec![];
+        let new: Vec<Token<String>> = vec!["a".into(), "b".into()];
+        let result = diff(&old, &new);
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_delete_only() {
+        let old = vec!["a".into(), "b".into()];
+        let new: Vec<Token<String>> = vec![];
+        let result = diff(&old, &new);
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_prefix_and_suffix() {
+        let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
+        let new = vec!["a".into(), "x".into(), "d".into()];
+        let result = diff(&old, &new);
+        assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_complex_diff() {
+        let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
+        let new = vec!["a".into(), "x".into(), "c".into(), "y".into()];
+        let result = diff(&old, &new);
+        assert_debug_snapshot!(result);
+    }
+}

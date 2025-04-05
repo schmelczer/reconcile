@@ -1,0 +1,19 @@
+---
+source: reconcile/src/diffs/myers.rs
+expression: result
+snapshot_kind: text
+---
+[
+    Insert(
+        [
+            Token {
+                normalised: "a",
+                original: "a",
+            },
+            Token {
+                normalised: "b",
+                original: "b",
+            },
+        ],
+    ),
+]
