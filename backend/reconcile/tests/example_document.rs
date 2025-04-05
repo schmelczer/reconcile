@@ -1,5 +1,3 @@
-use std::{fs, path::Path};
-
 use pretty_assertions::assert_eq;
 use reconcile::{CursorPosition, TextWithCursors};
 use serde::Deserialize;
@@ -19,17 +17,6 @@ pub struct ExampleDocument {
 }
 
 impl ExampleDocument {
-    /// Creates a new `ExampleDocument` instance from a YAML file.
-    ///
-    /// # Panics
-    ///
-    /// If the file cannot be opened or parsed, the program will panic.
-    #[must_use]
-    pub fn from_yaml(path: &Path) -> Self {
-        let file = fs::File::open(path).expect("Failed to open example file");
-        serde_yaml::from_reader(file).expect("Failed to parse example file")
-    }
-
     #[must_use]
     pub fn parent(&self) -> String { self.parent.clone() }
 
@@ -52,7 +39,10 @@ impl ExampleDocument {
     /// will panic.
     pub fn assert_eq(&self, result: &TextWithCursors<'static>) {
         let result_str = ExampleDocument::text_with_cursors_to_string(result);
-        assert_eq!(result_str, self.expected);
+        assert_eq!(
+            result_str, self.expected,
+            "Left (actual) isn't equal to right (expected). Actual: ```\n{result_str}```",
+        );
     }
 
     /// Asserts that the result string matches the expected string,
@@ -63,9 +53,10 @@ impl ExampleDocument {
     /// If the result string does not match the expected string, the program
     /// will panic.
     pub fn assert_eq_without_cursors(&self, result: &str) {
+        let expected = ExampleDocument::string_to_text_with_cursors(&self.expected).text;
         assert_eq!(
-            result,
-            ExampleDocument::string_to_text_with_cursors(&self.expected).text,
+            result, expected,
+            "Left (actual) isn't equal to right (expected), Actual: ```\n{result}```",
         );
     }
 
