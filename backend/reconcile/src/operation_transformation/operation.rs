@@ -13,9 +13,7 @@ use crate::{
     },
 };
 
-/// Represents a change that can be applied to a text document.
-/// Operation is tied to a `ropey::Rope` and is mainly expected to be
-/// created by `EditedText`.
+/// Represents a change that can be applied on a `StringBuilder`.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq)]
 pub enum Operation<T>
