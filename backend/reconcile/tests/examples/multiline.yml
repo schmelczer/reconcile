@@ -20,7 +20,6 @@ expected: |
   How are you?
 
 ---
-
 parent: |
   - my list
   - 2nd item
@@ -50,7 +49,6 @@ expected: |
     - another nested list
 
 ---
-
 parent: |
   a
   a

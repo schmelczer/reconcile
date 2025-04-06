@@ -4,7 +4,6 @@ right: Team meeting at 2pm in conference room|
 expected: Team meeting at |3pm in conference room|
 
 ---
-
 parent: "    "
 left: "it’|s utf-8!"
 right: "    "

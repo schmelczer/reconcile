@@ -5,7 +5,6 @@ right: original_1 original_2| edit_2
 expected: original_1 edit_1|| edit_2
 
 ---
-
 # Both replace the same token with the same value
 parent: original_1 original_2 original_3
 left: original_1 edit_1| original_3
@@ -13,7 +12,6 @@ right: original_1 edit_1 original_3|
 expected: original_1 edit_1| original_3|
 
 ---
-
 # Both replace the same token with different value
 parent: original_1 original_2 original_3
 left: original_1 edit_1| original_3
