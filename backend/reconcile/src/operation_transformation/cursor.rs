@@ -3,9 +3,6 @@ use std::borrow::Cow;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::merge_context::MergeContext;
-use crate::operation_transformation::Operation;
-
 // CursorPosition represents the position of an identifiable cursor in a text
 // document based on its (UTF-8) character index.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -16,6 +13,7 @@ pub struct CursorPosition {
 }
 
 impl CursorPosition {
+    #[must_use]
     pub fn with_index(self, index: usize) -> Self {
         CursorPosition {
             id: self.id,

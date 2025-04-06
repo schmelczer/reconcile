@@ -35,7 +35,7 @@ use crate::{
 /// Diff `old`, between indices `old_range` and `new` between indices
 /// `new_range`.
 ///
-/// The returned RawOperations all have a token count of 1.
+/// The returned `RawOperations` all have a token count of 1.
 pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone + std::fmt::Debug,
@@ -245,7 +245,7 @@ fn conquer<T>(
             old[old_range.start..old_range.start + common_prefix_len]
                 .iter()
                 .map(|token| RawOperation::Equal(vec![token.clone()])),
-        )
+        );
     }
     old_range.start += common_prefix_len;
     new_range.start += common_prefix_len;
@@ -266,13 +266,13 @@ fn conquer<T>(
             old[old_range.start..old_range.start + old_range.len()]
                 .iter()
                 .map(|token| RawOperation::Delete(vec![token.clone()])),
-        )
+        );
     } else if old_range.is_empty() {
         result.extend(
             new[new_range.start..new_range.start + new_range.len()]
                 .iter()
                 .map(|token| RawOperation::Insert(vec![token.clone()])),
-        )
+        );
     } else if let Some((x_start, y_start)) =
         find_middle_snake(old, old_range.clone(), new, new_range.clone(), vf, vb)
     {

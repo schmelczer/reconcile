@@ -3,11 +3,11 @@ use core::iter;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{ordered_operation::OrderedOperation, CursorPosition, Operation, TextWithCursors};
+use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
-    operation_transformation::{merge_context::MergeContext, operation},
-    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
+    operation_transformation::merge_context::MergeContext,
+    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{merge_iters::MergeSorted as _, side::Side, string_builder::StringBuilder},
 };
 
@@ -84,7 +84,7 @@ where
             .flat_map(|next| match next {
                 RawOperation::Insert(..) => match maybe_previous_insert.take() {
                     Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                        maybe_previous_insert = prev.extend(next);
+                        maybe_previous_insert = Some(prev.extend(next));
                         Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                     }
                     prev => {
@@ -94,7 +94,7 @@ where
                 },
                 RawOperation::Delete(..) => match maybe_previous_delete.take() {
                     Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                        maybe_previous_delete = prev.extend(next);
+                        maybe_previous_delete = Some(prev.extend(next));
                         Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                     }
                     prev => {
@@ -133,7 +133,7 @@ where
         let mut new_index = 0; // this is the start index of the operation on the new text
         let mut order = 0; // this is the start index of the operation on the original text
 
-        raw_operations.into_iter().flat_map(move |raw_operation| {
+        raw_operations.into_iter().filter_map(move |raw_operation| {
             let length = raw_operation.original_text_length();
 
             match raw_operation {
@@ -261,8 +261,8 @@ where
                             &mut left_merge_context,
                         );
 
-                        if let Some(ref op @ Operation::Insert { .. })
-                        | Some(ref op @ Operation::Equal { .. }) = result
+                        if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
+                            result
                         {
                             while let Some(mut cursor) =
                                 left_cursors.next_if(|cursor| cursor.char_index <= original_end + 1)
@@ -284,8 +284,8 @@ where
                             &mut right_merge_context,
                         );
 
-                        if let Some(ref op @ Operation::Insert { .. })
-                        | Some(ref op @ Operation::Equal { .. }) = result
+                        if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
+                            result
                         {
                             while let Some(mut cursor) = right_cursors
                                 .next_if(|cursor| cursor.char_index <= original_end + 1)
@@ -310,8 +310,7 @@ where
         let last_index = merged_operations
             .iter()
             .last()
-            .map(|op| op.operation.end_index())
-            .unwrap_or(0);
+            .map_or(0, |op| op.operation.end_index());
 
         for cursor in left_cursors.chain(right_cursors) {
             merged_cursors.push(cursor.with_index(last_index));

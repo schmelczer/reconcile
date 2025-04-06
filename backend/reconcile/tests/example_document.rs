@@ -66,11 +66,9 @@ impl ExampleDocument {
             result.insert(
                 result
                     .char_indices()
-                    .skip(cursor.char_index + i)
-                    .next()
-                    .map(|(byte_index, _)| byte_index)
-                    .unwrap_or_else(|| result.len()), /* find the utf8 char index of the insert
-                                                       * in byte index */
+                    .nth(cursor.char_index + i)
+                    .map_or_else(|| result.len(), |(byte_index, _)| byte_index), /* find the utf8 char index of the insert
+                                                                                  * in byte index */
                 '|',
             );
         }

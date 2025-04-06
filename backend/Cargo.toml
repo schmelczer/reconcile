@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "reconcile",
-    "sync_server", 
+    "sync_server",
     "sync_lib"
 ]
 
@@ -14,9 +14,9 @@ license = "MIT"
 repository = "https://github.com/schmelczer/vault-link"
 version = "0.3.6"
 
-[workspace.dependencies]  
+[workspace.dependencies]
 serde = { version = "1.0.219", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.66", default-features = false  } 
+thiserror = { version = "1.0.66", default-features = false  }
 
 [profile.release]
 codegen-units = 1
@@ -58,6 +58,7 @@ unnested_or_patterns = "warn"
 unused_self = "warn"
 verbose_file_reads = "warn"
 
+large_stack_arrays = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/13774
 cast_possible_truncation = { level = "allow", priority = 1 }
 doc_link_with_quotes = { level = "allow", priority = 1 }
 cast_sign_loss = { level = "allow", priority = 1 }

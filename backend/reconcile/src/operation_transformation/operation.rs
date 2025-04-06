@@ -251,6 +251,7 @@ where
     /// and updating the context. This implements a comples FSM that handles
     /// the merging of operations in a way that is consistent with the text.
     /// The contexts are updated in-place.
+    #[allow(clippy::too_many_lines)]
     pub fn merge_operations_with_context(
         self,
         affecting_context: &mut MergeContext<T>,
@@ -298,7 +299,7 @@ where
 
             (
                 operation @ Operation::Delete { .. },
-                None | Some(Operation::Insert { .. }) | Some(Operation::Equal { .. }),
+                None | Some(Operation::Insert { .. } | Operation::Equal { .. }),
             ) => {
                 produced_context.consume_and_replace_last_operation(Some(operation.clone()));
                 Some(operation)

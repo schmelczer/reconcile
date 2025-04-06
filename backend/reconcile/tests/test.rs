@@ -8,46 +8,46 @@ use serde::Deserialize;
 
 #[test]
 fn test_document_one_way_without_cursors() {
-    get_all_documents().iter().for_each(|doc| {
+    for doc in &get_all_documents() {
         doc.assert_eq_without_cursors(&reconcile(
             &doc.parent(),
             &doc.left().text,
             &doc.right().text,
-        ))
-    });
+        ));
+    }
 }
 
 #[test]
 fn test_document_one_way_with_cursors() {
-    get_all_documents().iter().for_each(|doc| {
+    for doc in &get_all_documents() {
         doc.assert_eq(&reconcile_with_cursors(
             &doc.parent(),
             doc.left(),
             doc.right(),
-        ))
-    });
+        ));
+    }
 }
 
 #[test]
 fn test_document_inverse_way_without_cursors() {
-    get_all_documents().iter().for_each(|doc| {
+    for doc in &get_all_documents() {
         doc.assert_eq_without_cursors(&reconcile(
             &doc.parent(),
             &doc.right().text,
             &doc.left().text,
         ));
-    });
+    }
 }
 
 #[test]
 fn test_document_inverse_way_with_cursors() {
-    get_all_documents().iter().for_each(|doc| {
+    for doc in &get_all_documents() {
         doc.assert_eq(&reconcile_with_cursors(
             &doc.parent(),
             doc.right(),
             doc.left(),
-        ))
-    });
+        ));
+    }
 }
 
 fn get_all_documents() -> Vec<ExampleDocument> {

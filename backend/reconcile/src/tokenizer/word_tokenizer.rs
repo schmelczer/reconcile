@@ -10,7 +10,7 @@ pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
     let mut result: Vec<Token<String>> = Vec::new();
 
     let mut previous_boundary_index = 0;
-    let mut previous_char_is_whitespace = text.chars().next().map_or(true, |c| c.is_whitespace());
+    let mut previous_char_is_whitespace = text.chars().next().is_none_or(char::is_whitespace);
 
     for (i, c) in text.char_indices() {
         let is_current_char_whitespace = c.is_whitespace();
@@ -31,8 +31,8 @@ pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
     }
 
     for i in 0..result.len() - 1 {
-        if result[i].original().chars().all(|c| c.is_whitespace()) {
-            result[i].normalised = result[i].normalised().to_owned() + result[i + 1].original()
+        if result[i].original().chars().all(char::is_whitespace) {
+            result[i].normalised = result[i].normalised().to_owned() + result[i + 1].original();
         }
     }
 
