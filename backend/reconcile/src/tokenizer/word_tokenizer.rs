@@ -5,7 +5,9 @@ use super::token::Token;
 ///
 /// ## Example
 ///
-/// "Hi there!" -> ["Hi", " " ", "there!"]
+/// ```not_rust
+/// "Hi there!" -> ["Hi", " ", "there!"]
+/// ```
 pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
     let mut result: Vec<Token<String>> = Vec::new();
 

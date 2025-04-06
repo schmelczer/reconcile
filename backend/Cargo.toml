@@ -59,18 +59,19 @@ unused_self = "warn"
 verbose_file_reads = "warn"
 
 large_stack_arrays = { level = "allow", priority = 1 } # https://github.com/rust-lang/rust-clippy/issues/13774
+
+# TODO: fix these
 cast_possible_truncation = { level = "allow", priority = 1 }
-doc_link_with_quotes = { level = "allow", priority = 1 }
 cast_sign_loss = { level = "allow", priority = 1 }
 cast_possible_wrap = { level = "allow", priority = 1 }
-struct_field_names = { level = "allow", priority = 1 }
-single_call_fn = { level = "allow", priority = 1 }
-absolute_paths = { level = "allow", priority = 1 }
-arithmetic_side_effects = { level = "allow", priority = 1 }
-similar_names = { level = "allow", priority = 1 }
-self_named_module_files = { level = "allow", priority = 1 }
-single_char_lifetime_names = { level = "allow", priority = 1 }
-missing_docs_in_private_items = { level = "allow", priority = 1 }
-question_mark_used =  { level = "allow", priority = 1 }
+
+# Silly lints
 implicit_return = { level = "allow", priority = 1 }
+question_mark_used =  { level = "allow", priority = 1 }
+struct_field_names = { level = "allow", priority = 1 }
+single_char_lifetime_names = { level = "allow", priority = 1 }
+single_call_fn = { level = "allow", priority = 1 }
+similar_names = { level = "allow", priority = 1 }
+missing_docs_in_private_items = { level = "allow", priority = 1 }
+
 pedantic = { level = "warn", priority = 0 }
