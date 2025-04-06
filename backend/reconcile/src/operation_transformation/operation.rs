@@ -377,21 +377,29 @@ where
                 let overlap = (length as i64)
                     .min(last_delete.end_index() as i64 - operation.start_index() as i64 + 1);
 
-                if cfg!(debug_assertions) && text.is_some() {
-                    Operation::create_equal_with_text(
-                        operation.end_index().min(last_delete.end_index()),
-                        text.clone()
-                            .unwrap()
-                            .chars()
-                            .skip(overlap as usize)
-                            .collect::<String>(),
-                    )
-                } else {
-                    Operation::create_equal(
-                        operation.end_index().min(last_delete.end_index()),
-                        (length as i64 - overlap) as usize,
-                    )
-                }
+                #[cfg(debug_assertions)]
+                let result = text
+                    .as_ref()
+                    .map(|text| {
+                        Operation::create_equal_with_text(
+                            operation.end_index().min(last_delete.end_index()),
+                            text.chars().skip(overlap as usize).collect::<String>(),
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        Operation::create_equal(
+                            operation.end_index().min(last_delete.end_index()),
+                            (length as i64 - overlap) as usize,
+                        )
+                    });
+
+                #[cfg(not(debug_assertions))]
+                let result = Operation::create_equal(
+                    operation.end_index().min(last_delete.end_index()),
+                    (length as i64 - overlap) as usize,
+                );
+
+                result
             }
             (operation @ Operation::Equal { .. }, _) => Some(operation),
         }
