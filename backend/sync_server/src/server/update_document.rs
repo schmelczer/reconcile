@@ -104,32 +104,6 @@ async fn internal_update_document(
 
     let sanitized_relative_path = sanitize_path(&relative_path);
 
-    // Return the latest version if the update is a no-op from the client's
-    // perspective
-    if content == parent_document.content
-        && sanitized_relative_path == parent_document.relative_path
-    {
-        info!("Document content is the same as the parent version, skipping update");
-
-        let latest_version = state
-            .database
-            .get_latest_document(&vault_id, &document_id, None)
-            .await
-            .map_err(server_error)?
-            .map_or_else(
-                || {
-                    Err(not_found_error(anyhow!(
-                        "Document with id `{document_id}` not found",
-                    )))
-                },
-                Ok,
-            )?;
-
-        return Ok(Json(DocumentUpdateResponse::FastForwardUpdate(
-            latest_version.into(),
-        )));
-    }
-
     let mut transaction = state
         .database
         .create_write_transaction(&vault_id)

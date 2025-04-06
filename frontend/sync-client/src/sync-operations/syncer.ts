@@ -274,9 +274,8 @@ export class Syncer {
 			typeof globalThis !== "undefined" &&
 			typeof globalThis.WebSocket === "undefined"
 		) {
-			// polyfill for WebSocket in Node.js
 			// eslint-disable-next-line
-			globalThis.WebSocket = require("ws");
+			globalThis.WebSocket = require("ws"); // polyfill for WebSocket in Node.js
 		}
 
 		this.applyRemoteChangesWebSocket = new WebSocket(wsUri);

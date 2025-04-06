@@ -108,7 +108,7 @@ export class MockClient implements FileSystemOperations {
 				{
 					assert(
 						newParts.includes(part),
-						`Part ${part} not found in new content`
+						`Part ${part} not found in new content: ${newContent}`
 					);
 				}
 			);

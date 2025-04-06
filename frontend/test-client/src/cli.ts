@@ -25,10 +25,12 @@ async function runTest({
 	const settings = `with ${agentCount} agents, concurrency ${concurrency}, iterations ${iterations}, doDeletes ${doDeletes}, jitterScaleInSeconds ${jitterScaleInSeconds}, useSlowFileEvents ${useSlowFileEvents}`;
 	console.info(`Running test ${settings}`);
 
+	const vaultName = uuidv4();
+	console.info(`Using vault name: ${vaultName}`);
 	const initialSettings: Partial<SyncSettings> = {
 		isSyncEnabled: true,
 		token: "test-token-change-me", // same as in backend/config-e2e.yml
-		vaultName: uuidv4(),
+		vaultName,
 		syncConcurrency: concurrency,
 		remoteUri: "http://localhost:3000"
 	};
