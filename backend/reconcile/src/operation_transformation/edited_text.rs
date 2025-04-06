@@ -3,11 +3,11 @@ use core::iter;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
+use super::{ordered_operation::OrderedOperation, CursorPosition, Operation, TextWithCursors};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
-    operation_transformation::merge_context::MergeContext,
-    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
+    operation_transformation::{merge_context::MergeContext, operation},
+    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
     utils::{merge_iters::MergeSorted as _, side::Side, string_builder::StringBuilder},
 };
 
@@ -72,6 +72,10 @@ where
     where
         I: IntoIterator<Item = RawOperation<T>>,
     {
+        // This might look bad, but this makes sense. The inserts and deltes can be
+        // interleaved, such as: IDIDID and we need to turn this into IIIDDD.
+        // So we need to keep track of both the last insert and delete operations, not
+        // just the last one.
         let mut maybe_previous_insert: Option<RawOperation<T>> = None;
         let mut maybe_previous_delete: Option<RawOperation<T>> = None;
 
@@ -132,12 +136,22 @@ where
         raw_operations.into_iter().flat_map(move |raw_operation| {
             let length = raw_operation.original_text_length();
 
-            let operation = match raw_operation {
+            match raw_operation {
                 RawOperation::Equal(..) => {
+                    let op = if cfg!(debug_assertions) {
+                        Operation::create_equal_with_text(
+                            new_index,
+                            raw_operation.get_original_text(),
+                        )
+                    } else {
+                        Operation::create_equal(new_index, length)
+                    }
+                    .map(|operation| OrderedOperation { order, operation });
+
                     new_index += length;
                     order += length;
 
-                    None
+                    op
                 }
                 RawOperation::Insert(tokens) => {
                     let op = Operation::create_insert(new_index, tokens)
@@ -162,9 +176,7 @@ where
 
                     op
                 }
-            };
-
-            operation.into_iter()
+            }
         })
     }
 
@@ -208,10 +220,10 @@ where
         let mut right_merge_context = MergeContext::default();
 
         let mut merged_cursors = Vec::with_capacity(self.cursors.len() + other.cursors.len());
-        let mut left_cursors = self.cursors.iter().peekable();
-        let mut right_cursors = other.cursors.iter().peekable();
+        let mut left_cursors = self.cursors.into_iter().peekable();
+        let mut right_cursors = other.cursors.into_iter().peekable();
 
-        let merged_operations = self
+        let merged_operations: Vec<OrderedOperation<T>> = self
             .operations
             .into_iter()
             // The current text is always the left; the other operation is the right side.
@@ -221,13 +233,11 @@ where
                 |(operation, _)| {
                     (
                         operation.order,
-                        // Operations on the left and right must come in the same order so that
-                        // inserts can be merged with other inserts and deletes with deletes.
-                        usize::from(matches!(operation.operation, Operation::Delete { .. })),
                         operation.operation.start_index(),
                         // Make sure that the ordering is deterministic regardless which text
                         // is left or right.
                         match &operation.operation {
+                            Operation::Equal { index, .. } => index.to_string(),
                             Operation::Insert { text, .. } => text
                                 .iter()
                                 .map(super::super::tokenizer::token::Token::original)
@@ -241,58 +251,55 @@ where
                 },
             )
             .flat_map(|(OrderedOperation { order, operation }, side)| {
+                let original_start = operation.start_index() as i64;
+                let original_end = operation.end_index();
+
                 match side {
                     Side::Left => {
-                        while let Some(cursor) = left_cursors
-                            .next_if(|cursor| cursor.char_index <= operation.start_index())
-                        {
-                            right_merge_context.consume_last_operation_if_it_is_too_behind(
-                                cursor.char_index as i64,
-                            );
-                            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
-                        }
-
-                        while let Some(cursor) = right_cursors.next_if(|cursor| {
-                            cursor.char_index as i64
-                                <= operation.start_index() as i64 + right_merge_context.shift
-                                    - left_merge_context.shift
-                        }) {
-                            left_merge_context.consume_last_operation_if_it_is_too_behind(
-                                cursor.char_index as i64,
-                            );
-                            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
-                        }
-
-                        operation.merge_operations_with_context(
+                        let result = operation.merge_operations_with_context(
                             &mut right_merge_context,
                             &mut left_merge_context,
-                        )
+                        );
+
+                        if let Some(ref op @ Operation::Insert { .. })
+                        | Some(ref op @ Operation::Equal { .. }) = result
+                        {
+                            while let Some(mut cursor) =
+                                left_cursors.next_if(|cursor| cursor.char_index <= original_end + 1)
+                            {
+                                let shift = op.start_index() as i64 - original_start;
+
+                                cursor.char_index = (op.start_index() as i64)
+                                    .max(cursor.char_index as i64 + shift)
+                                    as usize;
+                                merged_cursors.push(cursor);
+                            }
+                        }
+
+                        result
                     }
                     Side::Right => {
-                        while let Some(cursor) = right_cursors
-                            .next_if(|cursor| cursor.char_index <= operation.start_index())
-                        {
-                            left_merge_context.consume_last_operation_if_it_is_too_behind(
-                                cursor.char_index as i64,
-                            );
-                            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
-                        }
-
-                        while let Some(cursor) = left_cursors.next_if(|cursor| {
-                            cursor.char_index as i64
-                                <= operation.start_index() as i64 + left_merge_context.shift
-                                    - right_merge_context.shift
-                        }) {
-                            right_merge_context.consume_last_operation_if_it_is_too_behind(
-                                cursor.char_index as i64,
-                            );
-                            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
-                        }
-
-                        operation.merge_operations_with_context(
+                        let result = operation.merge_operations_with_context(
                             &mut left_merge_context,
                             &mut right_merge_context,
-                        )
+                        );
+
+                        if let Some(ref op @ Operation::Insert { .. })
+                        | Some(ref op @ Operation::Equal { .. }) = result
+                        {
+                            while let Some(mut cursor) = right_cursors
+                                .next_if(|cursor| cursor.char_index <= original_end + 1)
+                            {
+                                let shift = op.start_index() as i64 - original_start;
+
+                                cursor.char_index = (op.start_index() as i64)
+                                    .max(cursor.char_index as i64 + shift)
+                                    as usize;
+                                merged_cursors.push(cursor);
+                            }
+                        }
+
+                        result
                     }
                 }
                 .map(|operation| OrderedOperation { order, operation })
@@ -300,15 +307,14 @@ where
             })
             .collect();
 
-        for cursor in left_cursors {
-            right_merge_context
-                .consume_last_operation_if_it_is_too_behind(cursor.char_index as i64);
-            merged_cursors.push(cursor.apply_merge_context(&right_merge_context));
-        }
+        let last_index = merged_operations
+            .iter()
+            .last()
+            .map(|op| op.operation.end_index())
+            .unwrap_or(0);
 
-        for cursor in right_cursors {
-            left_merge_context.consume_last_operation_if_it_is_too_behind(cursor.char_index as i64);
-            merged_cursors.push(cursor.apply_merge_context(&left_merge_context));
+        for cursor in left_cursors.chain(right_cursors) {
+            merged_cursors.push(cursor.with_index(last_index));
         }
 
         Self::new(self.text, merged_operations, merged_cursors)
@@ -331,6 +337,7 @@ where
 mod tests {
     use std::env;
 
+    use insta::assert_debug_snapshot;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -354,10 +361,9 @@ mod tests {
 
         let operations = EditedText::from_strings(text, text.into());
 
-        assert_eq!(operations.operations.len(), 0);
+        assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-
         assert_eq!(new_right.to_string(), text);
     }
 

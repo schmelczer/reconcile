@@ -16,19 +16,10 @@ pub struct CursorPosition {
 }
 
 impl CursorPosition {
-    #[must_use]
-    pub fn apply_merge_context<T>(&self, context: &MergeContext<T>) -> Self
-    where
-        T: PartialEq + Clone + std::fmt::Debug,
-    {
-        let char_index = match context.last_operation() {
-            Some(Operation::Delete { index, .. }) => (*index) as i64,
-            _ => self.char_index as i64 + context.shift,
-        };
-
+    pub fn with_index(self, index: usize) -> Self {
         CursorPosition {
             id: self.id,
-            char_index: char_index.max(0) as usize,
+            char_index: index,
         }
     }
 }

@@ -20,6 +20,14 @@ pub enum Operation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
+    Equal {
+        index: usize,
+        length: usize,
+
+        #[cfg(debug_assertions)]
+        text: Option<String>,
+    },
+
     Insert {
         index: usize,
         text: Vec<Token<T>>,
@@ -38,6 +46,37 @@ impl<T> Operation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
+    /// Creates an equal operation with the given index.
+    /// This operation is used to indicate that the text at the given index
+    /// is unchanged.
+    pub fn create_equal(index: usize, length: usize) -> Option<Self> {
+        if length == 0 {
+            return None;
+        }
+
+        Some(Operation::Equal {
+            index,
+            length,
+
+            #[cfg(debug_assertions)]
+            text: None,
+        })
+    }
+
+    pub fn create_equal_with_text(index: usize, text: String) -> Option<Self> {
+        if text.is_empty() {
+            return None;
+        }
+
+        Some(Operation::Equal {
+            index,
+            length: text.chars().count(),
+
+            #[cfg(debug_assertions)]
+            text: Some(text),
+        })
+    }
+
     /// Creates an insert operation with the given index and text.
     /// If the text is empty (meaning that the operation would be a no-op),
     /// returns None.
@@ -87,6 +126,20 @@ where
     /// on a range of text that does not match the text to be deleted.
     pub fn apply<'a>(&self, mut builder: StringBuilder<'a>) -> StringBuilder<'a> {
         match self {
+            Operation::Equal {
+                #[cfg(debug_assertions)]
+                text,
+                ..
+            } => {
+                #[cfg(debug_assertions)]
+                debug_assert!(
+                    text.as_ref()
+                        .is_none_or(|text| builder.get_slice(self.range()) == *text),
+                    "Text which is supposed to be equal does not match the text in the range"
+                );
+
+                return builder;
+            }
             Operation::Insert { text, .. } => builder.insert(
                 self.start_index(),
                 &text.iter().map(Token::original).collect::<String>(),
@@ -114,7 +167,9 @@ where
     /// Returns the index of the first character that the operation affects.
     pub fn start_index(&self) -> usize {
         match self {
-            Operation::Insert { index, .. } | Operation::Delete { index, .. } => *index,
+            Operation::Equal { index, .. }
+            | Operation::Insert { index, .. }
+            | Operation::Delete { index, .. } => *index,
         }
     }
 
@@ -135,6 +190,7 @@ where
     /// because empty operations cannot be created.
     pub fn len(&self) -> usize {
         match self {
+            Operation::Equal { length, .. } => *length,
             Operation::Insert { text, .. } => text.iter().map(Token::get_original_length).sum(),
             Operation::Delete {
                 deleted_character_count,
@@ -147,6 +203,19 @@ where
     /// index.
     pub fn with_index(self, index: usize) -> Self {
         match self {
+            Operation::Equal {
+                length,
+
+                #[cfg(debug_assertions)]
+                text,
+                ..
+            } => Operation::Equal {
+                index,
+                length,
+
+                #[cfg(debug_assertions)]
+                text,
+            },
             Operation::Insert { text, .. } => Operation::Insert { index, text },
             Operation::Delete {
                 deleted_character_count,
@@ -191,7 +260,7 @@ where
         let operation = self.with_shifted_index(affecting_context.shift);
 
         match (operation, affecting_context.last_operation()) {
-            (operation @ Operation::Insert { .. }, None) => {
+            (operation @ Operation::Insert { .. }, None | Some(Operation::Equal { .. })) => {
                 produced_context.shift += operation.len() as i64;
                 produced_context.consume_and_replace_last_operation(Some(operation.clone()));
                 Some(operation)
@@ -227,7 +296,10 @@ where
                 trimmed_operation
             }
 
-            (operation @ Operation::Delete { .. }, None | Some(Operation::Insert { .. })) => {
+            (
+                operation @ Operation::Delete { .. },
+                None | Some(Operation::Insert { .. }) | Some(Operation::Equal { .. }),
+            ) => {
                 produced_context.consume_and_replace_last_operation(Some(operation.clone()));
                 Some(operation)
             }
@@ -286,6 +358,41 @@ where
 
                 updated_delete
             }
+            (
+                ref operation @ Operation::Equal {
+                    length,
+                    #[cfg(debug_assertions)]
+                    ref text,
+                    ..
+                },
+                Some(last_delete @ Operation::Delete { .. }),
+            ) => {
+                debug_assert!(
+                    last_delete.range().contains(&operation.start_index()),
+                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
+                     not contained in it"
+                );
+
+                let overlap = (length as i64)
+                    .min(last_delete.end_index() as i64 - operation.start_index() as i64 + 1);
+
+                if cfg!(debug_assertions) && text.is_some() {
+                    Operation::create_equal_with_text(
+                        operation.end_index().min(last_delete.end_index()),
+                        text.clone()
+                            .unwrap()
+                            .chars()
+                            .skip(overlap as usize)
+                            .collect::<String>(),
+                    )
+                } else {
+                    Operation::create_equal(
+                        operation.end_index().min(last_delete.end_index()),
+                        (length as i64 - overlap) as usize,
+                    )
+                }
+            }
+            (operation @ Operation::Equal { .. }, _) => Some(operation),
         }
     }
 }
@@ -296,6 +403,28 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Operation::Equal {
+                index,
+                length,
+
+                #[cfg(debug_assertions)]
+                text,
+            } => {
+                #[cfg(debug_assertions)]
+                write!(
+                    f,
+                    "<equal {} from index {}>",
+                    text.as_ref()
+                        .map(|text| format!("'{text}'"))
+                        .unwrap_or(format!("{length} characters")),
+                    index
+                )?;
+
+                #[cfg(not(debug_assertions))]
+                write!(f, "<equal {length} from index {index}>")?;
+
+                Ok(())
+            }
             Operation::Insert { index, text } => {
                 write!(
                     f,

@@ -1,29 +1,39 @@
 use super::token::Token;
 
-/// Splits on whitespace keeping the leading whitespace.
+/// Splits on word boundaries creating alternating words and whitespaces with
+/// the whitesspaces getting unique IDs.
 ///
-///     
 /// ## Example
 ///
-/// "Hi there!" -> ["Hi", " there!"]
+/// "Hi there!" -> ["Hi", " " ", "there!"]
 pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
     let mut result: Vec<Token<String>> = Vec::new();
 
-    let mut last_whitespace = 0;
-    let mut previous_char_is_whitespace = true;
+    let mut previous_boundary_index = 0;
+    let mut previous_char_is_whitespace = text.chars().next().map_or(true, |c| c.is_whitespace());
 
     for (i, c) in text.char_indices() {
         let is_current_char_whitespace = c.is_whitespace();
-        if !previous_char_is_whitespace && is_current_char_whitespace {
-            result.push(text[last_whitespace..i].into());
-            last_whitespace = i;
+        if previous_char_is_whitespace != is_current_char_whitespace {
+            result.push(text[previous_boundary_index..i].into());
+            previous_boundary_index = i;
         }
 
         previous_char_is_whitespace = is_current_char_whitespace;
     }
 
-    if last_whitespace < text.len() {
-        result.push(text[last_whitespace..].into());
+    if previous_boundary_index < text.len() {
+        result.push(text[previous_boundary_index..].into());
+    }
+
+    if result.is_empty() {
+        return result;
+    }
+
+    for i in 0..result.len() - 1 {
+        if result[i].original().chars().all(|c| c.is_whitespace()) {
+            result[i].normalised = result[i].normalised().to_owned() + result[i + 1].original()
+        }
     }
 
     result

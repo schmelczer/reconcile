@@ -110,8 +110,8 @@ mod test {
                     }, // inside of "s|ample" because "text" got replaced by "sample"
                     CursorPosition {
                         id: 3,
-                        char_index: 31
-                    }, // before "for"
+                        char_index: 43
+                    }, // before "cursor movements"
                 ]
             )
         );

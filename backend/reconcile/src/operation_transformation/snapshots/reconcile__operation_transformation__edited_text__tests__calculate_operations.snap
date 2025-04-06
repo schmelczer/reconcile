@@ -15,6 +15,22 @@ EditedText {
             operation: <delete 'hello world!' from index 17>,
         },
         OrderedOperation {
+            order: 12,
+            operation: <equal ' ' from index 17>,
+        },
+        OrderedOperation {
+            order: 13,
+            operation: <equal 'How' from index 18>,
+        },
+        OrderedOperation {
+            order: 16,
+            operation: <equal ' ' from index 21>,
+        },
+        OrderedOperation {
+            order: 17,
+            operation: <equal 'are' from index 22>,
+        },
+        OrderedOperation {
             order: 20,
             operation: <insert ' you doing? Albert' from index 25>,
         },
