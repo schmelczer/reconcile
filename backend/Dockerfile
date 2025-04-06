@@ -28,6 +28,6 @@ WORKDIR /data
 HEALTHCHECK \
     --interval=30s \
     --timeout=5s \
-    CMD curl -f http://localhost:3000/ping || exit 1
+    CMD curl -f http://localhost:3000/vaults/fake/ping || exit 1
 
 ENTRYPOINT ["/app/sync_server"]
