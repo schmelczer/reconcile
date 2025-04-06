@@ -122,3 +122,9 @@ parent: hello world
 left: hi, world
 right: hello my friend!
 expected: hi, my friend!
+
+---
+parent: a a
+left: a
+right: a
+expected: a

@@ -240,7 +240,7 @@ where
                             Operation::Equal { index, .. } => index.to_string(),
                             Operation::Insert { text, .. } => text
                                 .iter()
-                                .map(super::super::tokenizer::token::Token::original)
+                                .map(crate::tokenizer::token::Token::original)
                                 .collect::<String>(),
                             Operation::Delete {
                                 deleted_character_count,

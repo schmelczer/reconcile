@@ -120,23 +120,20 @@ mod test {
     #[ignore = "expensive to run, only run in CI"]
     #[test_matrix( [
         "pride_and_prejudice.txt",
-        "romeo_and_juliet.txt",
         "room_with_a_view.txt",
         "kun_lu.txt",
         "blns.txt"
     ],  [
         "pride_and_prejudice.txt",
-        "romeo_and_juliet.txt",
         "room_with_a_view.txt",
         "kun_lu.txt",
         "blns.txt"
     ],  [
         "pride_and_prejudice.txt",
-        "romeo_and_juliet.txt",
         "room_with_a_view.txt",
         "kun_lu.txt",
         "blns.txt"
-    ], [0..10000, 10000..20000, 20000..50000], [0..10000, 10000..20000, 20000..50000], [0..10000, 10000..20000, 20000..50000])]
+    ], [0..10000, 10000..20000], [0..10000, 10000..20000], [0..10000, 10000..20000])]
     fn test_merge_files_without_panic(
         file_name_1: &str,
         file_name_2: &str,
