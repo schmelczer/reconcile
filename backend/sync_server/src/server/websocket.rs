@@ -21,11 +21,13 @@ use crate::{
         database::models::{DeviceId, DocumentVersionWithoutContent, VaultId, VaultUpdateId},
     },
     errors::{SyncServerError, server_error, unauthenticated_error},
+    utils::normalize::{normalize, normalize_string},
 };
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
 pub struct WebsocketPathParams {
+    #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
 }
 
@@ -81,7 +83,7 @@ async fn websocket(
             .context("Failed to parse token")
             .map_err(server_error)?;
 
-        auth(&state, &handshake.token, &vault_id)?;
+        auth(&state, handshake.token.trim(), &normalize_string(&vault_id))?;
 
         handshake
     } else {

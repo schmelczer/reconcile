@@ -15,6 +15,7 @@ use crate::{
     app_state::{AppState, database::models::VaultId},
     config::user_config::{AllowListedVaults, User, VaultAccess},
     errors::{SyncServerError, permission_denied_error, unauthenticated_error},
+    utils::normalize::normalize_string,
 };
 
 pub async fn auth_middleware(
@@ -24,12 +25,14 @@ pub async fn auth_middleware(
     mut req: Request,
     next: Next,
 ) -> Result<Response, SyncServerError> {
-    let token = auth_header.token();
-    let vault_id = path_params
-        .get("vault_id")
-        .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Missing vault_id")))?;
+    let token = auth_header.token().trim();
+    let vault_id = normalize_string(
+        path_params
+            .get("vault_id")
+            .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Missing vault_id")))?,
+    );
 
-    let user = auth(&state, token, vault_id)?;
+    let user = auth(&state, token, &vault_id)?;
 
     req.extensions_mut().insert(user);
 

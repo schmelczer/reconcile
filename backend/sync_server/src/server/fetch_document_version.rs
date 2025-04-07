@@ -10,12 +10,15 @@ use crate::{
         database::models::{DocumentId, DocumentVersion, VaultId, VaultUpdateId},
     },
     errors::{SyncServerError, not_found_error, server_error},
+    utils::normalize::normalize,
 };
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
 pub struct FetchDocumentVersionPathParams {
+    #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
+
     document_id: DocumentId,
     vault_update_id: VaultUpdateId,
 }

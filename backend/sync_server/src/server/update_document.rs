@@ -18,13 +18,15 @@ use crate::{
         database::models::{DeviceId, DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
     },
     errors::{SyncServerError, client_error, not_found_error, server_error},
-    utils::{deduped_file_paths, sanitize_path},
+    utils::{dedup_paths::dedup_paths, normalize::normalize, sanitize_path::sanitize_path},
 };
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
 pub struct UpdateDocumentPathParams {
+    #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
+
     document_id: DocumentId,
 }
 
@@ -171,7 +173,7 @@ async fn internal_update_document(
         && latest_version.relative_path != sanitized_relative_path
     {
         let mut new_relative_path = String::default();
-        for candidate in deduped_file_paths(&sanitized_relative_path) {
+        for candidate in dedup_paths(&sanitized_relative_path) {
             if state
                 .database
                 .get_latest_document_by_path(&vault_id, &candidate, Some(&mut transaction))

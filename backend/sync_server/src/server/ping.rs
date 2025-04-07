@@ -13,11 +13,13 @@ use super::{auth::auth, responses::PingResponse};
 use crate::{
     app_state::{AppState, database::models::VaultId},
     errors::SyncServerError,
+    utils::normalize::normalize,
 };
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
 pub struct PingPathParams {
+    #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
 }
 

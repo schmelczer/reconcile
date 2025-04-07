@@ -14,13 +14,15 @@ use crate::{
         },
     },
     errors::{SyncServerError, server_error},
-    utils::sanitize_path,
+    utils::{normalize::normalize, sanitize_path::sanitize_path},
 };
 
 // This is required for aide to infer the path parameter types and names
 #[derive(Deserialize, JsonSchema)]
 pub struct DeleteDocumentPathParams {
+    #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
+
     document_id: DocumentId,
 }
 
