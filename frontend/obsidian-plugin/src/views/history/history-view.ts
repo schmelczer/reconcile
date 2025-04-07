@@ -107,7 +107,8 @@ export class HistoryView extends ItemView {
 			return;
 		}
 
-		const entries = this.client.getHistoryEntries();
+		// entries are newest first, but we prepend new ones
+		const entries = this.client.getHistoryEntries().toReversed();
 
 		if (this.historyEntryToElement.size === 0 && entries.length > 0) {
 			// Clear the "No update has happened yet" message
