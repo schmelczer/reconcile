@@ -137,7 +137,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 			"Server address",
 			"remoteUri"
 		);
-
 		new Setting(containerEl)
 			.setName(title)
 			.setDesc(
@@ -147,10 +146,10 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("https://example.com:3000")
-					.setValue(this.editedServerUri)
+					.setValue(this.editedServerUri.toLowerCase().trim())
 					.onChange((value) => {
-						this.editedServerUri = value;
-						updateTitle(value);
+						this.editedServerUri = value.toLowerCase().trim();
+						updateTitle(value.toLowerCase().trim());
 					})
 			);
 
@@ -158,7 +157,6 @@ export class SyncSettingsTab extends PluginSettingTab {
 			"Access token",
 			"token"
 		);
-
 		new Setting(containerEl)
 			.setName(tokenTitle)
 			.setClass("sync-settings-access-token")
@@ -169,16 +167,15 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("ey...")
-					.setValue(this.editedToken)
+					.setValue(this.editedToken.trim())
 					.onChange((value) => {
-						this.editedToken = value;
-						updateTokenTitle(value);
+						this.editedToken = value.trim();
+						updateTokenTitle(value.trim());
 					})
 			);
 
 		const [vaultNameTitle, updateVaultNameTitle] =
 			this.unsavedAwareSettingName("Vault name", "vaultName");
-
 		new Setting(containerEl)
 			.setName(vaultNameTitle)
 			.setDesc(
@@ -188,23 +185,17 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("My Obsidian Vault")
-					.setValue(this.editedVaultName)
+					.setValue(this.editedVaultName.toLowerCase().trim())
 					.onChange((value) => {
-						this.editedVaultName = value;
-						updateVaultNameTitle(value);
+						this.editedVaultName = value.toLowerCase().trim();
+						updateVaultNameTitle(value.toLowerCase().trim());
 					})
 			);
 
 		new Setting(containerEl)
 			.addButton((button) =>
 				button.setButtonText("Apply").onClick(async () => {
-					if (
-						this.editedVaultName !==
-							this.syncClient.getSettings().vaultName ||
-						this.editedServerUri !==
-							this.syncClient.getSettings().remoteUri ||
-						this.editedToken !== this.syncClient.getSettings().token
-					) {
+					if (this.areThereUnsavedChanges()) {
 						await this.syncClient.setSettings({
 							vaultName: this.editedVaultName,
 							remoteUri: this.editedServerUri,
@@ -221,12 +212,26 @@ export class SyncSettingsTab extends PluginSettingTab {
 			)
 			.addButton((button) =>
 				button.setButtonText("Test connection").onClick(async () => {
+					if (this.areThereUnsavedChanges()) {
+						new Notice(
+							"There are unsaved changes, testing with the currently saved settings"
+						);
+					}
+
 					new Notice(
 						(await this.syncClient.checkConnection()).serverMessage
 					);
 					await this.statusDescription.updateConnectionState();
 				})
 			);
+	}
+
+	private areThereUnsavedChanges(): boolean {
+		return (
+			this.editedServerUri !== this.syncClient.getSettings().remoteUri ||
+			this.editedToken !== this.syncClient.getSettings().token ||
+			this.editedVaultName !== this.syncClient.getSettings().vaultName
+		);
 	}
 
 	private renderSyncSettings(containerEl: HTMLElement): void {
