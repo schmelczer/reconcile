@@ -2,6 +2,7 @@ import type { SyncSettings } from "sync-client";
 import { MockAgent } from "./agent/mock-agent";
 import { sleep } from "./utils/sleep";
 import { v4 as uuidv4 } from "uuid";
+import { randomCasing } from "./utils/random-casing";
 
 let slowFileEvents = false;
 
@@ -29,8 +30,8 @@ async function runTest({
 	console.info(`Using vault name: ${vaultName}`);
 	const initialSettings: Partial<SyncSettings> = {
 		isSyncEnabled: true,
-		token: "test-token-change-me", // same as in backend/config-e2e.yml
-		vaultName,
+		token: "   test-token-change-me     ", // same as in backend/config-e2e.yml with spaces
+		vaultName: randomCasing(vaultName) + (Math.random() > 0.5 ? "  " : ""), // extra spaces shouldn't matter
 		syncConcurrency: concurrency,
 		remoteUri: "http://localhost:3000"
 	};
