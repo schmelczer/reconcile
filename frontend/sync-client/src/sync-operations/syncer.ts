@@ -31,6 +31,8 @@ export class Syncer {
 		| undefined;
 	private applyRemoteChangesWebSocket: WebSocket | undefined;
 
+	private readonly webSocketImplementation: typeof globalThis.WebSocket;
+
 	// eslint-disable-next-line @typescript-eslint/max-params
 	public constructor(
 		private readonly deviceId: string,
@@ -39,11 +41,26 @@ export class Syncer {
 		private readonly settings: Settings,
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
-		private readonly internalSyncer: UnrestrictedSyncer
+		private readonly internalSyncer: UnrestrictedSyncer,
+		webSocketImplementation?: typeof globalThis.WebSocket
 	) {
 		this.syncQueue = new PQueue({
 			concurrency: settings.getSettings().syncConcurrency
 		});
+
+		if (webSocketImplementation) {
+			this.webSocketImplementation = webSocketImplementation;
+		} else {
+			if (
+				typeof globalThis !== "undefined" &&
+				typeof globalThis.WebSocket === "undefined"
+			) {
+				// eslint-disable-next-line
+				this.webSocketImplementation = require("ws"); // polyfill for WebSocket in Node.js
+			} else {
+				this.webSocketImplementation = WebSocket;
+			}
+		}
 
 		this.updateWebSocket(settings.getSettings());
 
@@ -74,7 +91,10 @@ export class Syncer {
 	}
 
 	public get isWebSocketConnected(): boolean {
-		return this.applyRemoteChangesWebSocket?.readyState === WebSocket.OPEN;
+		return (
+			this.applyRemoteChangesWebSocket?.readyState ===
+			this.webSocketImplementation.OPEN
+		);
 	}
 
 	public addRemainingOperationsListener(
@@ -270,15 +290,9 @@ export class Syncer {
 
 		this.logger.info(`Connecting to WebSocket at ${wsUri.toString()}`);
 
-		if (
-			typeof globalThis !== "undefined" &&
-			typeof globalThis.WebSocket === "undefined"
-		) {
-			// eslint-disable-next-line
-			globalThis.WebSocket = require("ws"); // polyfill for WebSocket in Node.js
-		}
-
-		this.applyRemoteChangesWebSocket = new WebSocket(wsUri);
+		this.applyRemoteChangesWebSocket = new this.webSocketImplementation(
+			wsUri
+		);
 
 		this.applyRemoteChangesWebSocket.onmessage = (event): void =>
 			void this.syncRemotelyUpdatedFile(event.data).catch(
@@ -316,7 +330,8 @@ export class Syncer {
 	private setWebSocketRefreshInterval(): void {
 		this.refreshApplyRemoteChangesWebSocketInterval = setInterval(() => {
 			if (
-				this.applyRemoteChangesWebSocket?.readyState === WebSocket.OPEN
+				this.applyRemoteChangesWebSocket?.readyState ===
+				this.webSocketImplementation.OPEN
 			) {
 				return;
 			}

@@ -30,7 +30,8 @@ export class MockClient implements FileSystemOperations {
 	}
 
 	public async init(
-		fetchImplementation: typeof globalThis.fetch
+		fetchImplementation: typeof globalThis.fetch,
+		webSocketImplementation: typeof globalThis.WebSocket
 	): Promise<void> {
 		this.client = await SyncClient.create({
 			fs: this,
@@ -38,7 +39,8 @@ export class MockClient implements FileSystemOperations {
 				load: async () => this.data,
 				save: async (data) => void (this.data = data)
 			},
-			fetch: fetchImplementation
+			fetch: fetchImplementation,
+			webSocket: webSocketImplementation
 		});
 
 		await this.client.start();

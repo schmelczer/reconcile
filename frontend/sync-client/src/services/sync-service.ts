@@ -21,13 +21,13 @@ export class SyncService {
 	private static readonly NETWORK_RETRY_INTERVAL_MS = 1000;
 	private client: Client<paths>;
 	private pingClient: Client<paths>;
-	private _fetchImplementation: typeof globalThis.fetch = globalThis.fetch;
 
 	public constructor(
 		private readonly deviceId: string,
 		private readonly connectionStatus: ConnectionStatus,
 		private readonly settings: Settings,
-		private readonly logger: Logger
+		private readonly logger: Logger,
+		private readonly fetchImplementation: typeof globalThis.fetch = globalThis.fetch
 	) {
 		[this.client, this.pingClient] = this.createClient(
 			this.settings.getSettings().remoteUri
@@ -42,13 +42,6 @@ export class SyncService {
 				newSettings.remoteUri
 			);
 		});
-	}
-
-	public set fetchImplementation(fetch: typeof globalThis.fetch) {
-		this._fetchImplementation = fetch;
-		[this.client, this.pingClient] = this.createClient(
-			this.settings.getSettings().remoteUri
-		);
 	}
 
 	private static formatError(
@@ -329,7 +322,7 @@ export class SyncService {
 				baseUrl: remoteUri,
 				fetch: this.connectionStatus.getFetchImplementation(
 					this.logger,
-					this._fetchImplementation
+					this.fetchImplementation
 				),
 				headers: {
 					authorization: `Bearer ${this.settings.getSettings().token}`
@@ -337,7 +330,7 @@ export class SyncService {
 			}),
 			createClient<paths>({
 				baseUrl: remoteUri,
-				fetch: this._fetchImplementation,
+				fetch: this.fetchImplementation,
 				headers: {
 					authorization: `Bearer ${this.settings.getSettings().token}`
 				}

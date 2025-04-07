@@ -6,6 +6,8 @@ import { LogLevel } from "sync-client";
 import { MockClient } from "./mock-client";
 import { sleep } from "../utils/sleep";
 import type { LogLine } from "sync-client/dist/types/tracing/logger";
+import { flakyFetchFactory } from "../utils/flaky-fetch";
+import { flakyWebSocketFactory } from "../utils/flaky-websocket";
 
 export class MockAgent extends MockClient {
 	private readonly writtenContents: string[] = [];
@@ -26,16 +28,8 @@ export class MockAgent extends MockClient {
 
 	public async init(): Promise<void> {
 		await super.init(
-			// flaky fetch implementation to use during testing
-			async (
-				input: string | URL | globalThis.Request,
-				init?: RequestInit
-			): Promise<Response> => {
-				await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
-				const response = await fetch(input, init);
-				await sleep(Math.random() * this.jitterScaleInSeconds * 1000);
-				return response;
-			}
+			flakyFetchFactory(this.jitterScaleInSeconds),
+			flakyWebSocketFactory(this.jitterScaleInSeconds)
 		);
 
 		assert(

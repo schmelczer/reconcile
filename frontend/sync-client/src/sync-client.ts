@@ -56,7 +56,8 @@ export class SyncClient {
 	public static async create({
 		fs,
 		persistence,
-		fetch = globalThis.fetch,
+		fetch,
+		webSocket,
 		nativeLineEndings = "\n"
 	}: {
 		fs: FileSystemOperations;
@@ -67,6 +68,7 @@ export class SyncClient {
 			}>
 		>;
 		fetch?: typeof globalThis.fetch;
+		webSocket?: typeof globalThis.WebSocket;
 		nativeLineEndings?: string;
 	}): Promise<SyncClient> {
 		const logger = new Logger();
@@ -113,9 +115,10 @@ export class SyncClient {
 			deviceId,
 			connectionStatus,
 			settings,
-			logger
+			logger,
+			fetch
 		);
-		syncService.fetchImplementation = fetch;
+
 		const fileOperations = new FileOperations(
 			logger,
 			database,
@@ -137,7 +140,8 @@ export class SyncClient {
 			settings,
 			syncService,
 			fileOperations,
-			unrestrictedSyncer
+			unrestrictedSyncer,
+			webSocket
 		);
 
 		const client = new SyncClient(
