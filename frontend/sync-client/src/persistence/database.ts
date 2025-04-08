@@ -1,5 +1,6 @@
 import type { Logger } from "../tracing/logger";
 import { EMPTY_HASH } from "../utils/hash";
+import { CoveredValues } from "../utils/min-covered";
 
 export type VaultUpdateId = number;
 export type DocumentId = string;
@@ -40,7 +41,7 @@ export interface DocumentRecord {
 
 export class Database {
 	private documents: DocumentRecord[];
-	private lastSeenUpdateId: VaultUpdateId | undefined;
+	private lastSeenUpdateIds: CoveredValues;
 	private hasInitialSyncCompleted: boolean;
 
 	public constructor(
@@ -65,9 +66,10 @@ export class Database {
 		this.ensureConsistency();
 		this.logger.debug(`Loaded ${this.documents.length} documents`);
 
-		this.lastSeenUpdateId = initialState.lastSeenUpdateId;
-		this.logger.debug(
-			`Loaded last seen update id: ${this.lastSeenUpdateId}`
+		const { lastSeenUpdateId } = initialState;
+		this.logger.debug(`Loaded last seen update id: ${lastSeenUpdateId}`);
+		this.lastSeenUpdateIds = new CoveredValues(
+			Math.max(0, lastSeenUpdateId ?? 0) // the first updateId will be 1 which is the first integer after -1
 		);
 
 		this.hasInitialSyncCompleted =
@@ -286,18 +288,28 @@ export class Database {
 		this.save();
 	}
 
-	public getLastSeenUpdateId(): VaultUpdateId | undefined {
-		return this.lastSeenUpdateId;
+	public getLastSeenUpdateId(): VaultUpdateId {
+		return this.lastSeenUpdateIds.min;
 	}
 
-	public setLastSeenUpdateId(value: VaultUpdateId | undefined): void {
-		this.lastSeenUpdateId = value;
+	public addLastSeenUpdateId(value: number): void {
+		const previousMin = this.lastSeenUpdateIds.min;
+		this.lastSeenUpdateIds.add(value);
+		if (previousMin !== this.lastSeenUpdateIds.min) {
+			this.save();
+		}
+	}
+
+	public setLastSeenUpdateId(value: number): void {
+		this.lastSeenUpdateIds.min = value;
 		this.save();
 	}
 
 	public reset(): void {
 		this.documents = [];
-		this.lastSeenUpdateId = 0;
+		this.lastSeenUpdateIds = new CoveredValues(
+			0 // the first updateId will be 1 which is the first integer after -1
+		);
 		this.hasInitialSyncCompleted = false;
 		this.save();
 	}
@@ -313,7 +325,7 @@ export class Database {
 					...metadata! // `resolvedDocuments` only returns docs with metadata set
 				})
 			),
-			lastSeenUpdateId: this.lastSeenUpdateId,
+			lastSeenUpdateId: this.lastSeenUpdateIds.min,
 			hasInitialSyncCompleted: this.hasInitialSyncCompleted
 		});
 	}

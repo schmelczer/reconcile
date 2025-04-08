@@ -59,7 +59,7 @@ export class UnrestrictedSyncer {
 					document
 				);
 
-				this.tryIncrementVaultUpdateId(response.vaultUpdateId);
+				this.database.addLastSeenUpdateId(response.vaultUpdateId);
 			}
 		);
 	}
@@ -90,6 +90,8 @@ export class UnrestrictedSyncer {
 					},
 					document
 				);
+
+				this.database.addLastSeenUpdateId(response.vaultUpdateId);
 			}
 		);
 	}
@@ -156,6 +158,7 @@ export class UnrestrictedSyncer {
 					this.logger.info(
 						`Document ${document.relativePath} has been deleted before we could finish updating it`
 					);
+					this.database.addLastSeenUpdateId(response.vaultUpdateId);
 					return;
 				}
 
@@ -174,6 +177,7 @@ export class UnrestrictedSyncer {
 					this.logger.debug(
 						`Document ${document.relativePath} is already more up to date than the fetched version`
 					);
+					this.database.addLastSeenUpdateId(response.vaultUpdateId); // in case the previous `vaultUpdateId` update hasn't made it through
 					return;
 				}
 
@@ -206,7 +210,7 @@ export class UnrestrictedSyncer {
 
 					await this.operations.delete(document.relativePath);
 
-					this.tryIncrementVaultUpdateId(response.vaultUpdateId);
+					this.database.addLastSeenUpdateId(response.vaultUpdateId);
 
 					return;
 				}
@@ -220,14 +224,6 @@ export class UnrestrictedSyncer {
 						response.relativePath
 					); // this can throw FileNotFoundError
 				}
-
-				this.database.updateDocumentMetadata(
-					{
-						parentVersionId: response.vaultUpdateId,
-						hash: contentHash
-					},
-					document
-				);
 
 				if (
 					!("type" in response) ||
@@ -268,7 +264,7 @@ export class UnrestrictedSyncer {
 					);
 				}
 
-				this.tryIncrementVaultUpdateId(response.vaultUpdateId);
+				this.database.addLastSeenUpdateId(response.vaultUpdateId);
 			}
 		);
 	}
@@ -291,6 +287,7 @@ export class UnrestrictedSyncer {
 						this.logger.debug(
 							`Document ${remoteVersion.relativePath} is already at least as up to date as the fetched version`
 						);
+
 						return;
 					}
 
@@ -423,12 +420,6 @@ export class UnrestrictedSyncer {
 				});
 				throw e;
 			}
-		}
-	}
-
-	private tryIncrementVaultUpdateId(responseVaultUpdateId: number): void {
-		if (this.database.getLastSeenUpdateId() === responseVaultUpdateId - 1) {
-			this.database.setLastSeenUpdateId(responseVaultUpdateId);
 		}
 	}
 }

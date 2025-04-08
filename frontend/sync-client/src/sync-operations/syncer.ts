@@ -17,6 +17,11 @@ import { createPromise } from "../utils/create-promise";
 import { SyncResetError } from "../services/sync-reset-error";
 import { Locks } from "../utils/locks";
 
+interface WebsocketVaultUpdate {
+	documents: components["schemas"]["DocumentVersionWithoutContent"][];
+	isInitialSync: boolean;
+}
+
 export class Syncer {
 	private readonly remoteDocumentsLock: Locks<DocumentId>;
 	private readonly remainingOperationsListeners: ((
@@ -273,6 +278,7 @@ export class Syncer {
 
 	public stop(): void {
 		clearInterval(this.refreshApplyRemoteChangesWebSocketInterval);
+
 		try {
 			this.applyRemoteChangesWebSocket?.close();
 		} catch (e) {
@@ -302,14 +308,30 @@ export class Syncer {
 			wsUri
 		);
 
-		this.applyRemoteChangesWebSocket.onmessage = (event): void =>
-			void this.syncRemotelyUpdatedFile(event.data).catch(
-				(e: unknown) => {
-					this.logger.error(
-						`Failed to sync remotely updated file: ${e}`
+		this.applyRemoteChangesWebSocket.onmessage = async (
+			event
+		): Promise<void> => {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+			const message = JSON.parse(event.data) as WebsocketVaultUpdate;
+
+			try {
+				await Promise.all(
+					message.documents.map(async (document) =>
+						this.syncRemotelyUpdatedFile(document)
+					)
+				);
+
+				if (message.isInitialSync && message.documents.length > 0) {
+					this.database.setLastSeenUpdateId(
+						message.documents
+							.map((document) => document.vaultUpdateId)
+							.reduce((a, b) => Math.max(a, b))
 					);
 				}
-			);
+			} catch (e) {
+				this.logger.error(`Failed to sync remotely updated file: ${e}`);
+			}
+		};
 
 		// The JS WebSocket API doesn't support setting headers, so we have to send the token as a message
 		this.applyRemoteChangesWebSocket.onopen = (): void => {
@@ -317,7 +339,8 @@ export class Syncer {
 			this.applyRemoteChangesWebSocket?.send(
 				JSON.stringify({
 					deviceId: this.deviceId,
-					token: settings.token
+					token: settings.token,
+					lastSeenVaultUpdateId: this.database.getLastSeenUpdateId()
 				})
 			);
 			this.webSocketStatusChangeListeners.forEach((listener) => {
@@ -327,7 +350,7 @@ export class Syncer {
 
 		this.applyRemoteChangesWebSocket.onclose = (event): void => {
 			this.logger.warn(
-				`WebSocket closed with code ${event.code}: ${event.reason}`
+				`WebSocket closed with code ${event.code} (${event.reason == "" ? "unknown reason" : event.reason})`
 			);
 			this.webSocketStatusChangeListeners.forEach((listener) => {
 				listener();
@@ -347,12 +370,9 @@ export class Syncer {
 		}, 5000);
 	}
 
-	private async syncRemotelyUpdatedFile(message: string): Promise<void> {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-		const remoteVersion = JSON.parse(
-			message
-		) as components["schemas"]["DocumentVersionWithoutContent"];
-
+	private async syncRemotelyUpdatedFile(
+		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
+	): Promise<void> {
 		let document = this.database.getDocumentByDocumentId(
 			remoteVersion.documentId
 		);
@@ -400,6 +420,8 @@ export class Syncer {
 					this.database.removeDocumentPromise(promise);
 				}
 			}
+
+			this.database.addLastSeenUpdateId(remoteVersion.vaultUpdateId);
 		} finally {
 			if (hasLockToRelease) {
 				this.remoteDocumentsLock.unlock(remoteVersion.documentId);
