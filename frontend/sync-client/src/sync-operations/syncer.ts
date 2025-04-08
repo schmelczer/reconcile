@@ -273,11 +273,19 @@ export class Syncer {
 
 	public stop(): void {
 		clearInterval(this.refreshApplyRemoteChangesWebSocketInterval);
-		this.applyRemoteChangesWebSocket?.close();
+		try {
+			this.applyRemoteChangesWebSocket?.close();
+		} catch (e) {
+			this.logger.warn(`Failed to close WebSocket: ${e}`);
+		}
 	}
 
 	private updateWebSocket(settings: SyncSettings): void {
-		this.applyRemoteChangesWebSocket?.close();
+		try {
+			this.applyRemoteChangesWebSocket?.close();
+		} catch (e) {
+			this.logger.warn(`Failed to close WebSocket: ${e}`);
+		}
 
 		if (!settings.isSyncEnabled) {
 			this.applyRemoteChangesWebSocket = undefined;
