@@ -2546,7 +2546,7 @@ dependencies = [
  "console_error_panic_hook",
  "insta",
  "reconcile",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]
@@ -2576,7 +2576,7 @@ dependencies = [
  "serde_yaml",
  "sqlx",
  "sync_lib",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tower-http",
  "tracing",
