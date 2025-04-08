@@ -1,0 +1,23 @@
+{
+  "name": "sync_lib",
+  "type": "module",
+  "collaborators": [
+    "Andras Schmelczer <andras@schmelczer.dev>"
+  ],
+  "version": "0.3.9",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schmelczer/vault-link"
+  },
+  "files": [
+    "sync_lib_bg.wasm",
+    "sync_lib.js",
+    "sync_lib.d.ts"
+  ],
+  "main": "sync_lib.js",
+  "types": "sync_lib.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
