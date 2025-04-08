@@ -138,14 +138,14 @@ impl Database {
         let query = sqlx::query_as!(
             DocumentVersionWithoutContent,
             r#"
-            select 
+            select
                 vault_update_id,
-                document_id as "document_id: Hyphenated", 
+                document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 is_deleted
             from latest_document_versions
-            order by vault_update_id desc
+            order by vault_update_id
             "#,
         );
 
@@ -178,7 +178,7 @@ impl Database {
                 is_deleted
             from latest_document_versions
             where vault_update_id > ?
-            order by vault_update_id desc
+            order by vault_update_id
             "#,
             vault_update_id
         );
@@ -227,9 +227,9 @@ impl Database {
         let query = sqlx::query_as!(
             StoredDocumentVersion,
             r#"
-            select 
+            select
                 vault_update_id,
-                document_id as "document_id: Hyphenated", 
+                document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
@@ -264,9 +264,9 @@ impl Database {
         let query = sqlx::query_as!(
             StoredDocumentVersion,
             r#"
-            select 
+            select
                 vault_update_id,
-                document_id as "document_id: Hyphenated", 
+                document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
@@ -296,9 +296,9 @@ impl Database {
         let query = sqlx::query_as!(
             StoredDocumentVersion,
             r#"
-            select 
+            select
                 vault_update_id,
-                document_id as "document_id: Hyphenated", 
+                document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
@@ -329,7 +329,7 @@ impl Database {
             r#"
             insert into documents (
                 vault_update_id,
-                document_id, 
+                document_id,
                 relative_path,
                 updated_date,
                 content,
