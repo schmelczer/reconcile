@@ -556,10 +556,6 @@ export interface components {
 			/** Format: int64 */
 			since_update_id?: number | null;
 		};
-		QueryParams2: {
-			/** Format: int64 */
-			since_update_id?: number | null;
-		};
 		SerializedError: {
 			causes: string[];
 			message: string;
