@@ -12,7 +12,7 @@ use futures::{
 };
 use log::{error, info, warn};
 use schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::auth::auth;
 use crate::{
@@ -59,6 +59,13 @@ struct WebsocketHandshake {
     pub last_seen_vault_update_id: Option<VaultUpdateId>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WebsocketVaultUpdate {
+    pub documents: Vec<DocumentVersionWithoutContent>,
+    pub is_initial_sync: bool,
+}
+
 async fn websocket(
     state: AppState,
     stream: WebSocket,
@@ -96,9 +103,14 @@ async fn websocket(
             .map_err(server_error)
     }?;
 
-    for document in documents {
-        send_document_over_websocket(document, &mut sender).await?;
-    }
+    send_update_over_websocket(
+        &WebsocketVaultUpdate {
+            documents,
+            is_initial_sync: true,
+        },
+        &mut sender,
+    )
+    .await?;
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(update) = rx.recv().await {
@@ -106,7 +118,14 @@ async fn websocket(
                 continue;
             }
 
-            send_document_over_websocket(update.document, &mut sender).await?;
+            send_update_over_websocket(
+                &WebsocketVaultUpdate {
+                    documents: vec![update.document],
+                    is_initial_sync: false,
+                },
+                &mut sender,
+            )
+            .await?;
         }
 
         Ok::<(), SyncServerError>(())
@@ -135,11 +154,11 @@ async fn websocket(
     Ok(())
 }
 
-async fn send_document_over_websocket(
-    document: DocumentVersionWithoutContent,
+async fn send_update_over_websocket(
+    update: &WebsocketVaultUpdate,
     sender: &mut SplitSink<WebSocket, Message>,
 ) -> Result<(), SyncServerError> {
-    let serialized_update = serde_json::to_string(&document)
+    let serialized_update = serde_json::to_string(update)
         .context("Failed to serialize update")
         .map_err(server_error)?;
 
