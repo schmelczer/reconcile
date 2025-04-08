@@ -18,6 +18,15 @@ export class CoveredValues {
 
 	public constructor(private minValue: number) {}
 
+	public get min(): number {
+		return this.minValue;
+	}
+
+	public set min(value: number) {
+		this.minValue = Math.max(value, this.minValue);
+		this.seenValues = this.seenValues.filter((v) => v > value);
+	}
+
 	public add(value: number): void {
 		if (value < this.minValue) {
 			return;
@@ -43,9 +52,5 @@ export class CoveredValues {
 			this.seenValues.shift();
 			this.minValue++;
 		}
-	}
-
-	public get min(): number {
-		return this.minValue;
 	}
 }

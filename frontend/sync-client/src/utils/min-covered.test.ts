@@ -45,4 +45,16 @@ describe("CoveredValues", () => {
 		covered.add(6);
 		expect(covered.min).toBe(6);
 	});
+
+	test("should handle force setting min value", () => {
+		const covered = new CoveredValues(5);
+		covered.add(7);
+		covered.add(8);
+		covered.add(9);
+		expect(covered.min).toBe(5);
+		covered.min = 6;
+		expect(covered.min).toBe(6);
+		covered.add(10);
+		expect(covered.min).toBe(10);
+	});
 });
