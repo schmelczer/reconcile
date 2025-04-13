@@ -131,7 +131,17 @@ process.on("uncaughtException", (error) => {
 	if (slowFileEvents) {
 		return;
 	}
-	console.error("Uncaught Exception:", error);
+
+	if (
+		error instanceof Error &&
+		error.message.includes(
+			"WebSocket was closed before the connection was established"
+		)
+	) {
+		return;
+	}
+
+	console.error("Uncaught exception:", error);
 	process.exit(1);
 });
 
@@ -144,7 +154,7 @@ process.on("unhandledRejection", (error, _promise) => {
 		return;
 	}
 
-	console.error("Unhandled Rejection:", error);
+	console.error("Unhandled rejection:", error);
 	process.exit(1);
 });
 
