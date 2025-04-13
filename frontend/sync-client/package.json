@@ -1,6 +1,6 @@
 {
     "name": "sync-client",
-    "version": "0.3.9",
+    "version": "0.3.10",
     "main": "dist/sync-client.node.js",
     "browser": "dist/sync-client.web.js",
     "types": "dist/types/index.d.ts",

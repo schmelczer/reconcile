@@ -1,6 +1,6 @@
 {
 	"name": "vault-link-obsidian-plugin",
-	"version": "0.3.9",
+	"version": "0.3.10",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
