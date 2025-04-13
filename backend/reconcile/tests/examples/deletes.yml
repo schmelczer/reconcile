@@ -23,3 +23,9 @@ parent: long text with one big delete and many small
 left: long small
 right: long with big and small
 expected: long small
+
+---
+parent: long text where the cursor has to be clamped after delete
+left: long text where the cursor has to be clamped after delete|
+right: long text where the cursor
+expected: long text where the cursor|

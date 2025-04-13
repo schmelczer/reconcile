@@ -63,6 +63,13 @@ impl ExampleDocument {
     fn text_with_cursors_to_string(text: &TextWithCursors<'_>) -> String {
         let mut result = text.text.clone().into_owned();
         for (i, cursor) in text.cursors.iter().enumerate() {
+            assert!(
+                cursor.char_index <= result.len(), // equals in case of insert at the end
+                "Cursor index out of bounds: {} > {}",
+                cursor.char_index,
+                result.len()
+            );
+
             result.insert(
                 result
                     .char_indices()
