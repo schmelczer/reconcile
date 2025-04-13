@@ -309,7 +309,13 @@ where
 
         let last_index = merged_operations
             .iter()
-            .last()
+            .filter(|operation| {
+                matches!(
+                    operation.operation,
+                    Operation::Insert { .. } | Operation::Equal { .. }
+                )
+            })
+            .next_back()
             .map_or(0, |op| op.operation.end_index());
 
         for cursor in left_cursors.chain(right_cursors) {
