@@ -14,13 +14,18 @@ export function positionToLineAndColumn(
 		throw new Error("Position cannot be negative");
 	}
 
-	if (position > text.length) {
+	text = text.replace("\r", "");
+
+	if (
+		position >
+		text.length + 1
+		// +1 to account for the cursor being after last character
+	) {
 		throw new Error(
 			`Position ${position} exceeds text length ${text.length}`
 		);
 	}
 
-	text = text.replace("\r", "");
 	const textUpToPosition = text.substring(0, position);
 	const lines = textUpToPosition.split("\n");
 
