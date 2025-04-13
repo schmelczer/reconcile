@@ -14,7 +14,7 @@ pub struct CursorPosition {
 
 impl CursorPosition {
     #[must_use]
-    pub fn with_index(self, index: usize) -> Self {
+    pub fn with_index(&self, index: usize) -> Self {
         CursorPosition {
             id: self.id,
             char_index: index,

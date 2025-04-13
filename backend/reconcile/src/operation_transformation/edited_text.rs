@@ -253,57 +253,50 @@ where
             .flat_map(|(OrderedOperation { order, operation }, side)| {
                 let original_start = operation.start_index() as i64;
                 let original_end = operation.end_index();
+                let original_length = operation.len() as i64;
 
-                match side {
-                    Side::Left => {
-                        let result = operation.merge_operations_with_context(
-                            &mut right_merge_context,
-                            &mut left_merge_context,
-                        );
+                let result = match side {
+                    Side::Left => operation.merge_operations_with_context(
+                        &mut right_merge_context,
+                        &mut left_merge_context,
+                    ),
+                    Side::Right => operation.merge_operations_with_context(
+                        &mut left_merge_context,
+                        &mut right_merge_context,
+                    ),
+                };
 
-                        if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
-                            result
-                        {
-                            while let Some(mut cursor) =
+                if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) = result
+                {
+                    let shift = op.start_index() as i64 - original_start + op.len() as i64
+                        - original_length;
+                    match side {
+                        Side::Left => {
+                            while let Some(cursor) =
                                 left_cursors.next_if(|cursor| cursor.char_index <= original_end + 1)
                             {
-                                let shift = op.start_index() as i64 - original_start;
-
-                                cursor.char_index = (op.start_index() as i64)
-                                    .max(cursor.char_index as i64 + shift)
-                                    as usize;
-                                merged_cursors.push(cursor);
+                                merged_cursors.push(cursor.with_index(
+                                    (op.start_index() as i64).max(cursor.char_index as i64 + shift)
+                                        as usize,
+                                ));
                             }
                         }
-
-                        result
-                    }
-                    Side::Right => {
-                        let result = operation.merge_operations_with_context(
-                            &mut left_merge_context,
-                            &mut right_merge_context,
-                        );
-
-                        if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
-                            result
-                        {
-                            while let Some(mut cursor) = right_cursors
+                        Side::Right => {
+                            while let Some(cursor) = right_cursors
                                 .next_if(|cursor| cursor.char_index <= original_end + 1)
                             {
-                                let shift = op.start_index() as i64 - original_start;
-
-                                cursor.char_index = (op.start_index() as i64)
-                                    .max(cursor.char_index as i64 + shift)
-                                    as usize;
-                                merged_cursors.push(cursor);
+                                merged_cursors.push(cursor.with_index(
+                                    (op.start_index() as i64).max(cursor.char_index as i64 + shift)
+                                        as usize,
+                                ));
                             }
                         }
-
-                        result
                     }
                 }
-                .map(|operation| OrderedOperation { order, operation })
-                .into_iter()
+
+                result
+                    .map(|operation| OrderedOperation { order, operation })
+                    .into_iter()
             })
             .collect();
 

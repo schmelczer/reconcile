@@ -65,7 +65,7 @@ impl ExampleDocument {
         for (i, cursor) in text.cursors.iter().enumerate() {
             assert!(
                 cursor.char_index <= result.len(), // equals in case of insert at the end
-                "Cursor index out of bounds: {} > {}",
+                "Cursor index out of bounds: {} > {} when testing for '{result}'",
                 cursor.char_index,
                 result.len()
             );
