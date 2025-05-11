@@ -55,20 +55,31 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 		const view = this.workspace.getActiveViewOfType(MarkdownView);
 
 		if (view?.file?.path === path) {
-			const cursor = view.editor.getCursor();
 			const text = view.editor.getValue();
-			const result = updater({
-				text,
-				cursors: [
+			const cursors = view.editor
+				.listSelections()
+				.flatMap(({ anchor, head }, i) => [
 					{
-						id: 0,
+						id: 2 * i,
 						characterPosition: lineAndColumnToPosition(
 							text,
-							cursor.line,
-							cursor.ch
+							anchor.line,
+							anchor.ch
+						)
+					},
+					{
+						id: 2 * i + 1,
+						characterPosition: lineAndColumnToPosition(
+							text,
+							head.line,
+							head.ch
 						)
 					}
-				]
+				]);
+
+			const result = updater({
+				text,
+				cursors
 			});
 
 			if (result.text === text) {
@@ -77,13 +88,25 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 
 			view.editor.setValue(result.text);
 
-			result.cursors.forEach((movedCursor) => {
-				const { line, column } = positionToLineAndColumn(
-					result.text,
-					movedCursor.characterPosition
-				);
-				view.editor.setCursor(line, column);
-			});
+			const selections = [];
+			for (let i = 0; i < result.cursors.length / 2; i++) {
+				const from = result.cursors[2 * i];
+				const to = result.cursors[2 * i + 1];
+				const { line: fromLine, column: fromColumn } =
+					positionToLineAndColumn(
+						result.text,
+						from.characterPosition
+					);
+
+				const { line: toLine, column: toColumn } =
+					positionToLineAndColumn(result.text, to.characterPosition);
+
+				selections.push({
+					anchor: { line: fromLine, ch: fromColumn },
+					head: { line: toLine, ch: toColumn }
+				});
+			}
+			view.editor.setSelections(selections);
 
 			return result.text;
 		}
