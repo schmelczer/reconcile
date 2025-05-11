@@ -16,7 +16,7 @@ import { ConnectionStatus } from "./services/connection-status";
 import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
 import { rateLimit } from "./utils/rate-limit";
 import { v4 as uuidv4 } from "uuid";
-import { NetworkConnectionStatus } from "./types/network-connection-status";
+import type { NetworkConnectionStatus } from "./types/network-connection-status";
 import { DocumentUpdateStatus } from "./types/document-update-status";
 
 export class SyncClient {

@@ -15,8 +15,10 @@ import { SyncClient, rateLimit } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 import { SyncSettingsTab } from "./views/settings/settings-tab";
 import { registerConsoleForLogging } from "./utils/register-console-for-logging";
+import { updateEditorStatusDisplay } from "./views/editor-sync-line/editor-sync-line";
 
 export default class VaultLinkPlugin extends Plugin {
+	private readonly disposables: (() => void)[] = [];
 	private settingsTab: SyncSettingsTab | undefined;
 	private client!: SyncClient;
 	private readonly rateLimitedUpdatesPerFile = new Map<
@@ -74,11 +76,21 @@ export default class VaultLinkPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(async () => {
 			this.registerEditorEvents();
 			void this.client.start();
+
+			const interval = setInterval(() => {
+				updateEditorStatusDisplay(this.app.workspace, this.client);
+			}, 200);
+			this.disposables.push(() => {
+				clearInterval(interval);
+			});
 		});
 	}
 
 	public onunload(): void {
 		this.client.stop();
+		this.disposables.forEach((disposable) => {
+			disposable();
+		});
 	}
 
 	public openSettings(): void {
