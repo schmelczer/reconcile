@@ -15,5 +15,6 @@ export type {
 } from "./file-operations/filesystem-operations";
 export type { PersistenceProvider } from "./persistence/persistence";
 
-export type { NetworkConnectionStatus } from "./sync-client";
+export type { NetworkConnectionStatus } from "./types/network-connection-status";
+export { DocumentUpdateStatus } from "./types/document-update-status";
 export { SyncClient } from "./sync-client";

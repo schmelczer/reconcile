@@ -16,12 +16,8 @@ import { ConnectionStatus } from "./services/connection-status";
 import { UnrestrictedSyncer } from "./sync-operations/unrestricted-syncer";
 import { rateLimit } from "./utils/rate-limit";
 import { v4 as uuidv4 } from "uuid";
-
-export interface NetworkConnectionStatus {
-	isSuccessful: boolean;
-	serverMessage: string;
-	isWebSocketConnected: boolean;
-}
+import { NetworkConnectionStatus } from "./types/network-connection-status";
+import { DocumentUpdateStatus } from "./types/document-update-status";
 
 export class SyncClient {
 	private static readonly MINIMUM_SAVE_INTERVAL_MS = 1000;
@@ -259,5 +255,18 @@ export class SyncClient {
 			oldPath,
 			relativePath
 		});
+	}
+
+	public getDocumentSyncingStatus(
+		relativePath: RelativePath
+	): DocumentUpdateStatus {
+		const document =
+			this.database.getLatestDocumentByRelativePath(relativePath);
+		if (document === undefined) {
+			return DocumentUpdateStatus.SYNCING;
+		}
+		return document.updates.length > 0
+			? DocumentUpdateStatus.SYNCING
+			: DocumentUpdateStatus.UP_TO_DATE;
 	}
 }
