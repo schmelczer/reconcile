@@ -15,7 +15,27 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 	) {}
 
 	public async listAllFiles(): Promise<RelativePath[]> {
-		return this.vault.getFiles().map((file) => file.path);
+		// Let's implement this by hand because vault.adapter.listAllFiles doesn't always return all files.
+		const allFiles = [];
+		const remainingFolders = [this.vault.getRoot().path];
+
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+		while (true) {
+			const folder = remainingFolders.pop();
+			if (folder == undefined) {
+				break;
+			}
+
+			if (folder.includes(".obsidian")) {
+				continue;
+			}
+
+			const files = await this.vault.adapter.list(normalizePath(folder));
+			allFiles.push(...files.files);
+			remainingFolders.push(...files.folders);
+		}
+
+		return allFiles;
 	}
 
 	public async read(path: RelativePath): Promise<Uint8Array> {

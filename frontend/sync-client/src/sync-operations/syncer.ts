@@ -1,6 +1,7 @@
 import type {
 	Database,
 	DocumentId,
+	DocumentRecord,
 	RelativePath
 } from "../persistence/database";
 import type { SyncService } from "../services/sync-service";
@@ -434,9 +435,16 @@ export class Syncer {
 
 		const allLocalFiles = await this.operations.listAllFiles();
 
-		let locallyPossiblyDeletedFiles = [
-			...this.database.resolvedDocuments
-		].filter(({ relativePath }) => !allLocalFiles.includes(relativePath));
+		let locallyPossiblyDeletedFiles: DocumentRecord[] = [];
+
+		for (const document of this.database.resolvedDocuments) {
+			if (
+				!document.isDeleted &&
+				!(await this.operations.exists(document.relativePath))
+			) {
+				locallyPossiblyDeletedFiles.push(document);
+			}
+		}
 
 		const updates = Promise.all(
 			allLocalFiles.map(async (relativePath) => {
