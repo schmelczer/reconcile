@@ -37,6 +37,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -71,6 +75,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -119,6 +127,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -162,6 +174,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -196,6 +212,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -231,6 +251,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -278,6 +302,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -324,6 +352,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -371,6 +403,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
@@ -416,6 +452,10 @@ export interface paths {
 						[name: string]: unknown;
 					};
 					content: {
+						/** @example {
+						 *       "causes": [],
+						 *       "message": "An error has occurred"
+						 *     } */
 						"application/json": components["schemas"]["SerializedError"];
 					};
 				};
