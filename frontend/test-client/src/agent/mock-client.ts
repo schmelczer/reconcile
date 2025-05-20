@@ -78,7 +78,7 @@ export class MockClient implements FileSystemOperations {
 		);
 		this.localFiles.set(path, newContent);
 
-		this.runCallback(() => {
+		this.executeFileOperation(() => {
 			void this.client.syncLocallyCreatedFile(path);
 		});
 	}
@@ -120,7 +120,7 @@ export class MockClient implements FileSystemOperations {
 			`Updated file ${path} with:\n  current content: ${currentContent}\n  new content: ${newContent}`
 		);
 
-		this.runCallback(() => {
+		this.executeFileOperation(() => {
 			void this.client.syncLocallyUpdatedFile({
 				relativePath: path
 			});
@@ -137,7 +137,7 @@ export class MockClient implements FileSystemOperations {
 			`Updated file ${path} with:\n  new content: ${new TextDecoder().decode(content)}`
 		);
 
-		this.runCallback(() => {
+		this.executeFileOperation(() => {
 			if (hasExisted) {
 				void this.client.syncLocallyUpdatedFile({
 					relativePath: path
@@ -154,7 +154,7 @@ export class MockClient implements FileSystemOperations {
 		);
 		this.localFiles.delete(path);
 
-		this.runCallback(() => {
+		this.executeFileOperation(() => {
 			void this.client.syncLocallyDeletedFile(path);
 		});
 	}
@@ -176,7 +176,7 @@ export class MockClient implements FileSystemOperations {
 			`Renamed file: ${oldPath} -> ${newPath} with:\n  content ${new TextDecoder().decode(file)}`
 		);
 
-		this.runCallback(() => {
+		this.executeFileOperation(() => {
 			void this.client.syncLocallyUpdatedFile({
 				oldPath,
 				relativePath: newPath
@@ -184,10 +184,10 @@ export class MockClient implements FileSystemOperations {
 		});
 	}
 
-	private runCallback(callback: () => void): void {
+	private executeFileOperation(callback: () => void): void {
 		if (this.useSlowFileEvents) {
 			// we aren't the best client and it takes some time to notice changes
-			setTimeout(callback, 100);
+			setTimeout(callback, Math.random() * 100);
 		} else {
 			callback();
 		}

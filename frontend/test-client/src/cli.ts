@@ -4,6 +4,7 @@ import { sleep } from "./utils/sleep";
 import { v4 as uuidv4 } from "uuid";
 import { randomCasing } from "./utils/random-casing";
 
+// Simulate async file access by injecting waiting time before returning from file operations.
 let slowFileEvents = false;
 
 async function runTest({
