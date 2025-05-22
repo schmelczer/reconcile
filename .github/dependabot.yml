@@ -6,20 +6,17 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directories: ["**"]
-    directory: "/frontend"
+    directories: ["/frontend"]
     schedule:
       interval: "daily"
 
   - package-ecosystem: "docker"
     directories: ["**"]
-    directory: "/backend"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directories: ["**"]
-    directory: "/backend"
     schedule:
       interval: "daily"
 
