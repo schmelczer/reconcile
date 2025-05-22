@@ -50,7 +50,9 @@ export interface paths {
 		post: {
 			parameters: {
 				query?: never;
-				header?: never;
+				header: {
+					"user-agent": string;
+				};
 				path: {
 					vault_id: string;
 				};
@@ -102,7 +104,9 @@ export interface paths {
 		post: {
 			parameters: {
 				query?: never;
-				header?: never;
+				header: {
+					"user-agent": string;
+				};
 				path: {
 					vault_id: string;
 				};
@@ -186,7 +190,9 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header?: never;
+				header: {
+					"user-agent": string;
+				};
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -225,7 +231,9 @@ export interface paths {
 		delete: {
 			parameters: {
 				query?: never;
-				header?: never;
+				header: {
+					"user-agent": string;
+				};
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -276,7 +284,9 @@ export interface paths {
 		put: {
 			parameters: {
 				query?: never;
-				header?: never;
+				header: {
+					"user-agent": string;
+				};
 				path: {
 					document_id: string;
 					vault_id: string;
@@ -506,6 +516,7 @@ export interface components {
 		/** @description Response to an update document request. */
 		DocumentUpdateResponse:
 			| {
+					deviceId: string;
 					/** Format: uuid */
 					documentId: string;
 					isDeleted: boolean;
@@ -514,11 +525,13 @@ export interface components {
 					type: "FastForwardUpdate";
 					/** Format: date-time */
 					updatedDate: string;
+					userId: string;
 					/** Format: int64 */
 					vaultUpdateId: number;
 			  }
 			| {
 					contentBase64: string;
+					deviceId: string;
 					/** Format: uuid */
 					documentId: string;
 					isDeleted: boolean;
@@ -527,27 +540,32 @@ export interface components {
 					type: "MergingUpdate";
 					/** Format: date-time */
 					updatedDate: string;
+					userId: string;
 					/** Format: int64 */
 					vaultUpdateId: number;
 			  };
 		DocumentVersion: {
 			contentBase64: string;
+			deviceId: string;
 			/** Format: uuid */
 			documentId: string;
 			isDeleted: boolean;
 			relativePath: string;
 			/** Format: date-time */
 			updatedDate: string;
+			userId: string;
 			/** Format: int64 */
 			vaultUpdateId: number;
 		};
 		DocumentVersionWithoutContent: {
+			deviceId: string;
 			/** Format: uuid */
 			documentId: string;
 			isDeleted: boolean;
 			relativePath: string;
 			/** Format: date-time */
 			updatedDate: string;
+			userId: string;
 			/** Format: int64 */
 			vaultUpdateId: number;
 		};
