@@ -24,7 +24,7 @@ tower-http = { version = "0.6.1", features = ["cors", "trace", "limit", "timeout
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"]}
 serde_yaml = "0.9.34"
 sqlx = { version = "0.8.5", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
-chrono = { version = "0.4.40", features = ["serde"] }
+chrono = { version = "0.4.41", features = ["serde"] }
 aide = { version = "0.13.5", features = ["axum", "axum-ws", "scalar", "axum-headers"] }
 schemars = { version = "0.8.22", features = ["chrono", "uuid1", "bytes"] }
 tracing = "0.1.41"
