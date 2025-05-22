@@ -35,11 +35,11 @@ flatpak run md.obsidian.Obsidian
 
 #### Update HTTP API TS bindings
 
-```sh 
+```sh
 scripts/update-api-types.sh
 ```
 
-#### Publish new version 
+#### Publish new version
 
 ```sh
 scripts/bump-version.sh patch
@@ -48,8 +48,12 @@ scripts/bump-version.sh patch
 
 #### Run E2E tests
 
-```sh 
+```sh
 scripts/e2e.sh
 ```
 
 And to clean up the logs & database files, run `scripts/clean-up.sh`
+
+## Projects
+
+- [Sync server](./backend/sync_server/README.md)
