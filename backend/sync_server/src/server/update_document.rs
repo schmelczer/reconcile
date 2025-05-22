@@ -4,7 +4,7 @@ use axum::{
     Extension,
     extract::{Path, State},
 };
-use axum_extra::{TypedHeader, headers::UserAgent};
+use axum_extra::TypedHeader;
 use axum_jsonschema::Json;
 use log::info;
 use schemars::JsonSchema;
@@ -12,6 +12,7 @@ use serde::Deserialize;
 use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
 
 use super::{
+    device_id_header::DeviceIdHeader,
     requests::{UpdateDocumentVersion, UpdateDocumentVersionMultipart},
     responses::DocumentUpdateResponse,
 };
@@ -42,7 +43,7 @@ pub async fn update_document_multipart(
         document_id,
     }): Path<UpdateDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         UpdateDocumentVersionMultipart,
@@ -69,7 +70,7 @@ pub async fn update_document_json(
         document_id,
     }): Path<UpdateDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
@@ -94,7 +95,7 @@ pub async fn update_document_json(
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn internal_update_document(
     user: User,
-    user_agent: UserAgent,
+    user_agent: DeviceIdHeader,
     state: AppState,
     vault_id: VaultId,
     document_id: DocumentId,
@@ -214,7 +215,7 @@ async fn internal_update_document(
         updated_date: chrono::Utc::now(),
         is_deleted: false,
         user_id: user.name,
-        device_id: user_agent.to_string(),
+        device_id: user_agent.0,
     };
 
     state

@@ -4,13 +4,16 @@ use axum::{
     Extension,
     extract::{Path, State},
 };
-use axum_extra::{TypedHeader, headers::UserAgent};
+use axum_extra::TypedHeader;
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use sync_lib::base64_to_bytes;
 
-use super::requests::{CreateDocumentVersion, CreateDocumentVersionMultipart};
+use super::{
+    device_id_header::DeviceIdHeader,
+    requests::{CreateDocumentVersion, CreateDocumentVersionMultipart},
+};
 use crate::{
     app_state::{
         AppState,
@@ -38,7 +41,7 @@ pub struct CreateDocumentPathParams {
 pub async fn create_document_multipart(
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         CreateDocumentVersionMultipart,
@@ -64,7 +67,7 @@ pub async fn create_document_multipart(
 pub async fn create_document_json(
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
@@ -88,7 +91,7 @@ pub async fn create_document_json(
 #[allow(clippy::too_many_arguments)]
 async fn internal_create_document(
     user: User,
-    user_agent: UserAgent,
+    user_agent: DeviceIdHeader,
     state: AppState,
     vault_id: VaultId,
     document_id: Option<DocumentId>,
@@ -137,7 +140,7 @@ async fn internal_create_document(
         updated_date: chrono::Utc::now(),
         is_deleted: false,
         user_id: user.name,
-        device_id: user_agent.to_string(),
+        device_id: user_agent.0,
     };
 
     state

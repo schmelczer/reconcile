@@ -51,7 +51,7 @@ export interface paths {
 			parameters: {
 				query?: never;
 				header: {
-					"user-agent": string;
+					"device-id": string;
 				};
 				path: {
 					vault_id: string;
@@ -105,7 +105,7 @@ export interface paths {
 			parameters: {
 				query?: never;
 				header: {
-					"user-agent": string;
+					"device-id": string;
 				};
 				path: {
 					vault_id: string;
@@ -191,7 +191,7 @@ export interface paths {
 			parameters: {
 				query?: never;
 				header: {
-					"user-agent": string;
+					"device-id": string;
 				};
 				path: {
 					document_id: string;
@@ -232,7 +232,7 @@ export interface paths {
 			parameters: {
 				query?: never;
 				header: {
-					"user-agent": string;
+					"device-id": string;
 				};
 				path: {
 					document_id: string;
@@ -285,7 +285,7 @@ export interface paths {
 			parameters: {
 				query?: never;
 				header: {
-					"user-agent": string;
+					"device-id": string;
 				};
 				path: {
 					document_id: string;

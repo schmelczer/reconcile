@@ -1,6 +1,7 @@
 mod auth;
 mod create_document;
 mod delete_document;
+mod device_id_header;
 mod fetch_document_version;
 mod fetch_document_version_content;
 mod fetch_latest_document_version;
@@ -32,6 +33,7 @@ use axum::{
     response::IntoResponse,
     routing::IntoMakeService,
 };
+use device_id_header::DEVICE_ID_HEADER_NAME;
 use log::{error, info};
 use tokio::signal;
 use tower_http::{
@@ -79,7 +81,11 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
         .layer(
             CorsLayer::new()
                 .allow_origin("*".parse::<HeaderValue>().expect("Failed to parse origin"))
-                .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
+                .allow_headers([
+                    http::header::CONTENT_TYPE,
+                    http::header::AUTHORIZATION,
+                    DEVICE_ID_HEADER_NAME.clone(),
+                ])
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
         )
         .layer(

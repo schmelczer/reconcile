@@ -3,12 +3,12 @@ use axum::{
     Extension,
     extract::{Path, State},
 };
-use axum_extra::{TypedHeader, headers::UserAgent};
+use axum_extra::TypedHeader;
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use super::requests::DeleteDocumentVersion;
+use super::{device_id_header::DeviceIdHeader, requests::DeleteDocumentVersion};
 use crate::{
     app_state::{
         AppState,
@@ -38,7 +38,7 @@ pub async fn delete_document(
         document_id,
     }): Path<DeleteDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
@@ -76,7 +76,7 @@ pub async fn delete_document(
         updated_date: chrono::Utc::now(),
         is_deleted: true,
         user_id: user.name,
-        device_id: user_agent.to_string(),
+        device_id: user_agent.0,
     };
 
     state

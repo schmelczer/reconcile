@@ -1,5 +1,7 @@
 const path = require("path");
 const { merge } = require("webpack-merge");
+const webpack = require("webpack");
+const packageJson = require("./package.json");
 
 const common = {
 	entry: "./src/index.ts",
@@ -15,6 +17,11 @@ const common = {
 			}
 		]
 	},
+	plugins: [
+		new webpack.DefinePlugin({
+			__CURRENT_VERSION__: JSON.stringify(packageJson.version)
+		})
+	],
 	optimization: {
 		// the consuming project should take care of minification
 		minimize: false
