@@ -7,17 +7,19 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directories: ["**"]
+    directory: "/frontend"
     schedule:
       interval: "daily"
-    versioning-strategy: increase
 
   - package-ecosystem: "docker"
     directories: ["**"]
+    directory: "/backend"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "cargo"
     directories: ["**"]
+    directory: "/backend"
     schedule:
       interval: "daily"
 
