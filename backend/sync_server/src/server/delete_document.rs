@@ -1,4 +1,4 @@
-use anyhow::Context as _;
+use anyhow::{Context as _, anyhow};
 use axum::{
     Extension,
     extract::{Path, State},
@@ -18,7 +18,7 @@ use crate::{
         },
     },
     config::user_config::User,
-    errors::{SyncServerError, server_error},
+    errors::{SyncServerError, not_found_error, server_error},
     utils::{normalize::normalize, sanitize_path::sanitize_path},
 };
 
@@ -54,11 +54,25 @@ pub async fn delete_document(
         .await
         .map_err(server_error)?;
 
+    let latest_version = state
+        .database
+        .get_latest_document(&vault_id, &document_id, Some(&mut transaction))
+        .await
+        .map_err(server_error)?
+        .map_or_else(
+            || {
+                Err(not_found_error(anyhow!(
+                    "Document with id `{document_id}` not found",
+                )))
+            },
+            Ok,
+        )?;
+
     let new_version = StoredDocumentVersion {
         vault_update_id: last_update_id + 1,
         document_id,
         relative_path: sanitize_path(&request.relative_path),
-        content: vec![],
+        content: latest_version.content, // copy the content from the latest version
         updated_date: chrono::Utc::now(),
         is_deleted: true,
         user_id: user.name,
