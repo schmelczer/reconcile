@@ -11,7 +11,7 @@ import { HistoryView } from "./views/history/history-view";
 import { StatusBar } from "./views/status-bar/status-bar";
 import { LogsView } from "./views/logs/logs-view";
 import { StatusDescription } from "./views/status-description/status-description";
-import { SyncClient, rateLimit } from "sync-client";
+import { SyncClient, rateLimit, DEFAULT_SETTINGS } from "sync-client";
 import { ObsidianFileSystemOperations } from "./obsidian-file-system";
 import { SyncSettingsTab } from "./views/settings/settings-tab";
 import { registerConsoleForLogging } from "./utils/register-console-for-logging";
@@ -27,6 +27,8 @@ export default class VaultLinkPlugin extends Plugin {
 	>();
 
 	public async onload(): Promise<void> {
+		DEFAULT_SETTINGS.ignorePatterns.push(".obsidian", ".git");
+
 		this.client = await SyncClient.create({
 			fs: new ObsidianFileSystemOperations(
 				this.app.vault,

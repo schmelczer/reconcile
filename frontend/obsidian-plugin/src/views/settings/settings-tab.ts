@@ -254,6 +254,29 @@ export class SyncSettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Ignore patterns")
+			.setDesc(
+				"Patterns to ignore when syncing. Each line is a separate glob pattern. Patterns are matched against the relative path of the file. For example, to ignore all files in a folder named 'ignore', enter 'ignore/*'. To ignore all files with the extension '.log', enter '*.log'."
+			)
+			.addTextArea((text) =>
+				text
+					.setValue(
+						this.syncClient.getSettings().ignorePatterns.join("\n")
+					)
+					.setPlaceholder("Enter patterns to ignore, one per line")
+					.onChange(async (value) => {
+						const patterns = value
+							.split("\n")
+							.map((pattern) => pattern.trim())
+							.filter((pattern) => pattern.length > 0);
+						return this.syncClient.setSetting(
+							"ignorePatterns",
+							patterns
+						);
+					})
+			);
+
+		new Setting(containerEl)
 			.setName("Sync concurrency")
 			.setDesc(
 				"How many concurrent sync operations to run. Setting this value higher may increase the overall performance, however, it will require more memory as well. If you notice frequent crashes, especially on mobile, set this to 1."

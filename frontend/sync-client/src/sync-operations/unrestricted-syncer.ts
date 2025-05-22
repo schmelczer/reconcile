@@ -16,8 +16,11 @@ import type { FileOperations } from "../file-operations/file-operations";
 import { createPromise } from "../utils/create-promise";
 import { FileNotFoundError } from "../file-operations/file-not-found-error";
 import { SyncResetError } from "../services/sync-reset-error";
+import { makeRe } from "minimatch";
 
 export class UnrestrictedSyncer {
+	private ignorePatterns: RegExp[];
+
 	public constructor(
 		private readonly logger: Logger,
 		private readonly database: Database,
@@ -25,7 +28,16 @@ export class UnrestrictedSyncer {
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
 		private readonly history: SyncHistory
-	) {}
+	) {
+		this.ignorePatterns = this.globsToRegex(
+			this.settings.getSettings().ignorePatterns
+		);
+
+		this.settings.addOnSettingsChangeListener((newSettings) => {
+			this.ignorePatterns = this.globsToRegex(newSettings.ignorePatterns);
+		});
+	}
+
 	public async unrestrictedSyncLocallyCreatedFile(
 		document: DocumentRecord
 	): Promise<void> {
@@ -373,7 +385,14 @@ export class UnrestrictedSyncer {
 		syncType: SyncType,
 		fn: () => Promise<T>
 	): Promise<T | undefined> {
-		this.logger.debug(`Syncing ${relativePath} (${syncType})`);
+		for (const pattern of this.ignorePatterns) {
+			if (pattern.test(relativePath)) {
+				this.logger.debug(
+					`File '${relativePath}' is ignored by the ignore pattern: ${pattern}`
+				);
+				return; // bail without SKIPPED status because we were told to ignore this file and we shouldn't clutter up the history
+			}
+		}
 
 		try {
 			if (await this.operations.exists(relativePath)) {
@@ -385,7 +404,7 @@ export class UnrestrictedSyncer {
 
 				if (sizeInMB > this.settings.getSettings().maxFileSizeMB) {
 					this.history.addHistoryEntry({
-						status: SyncStatus.ERROR,
+						status: SyncStatus.SKIPPED,
 						relativePath,
 						message: `File size of ${sizeInMB} MB exceeds the maximum file size limit of ${
 							this.settings.getSettings().maxFileSizeMB
@@ -421,5 +440,19 @@ export class UnrestrictedSyncer {
 				throw e;
 			}
 		}
+	}
+
+	private globsToRegex(globs: string[]): RegExp[] {
+		return globs
+			.map((pattern) => {
+				const result = makeRe(pattern);
+				if (result === false) {
+					this.logger.warn(
+						`Failed to parse ${pattern}' as a glob pattern, skipping it`
+					);
+				}
+				return result;
+			})
+			.filter((pattern) => pattern !== false);
 	}
 }

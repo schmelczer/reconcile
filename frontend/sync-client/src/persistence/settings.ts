@@ -7,15 +7,17 @@ export interface SyncSettings {
 	syncConcurrency: number;
 	isSyncEnabled: boolean;
 	maxFileSizeMB: number;
+	ignorePatterns: string[];
 }
 
-const DEFAULT_SETTINGS: SyncSettings = {
+export const DEFAULT_SETTINGS: SyncSettings = {
 	remoteUri: "",
 	token: "",
 	vaultName: "default",
 	syncConcurrency: 1,
 	isSyncEnabled: false,
-	maxFileSizeMB: 10
+	maxFileSizeMB: 10,
+	ignorePatterns: []
 };
 
 export class Settings {

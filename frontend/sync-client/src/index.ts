@@ -5,7 +5,7 @@ export {
 	type HistoryEntry
 } from "./tracing/sync-history";
 export { Logger, LogLevel, LogLine } from "./tracing/logger";
-export { type SyncSettings } from "./persistence/settings";
+export { type SyncSettings, DEFAULT_SETTINGS } from "./persistence/settings";
 export { rateLimit } from "./utils/rate-limit";
 export type { RelativePath, StoredDatabase } from "./persistence/database";
 export type {

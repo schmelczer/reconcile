@@ -16,7 +16,8 @@ export enum SyncType {
 
 export enum SyncStatus {
 	SUCCESS = "SUCCESS",
-	ERROR = "ERROR"
+	ERROR = "ERROR",
+	SKIPPED = "SKIPPED"
 }
 
 export type HistoryEntry = CommonHistoryEntry & { timestamp: Date };
