@@ -1,5 +1,9 @@
 use anyhow::Context as _;
-use axum::extract::{Path, State};
+use axum::{
+    Extension,
+    extract::{Path, State},
+};
+use axum_extra::{TypedHeader, headers::UserAgent};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -13,6 +17,7 @@ use crate::{
             DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
         },
     },
+    config::user_config::User,
     errors::{SyncServerError, server_error},
     utils::{normalize::normalize, sanitize_path::sanitize_path},
 };
@@ -32,6 +37,8 @@ pub async fn delete_document(
         vault_id,
         document_id,
     }): Path<DeleteDocumentPathParams>,
+    Extension(user): Extension<User>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
@@ -54,6 +61,8 @@ pub async fn delete_document(
         content: vec![],
         updated_date: chrono::Utc::now(),
         is_deleted: true,
+        user_id: user.name,
+        device_id: user_agent.to_string(),
     };
 
     state

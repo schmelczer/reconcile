@@ -1,6 +1,10 @@
 use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::{Context as _, anyhow};
-use axum::extract::{Path, State};
+use axum::{
+    Extension,
+    extract::{Path, State},
+};
+use axum_extra::{TypedHeader, headers::UserAgent};
 use axum_jsonschema::Json;
 use log::info;
 use schemars::JsonSchema;
@@ -17,6 +21,7 @@ use crate::{
         broadcasts::VaultUpdate,
         database::models::{DeviceId, DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
     },
+    config::user_config::User,
     errors::{SyncServerError, client_error, not_found_error, server_error},
     utils::{dedup_paths::dedup_paths, normalize::normalize, sanitize_path::sanitize_path},
 };
@@ -36,12 +41,16 @@ pub async fn update_document_multipart(
         vault_id,
         document_id,
     }): Path<UpdateDocumentPathParams>,
+    Extension(user): Extension<User>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         UpdateDocumentVersionMultipart,
     >,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     internal_update_document(
+        user,
+        user_agent,
         state,
         vault_id,
         document_id,
@@ -59,6 +68,8 @@ pub async fn update_document_json(
         vault_id,
         document_id,
     }): Path<UpdateDocumentPathParams>,
+    Extension(user): Extension<User>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
     State(state): State<AppState>,
     Json(request): Json<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
@@ -67,6 +78,8 @@ pub async fn update_document_json(
         .map_err(client_error)?;
 
     internal_update_document(
+        user,
+        user_agent,
         state,
         vault_id,
         document_id,
@@ -80,6 +93,8 @@ pub async fn update_document_json(
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn internal_update_document(
+    user: User,
+    user_agent: UserAgent,
     state: AppState,
     vault_id: VaultId,
     document_id: DocumentId,
@@ -198,6 +213,8 @@ async fn internal_update_document(
         content: merged_content,
         updated_date: chrono::Utc::now(),
         is_deleted: false,
+        user_id: user.name,
+        device_id: user_agent.to_string(),
     };
 
     state

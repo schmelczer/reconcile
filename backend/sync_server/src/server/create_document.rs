@@ -1,6 +1,10 @@
 use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::Context as _;
-use axum::extract::{Path, State};
+use axum::{
+    Extension,
+    extract::{Path, State},
+};
+use axum_extra::{TypedHeader, headers::UserAgent};
 use axum_jsonschema::Json;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -15,6 +19,7 @@ use crate::{
             DeviceId, DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
         },
     },
+    config::user_config::User,
     errors::{SyncServerError, client_error, server_error},
     utils::{normalize::normalize, sanitize_path::sanitize_path},
 };
@@ -32,12 +37,16 @@ pub struct CreateDocumentPathParams {
 #[axum::debug_handler]
 pub async fn create_document_multipart(
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
+    Extension(user): Extension<User>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
     State(state): State<AppState>,
     TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
         CreateDocumentVersionMultipart,
     >,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
     internal_create_document(
+        user,
+        user_agent,
         state,
         vault_id,
         request.document_id,
@@ -54,6 +63,8 @@ pub async fn create_document_multipart(
 #[axum::debug_handler]
 pub async fn create_document_json(
     Path(CreateDocumentPathParams { vault_id }): Path<CreateDocumentPathParams>,
+    Extension(user): Extension<User>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
     State(state): State<AppState>,
     Json(request): Json<CreateDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
@@ -62,6 +73,8 @@ pub async fn create_document_json(
         .map_err(client_error)?;
 
     internal_create_document(
+        user,
+        user_agent,
         state,
         vault_id,
         request.document_id,
@@ -72,7 +85,10 @@ pub async fn create_document_json(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn internal_create_document(
+    user: User,
+    user_agent: UserAgent,
     state: AppState,
     vault_id: VaultId,
     document_id: Option<DocumentId>,
@@ -120,6 +136,8 @@ async fn internal_create_document(
         content,
         updated_date: chrono::Utc::now(),
         is_deleted: false,
+        user_id: user.name,
+        device_id: user_agent.to_string(),
     };
 
     state

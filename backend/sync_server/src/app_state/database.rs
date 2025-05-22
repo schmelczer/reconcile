@@ -143,7 +143,9 @@ impl Database {
                 document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             from latest_document_versions
             order by vault_update_id
             "#,
@@ -175,7 +177,9 @@ impl Database {
                 document_id as "document_id: Hyphenated",
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             from latest_document_versions
             where vault_update_id > ?
             order by vault_update_id
@@ -233,7 +237,9 @@ impl Database {
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             from latest_document_versions
             where relative_path = ?
             order by vault_update_id desc  -- `latest_document_versions` only contains a single latest version of each document, however,
@@ -270,7 +276,9 @@ impl Database {
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             from latest_document_versions
             where document_id = ?
             "#,
@@ -302,7 +310,9 @@ impl Database {
                 relative_path,
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 content,
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             from documents
             where vault_update_id = ?"#,
             vault_update_id
@@ -333,16 +343,20 @@ impl Database {
                 relative_path,
                 updated_date,
                 content,
-                is_deleted
+                is_deleted,
+                user_id,
+                device_id
             )
-            values (?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             version.vault_update_id,
             document_id,
             version.relative_path,
             version.updated_date,
             version.content,
-            version.is_deleted
+            version.is_deleted,
+            version.user_id,
+            version.device_id
         );
 
         if let Some(transaction) = transaction {

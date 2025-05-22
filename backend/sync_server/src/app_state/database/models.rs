@@ -6,6 +6,7 @@ use sync_lib::bytes_to_base64;
 pub type VaultId = String;
 pub type VaultUpdateId = i64;
 pub type DocumentId = uuid::Uuid;
+pub type UserId = String;
 pub type DeviceId = String;
 
 #[derive(Debug, Clone)]
@@ -16,6 +17,8 @@ pub struct StoredDocumentVersion {
     pub updated_date: DateTime<Utc>,
     pub content: Vec<u8>,
     pub is_deleted: bool,
+    pub user_id: UserId,
+    pub device_id: DeviceId,
 }
 
 impl PartialEq<Self> for StoredDocumentVersion {
@@ -30,6 +33,8 @@ pub struct DocumentVersionWithoutContent {
     pub relative_path: String,
     pub updated_date: DateTime<Utc>,
     pub is_deleted: bool,
+    pub user_id: UserId,
+    pub device_id: DeviceId,
 }
 
 impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
@@ -40,6 +45,8 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
             relative_path: value.relative_path,
             updated_date: value.updated_date,
             is_deleted: value.is_deleted,
+            user_id: value.user_id,
+            device_id: value.device_id,
         }
     }
 }
@@ -53,6 +60,8 @@ pub struct DocumentVersion {
     pub updated_date: DateTime<Utc>,
     pub content_base64: String,
     pub is_deleted: bool,
+    pub user_id: UserId,
+    pub device_id: DeviceId,
 }
 
 impl From<StoredDocumentVersion> for DocumentVersion {
@@ -64,6 +73,8 @@ impl From<StoredDocumentVersion> for DocumentVersion {
             updated_date: value.updated_date,
             content_base64: bytes_to_base64(&value.content),
             is_deleted: value.is_deleted,
+            user_id: value.user_id,
+            device_id: value.device_id,
         }
     }
 }
