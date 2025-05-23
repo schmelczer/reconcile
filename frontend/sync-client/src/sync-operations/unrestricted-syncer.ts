@@ -45,6 +45,13 @@ export class UnrestrictedSyncer {
 			document.relativePath,
 			SyncType.CREATE,
 			async () => {
+				if (document.isDeleted) {
+					this.logger.debug(
+						`Document ${document.relativePath} has been already deleted, no need to update it`
+					);
+					return;
+				}
+
 				const contentBytes = await this.operations.read(
 					document.relativePath
 				); // this can throw FileNotFoundError
@@ -125,7 +132,7 @@ export class UnrestrictedSyncer {
 			async () => {
 				const originalRelativePath = document.relativePath;
 
-				if (document.metadata === undefined || document.isDeleted) {
+				if (document.isDeleted || document.metadata === undefined) {
 					this.logger.debug(
 						`Document ${document.relativePath} has been already deleted, no need to update it`
 					);
