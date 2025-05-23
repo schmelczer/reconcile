@@ -128,10 +128,15 @@ export class Syncer {
 
 		const [promise, resolve, reject] = createPromise();
 
+		const id = uuidv4();
 		const document = this.database.createNewPendingDocument(
-			uuidv4(),
+			id,
 			relativePath,
 			promise
+		);
+
+		this.logger.debug(
+			`Creating new pending document ${relativePath} with id ${id}`
 		);
 
 		try {
