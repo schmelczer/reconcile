@@ -25,6 +25,6 @@
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"npm-check-updates": "^17.1.16",
 		"prettier": "^3.5.3",
-		"typescript-eslint": "8.29.0"
+		"typescript-eslint": "8.32.1"
 	}
 }
