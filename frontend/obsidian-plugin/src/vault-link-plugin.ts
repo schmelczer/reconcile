@@ -27,7 +27,11 @@ export default class VaultLinkPlugin extends Plugin {
 	>();
 
 	public async onload(): Promise<void> {
-		DEFAULT_SETTINGS.ignorePatterns.push(".obsidian/**", ".git/**");
+		DEFAULT_SETTINGS.ignorePatterns.push(
+			".obsidian/**",
+			".git/**",
+			".trash/**"
+		);
 
 		this.client = await SyncClient.create({
 			fs: new ObsidianFileSystemOperations(
