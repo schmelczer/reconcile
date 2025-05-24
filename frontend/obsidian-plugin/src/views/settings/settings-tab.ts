@@ -311,13 +311,15 @@ export class SyncSettingsTab extends PluginSettingTab {
 							parsedValue =
 								this.syncClient.getSettings().maxFileSizeMB;
 						}
-						this.syncClient.setSetting(
-							"maxFileSizeMB",
-							parsedValue
-						);
+
 						if (value !== parsedValue.toString()) {
 							input.setValue(parsedValue.toString());
 						}
+
+						return this.syncClient.setSetting(
+							"maxFileSizeMB",
+							parsedValue
+						);
 					})
 			);
 

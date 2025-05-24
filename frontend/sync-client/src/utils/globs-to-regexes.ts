@@ -1,5 +1,5 @@
 import { makeRe } from "minimatch";
-import { Logger } from "../tracing/logger";
+import type { Logger } from "../tracing/logger";
 
 export function globsToRegexes(globs: string[], logger: Logger): RegExp[] {
 	return globs
