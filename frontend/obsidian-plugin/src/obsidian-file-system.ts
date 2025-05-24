@@ -26,7 +26,9 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 				break;
 			}
 
-			if (folder.includes(".obsidian")) {
+			// This would be a very bad idea to sync as it would mess with
+			// the integrity of the sync database.
+			if (folder.endsWith(".obsidian/plugins/vault-link/data.json")) {
 				continue;
 			}
 

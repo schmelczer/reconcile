@@ -1,0 +1,16 @@
+import { makeRe } from "minimatch";
+import { Logger } from "../tracing/logger";
+
+export function globsToRegex(globs: string[], logger: Logger): RegExp[] {
+	return globs
+		.map((pattern) => {
+			const result = makeRe(pattern);
+			if (result === false) {
+				logger.warn(
+					`Failed to parse ${pattern}' as a glob pattern, skipping it`
+				);
+			}
+			return result;
+		})
+		.filter((pattern) => pattern !== false);
+}
