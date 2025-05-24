@@ -4,26 +4,22 @@ import type { Logger } from "./logger";
 export interface SyncCreateDetails {
 	type: SyncType.CREATE;
 	relativePath: RelativePath;
-	author?: string;
 }
 
 export interface SyncUpdateDetails {
 	type: SyncType.UPDATE;
 	relativePath: RelativePath;
-	author?: string;
 }
 
 export interface SyncMovedDetails {
 	type: SyncType.MOVE;
 	relativePath: RelativePath;
 	movedFrom: RelativePath;
-	author?: string;
 }
 
 export interface SyncDeleteDetails {
 	type: SyncType.DELETE;
 	relativePath: RelativePath;
-	author?: string;
 }
 
 export interface SyncSkippedDetails {
@@ -42,6 +38,7 @@ export interface CommonHistoryEntry {
 	status: SyncStatus;
 	message: string;
 	details: SyncDetails;
+	author?: string;
 }
 
 export enum SyncType {
@@ -164,6 +161,9 @@ export class SyncHistory {
 			case SyncStatus.ERROR:
 				this.status.error++;
 				this.logger.error(`Cannot sync file: ${message}`);
+				break;
+			case SyncStatus.SKIPPED:
+				this.logger.error(`Skipping file: ${message}`);
 				break;
 		}
 
