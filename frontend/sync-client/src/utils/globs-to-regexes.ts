@@ -1,7 +1,7 @@
 import { makeRe } from "minimatch";
 import { Logger } from "../tracing/logger";
 
-export function globsToRegex(globs: string[], logger: Logger): RegExp[] {
+export function globsToRegexes(globs: string[], logger: Logger): RegExp[] {
 	return globs
 		.map((pattern) => {
 			const result = makeRe(pattern);
