@@ -4,7 +4,9 @@ import { Logger } from "../tracing/logger";
 export function globsToRegexes(globs: string[], logger: Logger): RegExp[] {
 	return globs
 		.map((pattern) => {
-			const result = makeRe(pattern);
+			const result = makeRe(pattern, {
+				dot: true
+			});
 			if (result === false) {
 				logger.warn(
 					`Failed to parse ${pattern}' as a glob pattern, skipping it`

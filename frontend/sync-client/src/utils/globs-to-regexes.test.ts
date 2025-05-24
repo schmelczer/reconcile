@@ -6,5 +6,6 @@ describe("globsToRegexes", () => {
 		const regex = globsToRegexes([".git/**"], new Logger())[0];
 
 		expect(regex.test(".git/objects/object")).toBeTruthy();
+		expect(regex.test(".git/objects/.object")).toBeTruthy();
 	});
 });
