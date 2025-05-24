@@ -297,15 +297,28 @@ export class SyncSettingsTab extends PluginSettingTab {
 			.setDesc(
 				"Set the maximum file size that can be uploaded to the server. Files larger than this size will be ignored."
 			)
-			.addSlider((slider) =>
-				slider
-					.setLimits(1, 64, 1)
-					.setDynamicTooltip()
-					.setInstant(false)
-					.setValue(this.syncClient.getSettings().maxFileSizeMB)
-					.onChange(async (value) =>
-						this.syncClient.setSetting("maxFileSizeMB", value)
+			.addText((input) =>
+				input
+					.setValue(
+						this.syncClient.getSettings().maxFileSizeMB.toString()
 					)
+					.onChange(async (value) => {
+						if (value === "") {
+							return;
+						}
+						let parsedValue = Number.parseFloat(value);
+						if (Number.isNaN(parsedValue) || parsedValue < 0) {
+							parsedValue =
+								this.syncClient.getSettings().maxFileSizeMB;
+						}
+						this.syncClient.setSetting(
+							"maxFileSizeMB",
+							parsedValue
+						);
+						if (value !== parsedValue.toString()) {
+							input.setValue(parsedValue.toString());
+						}
+					})
 			);
 
 		new Setting(containerEl)
