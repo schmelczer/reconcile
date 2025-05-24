@@ -135,8 +135,7 @@ impl Database {
         vault: &VaultId,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<Vec<DocumentVersionWithoutContent>> {
-        let query = sqlx::query_as!(
-            DocumentVersionWithoutContent,
+        let query = sqlx::query!(
             r#"
             select
                 vault_update_id,
@@ -145,7 +144,8 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 is_deleted,
                 user_id,
-                device_id
+                device_id,
+                length(content) as "content_size: u64"
             from latest_document_versions
             order by vault_update_id
             "#,
@@ -159,6 +159,22 @@ impl Database {
                 .await
         }
         .context("Cannot fetch latest documents")
+        .map(|rows| {
+            rows.into_iter()
+                .map(|row| DocumentVersionWithoutContent {
+                    vault_update_id: row.vault_update_id,
+                    document_id: row.document_id.into(),
+                    relative_path: row.relative_path,
+                    updated_date: row.updated_date,
+                    is_deleted: row.is_deleted,
+                    user_id: row.user_id,
+                    device_id: row.device_id,
+                    content_size: row
+                        .content_size
+                        .expect("Content size can't be null but sqlx can't infer it"),
+                })
+                .collect()
+        })
     }
 
     /// Return the latest state of all documents (including deleted) in the
@@ -169,8 +185,7 @@ impl Database {
         vault_update_id: VaultUpdateId,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<Vec<DocumentVersionWithoutContent>> {
-        let query = sqlx::query_as!(
-            DocumentVersionWithoutContent,
+        let query = sqlx::query!(
             r#"
             select
                 vault_update_id,
@@ -179,7 +194,8 @@ impl Database {
                 updated_date as "updated_date: chrono::DateTime<Utc>",
                 is_deleted,
                 user_id,
-                device_id
+                device_id,
+                length(content) as "content_size: u64"
             from latest_document_versions
             where vault_update_id > ?
             order by vault_update_id
@@ -196,6 +212,22 @@ impl Database {
         }
         .with_context(|| {
             format!("Cannot fetch latest documents since vault_update_id {vault_update_id}")
+        })
+        .map(|rows| {
+            rows.into_iter()
+                .map(|row| DocumentVersionWithoutContent {
+                    vault_update_id: row.vault_update_id,
+                    document_id: row.document_id.into(),
+                    relative_path: row.relative_path,
+                    updated_date: row.updated_date,
+                    is_deleted: row.is_deleted,
+                    user_id: row.user_id,
+                    device_id: row.device_id,
+                    content_size: row
+                        .content_size
+                        .expect("Content size can't be null but sqlx can't infer it"),
+                })
+                .collect()
         })
     }
 

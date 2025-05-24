@@ -35,6 +35,7 @@ pub struct DocumentVersionWithoutContent {
     pub is_deleted: bool,
     pub user_id: UserId,
     pub device_id: DeviceId,
+    pub content_size: u64,
 }
 
 impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
@@ -47,6 +48,7 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
             is_deleted: value.is_deleted,
             user_id: value.user_id,
             device_id: value.device_id,
+            content_size: value.content.len() as u64,
         }
     }
 }

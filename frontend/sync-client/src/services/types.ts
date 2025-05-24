@@ -516,6 +516,8 @@ export interface components {
 		/** @description Response to an update document request. */
 		DocumentUpdateResponse:
 			| {
+					/** Format: uint64 */
+					contentSize: number;
 					deviceId: string;
 					/** Format: uuid */
 					documentId: string;
@@ -558,6 +560,8 @@ export interface components {
 			vaultUpdateId: number;
 		};
 		DocumentVersionWithoutContent: {
+			/** Format: uint64 */
+			contentSize: number;
 			deviceId: string;
 			/** Format: uuid */
 			documentId: string;
