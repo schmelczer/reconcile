@@ -42,6 +42,10 @@ export class HistoryView extends ItemView {
 				return "trash-2";
 			case SyncType.UPDATE:
 				return "file-pen-line";
+			case SyncType.MOVE:
+				return "move-right";
+			case SyncType.SKIPPED:
+				return "circle-slash";
 			case undefined:
 			default:
 				return "";
@@ -52,13 +56,17 @@ export class HistoryView extends ItemView {
 		element: HTMLElement,
 		entry: HistoryEntry
 	): void {
-		const syncTypeIcon = HistoryView.getSyncTypeIcon(entry.type);
+		const syncTypeIcon = HistoryView.getSyncTypeIcon(entry.details.type);
 		if (syncTypeIcon) {
 			setIcon(element.createDiv(), syncTypeIcon);
 		}
 
+		const fileName = entry.details.relativePath.split("/").pop();
 		element.createEl("span", {
-			text: entry.relativePath.split("/").pop()
+			text:
+				entry.details.type === SyncType.SKIPPED
+					? `Skipped: ${fileName}`
+					: fileName
 		});
 	}
 
@@ -69,12 +77,19 @@ export class HistoryView extends ItemView {
 		const timestampElement = element.querySelector(
 			".history-card-timestamp"
 		);
+
 		if (timestampElement != null) {
-			timestampElement.textContent = intlFormatDistance(
-				entry.timestamp,
-				new Date()
-			);
+			timestampElement.textContent =
+				HistoryView.getTimestampAndAuthor(entry);
 		}
+	}
+
+	private static getTimestampAndAuthor(entry: HistoryEntry): string {
+		let content = intlFormatDistance(entry.timestamp, new Date());
+		if ("author" in entry && entry.author !== undefined) {
+			content += ` by ${entry.author}`;
+		}
+		return content;
 	}
 
 	public getViewType(): string {
@@ -152,11 +167,14 @@ export class HistoryView extends ItemView {
 				cls: ["history-card", entry.status.toLocaleLowerCase()]
 			},
 			(card) => {
-				if (this.app.vault.getFileByPath(entry.relativePath) !== null) {
+				if (
+					this.app.vault.getFileByPath(entry.details.relativePath) !==
+					null
+				) {
 					card.addEventListener("click", () => {
 						void this.app.workspace.openLinkText(
-							entry.relativePath,
-							entry.relativePath,
+							entry.details.relativePath,
+							entry.details.relativePath,
 							false
 						);
 					});
@@ -180,17 +198,19 @@ export class HistoryView extends ItemView {
 						);
 
 						header.createSpan({
-							text: intlFormatDistance(
-								entry.timestamp,
-								new Date()
-							),
+							text: HistoryView.getTimestampAndAuthor(entry),
 							cls: "history-card-timestamp"
 						});
 					}
 				);
 
+				const body =
+					entry.details.type === SyncType.MOVE
+						? `${entry.message}. Moved from '${entry.details.movedFrom}' to '${entry.details.relativePath}'`
+						: `${entry.message}.`;
+
 				card.createEl("p", {
-					text: `${entry.message}.`,
+					text: body,
 					cls: "history-card-message"
 				});
 			}

@@ -17,6 +17,10 @@
 		background-color: rgba(var(--color-red-rgb), 0.2);
 	}
 
+	&.skipped {
+		background-color: rgba(var(--color-green-rgb), 0.08);
+	}
+
 	.history-card-header {
 		display: flex;
 		justify-content: space-between;
@@ -36,6 +40,10 @@
 			gap: var(--size-4-2);
 			word-break: break-all;
 			margin: 0;
+
+			> span {
+				margin-bottom: var(--size-4-1);
+			}
 		}
 
 		.history-card-timestamp {
