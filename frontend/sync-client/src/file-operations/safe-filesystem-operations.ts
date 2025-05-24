@@ -60,7 +60,7 @@ export class SafeFileSystemOperations implements FileSystemOperations {
 	}
 
 	public async getFileSize(path: RelativePath): Promise<number> {
-		this.logger.debug(`Getting size of file '${path}'`);
+		// Logging this would be too noisy
 		return this.safeOperation(
 			path,
 			this.decorateToHoldLock(path, async () =>

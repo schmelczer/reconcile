@@ -385,7 +385,8 @@ export class Syncer {
 
 		let hasLockToRelease = false;
 		if (document === undefined) {
-			// Let's avoid the same documents getting created in parallel multiple times
+			// Let's avoid the same documents getting created in parallel multiple times.
+			// There might be multiple tasks waiting for the lock
 			await this.remoteDocumentsLock.waitForLock(
 				remoteVersion.documentId
 			);
@@ -396,6 +397,7 @@ export class Syncer {
 		}
 
 		try {
+			// We're either the first one to get the lock, so we have to create the document in `unrestrictedSyncRemotelyUpdatedFile`
 			if (document === undefined) {
 				await this.syncQueue.add(async () =>
 					this.internalSyncer.unrestrictedSyncRemotelyUpdatedFile(
@@ -427,7 +429,7 @@ export class Syncer {
 				}
 			}
 
-			this.database.addLastSeenUpdateId(remoteVersion.vaultUpdateId);
+			this.database.addSeenUpdateId(remoteVersion.vaultUpdateId);
 		} finally {
 			if (hasLockToRelease) {
 				this.remoteDocumentsLock.unlock(remoteVersion.documentId);

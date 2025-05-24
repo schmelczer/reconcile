@@ -292,7 +292,7 @@ export class Database {
 		return this.lastSeenUpdateIds.min;
 	}
 
-	public addLastSeenUpdateId(value: number): void {
+	public addSeenUpdateId(value: number): void {
 		const previousMin = this.lastSeenUpdateIds.min;
 		this.lastSeenUpdateIds.add(value);
 		if (previousMin !== this.lastSeenUpdateIds.min) {
