@@ -36,9 +36,9 @@ module.exports = (env, argv) => ({
 				compiler.hooks.done.tap("Copy Files Plugin", (stats) => {
 					const source = path.resolve(__dirname, "dist");
 					const destinations = [
-						"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/my-plugin",
-						"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/my-plugin",
-						"/home/andras/obsidian-test/.obsidian/plugins/my-plugin"
+						"/mnt/c/Users/Andras/Desktop/test/test/.obsidian/plugins/vault-link",
+						"/mnt/c/Users/Andras/Desktop/test/test2/.obsidian/plugins/vault-link",
+						"/home/andras/obsidian-test/.obsidian/plugins/vault-link"
 					];
 					destinations.forEach((destination) => {
 						fs.copy(source, destination)
