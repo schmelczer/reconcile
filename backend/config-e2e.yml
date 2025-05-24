@@ -10,9 +10,14 @@ server:
   response_timeout_seconds: 60
 
 users:
-  user_tokens:
+  user_configs:
     - name: admin
       token: test-token-change-me
+      vault_access:
+        type: allow_access_to_all
+
+    - name: other-admin
+      token: test-token-change-me2
       vault_access:
         type: allow_access_to_all
 
