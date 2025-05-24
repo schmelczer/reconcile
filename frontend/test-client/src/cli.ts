@@ -4,6 +4,8 @@ import { sleep } from "./utils/sleep";
 import { v4 as uuidv4 } from "uuid";
 import { randomCasing } from "./utils/random-casing";
 
+const TEST_ITERATIONS = 5;
+
 // Simulate async file access by injecting waiting time before returning from file operations.
 let slowFileEvents = false;
 
@@ -109,20 +111,22 @@ async function runTest({
 }
 
 async function runTests(): Promise<void> {
-	for (const useSlowFileEvents of [false, true]) {
-		for (const concurrency of [
-			16,
-			1 // test with concurrency 1 to check for deadlocks
-		]) {
-			for (const doDeletes of [true, false]) {
-				await runTest({
-					agentCount: 2,
-					concurrency,
-					iterations: 100,
-					doDeletes,
-					useSlowFileEvents,
-					jitterScaleInSeconds: 0.75
-				});
+	for (let i = 0; i < TEST_ITERATIONS; i++) {
+		for (const useSlowFileEvents of [false, true]) {
+			for (const concurrency of [
+				16,
+				1 // test with concurrency 1 to check for deadlocks
+			]) {
+				for (const doDeletes of [true, false]) {
+					await runTest({
+						agentCount: 2,
+						concurrency,
+						iterations: 100,
+						doDeletes,
+						useSlowFileEvents,
+						jitterScaleInSeconds: 0.75
+					});
+				}
 			}
 		}
 	}
