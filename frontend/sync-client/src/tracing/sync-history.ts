@@ -1,17 +1,55 @@
 import type { RelativePath } from "../persistence/database";
 import type { Logger } from "./logger";
 
+export interface SyncCreateDetails {
+	type: SyncType.CREATE;
+	relativePath: RelativePath;
+	author?: string;
+}
+
+export interface SyncUpdateDetails {
+	type: SyncType.UPDATE;
+	relativePath: RelativePath;
+	author?: string;
+}
+
+export interface SyncMovedDetails {
+	type: SyncType.MOVE;
+	relativePath: RelativePath;
+	movedFrom: RelativePath;
+	author?: string;
+}
+
+export interface SyncDeleteDetails {
+	type: SyncType.DELETE;
+	relativePath: RelativePath;
+	author?: string;
+}
+
+export interface SyncSkippedDetails {
+	type: SyncType.SKIPPED;
+	relativePath: RelativePath;
+}
+
+export type SyncDetails =
+	| SyncCreateDetails
+	| SyncUpdateDetails
+	| SyncDeleteDetails
+	| SyncMovedDetails
+	| SyncSkippedDetails;
+
 export interface CommonHistoryEntry {
 	status: SyncStatus;
-	relativePath: RelativePath;
 	message: string;
-	type?: SyncType;
+	details: SyncDetails;
 }
 
 export enum SyncType {
 	CREATE = "CREATE",
 	UPDATE = "UPDATE",
-	DELETE = "DELETE"
+	DELETE = "DELETE",
+	MOVE = "MOVE",
+	SKIPPED = "SKIPPED"
 }
 
 export enum SyncStatus {
@@ -28,8 +66,8 @@ export interface HistoryStats {
 }
 
 export class SyncHistory {
-	private static readonly MAX_ENTRIES = 500;
-	private static readonly TIMEOUT_FOR_MERGING_ENTRIES_IN_SECONDS = 15;
+	private static readonly MAX_ENTRIES = 5000;
+	private static readonly TIMEOUT_FOR_MERGING_ENTRIES_IN_SECONDS = 60;
 
 	private _entries: HistoryEntry[] = [];
 
@@ -60,7 +98,7 @@ export class SyncHistory {
 			timestamp: new Date()
 		};
 
-		const candidate = this.findSimilarRecentEntry(historyEntry);
+		const candidate = this.findSimilarRecentUpdateEntry(historyEntry);
 		if (candidate !== undefined) {
 			this._entries = this._entries.filter((e) => e !== candidate);
 		}
@@ -93,11 +131,17 @@ export class SyncHistory {
 		});
 	}
 
-	private findSimilarRecentEntry(
+	private findSimilarRecentUpdateEntry(
 		entry: HistoryEntry
 	): HistoryEntry | undefined {
+		if (entry.details.type !== SyncType.UPDATE) {
+			return;
+		}
+
 		const candidate = this._entries.find(
-			(e) => e.relativePath === entry.relativePath
+			(e) =>
+				e.details.type === SyncType.UPDATE &&
+				e.details.relativePath === entry.details.relativePath
 		);
 		if (
 			candidate !== undefined &&
@@ -111,17 +155,18 @@ export class SyncHistory {
 	}
 
 	private updateSuccessCount(entry: HistoryEntry): void {
-		if (entry.status === SyncStatus.SUCCESS) {
-			this.status.success++;
-			this.logger.info(
-				`History entry: ${entry.relativePath} - ${entry.message}`
-			);
-		} else {
-			this.status.error++;
-			this.logger.error(
-				`Cannot sync file: ${entry.relativePath} - ${entry.message}`
-			);
+		const message = `${entry.details.relativePath} - ${entry.message} (${entry.details.type.toLocaleLowerCase()})`;
+		switch (entry.status) {
+			case SyncStatus.SUCCESS:
+				this.status.success++;
+				this.logger.info(`History entry: ${message}`);
+				break;
+			case SyncStatus.ERROR:
+				this.status.error++;
+				this.logger.error(`Cannot sync file: ${message}`);
+				break;
 		}
+
 		this.syncHistoryUpdateListeners.forEach((listener) => {
 			listener(this.status);
 		});

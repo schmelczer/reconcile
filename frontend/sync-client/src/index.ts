@@ -2,7 +2,12 @@ export {
 	SyncType,
 	SyncStatus,
 	type HistoryStats,
-	type HistoryEntry
+	type HistoryEntry,
+	type SyncDetails,
+	type SyncCreateDetails,
+	type SyncUpdateDetails,
+	type SyncMovedDetails,
+	type SyncDeleteDetails
 } from "./tracing/sync-history";
 export { Logger, LogLevel, LogLine } from "./tracing/logger";
 export { type SyncSettings, DEFAULT_SETTINGS } from "./persistence/settings";
