@@ -155,6 +155,18 @@ export class Syncer {
 	public async syncLocallyDeletedFile(
 		relativePath: RelativePath
 	): Promise<void> {
+		if (
+			this.database.getLatestDocumentByRelativePath(relativePath)
+				?.isDeleted === true
+		) {
+			// This is must be a consequence of us deleting a file because of a remote update
+			// which triggered a local delete, so we don't need to do anything here.
+			this.logger.debug(
+				`Document ${relativePath} has already been markes as deleted, skipping`
+			);
+			return;
+		}
+
 		// We have to have a record of the delete in case there's an in-flight update for the same
 		// document which finishes after the delete has succeeded and would introduce a phantom metadata record.
 		this.database.delete(relativePath);
