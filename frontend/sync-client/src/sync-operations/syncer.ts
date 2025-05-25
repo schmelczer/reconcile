@@ -200,24 +200,37 @@ export class Syncer {
 		oldPath?: RelativePath;
 		relativePath: RelativePath;
 	}): Promise<void> {
-		if (
-			oldPath !== undefined &&
-			(this.database.getLatestDocumentByRelativePath(relativePath) ===
-				undefined ||
+		if (oldPath !== undefined) {
+			// We might have moved the document in the database before calling this method,
+			// in that case, we mustn't move it again.
+			if (
+				this.database.getLatestDocumentByRelativePath(relativePath) ===
+					undefined ||
 				this.database.getLatestDocumentByRelativePath(relativePath)
-					?.isDeleted === true)
-		) {
-			if (oldPath === relativePath) {
-				throw new Error(
-					`Old path and new path are the same: ${oldPath}`
-				);
-			}
+					?.isDeleted === true
+			) {
+				if (oldPath === relativePath) {
+					throw new Error(
+						`Old path and new path are the same: ${oldPath}`
+					);
+				}
 
-			this.database.move(oldPath, relativePath);
+				this.database.move(oldPath, relativePath);
+			}
 		}
 
 		let document =
 			this.database.getLatestDocumentByRelativePath(relativePath);
+
+		if (
+			oldPath !== undefined &&
+			document?.metadata?.remoteRelativePath === relativePath
+		) {
+			this.logger.debug(
+				`Document ${relativePath} has been moved as a result of a remote update, skipping sync`
+			);
+			return;
+		}
 
 		if (document === undefined) {
 			this.logger.debug(

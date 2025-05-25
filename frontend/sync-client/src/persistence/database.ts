@@ -9,12 +9,14 @@ export type RelativePath = string;
 export interface DocumentMetadata {
 	parentVersionId: VaultUpdateId;
 	hash: string;
+	remoteRelativePath?: RelativePath;
 }
 
 export interface StoredDocumentMetadata {
 	relativePath: RelativePath;
 	documentId: DocumentId;
 	parentVersionId: VaultUpdateId;
+	remoteRelativePath?: RelativePath;
 	hash: string;
 }
 
@@ -120,6 +122,7 @@ export class Database {
 		metadata: {
 			parentVersionId: VaultUpdateId;
 			hash: string;
+			remoteRelativePath: RelativePath;
 		},
 		toUpdate: DocumentRecord
 	): void {
@@ -221,7 +224,8 @@ export class Database {
 			documentId,
 			metadata: {
 				parentVersionId,
-				hash: EMPTY_HASH
+				hash: EMPTY_HASH,
+				remoteRelativePath: relativePath
 			},
 			isDeleted: false,
 			updates: [],
