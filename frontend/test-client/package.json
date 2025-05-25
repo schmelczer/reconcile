@@ -1,6 +1,6 @@
 {
     "name": "test-client",
-    "version": "0.3.14",
+    "version": "0.3.15",
     "private": true,
     "bin": {
         "test-client": "./dist/cli.js"
