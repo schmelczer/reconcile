@@ -61,7 +61,9 @@ export class HistoryView extends ItemView {
 			setIcon(element.createDiv(), syncTypeIcon);
 		}
 
-		const fileName = entry.details.relativePath.split("/").pop();
+		let fileName = entry.details.relativePath.split("/").pop() ?? "";
+		fileName = fileName.replace(/\.md$/, "");
+
 		element.createEl("span", {
 			text:
 				entry.details.type === SyncType.SKIPPED
@@ -168,7 +170,7 @@ export class HistoryView extends ItemView {
 			},
 			(card) => {
 				if (
-					this.app.vault.getFileByPath(entry.details.relativePath) !==
+					this.app.vault.getFileByPath(entry.details.relativePath) !=
 					null
 				) {
 					card.addEventListener("click", () => {
