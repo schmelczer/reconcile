@@ -11,7 +11,7 @@
         "test": "jest"
     },
     "devDependencies": {
-        "@types/node": "^22.14.0",
+        "@types/node": "^22.15.27",
         "sync-client": "file:../sync-client",
         "ts-loader": "^9.5.2",
         "tslib": "2.8.1",
