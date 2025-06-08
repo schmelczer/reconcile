@@ -17,7 +17,6 @@ import type {
 } from "../tracing/sync-history";
 import { SyncStatus, SyncType } from "../tracing/sync-history";
 import { EMPTY_HASH, hash } from "../utils/hash";
-import type { components } from "../services/types";
 import { deserialize } from "../utils/deserialize";
 import type { Settings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
@@ -25,6 +24,9 @@ import { createPromise } from "../utils/create-promise";
 import { FileNotFoundError } from "../file-operations/file-not-found-error";
 import { SyncResetError } from "../services/sync-reset-error";
 import { globsToRegexes } from "../utils/globs-to-regexes";
+import type { DocumentVersion } from "../services/types/DocumentVersion";
+import type { DocumentUpdateResponse } from "../services/types/DocumentUpdateResponse";
+import type { DocumentVersionWithoutContent } from "../services/types/DocumentVersionWithoutContent";
 
 export class UnrestrictedSyncer {
 	private ignorePatterns: RegExp[];
@@ -172,10 +174,8 @@ export class UnrestrictedSyncer {
 				document.metadata.hash === contentHash && oldPath === undefined
 			);
 
-			let response:
-				| components["schemas"]["DocumentVersion"]
-				| components["schemas"]["DocumentUpdateResponse"]
-				| undefined = undefined;
+			let response: DocumentVersion | DocumentUpdateResponse | undefined =
+				undefined;
 
 			if (areThereLocalChanges) {
 				response = await this.syncService.put({
@@ -332,7 +332,7 @@ export class UnrestrictedSyncer {
 	}
 
 	public async unrestrictedSyncRemotelyUpdatedFile(
-		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"],
+		remoteVersion: DocumentVersionWithoutContent,
 		document?: DocumentRecord
 	): Promise<void> {
 		const updateDetails: SyncCreateDetails = {

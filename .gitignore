@@ -7,11 +7,12 @@ node_modules
 # Rust build folder
 backend/target
 
+# Frontend build folders
 frontend/*/dist
 
 backend/db.sqlite3*
 backend/databases
+backend/sync_server/bindings/*.ts
 
 *.log
-
 *.sqlx

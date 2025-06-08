@@ -51,7 +51,10 @@ export class ConnectionStatus {
 		logger: Logger,
 		fetch: typeof globalThis.fetch = globalThis.fetch
 	): typeof globalThis.fetch {
-		return async (input: RequestInfo | URL): Promise<Response> => {
+		return async (
+			input: RequestInfo | URL,
+			init?: RequestInit
+		): Promise<Response> => {
 			while (!this.canFetch) {
 				await this.until;
 			}
@@ -63,7 +66,7 @@ export class ConnectionStatus {
 						? input.clone()
 						: input;
 
-				const fetchPromise = fetch(_input);
+				const fetchPromise = fetch(_input, init);
 
 				// We only want to catch rejections from `this.until`
 				let result: symbol | Response | undefined = undefined;

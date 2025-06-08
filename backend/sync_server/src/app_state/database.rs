@@ -6,23 +6,29 @@ use models::{
     DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId, VaultUpdateId,
 };
 use sqlx::{sqlite::SqliteConnectOptions, types::chrono::Utc};
+
 pub mod models;
 use sqlx::{Pool, Sqlite, sqlite::SqlitePoolOptions};
 use tokio::sync::Mutex;
 use uuid::fmt::Hyphenated;
 
+use super::websocket::{
+    broadcasts::Broadcasts,
+    models::{WebSocketServerMessage, WebSocketServerMessageWithOrigin, WebSocketVaultUpdate},
+};
 use crate::config::database_config::DatabaseConfig;
 
 #[derive(Clone, Debug)]
 pub struct Database {
     config: DatabaseConfig,
+    broadcasts: Broadcasts,
     connection_pools: Arc<Mutex<HashMap<VaultId, Pool<Sqlite>>>>,
 }
 
 pub type Transaction<'a> = sqlx::Transaction<'a, Sqlite>;
 
 impl Database {
-    pub async fn try_new(config: &DatabaseConfig) -> Result<Self> {
+    pub async fn try_new(config: &DatabaseConfig, broadcasts: &Broadcasts) -> Result<Self> {
         tokio::fs::create_dir_all(&config.databases_directory_path)
             .await
             .with_context(|| {
@@ -55,6 +61,7 @@ impl Database {
         Ok(Self {
             config: config.clone(),
             connection_pools: Arc::new(Mutex::new(connection_pools)),
+            broadcasts: broadcasts.clone(),
         })
     }
 
@@ -362,7 +369,7 @@ impl Database {
 
     pub async fn insert_document_version(
         &self,
-        vault: &VaultId,
+        vault_id: &VaultId,
         version: &StoredDocumentVersion,
         transaction: Option<&mut Transaction<'_>>,
     ) -> Result<()> {
@@ -394,9 +401,24 @@ impl Database {
         if let Some(transaction) = transaction {
             query.execute(&mut **transaction).await
         } else {
-            query.execute(&self.get_connection_pool(vault).await?).await
+            query
+                .execute(&self.get_connection_pool(vault_id).await?)
+                .await
         }
         .context("Cannot insert document version")?;
+
+        self.broadcasts
+            .send_document_update(
+                vault_id.clone(),
+                WebSocketServerMessageWithOrigin::with_origin(
+                    version.device_id.clone(),
+                    WebSocketServerMessage::VaultUpdate(WebSocketVaultUpdate {
+                        documents: vec![version.clone().into()],
+                        is_initial_sync: false,
+                    }),
+                ),
+            )
+            .await;
 
         Ok(())
     }

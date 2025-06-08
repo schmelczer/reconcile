@@ -1,11 +1,13 @@
-pub mod broadcasts;
+pub mod cursors;
 pub mod database;
+pub mod websocket;
 
 use std::ffi::OsString;
 
 use anyhow::Result;
-use broadcasts::Broadcasts;
+use cursors::Cursors;
 use database::Database;
+use websocket::broadcasts::Broadcasts;
 
 use crate::{config::Config, consts::DEFAULT_CONFIG_PATH};
 
@@ -13,6 +15,7 @@ use crate::{config::Config, consts::DEFAULT_CONFIG_PATH};
 pub struct AppState {
     pub config: Config,
     pub database: Database,
+    pub cursors: Cursors,
     pub broadcasts: Broadcasts,
 }
 
@@ -22,12 +25,16 @@ impl AppState {
         let path = std::path::PathBuf::from(config_path);
 
         let config = Config::read_or_create(&path).await?;
-        let database = Database::try_new(&config.database).await?;
         let broadcasts = Broadcasts::new(&config.server);
+        let database = Database::try_new(&config.database, &broadcasts).await?;
+        let cursors: Cursors = Cursors::new(&config.database, &broadcasts);
+
+        Cursors::start_background_task(cursors.clone());
 
         Ok(Self {
             config,
             database,
+            cursors,
             broadcasts,
         })
     }

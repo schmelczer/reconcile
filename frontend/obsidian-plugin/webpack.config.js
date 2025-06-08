@@ -12,7 +12,16 @@ module.exports = (env, argv) => ({
 		ignored: "**/node_modules"
 	},
 	externals: {
-		obsidian: "commonjs obsidian"
+		obsidian: "commonjs obsidian",
+		electron: "commonjs electron",
+		"@codemirror/autocomplete": "commonjs @codemirror/autocomplete",
+		"@codemirror/collab": "commonjs @codemirror/collab",
+		"@codemirror/commands": "commonjs @codemirror/commands",
+		"@codemirror/language": "commonjs @codemirror/language",
+		"@codemirror/lint": "commonjs @codemirror/lint",
+		"@codemirror/search": "commonjs @codemirror/search",
+		"@codemirror/state": "commonjs @codemirror/state",
+		"@codemirror/view": "commonjs @codemirror/view"
 	},
 	optimization: {
 		minimizer: [

@@ -3,7 +3,6 @@ use axum::{
     body::Bytes,
     extract::{Path, State},
 };
-use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::{
@@ -15,8 +14,7 @@ use crate::{
     utils::normalize::normalize,
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct FetchDocumentVersionContentPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,

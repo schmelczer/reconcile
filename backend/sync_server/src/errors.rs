@@ -1,15 +1,14 @@
 use std::fmt::Display;
 
-use aide::OperationOutput;
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use log::{error, info};
-use schemars::JsonSchema;
+use log::{debug, error};
 use serde::Serialize;
 use thiserror::Error;
+use ts_rs::TS;
 
 #[derive(Error, Debug)]
 pub enum SyncServerError {
@@ -45,8 +44,11 @@ impl SyncServerError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct SerializedError {
+    pub error_type: &'static str,
     pub message: String,
     pub causes: Vec<String>,
 }
@@ -90,41 +92,49 @@ impl From<&anyhow::Error> for SerializedError {
         }
 
         SerializedError {
+            error_type: error.downcast_ref::<SyncServerError>().map_or(
+                "UnknownError",
+                |e| match e {
+                    SyncServerError::InitError(_) => "InitError",
+                    SyncServerError::ClientError(_) => "ClientError",
+                    SyncServerError::ServerError(_) => "ServerError",
+                    SyncServerError::NotFound(_) => "NotFound",
+                    SyncServerError::Unauthenticated(_) => "Unauthenticated",
+                    SyncServerError::PermissionDeniedError(_) => "PermissionDeniedError",
+                },
+            ),
             message: error.to_string(),
             causes,
         }
     }
 }
 
-impl OperationOutput for SyncServerError {
-    type Inner = Self;
-}
-
-pub const fn init_error(error: anyhow::Error) -> SyncServerError {
+pub fn init_error(error: anyhow::Error) -> SyncServerError {
+    debug!("Initialization error: {error:?}");
     SyncServerError::InitError(error)
 }
 
 pub fn server_error(error: anyhow::Error) -> SyncServerError {
-    error!("Server error: {error:?}");
+    debug!("Server error: {error:?}");
     SyncServerError::ServerError(error)
 }
 
 pub fn client_error(error: anyhow::Error) -> SyncServerError {
-    info!("Client error: {error:?}");
+    debug!("Client error: {error:?}");
     SyncServerError::ClientError(error)
 }
 
 pub fn not_found_error(error: anyhow::Error) -> SyncServerError {
-    info!("Not found: {error:?}");
+    debug!("Not found: {error:?}");
     SyncServerError::NotFound(error)
 }
 
 pub fn unauthenticated_error(error: anyhow::Error) -> SyncServerError {
-    info!("Unauthenticated user: {error:?}");
+    debug!("Unauthenticated user: {error:?}");
     SyncServerError::Unauthenticated(error)
 }
 
 pub fn permission_denied_error(error: anyhow::Error) -> SyncServerError {
-    info!("Permission denied: {error:?}");
+    debug!("Permission denied: {error:?}");
     SyncServerError::PermissionDeniedError(error)
 }

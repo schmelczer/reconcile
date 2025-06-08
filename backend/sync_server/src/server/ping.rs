@@ -6,7 +6,6 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::{auth::auth, responses::PingResponse};
@@ -16,8 +15,7 @@ use crate::{
     utils::normalize::normalize,
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct PingPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,

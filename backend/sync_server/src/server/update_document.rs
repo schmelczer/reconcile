@@ -1,34 +1,29 @@
-use aide_axum_typed_multipart::TypedMultipart;
 use anyhow::{Context as _, anyhow};
 use axum::{
-    Extension,
+    Extension, Json,
     extract::{Path, State},
 };
 use axum_extra::TypedHeader;
-use axum_jsonschema::Json;
+use axum_typed_multipart::TypedMultipart;
 use log::info;
-use schemars::JsonSchema;
 use serde::Deserialize;
-use sync_lib::{base64_to_bytes, is_file_type_mergable, merge};
+use sync_lib::{is_file_type_mergable, merge};
 
 use super::{
-    device_id_header::DeviceIdHeader,
-    requests::{UpdateDocumentVersion, UpdateDocumentVersionMultipart},
+    device_id_header::DeviceIdHeader, requests::UpdateDocumentVersion,
     responses::DocumentUpdateResponse,
 };
 use crate::{
     app_state::{
         AppState,
-        broadcasts::VaultUpdate,
-        database::models::{DeviceId, DocumentId, StoredDocumentVersion, VaultId, VaultUpdateId},
+        database::models::{DocumentId, StoredDocumentVersion, VaultId},
     },
     config::user_config::User,
-    errors::{SyncServerError, client_error, not_found_error, server_error},
+    errors::{SyncServerError, not_found_error, server_error},
     utils::{dedup_paths::dedup_paths, normalize::normalize, sanitize_path::sanitize_path},
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct UpdateDocumentPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
@@ -37,90 +32,34 @@ pub struct UpdateDocumentPathParams {
 }
 
 #[axum::debug_handler]
-pub async fn update_document_multipart(
+#[allow(clippy::too_many_lines)]
+pub async fn update_document(
     Path(UpdateDocumentPathParams {
         vault_id,
         document_id,
     }): Path<UpdateDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
+    TypedHeader(device_id): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
-    TypedMultipart(axum_typed_multipart::TypedMultipart(request)): TypedMultipart<
-        UpdateDocumentVersionMultipart,
-    >,
-) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
-    internal_update_document(
-        user,
-        user_agent,
-        state,
-        vault_id,
-        document_id,
-        request.parent_version_id,
-        request.relative_path,
-        request.device_id,
-        request.content.contents.to_vec(),
-    )
-    .await
-}
-
-#[axum::debug_handler]
-pub async fn update_document_json(
-    Path(UpdateDocumentPathParams {
-        vault_id,
-        document_id,
-    }): Path<UpdateDocumentPathParams>,
-    Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
-    State(state): State<AppState>,
-    Json(request): Json<UpdateDocumentVersion>,
-) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
-    let content_bytes = base64_to_bytes(&request.content_base64)
-        .context("Failed to decode base64 content in request")
-        .map_err(client_error)?;
-
-    internal_update_document(
-        user,
-        user_agent,
-        state,
-        vault_id,
-        document_id,
-        request.parent_version_id,
-        request.relative_path,
-        request.device_id,
-        content_bytes,
-    )
-    .await
-}
-
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
-async fn internal_update_document(
-    user: User,
-    user_agent: DeviceIdHeader,
-    state: AppState,
-    vault_id: VaultId,
-    document_id: DocumentId,
-    parent_version_id: VaultUpdateId,
-    relative_path: String,
-    device_id: Option<DeviceId>,
-    content: Vec<u8>,
+    TypedMultipart(request): TypedMultipart<UpdateDocumentVersion>,
 ) -> Result<Json<DocumentUpdateResponse>, SyncServerError> {
     // No need for a transaction as document versions are immutable
     let parent_document = state
         .database
-        .get_document_version(&vault_id, parent_version_id, None)
+        .get_document_version(&vault_id, request.parent_version_id, None)
         .await
         .map_err(server_error)?
         .map_or_else(
             || {
                 Err(not_found_error(anyhow!(
                     "Parent version with id `{}` not found",
-                    parent_version_id
+                    request.parent_version_id
                 )))
             },
             Ok,
         )?;
 
-    let sanitized_relative_path = sanitize_path(&relative_path);
+    let sanitized_relative_path = sanitize_path(&request.relative_path);
 
     let mut transaction = state
         .database
@@ -159,6 +98,8 @@ async fn internal_update_document(
             latest_version.into(),
         )));
     }
+
+    let content = request.content.contents.to_vec();
 
     // Return the latest version if the content and path are the same as the latest
     // version
@@ -215,7 +156,7 @@ async fn internal_update_document(
         updated_date: chrono::Utc::now(),
         is_deleted: false,
         user_id: user.name,
-        device_id: user_agent.0,
+        device_id: device_id.0,
     };
 
     state
@@ -229,17 +170,6 @@ async fn internal_update_document(
         .await
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
-
-    state
-        .broadcasts
-        .send(
-            vault_id,
-            VaultUpdate {
-                origin_device_id: device_id,
-                document: new_version.clone().into(),
-            },
-        )
-        .await;
 
     Ok(Json(if is_different_from_request_content {
         DocumentUpdateResponse::MergingUpdate(new_version.into())

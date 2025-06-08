@@ -1,4 +1,4 @@
-mod auth;
+pub mod auth;
 mod create_document;
 mod delete_document;
 mod device_id_header;
@@ -6,35 +6,27 @@ mod fetch_document_version;
 mod fetch_document_version_content;
 mod fetch_latest_document_version;
 mod fetch_latest_documents;
+mod index;
 mod ping;
 mod requests;
 mod responses;
 mod update_document;
 mod websocket;
 
-use std::{ffi::OsString, sync::Arc, time::Duration};
+use std::{ffi::OsString, time::Duration};
 
-use aide::{
-    axum::{
-        ApiRouter,
-        routing::{delete, get, post, put},
-    },
-    openapi::{Info, OpenApi},
-    scalar::Scalar,
-    transform::TransformOpenApi,
-};
 use anyhow::{Context as _, Result, anyhow};
 use auth::auth_middleware;
 use axum::{
-    Extension, Json,
+    Router,
     extract::{DefaultBodyLimit, Request},
     http::{self, HeaderValue, Method},
     middleware,
     response::IntoResponse,
-    routing::IntoMakeService,
+    routing::{IntoMakeService, delete, get, post, put},
 };
 use device_id_header::DEVICE_ID_HEADER_NAME;
-use log::{error, info};
+use log::info;
 use tokio::signal;
 use tower_http::{
     LatencyUnit,
@@ -51,26 +43,21 @@ use tracing::{Level, info_span};
 use crate::{
     app_state::AppState,
     config::server_config::ServerConfig,
-    errors::{SerializedError, client_error, not_found_error},
+    errors::{client_error, not_found_error},
 };
 
 pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
-    aide::r#gen::on_error(|err| error!("{err}"));
-    aide::r#gen::extract_schemas(true);
-
     let app_state = AppState::try_new(config_path)
         .await
         .context("Failed to initialise app state")?;
 
     let server_config = app_state.config.server.clone();
 
-    let mut api = create_open_api();
-    let app = ApiRouter::new()
+    let app = Router::new()
         .nest("/", get_authed_routes(app_state.clone()))
-        .api_route("/vaults/:vault_id/ping", get(ping::ping))
+        .route("/", get(index::index))
+        .route("/vaults/:vault_id/ping", get(ping::ping))
         .route("/vaults/:vault_id/ws", get(websocket::websocket_handler))
-        .route("/", Scalar::new("/api.json").axum_route())
-        .route("/api.json", axum::routing::get(serve_api))
         .layer(DefaultBodyLimit::disable())
         .layer(RequestBodyLimitLayer::new(
             app_state.config.server.max_body_size_mb * 1024 * 1024,
@@ -108,8 +95,6 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
                 .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
         )
         .with_state(app_state)
-        .finish_api_with(&mut api, add_api_docs_error_example)
-        .layer(Extension(Arc::new(api))) // https://github.com/tamasfe/aide/blob/507f4a8822bc0c13cbda0f589da1e0f4cbcdb812/examples/example-axum/src/main.rs#L39
         .fallback(handle_404)
         .fallback(handle_405)
         .into_make_service();
@@ -117,67 +102,33 @@ pub async fn create_server(config_path: Option<OsString>) -> Result<()> {
     start_server(app, &server_config).await
 }
 
-async fn serve_api(Extension(api): Extension<Arc<OpenApi>>) -> impl IntoResponse { Json(api) }
-
-fn create_open_api() -> OpenApi {
-    OpenApi {
-        info: Info {
-            title: "VaultLink sync server".to_owned(),
-            summary: Some(
-                "Simple API for syncing documents between concurrent clients.".to_owned(),
-            ),
-            description: Some(include_str!("../README.md").to_owned()),
-            version: env!("CARGO_PKG_VERSION").to_owned(),
-            ..Info::default()
-        },
-        ..OpenApi::default()
-    }
-}
-
-fn add_api_docs_error_example(api: TransformOpenApi<'_>) -> TransformOpenApi<'_> {
-    api.default_response_with::<Json<SerializedError>, _>(|res| {
-        res.example(SerializedError {
-            message: "An error has occurred".to_owned(),
-            causes: vec![],
-        })
-    })
-}
-
-fn get_authed_routes(app_state: AppState) -> ApiRouter<AppState> {
-    ApiRouter::new()
-        .api_route(
+fn get_authed_routes(app_state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
             "/vaults/:vault_id/documents",
             get(fetch_latest_documents::fetch_latest_documents),
         )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents",
-            post(create_document::create_document_multipart),
+            post(create_document::create_document),
         )
-        .api_route(
-            "/vaults/:vault_id/documents/json",
-            post(create_document::create_document_json),
-        )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents/:document_id",
             get(fetch_latest_document_version::fetch_latest_document_version),
         )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents/:document_id",
-            put(update_document::update_document_multipart),
+            put(update_document::update_document),
         )
-        .api_route(
-            "/vaults/:vault_id/documents/:document_id/json",
-            put(update_document::update_document_json),
-        )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents/:document_id/versions/:version_id",
             put(fetch_document_version::fetch_document_version),
         )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents/:document_id/versions/:version_id/content",
             put(fetch_document_version_content::fetch_document_version_content),
         )
-        .api_route(
+        .route(
             "/vaults/:vault_id/documents/:document_id",
             delete(delete_document::delete_document),
         )

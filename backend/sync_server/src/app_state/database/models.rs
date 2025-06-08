@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
-use schemars::JsonSchema;
 use serde::Serialize;
 use sync_lib::bytes_to_base64;
+use ts_rs::TS;
 
 pub type VaultId = String;
 pub type VaultUpdateId = i64;
+
 pub type DocumentId = uuid::Uuid;
 pub type UserId = String;
 pub type DeviceId = String;
@@ -25,16 +26,20 @@ impl PartialEq<Self> for StoredDocumentVersion {
     fn eq(&self, other: &Self) -> bool { self.vault_update_id == other.vault_update_id }
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentVersionWithoutContent {
+    #[ts(as = "i32")]
     pub vault_update_id: VaultUpdateId,
+
     pub document_id: DocumentId,
     pub relative_path: String,
     pub updated_date: DateTime<Utc>,
     pub is_deleted: bool,
     pub user_id: UserId,
     pub device_id: DeviceId,
+
+    #[ts(as = "i32")]
     pub content_size: u64,
 }
 
@@ -53,10 +58,12 @@ impl From<StoredDocumentVersion> for DocumentVersionWithoutContent {
     }
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentVersion {
+    #[ts(as = "i32")]
     pub vault_update_id: VaultUpdateId,
+
     pub document_id: DocumentId,
     pub relative_path: String,
     pub updated_date: DateTime<Utc>,

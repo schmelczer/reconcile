@@ -1,13 +1,14 @@
-use schemars::JsonSchema;
 use serde::{self, Serialize};
+use ts_rs::TS;
 
 use crate::app_state::database::models::{
     DocumentVersion, DocumentVersionWithoutContent, VaultUpdateId,
 };
 
 /// Response to a ping request.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct PingResponse {
     /// Semantic version of the server.
     pub server_version: String,
@@ -18,8 +19,9 @@ pub struct PingResponse {
 }
 
 /// Response to a fetch latest documents request.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct FetchLatestDocumentsResponse {
     pub latest_documents: Vec<DocumentVersionWithoutContent>,
 
@@ -28,8 +30,9 @@ pub struct FetchLatestDocumentsResponse {
 }
 
 /// Response to an update document request.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(TS, Debug, Clone, Serialize)]
 #[serde(tag = "type")]
+#[ts(export)]
 pub enum DocumentUpdateResponse {
     /// Returned when the created/updated document's content is the same as was
     /// sent in the create/update request and thus the response doesn't contain

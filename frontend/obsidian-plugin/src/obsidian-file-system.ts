@@ -7,6 +7,7 @@ import type {
 } from "sync-client";
 import { lineAndColumnToPosition } from "./utils/line-and-column-to-position";
 import { positionToLineAndColumn } from "./utils/position-to-line-and-column";
+import { getCursorsFromEditor } from "./views/cursors/get-cursors-from-editor";
 
 export class ObsidianFileSystemOperations implements FileSystemOperations {
 	public constructor(
@@ -78,26 +79,19 @@ export class ObsidianFileSystemOperations implements FileSystemOperations {
 
 		if (view?.file?.path === path) {
 			const text = view.editor.getValue();
-			const cursors = view.editor
-				.listSelections()
-				.flatMap(({ anchor, head }, i) => [
+
+			const cursors = getCursorsFromEditor(view.editor).flatMap(
+				({ id, start: anchor, end: head }) => [
 					{
-						id: 2 * i,
-						characterPosition: lineAndColumnToPosition(
-							text,
-							anchor.line,
-							anchor.ch
-						)
+						id: 2 * id,
+						characterPosition: anchor
 					},
 					{
-						id: 2 * i + 1,
-						characterPosition: lineAndColumnToPosition(
-							text,
-							head.line,
-							head.ch
-						)
+						id: 2 * id + 1,
+						characterPosition: head
 					}
-				]);
+				]
+			);
 
 			const result = updater({
 				text,

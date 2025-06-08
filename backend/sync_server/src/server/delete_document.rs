@@ -1,18 +1,15 @@
 use anyhow::Context as _;
 use axum::{
-    Extension,
+    Extension, Json,
     extract::{Path, State},
 };
 use axum_extra::TypedHeader;
-use axum_jsonschema::Json;
-use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::{device_id_header::DeviceIdHeader, requests::DeleteDocumentVersion};
 use crate::{
     app_state::{
         AppState,
-        broadcasts::VaultUpdate,
         database::models::{
             DocumentId, DocumentVersionWithoutContent, StoredDocumentVersion, VaultId,
         },
@@ -22,8 +19,7 @@ use crate::{
     utils::{normalize::normalize, sanitize_path::sanitize_path},
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct DeleteDocumentPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
@@ -38,7 +34,7 @@ pub async fn delete_document(
         document_id,
     }): Path<DeleteDocumentPathParams>,
     Extension(user): Extension<User>,
-    TypedHeader(user_agent): TypedHeader<DeviceIdHeader>,
+    TypedHeader(device_id): TypedHeader<DeviceIdHeader>,
     State(state): State<AppState>,
     Json(request): Json<DeleteDocumentVersion>,
 ) -> Result<Json<DocumentVersionWithoutContent>, SyncServerError> {
@@ -69,7 +65,7 @@ pub async fn delete_document(
         updated_date: chrono::Utc::now(),
         is_deleted: true,
         user_id: user.name,
-        device_id: user_agent.0,
+        device_id: device_id.0,
     };
 
     state
@@ -83,17 +79,6 @@ pub async fn delete_document(
         .await
         .context("Failed to commit successful transaction")
         .map_err(server_error)?;
-
-    state
-        .broadcasts
-        .send(
-            vault_id,
-            VaultUpdate {
-                origin_device_id: request.device_id,
-                document: new_version.clone().into(),
-            },
-        )
-        .await;
 
     Ok(Json(new_version.into()))
 }

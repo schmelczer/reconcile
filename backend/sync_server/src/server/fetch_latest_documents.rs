@@ -1,6 +1,7 @@
-use axum::extract::{Path, Query, State};
-use axum_jsonschema::Json;
-use schemars::JsonSchema;
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
 use serde::Deserialize;
 
 use super::responses::FetchLatestDocumentsResponse;
@@ -13,15 +14,13 @@ use crate::{
     utils::normalize::normalize,
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct FetchLatestDocumentsPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,
 }
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct QueryParams {
     since_update_id: Option<VaultUpdateId>,
 }

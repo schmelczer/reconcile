@@ -9,7 +9,6 @@ import type { Logger } from "../tracing/logger";
 import PQueue from "p-queue";
 import { hash } from "../utils/hash";
 import { v4 as uuidv4 } from "uuid";
-import type { components } from "../services/types";
 import type { Settings, SyncSettings } from "../persistence/settings";
 import type { FileOperations } from "../file-operations/file-operations";
 import { findMatchingFile } from "../utils/find-matching-file";
@@ -17,27 +16,16 @@ import type { UnrestrictedSyncer } from "./unrestricted-syncer";
 import { createPromise } from "../utils/create-promise";
 import { SyncResetError } from "../services/sync-reset-error";
 import { Locks } from "../utils/locks";
-
-interface WebsocketVaultUpdate {
-	documents: components["schemas"]["DocumentVersionWithoutContent"][];
-	isInitialSync: boolean;
-}
+import type { DocumentVersionWithoutContent } from "../services/types/DocumentVersionWithoutContent";
 
 export class Syncer {
 	private readonly remoteDocumentsLock: Locks<DocumentId>;
 	private readonly remainingOperationsListeners: ((
 		remainingOperations: number
 	) => void)[] = [];
-	private readonly webSocketStatusChangeListeners: (() => void)[] = [];
 	private readonly syncQueue: PQueue;
 
 	private runningScheduleSyncForOfflineChanges: Promise<void> | undefined;
-	private refreshApplyRemoteChangesWebSocketInterval:
-		| NodeJS.Timeout
-		| undefined;
-	private applyRemoteChangesWebSocket: WebSocket | undefined;
-
-	private readonly webSocketImplementation: typeof globalThis.WebSocket;
 
 	// eslint-disable-next-line @typescript-eslint/max-params
 	public constructor(
@@ -47,41 +35,15 @@ export class Syncer {
 		private readonly settings: Settings,
 		private readonly syncService: SyncService,
 		private readonly operations: FileOperations,
-		private readonly internalSyncer: UnrestrictedSyncer,
-		webSocketImplementation?: typeof globalThis.WebSocket
+		private readonly internalSyncer: UnrestrictedSyncer
 	) {
 		this.syncQueue = new PQueue({
 			concurrency: settings.getSettings().syncConcurrency
 		});
 
-		if (webSocketImplementation) {
-			this.webSocketImplementation = webSocketImplementation;
-		} else {
-			if (
-				typeof globalThis !== "undefined" &&
-				typeof globalThis.WebSocket === "undefined"
-			) {
-				// eslint-disable-next-line
-				this.webSocketImplementation = require("ws"); // polyfill for WebSocket in Node.js
-			} else {
-				this.webSocketImplementation = WebSocket;
-			}
-		}
-
-		this.updateWebSocket(settings.getSettings());
-
 		this.remoteDocumentsLock = new Locks<DocumentId>(this.logger);
 
 		settings.addOnSettingsChangeListener((newSettings, oldSettings) => {
-			if (
-				newSettings.remoteUri !== oldSettings.remoteUri ||
-				newSettings.vaultName !== oldSettings.vaultName ||
-				newSettings.token !== oldSettings.token ||
-				newSettings.isSyncEnabled !== oldSettings.isSyncEnabled
-			) {
-				this.updateWebSocket(newSettings);
-			}
-
 			if (newSettings.syncConcurrency !== oldSettings.syncConcurrency) {
 				this.syncQueue.concurrency = newSettings.syncConcurrency;
 			}
@@ -92,25 +54,12 @@ export class Syncer {
 				listener(this.syncQueue.size);
 			});
 		});
-
-		this.setWebSocketRefreshInterval();
-	}
-
-	public get isWebSocketConnected(): boolean {
-		return (
-			this.applyRemoteChangesWebSocket?.readyState ===
-			this.webSocketImplementation.OPEN
-		);
 	}
 
 	public addRemainingOperationsListener(
 		listener: (remainingOperations: number) => void
 	): void {
 		this.remainingOperationsListeners.push(listener);
-	}
-
-	public addWebSocketStatusChangeListener(listener: () => void): void {
-		this.webSocketStatusChangeListeners.push(listener);
 	}
 
 	public async syncLocallyCreatedFile(
@@ -303,106 +252,10 @@ export class Syncer {
 
 	public async reset(): Promise<void> {
 		await this.waitUntilFinished();
-		this.setWebSocketRefreshInterval();
-		this.updateWebSocket(this.settings.getSettings());
 	}
 
-	public stop(): void {
-		clearInterval(this.refreshApplyRemoteChangesWebSocketInterval);
-
-		try {
-			this.applyRemoteChangesWebSocket?.close();
-		} catch (e) {
-			this.logger.warn(`Failed to close WebSocket: ${e}`);
-		}
-	}
-
-	private updateWebSocket(settings: SyncSettings): void {
-		try {
-			this.applyRemoteChangesWebSocket?.close();
-		} catch (e) {
-			this.logger.warn(`Failed to close WebSocket: ${e}`);
-		}
-
-		if (!settings.isSyncEnabled) {
-			this.applyRemoteChangesWebSocket = undefined;
-			return;
-		}
-
-		const wsUri = new URL(settings.remoteUri);
-		wsUri.protocol = wsUri.protocol === "https" ? "wss" : "ws";
-		wsUri.pathname = `/vaults/${settings.vaultName}/ws`;
-
-		this.logger.info(`Connecting to WebSocket at ${wsUri.toString()}`);
-
-		this.applyRemoteChangesWebSocket = new this.webSocketImplementation(
-			wsUri
-		);
-
-		this.applyRemoteChangesWebSocket.onmessage = async (
-			event
-		): Promise<void> => {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-			const message = JSON.parse(event.data) as WebsocketVaultUpdate;
-
-			try {
-				await Promise.all(
-					message.documents.map(async (document) =>
-						this.syncRemotelyUpdatedFile(document)
-					)
-				);
-
-				if (message.isInitialSync && message.documents.length > 0) {
-					this.database.setLastSeenUpdateId(
-						message.documents
-							.map((document) => document.vaultUpdateId)
-							.reduce((a, b) => Math.max(a, b))
-					);
-				}
-			} catch (e) {
-				this.logger.error(`Failed to sync remotely updated file: ${e}`);
-			}
-		};
-
-		// The JS WebSocket API doesn't support setting headers, so we have to send the token as a message
-		this.applyRemoteChangesWebSocket.onopen = (): void => {
-			this.logger.info("WebSocket connection opened");
-			this.applyRemoteChangesWebSocket?.send(
-				JSON.stringify({
-					deviceId: this.deviceId,
-					token: settings.token,
-					lastSeenVaultUpdateId: this.database.getLastSeenUpdateId()
-				})
-			);
-			this.webSocketStatusChangeListeners.forEach((listener) => {
-				listener();
-			});
-		};
-
-		this.applyRemoteChangesWebSocket.onclose = (event): void => {
-			this.logger.warn(
-				`WebSocket closed with code ${event.code} (${event.reason == "" ? "unknown reason" : event.reason})`
-			);
-			this.webSocketStatusChangeListeners.forEach((listener) => {
-				listener();
-			});
-		};
-	}
-
-	private setWebSocketRefreshInterval(): void {
-		this.refreshApplyRemoteChangesWebSocketInterval = setInterval(() => {
-			if (
-				this.applyRemoteChangesWebSocket?.readyState ===
-				this.webSocketImplementation.OPEN
-			) {
-				return;
-			}
-			this.updateWebSocket(this.settings.getSettings());
-		}, 5000);
-	}
-
-	private async syncRemotelyUpdatedFile(
-		remoteVersion: components["schemas"]["DocumentVersionWithoutContent"]
+	public async syncRemotelyUpdatedFile(
+		remoteVersion: DocumentVersionWithoutContent
 	): Promise<void> {
 		let document = this.database.getDocumentByDocumentId(
 			remoteVersion.documentId

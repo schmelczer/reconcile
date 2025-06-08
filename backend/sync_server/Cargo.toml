@@ -18,25 +18,23 @@ log = { version = "0.4.27" }
 anyhow =  { version = "1.0.98", features = ["backtrace"] }
 axum = { version = "0.7.4", features = ["ws", "macros", "tracing", "multipart"]}
 axum-extra = { version = "0.9.6", features = ["typed-header"] }
-aide-axum-typed-multipart = "0.13.0"
 axum_typed_multipart = "0.11.0"
 tower-http = { version = "0.6.1", features = ["cors", "trace", "limit", "timeout"] }
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"]}
-serde_yaml = "0.9.34"
 sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
 chrono = { version = "0.4.41", features = ["serde"] }
-aide = { version = "0.13.5", features = ["axum", "axum-ws", "scalar", "axum-headers"] }
-schemars = { version = "0.8.22", features = ["chrono", "uuid1", "bytes"] }
-tracing = "0.1.41"
 rand = "0.9.0"
 sanitize-filename = "0.6.0"
-axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 regex = "1.11.1"
 clap = { version = "4.5.38", features = ["derive"] }
 futures = "0.3.31"
+serde_yaml = "0.9.34"
 serde_json = "1.0.140"
 clap-verbosity-flag = "3.0.3"
 bimap = "0.6.3"
+ts-rs =  { version = "10.1", features = ["uuid-impl", "chrono-impl"] }
+serde_with = "3.12.0"
 
 [lints]
 workspace = true

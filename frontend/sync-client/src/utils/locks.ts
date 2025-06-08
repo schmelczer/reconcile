@@ -5,7 +5,7 @@ import type { Logger } from "../tracing/logger";
 // Locks are granted in a first-in-first-out order.
 export class Locks<T> {
 	private readonly locked = new Set<T>();
-	private readonly waiters = new Map<T, (() => void)[]>();
+	private readonly waiters = new Map<T, (() => unknown)[]>();
 
 	public constructor(private readonly logger: Logger) {}
 

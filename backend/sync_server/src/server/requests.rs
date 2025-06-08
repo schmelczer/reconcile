@@ -1,13 +1,12 @@
-use aide_axum_typed_multipart::FieldData;
 use axum::body::Bytes;
-use axum_typed_multipart::TryFromMultipart;
-use schemars::JsonSchema;
+use axum_typed_multipart::{FieldData, TryFromMultipart};
 use serde::{self, Deserialize};
+use ts_rs::TS;
 
-use crate::app_state::database::models::{DeviceId, DocumentId, VaultUpdateId};
+use crate::app_state::database::models::{DocumentId, VaultUpdateId};
 
-#[derive(Debug, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
+#[derive(TS, Debug, TryFromMultipart)]
+#[ts(export)]
 pub struct CreateDocumentVersion {
     /// The client can decide the document id (if it wishes to) in order
     /// to help with syncing. If the client does not provide a document id,
@@ -15,41 +14,26 @@ pub struct CreateDocumentVersion {
     /// it must not already exist in the database.
     pub document_id: Option<DocumentId>,
     pub relative_path: String,
-    pub content_base64: String,
-    pub device_id: Option<DeviceId>,
-}
 
-#[derive(Debug, TryFromMultipart, JsonSchema)]
-pub struct CreateDocumentVersionMultipart {
-    pub document_id: Option<DocumentId>,
-    pub relative_path: String,
+    #[ts(as = "Vec<u8>")]
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
-    pub device_id: Option<DeviceId>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
+#[derive(TS, Debug, TryFromMultipart)]
+#[ts(export)]
 pub struct UpdateDocumentVersion {
     pub parent_version_id: VaultUpdateId,
     pub relative_path: String,
-    pub content_base64: String,
-    pub device_id: Option<DeviceId>,
-}
 
-#[derive(Debug, TryFromMultipart, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateDocumentVersionMultipart {
-    pub parent_version_id: VaultUpdateId,
-    pub relative_path: String,
+    #[ts(as = "Vec<u8>")]
     #[form_data(limit = "unlimited")]
     pub content: FieldData<Bytes>,
-    pub device_id: Option<DeviceId>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(TS, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct DeleteDocumentVersion {
     pub relative_path: String,
-    pub device_id: Option<DeviceId>,
 }

@@ -1,7 +1,8 @@
 use anyhow::anyhow;
-use axum::extract::{Path, State};
-use axum_jsonschema::Json;
-use schemars::JsonSchema;
+use axum::{
+    Json,
+    extract::{Path, State},
+};
 use serde::Deserialize;
 
 use crate::{
@@ -13,8 +14,7 @@ use crate::{
     utils::normalize::normalize,
 };
 
-// This is required for aide to infer the path parameter types and names
-#[derive(Deserialize, JsonSchema)]
+#[derive(Deserialize)]
 pub struct FetchLatestDocumentVersionPathParams {
     #[serde(deserialize_with = "normalize")]
     vault_id: VaultId,

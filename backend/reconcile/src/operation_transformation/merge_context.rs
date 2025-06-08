@@ -62,12 +62,11 @@ where
                     self.shift -= *deleted_character_count as i64;
                     self.last_operation = None;
                 }
-            } else if let Operation::Insert { .. } = last_operation {
-                if threshold_index + self.shift - last_operation.len() as i64
+            } else if let Operation::Insert { .. } = last_operation
+                && threshold_index + self.shift - last_operation.len() as i64
                     > last_operation.end_index() as i64
-                {
-                    self.last_operation = None;
-                }
+            {
+                self.last_operation = None;
             }
         }
     }

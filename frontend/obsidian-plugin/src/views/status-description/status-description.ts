@@ -11,7 +11,7 @@ export class StatusDescription {
 	private lastRemaining: number | undefined;
 	private lastConnectionState: NetworkConnectionStatus | undefined;
 
-	private statusChangeListeners: (() => void)[] = [];
+	private statusChangeListeners: (() => unknown)[] = [];
 
 	public constructor(private readonly syncClient: SyncClient) {
 		void this.updateConnectionState();

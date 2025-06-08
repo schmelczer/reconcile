@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::{Context as _, Result};
 use database_config::DatabaseConfig;
-use log::{info, warn};
+use log::info;
 use serde::{Deserialize, Serialize};
 use server_config::ServerConfig;
 use tokio::fs;
@@ -24,21 +24,23 @@ pub struct Config {
 
 impl Config {
     pub async fn read_or_create(path: &Path) -> Result<Self> {
-        if path.exists() {
+        let config = if path.exists() {
             info!(
                 "Loading configuration from '{}'",
                 path.canonicalize().unwrap().display()
             );
-            Self::load_from_file(path).await
+            Self::load_from_file(path).await?
         } else {
-            let config = Self::default();
-            config.write(path).await?;
-            warn!(
-                "Configuration file not found, wrote default configuration to '{}'",
-                path.canonicalize().unwrap().display()
-            );
-            Ok(config)
-        }
+            Self::default()
+        };
+
+        config.write(path).await?;
+        info!(
+            "Updated configuration at '{}'",
+            path.canonicalize().unwrap().display()
+        );
+
+        Ok(config)
     }
 
     pub async fn load_from_file(path: &Path) -> Result<Self> {

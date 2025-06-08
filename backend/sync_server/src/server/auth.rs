@@ -47,19 +47,22 @@ pub fn auth(state: &AppState, token: &str, vault_id: &VaultId) -> Result<User, S
         .cloned()
         .ok_or_else(|| unauthenticated_error(anyhow::anyhow!("Invalid token")))?;
 
-    info!("User `{}` authenticated", user.name);
-
     if match user.vault_access {
         VaultAccess::AllowAccessToAll => true,
         VaultAccess::AllowList(AllowListedVaults { ref allowed }) => allowed.contains(vault_id),
     } {
         info!(
-            "User `{}` is authorised to access to vault `{}`",
-            user.name, vault_id
+            "User '{}' is authenticated and is authorised to access to vault '{vault_id}'",
+            user.name
         );
 
         Ok(user)
     } else {
+        info!(
+            "User '{}' is authenticated but is not authorised to access vault '{vault_id}'",
+            user.name
+        );
+
         Err(permission_denied_error(anyhow::anyhow!(
             "Permission denied for vault `{vault_id}`"
         )))

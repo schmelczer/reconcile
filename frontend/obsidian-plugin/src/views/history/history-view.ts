@@ -18,8 +18,8 @@ export class HistoryView extends ItemView {
 	>();
 
 	public constructor(
-		leaf: WorkspaceLeaf,
-		private readonly client: SyncClient
+		private readonly client: SyncClient,
+		leaf: WorkspaceLeaf
 	) {
 		super(leaf);
 		this.icon = HistoryView.ICON;
