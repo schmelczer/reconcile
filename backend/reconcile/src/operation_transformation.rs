@@ -3,6 +3,7 @@ mod edited_text;
 mod merge_context;
 mod operation;
 mod ordered_operation;
+mod utils;
 
 pub use cursor::{CursorPosition, TextWithCursors};
 pub use edited_text::EditedText;
