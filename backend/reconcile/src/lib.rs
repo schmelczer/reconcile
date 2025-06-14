@@ -7,4 +7,4 @@ pub use operation_transformation::{
     CursorPosition, EditedText, TextWithCursors, reconcile, reconcile_with_cursors,
     reconcile_with_tokenizer,
 };
-pub use tokenizer::{Tokenizer, token::Token};
+pub use tokenizer::{Tokenizer, token::Token, word_tokenizer::word_tokenizer};

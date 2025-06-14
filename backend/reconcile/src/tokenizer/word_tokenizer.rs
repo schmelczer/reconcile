@@ -1,7 +1,7 @@
 use super::token::Token;
 
-/// Splits on word boundaries creating alternating words and whitespaces with
-/// the whitespaces getting unique IDs.
+/// Splits text on word boundaries creating tokens of alternating words and
+/// whitespaces with the whitespaces getting unique IDs.
 ///
 /// ## Example
 ///

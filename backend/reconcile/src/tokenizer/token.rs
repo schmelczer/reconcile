@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 
 /// A token is a string that has been normalised in some way.
 ///
-/// It's UTF-8 compatible.
-///
 /// A token consists of the normalised form is used for comparison, and the
 /// original form used for subsequently applying `Operation`-s to a text
 /// document.
+///
+/// It's UTF-8 compatible.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Token<T>
