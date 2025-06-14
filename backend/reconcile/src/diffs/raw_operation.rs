@@ -30,12 +30,12 @@ where
 
     pub fn is_left_joinable(&self) -> bool {
         let first_token = self.tokens().first();
-        first_token.is_none_or(super::super::tokenizer::token::Token::get_is_left_joinable)
+        first_token.is_none_or(|token| token.is_left_joinable)
     }
 
     pub fn is_right_joinable(&self) -> bool {
         let last_token = self.tokens().last();
-        last_token.is_none_or(super::super::tokenizer::token::Token::get_is_right_joinable)
+        last_token.is_none_or(|token| token.is_right_joinable)
     }
 
     /// Extends the operation with another operation. Only operations of the
@@ -49,8 +49,8 @@ where
         );
 
         match (self, other) {
-            (RawOperation::Insert(tokens1), RawOperation::Insert(tokens2)) => {
-                RawOperation::Insert(tokens1.into_iter().chain(tokens2).collect())
+            (RawOperation::Insert(self_tokens), RawOperation::Insert(other_tokens)) => {
+                RawOperation::Insert(self_tokens.into_iter().chain(other_tokens).collect())
             }
             (RawOperation::Delete(tokens1), RawOperation::Delete(tokens2)) => {
                 RawOperation::Delete(tokens1.into_iter().chain(tokens2).collect())

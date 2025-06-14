@@ -30,7 +30,7 @@ use crate::{
     utils::{common_prefix_len::common_prefix_len, common_suffix_len::common_suffix_len},
 };
 
-/// Myers' diff algorithm with deadline.
+/// Myers' diff algorithm.
 ///
 /// Diff `old`, between indices `old_range` and `new` between indices
 /// `new_range`.

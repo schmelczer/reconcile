@@ -1,7 +1,7 @@
 use super::token::Token;
 
 /// Splits on word boundaries creating alternating words and whitespaces with
-/// the whitesspaces getting unique IDs.
+/// the whitespaces getting unique IDs.
 ///
 /// ## Example
 ///
@@ -34,7 +34,8 @@ pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
 
     for i in 0..result.len() - 1 {
         if result[i].original().chars().all(char::is_whitespace) {
-            result[i].normalised = result[i].normalised().to_owned() + result[i + 1].original();
+            let normalised = result[i].normalised().to_owned() + result[i + 1].original();
+            result[i].set_normalised(normalised);
         }
     }
 
