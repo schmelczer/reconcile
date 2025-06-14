@@ -1,23 +1,29 @@
-use core::iter;
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
-    operation_transformation::merge_context::MergeContext,
+    operation_transformation::{
+        merge_context::MergeContext,
+        utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
+    },
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{merge_iters::MergeSorted as _, side::Side, string_builder::StringBuilder},
 };
 
-/// A sequence of operations that can be applied to a text document.
-/// `EditedText` supports merging two sequences of operations using the
-/// principle of Operational Transformation.
+/// A text document and a sequence of operations that can be applied to the text
+/// document. `EditedText` supports merging two sequences of operations using
+/// the principles of Operational Transformation.
 ///
 /// It's mainly created through the `from_strings` method, then merged with
 /// another `EditedText` derived from the same original text and then applied to
 /// the original text to get the reconciled text of concurrent edits.
+///
+/// In addition to text and operations, it also keeps track of cursor positions
+/// in the original text. The cursor positions are updated when the operations
+/// are applied, so that the cursor positions can be used to restore the
+/// cursor positions in the updated text.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
@@ -63,121 +69,9 @@ where
 
         Self::new(
             original,
-            Self::cook_operations(Self::elongate_operations(diff)).collect(),
+            cook_operations(elongate_operations(diff)).collect(),
             updated.cursors,
         )
-    }
-
-    fn elongate_operations<I>(raw_operations: I) -> Vec<RawOperation<T>>
-    where
-        I: IntoIterator<Item = RawOperation<T>>,
-    {
-        // This might look bad, but this makes sense. The inserts and deltes can be
-        // interleaved, such as: IDIDID and we need to turn this into IIIDDD.
-        // So we need to keep track of both the last insert and delete operations, not
-        // just the last one.
-        let mut maybe_previous_insert: Option<RawOperation<T>> = None;
-        let mut maybe_previous_delete: Option<RawOperation<T>> = None;
-
-        let mut result: Vec<RawOperation<T>> = raw_operations
-            .into_iter()
-            .flat_map(|next| match next {
-                RawOperation::Insert(..) => match maybe_previous_insert.take() {
-                    Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                        maybe_previous_insert = Some(prev.extend(next));
-                        Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                    }
-                    prev => {
-                        maybe_previous_insert = Some(next);
-                        Box::new(prev.into_iter())
-                    }
-                },
-                RawOperation::Delete(..) => match maybe_previous_delete.take() {
-                    Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                        maybe_previous_delete = Some(prev.extend(next));
-                        Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                    }
-                    prev => {
-                        maybe_previous_delete = Some(next);
-                        Box::new(prev.into_iter())
-                    }
-                },
-                RawOperation::Equal(..) => Box::new(
-                    maybe_previous_insert
-                        .take()
-                        .into_iter()
-                        .chain(maybe_previous_delete.take())
-                        .chain(iter::once(next)),
-                )
-                    as Box<dyn Iterator<Item = RawOperation<T>>>,
-            })
-            .collect();
-
-        if let Some(prev) = maybe_previous_insert {
-            result.push(prev);
-        }
-
-        if let Some(prev) = maybe_previous_delete {
-            result.push(prev);
-        }
-
-        result
-    }
-
-    // Turn raw operations into ordered operations while keeping track of old & new
-    // indexes.
-    fn cook_operations<I>(raw_operations: I) -> impl Iterator<Item = OrderedOperation<T>>
-    where
-        I: IntoIterator<Item = RawOperation<T>>,
-    {
-        let mut new_index = 0; // this is the start index of the operation on the new text
-        let mut order = 0; // this is the start index of the operation on the original text
-
-        raw_operations.into_iter().filter_map(move |raw_operation| {
-            let length = raw_operation.original_text_length();
-
-            match raw_operation {
-                RawOperation::Equal(..) => {
-                    let op = if cfg!(debug_assertions) {
-                        Operation::create_equal_with_text(
-                            new_index,
-                            raw_operation.get_original_text(),
-                        )
-                    } else {
-                        Operation::create_equal(new_index, length)
-                    }
-                    .map(|operation| OrderedOperation { order, operation });
-
-                    new_index += length;
-                    order += length;
-
-                    op
-                }
-                RawOperation::Insert(tokens) => {
-                    let op = Operation::create_insert(new_index, tokens)
-                        .map(|operation| OrderedOperation { order, operation });
-
-                    new_index += length;
-
-                    op
-                }
-                RawOperation::Delete(..) => {
-                    let op = if cfg!(debug_assertions) {
-                        Operation::create_delete_with_text(
-                            new_index,
-                            raw_operation.get_original_text(),
-                        )
-                    } else {
-                        Operation::create_delete(new_index, length)
-                    }
-                    .map(|operation| OrderedOperation { order, operation });
-
-                    order += length;
-
-                    op
-                }
-            }
-        })
     }
 
     /// Create a new `EditedText` with the given operations.
