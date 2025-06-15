@@ -22,27 +22,16 @@ else
   echo "Your working directory is clean."
 fi
 
-echo "Bumping backend versions"
+echo "Bumping versions"
 cd backend
 cargo set-version --bump $1
 
-echo "Bumping frontend versions"
-cd ../frontend
-npm version $1 --workspaces
+wasm-pack build --target web --features wasm
 
-echo "Updating frontend dependencies to match the new backend versions"
-cd ../backend/sync_lib
-wasm-pack build --target web --features console_error_panic_hook
 
-cd ../../frontend
-npm install
-
-cd ..
-cp frontend/obsidian-plugin/manifest.json manifest.json  # for BRAT, otherwise it wouldn't update
 
 # Commit and tag
 git add .
-TAG=$(node -p "require('./frontend/obsidian-plugin/package.json').version")
 git commit -m "Bump versions to $TAG"
 
 git push
