@@ -30,7 +30,7 @@ jobs:
       - name: Build wasm
         run: |
           cargo install wasm-pack
-          wasm-pack build --target web sync_lib
+          wasm-pack build --target web
           cp -R pkg/reconcile.js examples/website/
           cp -R pkg/reconcile_bg.wasm examples/website/
 
