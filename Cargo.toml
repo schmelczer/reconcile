@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "reconcile",
-    "sync_server",
     "sync_lib"
 ]
 
