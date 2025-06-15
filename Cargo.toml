@@ -1,21 +1,38 @@
-[workspace]
-resolver = "2"
-members = [
-    "reconcile",
-    "sync_lib"
-]
-
-[workspace.package]
-rust-version = "1.83"
+[package]
+name = "reconcile"
+rust-version = "1.85"
 authors = ["Andras Schmelczer <andras@schmelczer.dev>"]
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/schmelczer/vault-link"
+repository = "https://github.com/schmelczer/reconcile"
 version = "0.4.0"
 
-[workspace.dependencies]
-serde = { version = "1.0.219", default-features = false, features = ["derive"] }
-thiserror = { version = "2.0.12", default-features = false  }
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1.0.219", optional = true, features = ["derive"] }
+
+wasm-bindgen = { version = "0.2.99", optional = true }
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+[features]
+default = ["serde", "wasm"]
+serde = [ "dep:serde" ]
+wasm = [ "dep:wasm-bindgen", "dep:console_error_panic_hook" ]
+
+[dev-dependencies]
+insta = "1.42.2"
+pretty_assertions = "1.4.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_yaml ="0.9.34"
+test-case = "3.3.1"
+wasm-bindgen-test = "0.3.49"
 
 [profile.release]
 codegen-units = 1

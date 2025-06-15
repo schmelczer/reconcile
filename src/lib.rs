@@ -8,3 +8,6 @@ pub use operation_transformation::{
     reconcile_with_tokenizer,
 };
 pub use tokenizer::{Tokenizer, token::Token, word_tokenizer::word_tokenizer};
+
+#[cfg(feature = "wasm")]
+pub mod wasm;

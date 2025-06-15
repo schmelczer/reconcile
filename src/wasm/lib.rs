@@ -11,56 +11,9 @@
 
 use core::str;
 
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-use cursor::TextWithCursors;
-use errors::SyncLibError;
 use wasm_bindgen::prelude::*;
 
-pub mod cursor;
-pub mod errors;
-
-/// Encode binary data for easy transport over HTTP. Inverse of
-/// `base64_to_bytes`.
-///
-/// # Arguments
-///
-/// - `input`: The binary data to encode.
-///
-/// # Returns
-///
-/// The base64-encoded string.
-///
-/// # Panics
-///
-/// If the input is not valid UTF-8.
-#[wasm_bindgen(js_name = bytesToBase64)]
-#[must_use]
-pub fn bytes_to_base64(input: &[u8]) -> String {
-    set_panic_hook();
-
-    STANDARD.encode(input)
-}
-
-/// Inverse of `bytes_to_base64`.
-/// Decode base64-encoded data into binary data.
-///
-/// # Arguments
-///
-/// - `input`: The base64-encoded string.
-///
-/// # Returns
-///
-/// The decoded binary data.
-///
-/// # Errors
-///
-/// If the input is not valid base64.
-#[wasm_bindgen(js_name = base64ToBytes)]
-pub fn base64_to_bytes(input: &str) -> Result<Vec<u8>, SyncLibError> {
-    set_panic_hook();
-
-    STANDARD.decode(input).map_err(SyncLibError::from)
-}
+use crate::wasm::cursor::JsTextWithCursors;
 
 /// Merge two documents with a common parent. Relies on `reconcile::reconcile`
 /// for texts and returns the right document as-is if either of the updated
@@ -87,7 +40,7 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
     if is_binary(parent) || is_binary(left) || is_binary(right) {
         right.to_vec()
     } else {
-        reconcile::reconcile(
+        crate::reconcile(
             str::from_utf8(parent).expect("parent must be valid UTF-8 because it's not binary"),
             str::from_utf8(left).expect("left must be valid UTF-8 because it's not binary"),
             str::from_utf8(right).expect("right must be valid UTF-8 because it's not binary"),
@@ -96,13 +49,13 @@ pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
     }
 }
 
-/// WASM wrapper around `reconcile::reconcile` for merging text.
+/// WASM wrapper around `crate::reconcile` for merging text.
 #[wasm_bindgen(js_name = mergeText)]
 #[must_use]
 pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
     set_panic_hook();
 
-    reconcile::reconcile(parent, left, right)
+    crate::reconcile(parent, left, right)
 }
 
 /// WASM wrapper around `reconcile::reconcile_with_cursors` for merging text.
@@ -110,12 +63,12 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
 #[must_use]
 pub fn merge_text_with_cursors(
     parent: &str,
-    left: TextWithCursors,
-    right: TextWithCursors,
-) -> TextWithCursors {
+    left: JsTextWithCursors,
+    right: JsTextWithCursors,
+) -> JsTextWithCursors {
     set_panic_hook();
 
-    reconcile::reconcile_with_cursors(parent, left.into(), right.into()).into()
+    crate::reconcile_with_cursors(parent, left.into(), right.into()).into()
 }
 
 /// Heuristically determine if the given data is a binary or a text file's

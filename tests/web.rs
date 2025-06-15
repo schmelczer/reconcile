@@ -1,29 +1,9 @@
 use insta::assert_debug_snapshot;
-use sync_lib::{
-    cursor::{CursorPosition, TextWithCursors},
-    *,
+use reconcile::wasm::{
+    cursor::{JsCursorPosition, JsTextWithCursors},
+    lib::{is_binary, is_file_type_mergable, merge, merge_text, merge_text_with_cursors},
 };
 use wasm_bindgen_test::*;
-
-#[wasm_bindgen_test(unsupported = test)]
-fn test_bytes_to_base64() {
-    let input = b"hello";
-    let expected = "aGVsbG8=";
-    assert_eq!(bytes_to_base64(input), expected);
-}
-
-#[wasm_bindgen_test(unsupported = test)]
-fn test_base64_to_bytes() {
-    let input = "aGVsbG8=";
-    let expected = b"hello".to_vec();
-    assert_eq!(base64_to_bytes(input).unwrap(), expected);
-}
-
-#[test] // insta doesn't support wasm-bindgen-test
-fn test_base64_to_bytes_error() {
-    let input = "===";
-    assert_debug_snapshot!(base64_to_bytes(input));
-}
 
 #[wasm_bindgen_test(unsupported = test)]
 fn test_merge() {
@@ -50,18 +30,18 @@ fn test_merge_text() {
 fn test_merge_text_with_cursors() {
     let result = merge_text_with_cursors(
         "hi",
-        TextWithCursors::new("hi world".to_owned(), vec![]),
-        TextWithCursors::new(
+        JsTextWithCursors::new("hi world".to_owned(), vec![]),
+        JsTextWithCursors::new(
             "hi".to_owned(),
-            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)],
+            vec![JsCursorPosition::new(0, 1), JsCursorPosition::new(1, 2)],
         ),
     );
 
     assert_eq!(
         result,
-        TextWithCursors::new(
+        JsTextWithCursors::new(
             "hi world".to_owned(),
-            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)]
+            vec![JsCursorPosition::new(0, 1), JsCursorPosition::new(1, 2)]
         ),
     );
 }

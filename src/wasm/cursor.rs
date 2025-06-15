@@ -3,27 +3,27 @@ use wasm_bindgen::prelude::*;
 /// Wrapper type to expose `TextWithCursors` to JS.
 #[wasm_bindgen]
 #[derive(Debug, Clone, PartialEq)]
-pub struct TextWithCursors {
+pub struct JsTextWithCursors {
     text: String,
-    cursors: Vec<CursorPosition>,
+    cursors: Vec<JsCursorPosition>,
 }
 
 #[wasm_bindgen]
-impl TextWithCursors {
+impl JsTextWithCursors {
     #[wasm_bindgen(constructor)]
     #[must_use]
-    pub fn new(text: String, cursors: Vec<CursorPosition>) -> Self { Self { text, cursors } }
+    pub fn new(text: String, cursors: Vec<JsCursorPosition>) -> Self { Self { text, cursors } }
 
     #[must_use]
     pub fn text(&self) -> String { self.text.clone() }
 
     #[must_use]
-    pub fn cursors(&self) -> Vec<CursorPosition> { self.cursors.clone() }
+    pub fn cursors(&self) -> Vec<JsCursorPosition> { self.cursors.clone() }
 }
 
-impl From<TextWithCursors> for reconcile::TextWithCursors<'_> {
-    fn from(owned: TextWithCursors) -> Self {
-        reconcile::TextWithCursors::new_owned(
+impl From<JsTextWithCursors> for crate::TextWithCursors<'_> {
+    fn from(owned: JsTextWithCursors) -> Self {
+        crate::TextWithCursors::new_owned(
             owned.text.to_string(),
             owned
                 .cursors
@@ -34,9 +34,9 @@ impl From<TextWithCursors> for reconcile::TextWithCursors<'_> {
     }
 }
 
-impl From<reconcile::TextWithCursors<'_>> for TextWithCursors {
-    fn from(text_with_cursors: reconcile::TextWithCursors<'_>) -> Self {
-        TextWithCursors {
+impl From<crate::TextWithCursors<'_>> for JsTextWithCursors {
+    fn from(text_with_cursors: crate::TextWithCursors<'_>) -> Self {
+        JsTextWithCursors {
             text: text_with_cursors.text.into_owned(),
             cursors: text_with_cursors
                 .cursors
@@ -50,13 +50,13 @@ impl From<reconcile::TextWithCursors<'_>> for TextWithCursors {
 /// Wrapper type to expose `CursorPosition` to JS.
 #[wasm_bindgen]
 #[derive(Debug, Clone, PartialEq)]
-pub struct CursorPosition {
+pub struct JsCursorPosition {
     id: usize,
     char_index: usize,
 }
 
 #[wasm_bindgen]
-impl CursorPosition {
+impl JsCursorPosition {
     #[wasm_bindgen(constructor)]
     #[must_use]
     pub fn new(id: usize, char_index: usize) -> Self { Self { id, char_index } }
@@ -69,18 +69,18 @@ impl CursorPosition {
     pub fn char_index(&self) -> usize { self.char_index }
 }
 
-impl From<CursorPosition> for reconcile::CursorPosition {
-    fn from(owned: CursorPosition) -> Self {
-        reconcile::CursorPosition {
+impl From<JsCursorPosition> for crate::CursorPosition {
+    fn from(owned: JsCursorPosition) -> Self {
+        crate::CursorPosition {
             id: owned.id,
             char_index: owned.char_index,
         }
     }
 }
 
-impl From<reconcile::CursorPosition> for CursorPosition {
-    fn from(cursor: reconcile::CursorPosition) -> Self {
-        CursorPosition {
+impl From<crate::CursorPosition> for JsCursorPosition {
+    fn from(cursor: crate::CursorPosition) -> Self {
+        JsCursorPosition {
             id: cursor.id,
             char_index: cursor.char_index,
         }
