@@ -5,23 +5,12 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directories: ["/frontend"]
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directories: ["**"]
-    schedule:
-      interval: "daily"
-
   - package-ecosystem: "cargo"
     directories: ["**"]
     schedule:
       interval: "daily"
 
-  # Disable this for security reasons
-  # - package-ecosystem: "github-actions"
-  #   directories: ["**"]
-  #   schedule:
-  #     interval: "daily"
+  - package-ecosystem: "github-actions"
+    directories: ["**"]
+    schedule:
+      interval: "daily"
