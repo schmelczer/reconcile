@@ -17,6 +17,9 @@ where
     let mut maybe_previous_insert: Option<RawOperation<T>> = None;
     let mut maybe_previous_delete: Option<RawOperation<T>> = None;
 
+    // Equals can't be interleaved with inserts and deletes
+    let mut maybe_previous_equal: Option<RawOperation<T>> = None;
+
     let mut result: Vec<RawOperation<T>> = raw_operations
         .into_iter()
         .flat_map(|next| match next {
@@ -27,7 +30,12 @@ where
                 }
                 prev => {
                     maybe_previous_insert = Some(next);
-                    Box::new(prev.into_iter())
+                    Box::new(
+                        maybe_previous_equal
+                            .take()
+                            .into_iter()
+                            .chain(prev.into_iter()),
+                    ) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
             },
             RawOperation::Delete(..) => match maybe_previous_delete.take() {
@@ -37,16 +45,30 @@ where
                 }
                 prev => {
                     maybe_previous_delete = Some(next);
-                    Box::new(prev.into_iter())
+                    Box::new(
+                        maybe_previous_equal
+                            .take()
+                            .into_iter()
+                            .chain(prev.into_iter()),
+                    ) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
             },
-            RawOperation::Equal(..) => Box::new(
-                maybe_previous_insert
-                    .take()
-                    .into_iter()
-                    .chain(maybe_previous_delete.take())
-                    .chain(iter::once(next)),
-            ) as Box<dyn Iterator<Item = RawOperation<T>>>,
+            RawOperation::Equal(..) => match maybe_previous_equal.take() {
+                Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
+                    maybe_previous_equal = Some(prev.extend(next));
+                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
+                }
+                prev => {
+                    maybe_previous_equal = Some(next);
+                    Box::new(
+                        maybe_previous_insert
+                            .take()
+                            .into_iter()
+                            .chain(maybe_previous_delete.take())
+                            .chain(prev.into_iter()),
+                    ) as Box<dyn Iterator<Item = RawOperation<T>>>
+                }
+            },
         })
         .collect();
 
@@ -58,5 +80,75 @@ where
         result.push(prev);
     }
 
+    if let Some(prev) = maybe_previous_equal {
+        result.push(prev);
+    }
+
     result
+}
+
+#[cfg(test)]
+
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_elongate_operations_empty() {
+        let operations: Vec<RawOperation<()>> = vec![];
+        let result = elongate_operations(operations);
+        assert_eq!(result, vec![]);
+    }
+
+    #[test]
+    fn test_elongate_operations_single_operation() {
+        let operations = vec![RawOperation::Insert(vec!["test".into()])];
+        let result = elongate_operations(operations);
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0], RawOperation::Insert(_)));
+    }
+
+    #[test]
+    fn test_elongate_operations_interleaved() {
+        let operations = vec![
+            RawOperation::Insert(vec!["a".into()]),
+            RawOperation::Delete(vec!["b".into()]),
+            RawOperation::Insert(vec!["c".into()]),
+            RawOperation::Delete(vec!["d".into()]),
+        ];
+        let result = elongate_operations(operations);
+        assert_eq!(result.len(), 2);
+        assert!(matches!(result[0], RawOperation::Insert(_)));
+        assert!(matches!(result[1], RawOperation::Delete(_)));
+    }
+
+    #[test]
+    fn test_elongate_operations_with_equal() {
+        let operations = vec![
+            RawOperation::Equal(vec!["a".into()]),
+            RawOperation::Equal(vec!["b".into()]),
+            RawOperation::Insert(vec!["c".into()]),
+            RawOperation::Insert(vec!["d".into()]),
+        ];
+        let result = elongate_operations(operations);
+        assert_eq!(result.len(), 2);
+        assert!(matches!(result[0], RawOperation::Equal(_)));
+        assert!(matches!(result[1], RawOperation::Insert(_)));
+    }
+
+    #[test]
+    fn test_elongate_operations_mixed_sequence() {
+        let operations = vec![
+            RawOperation::Insert(vec!["a".into()]),
+            RawOperation::Equal(vec!["b".into()]),
+            RawOperation::Delete(vec!["c".into()]),
+            RawOperation::Equal(vec!["d".into()]),
+        ];
+        let result = elongate_operations(operations);
+        assert_eq!(result.len(), 4);
+        assert!(matches!(result[0], RawOperation::Insert(_)));
+        assert!(matches!(result[1], RawOperation::Equal(_)));
+        assert!(matches!(result[2], RawOperation::Delete(_)));
+        assert!(matches!(result[3], RawOperation::Equal(_)));
+    }
 }
