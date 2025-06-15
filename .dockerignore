@@ -1,6 +1,0 @@
-target
-Dockerfile
-.dockerignore
-databases
-sync_lib/pkg
-*.yml
