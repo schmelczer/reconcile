@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>3-Way Text Merge</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <h1>3-Way Text Merge</h1>
+            <div class="diamond-layout">
+                <div class="diamond-row diamond-row-top">
+                    <div class="text-area diamond-parent">
+                        <label for="original">Original</label>
+                        <textarea id="original" rows="10"></textarea>
+                    </div>
+                </div>
+                <div class="diamond-row diamond-row-middle">
+                    <div class="text-area diamond-left">
+                        <label for="left">Left</label>
+                        <textarea id="left" rows="10"></textarea>
+                    </div>
+                    <div class="text-area diamond-right">
+                        <label for="right">Right</label>
+                        <textarea id="right" rows="10"></textarea>
+                    </div>
+                </div>
+                <div class="diamond-row diamond-row-bottom">
+                    <div class="diamond-bottom-content">
+                        <button id="merge-button">Merge</button>
+                        <div class="text-area diamond-result">
+                            <label for="merged">Merged</label>
+                            <textarea id="merged" rows="10" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="module">
+            import init, { mergeText } from "./reconcile.js";
+
+            async function run() {
+                await init();
+
+                const originalTextArea = document.getElementById("original");
+                const leftTextArea = document.getElementById("left");
+                const rightTextArea = document.getElementById("right");
+                const mergedTextArea = document.getElementById("merged");
+                const mergeButton = document.getElementById("merge-button");
+
+                const sampleTexts = [
+                    "The quick brown fox jumps over the lazy dog.",
+                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
+                    "A journey of a thousand miles begins with a single step.",
+                    "To be, or not to be, that is the question.",
+                ];
+
+                function loadSample() {
+                    const randomIndex = Math.floor(
+                        Math.random() * sampleTexts.length
+                    );
+                    const text = sampleTexts[randomIndex];
+                    originalTextArea.value = text;
+                    leftTextArea.value = text;
+                    rightTextArea.value = text;
+                    mergedTextArea.value = "";
+                }
+
+                mergeButton.addEventListener("click", () => {
+                    const original = originalTextArea.value;
+                    const left = leftTextArea.value;
+                    const right = rightTextArea.value;
+
+                    try {
+                        const result = mergeText(original, left, right);
+                        mergedTextArea.value = result;
+                    } catch (e) {
+                        mergedTextArea.value = `Error: ${e}`;
+                    }
+                });
+
+                window.addEventListener("load", loadSample);
+            }
+
+            run();
+        </script>
+    </body>
+</html>
