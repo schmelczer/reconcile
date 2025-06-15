@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -26,42 +26,20 @@ jobs:
       - name: Setup rust
         run: |
           cargo install sqlx-cli wasm-pack cargo-machete
-          cd backend
           sqlx database create --database-url sqlite://db.sqlite3
           sqlx migrate run --source sync_server/src/app_state/database/migrations --database-url sqlite://db.sqlite3
 
       - name: Build wasm
         run: |
-          cd backend
-          wasm-pack build --target web sync_lib
+          wasm-pack build --target web
 
-      - name: Lint backend
+      - name: Lint
         run: |
-          cd backend
           cargo clippy --all-targets --all-features
           cargo fmt --all -- --check
           cargo machete
 
-      - name: Test backend
+      - name: Test
         run: |
-          cd backend
           cargo test --verbose -- --include-ignored
-          cd sync_lib
           wasm-pack test --node
-
-      - name: Lint frontend
-        run: |
-          cd frontend
-          npm ci
-          npm run build
-          npm run lint
-          if [[ $(git status --porcelain) ]]; then
-              git status --porcelain
-              echo "Failing CI because the working directory is not clean after linting"
-              exit 1
-          fi
-
-      - name: Test frontend
-        run: |
-          cd frontend
-          npm run test
