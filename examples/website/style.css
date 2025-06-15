@@ -1,200 +1,192 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+* {
+    box-sizing: border-box;
     margin: 0;
-    padding: 20px;
-    background-color: #f0f2f5;
-    color: #333;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+    color: #23272f;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    justify-content: space-between;
 }
 
-h1 {
+header {
+    padding: 32px 20px 0 20px;
+
     text-align: center;
-    color: #1c1e21;
 }
 
-.diamond-layout {
+header > h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2451a6;
+    margin-bottom: 8px;
+}
+
+header > p {
+    color: #5a6272;
+    font-size: 1.1rem;
+    margin-bottom: 0;
+}
+
+main {
+    flex: 1;
     display: grid;
     grid-template-rows: auto auto auto;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px 20px;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
     justify-items: center;
     align-items: center;
-    margin-bottom: 20px;
+    padding: 32px 12vw 32px 12vw;
+    min-height: 540px;
 }
 
-.diamond-row {
-    display: contents;
+.diamond-parent {
+    grid-column: 1 / -1;
 }
 
-.diamond-row-top .diamond-parent {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
+.diamond-left {
+    grid-column: 1;
+    grid-row: 2;
 }
-.diamond-row-middle .diamond-left {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
+
+.diamond-right {
+    grid-column: 3;
+    grid-row: 2;
 }
-.diamond-row-middle .diamond-right {
-    grid-column: 3 / 4;
-    grid-row: 2 / 3;
+
+#merge-button {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 12px 36px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #2451a6 0%, #3486eb 100%);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 600;
+    box-shadow: 0 2px 12px 0 rgba(36, 81, 166, 0.08);
+    cursor: pointer;
+    align-self: center;
+    transition: transform 0.2s;
+    margin: 0 32px;
 }
-.diamond-row-bottom .diamond-bottom-content {
+
+#merge-button:hover {
+    transform: scale(1.1);
+}
+
+.diamond-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.diamond-result {
+    grid-column: 1 / -1;
+    grid-row: 3;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    width: 100%;
-    gap: 10px;
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-}
-
-.diamond-row-bottom .diamond-result {
-    width: 100%;
-    max-width: 100%;
-    flex: 1 1 100%;
-}
-
-.diamond-bottom-content {
-    width: 100%;
-    max-width: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-.diamond-bottom-content .diamond-result {
-    width: 100%;
-    max-width: 100%;
-}
-
-.diamond-bottom-content textarea {
-    width: 100%;
-    max-width: 100%;
-}
-
-.diamond-parent, .diamond-result {
-    grid-column: 1 / -1 !important;
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-}
-
-.diamond-left, .diamond-right {
-    min-width: 280px;
-    max-width: 500px;
-    width: 100%;
-}
-
-
-@media (max-width: 900px) {
-    .diamond-layout {
-        grid-template-columns: 1fr 1fr;
-    }
-    .diamond-row-top .diamond-parent,
-    .diamond-row-bottom .diamond-bottom-content {
-        grid-column: 1 / 3;
-    }
-    .diamond-row-middle .diamond-left {
-        grid-column: 1 / 2;
-    }
-    .diamond-row-middle .diamond-right {
-        grid-column: 2 / 3;
-    }
-}
-
-@media (max-width: 600px) {
-    .diamond-layout {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    .diamond-row-top .diamond-parent,
-    .diamond-row-middle .diamond-left,
-    .diamond-row-middle .diamond-right,
-    .diamond-row-bottom .diamond-bottom-content {
-        grid-column: 1 / 2;
-    }
-    .diamond-row-bottom .diamond-bottom-content {
-        align-items: stretch;
-    }
-    .diamond-result textarea,
-    .diamond-parent textarea,
-    .diamond-left textarea,
-    .diamond-right textarea {
-        font-size: 1rem;
-        min-height: 100px;
-    }
-    button {
-        font-size: 1.1rem;
-        padding: 14px 0;
-        width: 100%;
-    }
-    .container {
-        padding: 8px;
-    }
-}
-
-@media (max-width: 600px) {
-    .diamond-layout {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-    .diamond-row-top .diamond-parent,
-    .diamond-row-middle .diamond-left,
-    .diamond-row-middle .diamond-right,
-    .diamond-row-bottom .diamond-result {
-        grid-column: 1 / 2;
-    }
+    pointer-events: none;
 }
 
 .text-area {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px 0 rgba(36, 81, 166, 0.06);
+    padding: 18px 20px 16px 20px;
+    margin-bottom: 0;
 }
 
 label {
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2451a6;
 }
 
 textarea {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: none;
     font-size: 1rem;
+    font-family: inherit;
+    color: #23272f;
     box-sizing: border-box;
     resize: none;
+    outline: none;
+    margin-bottom: 0;
+    height: 100%;
 }
 
-textarea[readonly] {
-    background-color: #e9ebee;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    background-color: #007bff;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    align-self: center;
-}
-
-button:hover {
-    background-color: #0056b3;
+@media (max-width: 900px) {
+    main {
+        padding: 24px 2vw;
+    }
 }
 
 @media (max-width: 768px) {
-    .text-areas {
+    main {
         grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto auto;
     }
+    .diamond-parent {
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .diamond-left {
+        grid-row: 2;
+        grid-column: 1;
+    }
+
+    .diamond-right {
+        grid-row: 3;
+        grid-column: 1;
+    }
+
+    #merge-button {
+        grid-row: 4;
+        grid-column: 1;
+    }
+
+    .diamond-result {
+        grid-row: 5;
+        grid-column: 1;
+    }
+}
+
+footer {
+    position: relative;
+    margin-top: 32px;
+    padding: 28px 0 18px 0;
+    text-align: center;
+    color: #5a6272;
+    font-size: 1rem;
+    box-shadow: 0 -4px 12px 0 rgba(28, 28, 87, 0.1),
+        0 -1px 2px 0 rgba(1, 1, 3, 0.1);
+}
+
+.github-link > svg {
+    position: absolute;
+    top: 50%;
+    right: 36px;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    transition: transform 0.2s;
+}
+
+.github-link > svg:hover {
+    cursor: pointer;
+    transform: translateY(-50%) scale(1.15);
 }
