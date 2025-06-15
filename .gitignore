@@ -3,6 +3,3 @@
 
 # Rust build folder
 target
-
-*.log
-*.sqlx
