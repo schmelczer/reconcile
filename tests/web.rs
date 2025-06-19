@@ -1,4 +1,5 @@
-use insta::assert_debug_snapshot;
+#![cfg(feature = "wasm")]
+
 use reconcile::wasm::{
     cursor::{JsCursorPosition, JsTextWithCursors},
     lib::{is_binary, is_file_type_mergable, merge, merge_text, merge_text_with_cursors},

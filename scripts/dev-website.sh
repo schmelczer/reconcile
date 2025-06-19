@@ -1,5 +1,9 @@
 #!/bin/bash
 
+rm -rf pkg
+
+wasm-pack build --target web --features wasm
+
 cp -R pkg/reconcile.js examples/website/
 cp -R pkg/reconcile_bg.wasm examples/website/
 
