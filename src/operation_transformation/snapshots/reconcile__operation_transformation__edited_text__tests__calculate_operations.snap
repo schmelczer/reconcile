@@ -1,5 +1,5 @@
 ---
-source: reconcile/src/operation_transformation/edited_text.rs
+source: src/operation_transformation/edited_text.rs
 expression: operations
 snapshot_kind: text
 ---
@@ -8,11 +8,11 @@ EditedText {
     operations: [
         OrderedOperation {
             order: 0,
-            operation: <insert 'Hello, my friend!' from index 0>,
+            operation: <delete 'hello world!' from index 0>,
         },
         OrderedOperation {
-            order: 0,
-            operation: <delete 'hello world!' from index 17>,
+            order: 12,
+            operation: <insert 'Hello, my friend!' from index 0>,
         },
         OrderedOperation {
             order: 12,
@@ -32,11 +32,11 @@ EditedText {
         },
         OrderedOperation {
             order: 20,
-            operation: <insert ' you doing? Albert' from index 25>,
+            operation: <delete ' you?  Adam' from index 25>,
         },
         OrderedOperation {
-            order: 20,
-            operation: <delete ' you?  Adam' from index 43>,
+            order: 31,
+            operation: <insert ' you doing? Albert' from index 25>,
         },
     ],
     cursors: [],

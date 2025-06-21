@@ -41,20 +41,20 @@ where
                 }
             },
             RawOperation::Equal(..) => Box::new(
-                maybe_previous_insert
+                maybe_previous_delete
                     .take()
                     .into_iter()
-                    .chain(maybe_previous_delete.take())
+                    .chain(maybe_previous_insert.take())
                     .chain(iter::once(next)),
             ) as Box<dyn Iterator<Item = RawOperation<T>>>,
         })
         .collect();
 
-    if let Some(prev) = maybe_previous_insert {
+    if let Some(prev) = maybe_previous_delete {
         result.push(prev);
     }
 
-    if let Some(prev) = maybe_previous_delete {
+    if let Some(prev) = maybe_previous_insert {
         result.push(prev);
     }
 
