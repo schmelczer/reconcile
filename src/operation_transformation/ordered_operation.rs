@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::operation_transformation::Operation;
+use crate::{Token, operation_transformation::Operation};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
@@ -25,10 +25,9 @@ where
             // is left or right.
             match &self.operation {
                 Operation::Equal { index, .. } => index.to_string(),
-                Operation::Insert { text, .. } => text
-                    .iter()
-                    .map(crate::tokenizer::token::Token::original)
-                    .collect::<String>(),
+                Operation::Insert { text, .. } => {
+                    text.iter().map(Token::original).collect::<String>()
+                }
                 Operation::Delete {
                     deleted_character_count,
                     ..
