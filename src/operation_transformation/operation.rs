@@ -15,7 +15,7 @@ use crate::{
 
 /// Represents a change that can be applied on a `StringBuilder`.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Operation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
@@ -40,6 +40,40 @@ where
         #[cfg(debug_assertions)]
         deleted_text: Option<String>,
     },
+}
+
+impl<T> PartialEq for Operation<T>
+where
+    T: PartialEq + Clone + std::fmt::Debug,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Operation::Equal { length, .. },
+                Operation::Equal {
+                    length: other_length,
+                    ..
+                },
+            ) => length == other_length,
+            (
+                Operation::Insert { text, .. },
+                Operation::Insert {
+                    text: other_text, ..
+                },
+            ) => text == other_text,
+            (
+                Operation::Delete {
+                    deleted_character_count,
+                    ..
+                },
+                Operation::Delete {
+                    deleted_character_count: other_deleted_character_count,
+                    ..
+                },
+            ) => deleted_character_count == other_deleted_character_count,
+            _ => false,
+        }
+    }
 }
 
 impl<T> Operation<T>
@@ -129,24 +163,28 @@ where
             Operation::Equal {
                 #[cfg(debug_assertions)]
                 text,
+                length,
                 ..
             } => {
                 #[cfg(debug_assertions)]
                 debug_assert!(
                     text.as_ref()
                         .is_none_or(|text| builder.get_slice(self.range()) == *text),
-                    "Text which is supposed to be equal does not match the text in the range"
+                    "Text (`{}`) which is supposed to be equal does not match the text in the \
+                     range: `{}`",
+                    text.as_ref().unwrap_or(&"".to_owned()),
+                    builder.get_slice(self.range())
                 );
 
-                return builder;
+                builder.retain(*length)
             }
-            Operation::Insert { text, .. } => builder.insert(
-                self.start_index(),
-                &text.iter().map(Token::original).collect::<String>(),
-            ),
+            Operation::Insert { text, .. } => {
+                builder.insert(&text.iter().map(Token::original).collect::<String>())
+            }
             Operation::Delete {
                 #[cfg(debug_assertions)]
                 deleted_text,
+                deleted_character_count,
                 ..
             } => {
                 #[cfg(debug_assertions)]
@@ -154,10 +192,12 @@ where
                     deleted_text
                         .as_ref()
                         .is_none_or(|text| builder.get_slice(self.range()) == *text),
-                    "Text to delete does not match the text in the range"
+                    "Text to delete (`{}`) does not match the text in the range: {}",
+                    deleted_text.as_ref().unwrap_or(&"".to_owned()),
+                    builder.get_slice(self.range())
                 );
 
-                builder.delete(self.range());
+                builder.delete(*deleted_character_count)
             }
         }
 
@@ -424,7 +464,7 @@ where
                     f,
                     "<equal {} from index {}>",
                     text.as_ref()
-                        .map(|text| format!("'{text}'"))
+                        .map(|text| format!("'{}'", text.replace('\n', "\\n")))
                         .unwrap_or(format!("{length} characters")),
                     index
                 )?;
@@ -438,7 +478,10 @@ where
                 write!(
                     f,
                     "<insert '{}' from index {}>",
-                    text.iter().map(Token::original).collect::<String>(),
+                    text.iter()
+                        .map(Token::original)
+                        .collect::<String>()
+                        .replace('\n', "\\n"),
                     index
                 )
             }
@@ -455,7 +498,7 @@ where
                     "<delete {} from index {}>",
                     deleted_text
                         .as_ref()
-                        .map(|text| format!("'{text}'"))
+                        .map(|text| format!("'{}'", text.replace('\n', "\\n")))
                         .unwrap_or(format!("{deleted_character_count} characters")),
                     index
                 )?;
@@ -498,16 +541,26 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
-        let operation = Operation::<()>::create_delete_with_text(5, " world".to_owned()).unwrap();
+        let delete_operation =
+            Operation::<()>::create_delete_with_text(0, "hello ".to_owned()).unwrap();
+        let retain_operation = Operation::<()>::create_equal(5, 5).unwrap();
 
-        assert_eq!(operation.apply(builder).build(), "hello");
+        let mut builder = delete_operation.apply(builder);
+        builder = retain_operation.apply(builder);
+
+        assert_eq!(builder.build(), "world");
     }
 
     #[test]
     fn test_apply_insert() {
         let builder = StringBuilder::new("hello");
-        let operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
 
-        assert_eq!(operation.apply(builder).build(), "hello my friend");
+        let retain_operation = Operation::<()>::create_equal(5, 5).unwrap();
+        let insert_operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
+
+        let mut builder = retain_operation.apply(builder);
+        builder = insert_operation.apply(builder);
+
+        assert_eq!(builder.build(), "hello my friend");
     }
 }

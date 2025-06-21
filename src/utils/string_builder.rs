@@ -1,78 +1,67 @@
 use core::ops::Range;
+use std::iter::Iterator;
 
-/// A helper for building a string in order based on an original string and a
-/// series of insertions and deletions applied to it. It is safe to use with
-/// UTF-8 strings as all operations are based on character indices.
-#[derive(Debug, Clone)]
+/// A helper for building a string in-order based on an original string and a
+/// series of insertions, deletions, and copies applied to it. It is safe to use
+/// with UTF-8 strings as all operations are based on character indices. The
+/// methods must be called in-order.
 pub struct StringBuilder<'a> {
-    original: &'a str,
-    last_old_char_index: usize,
+    original: Box<dyn Iterator<Item = char> + 'a>,
     buffer: String,
+
+    #[cfg(debug_assertions)]
+    remaining: String,
 }
 
 impl StringBuilder<'_> {
     pub fn new(original: &str) -> StringBuilder<'_> {
         StringBuilder {
-            original,
-            last_old_char_index: 0,
+            original: Box::new(original.chars()),
             buffer: String::with_capacity(original.len()),
+
+            #[cfg(debug_assertions)]
+            remaining: original.to_string(),
         }
     }
 
-    /// Insert a string at the given index after copying the original string up
-    /// to that index from the last insertion or deletion.
-    pub fn insert(&mut self, from: usize, text: &str) {
-        self.copy_until(from);
-        self.buffer.push_str(text);
+    /// Insert a string at the end of the built buffer.
+    pub fn insert(&mut self, text: &str) { self.buffer.push_str(text); }
+
+    /// Skip copying `length` characters from the original string to the built
+    /// buffer.
+    pub fn delete(&mut self, length: usize) {
+        if length == 0 {
+            return;
+        }
+
+        self.original.nth(length - 1);
+
+        if cfg!(debug_assertions) {
+            self.remaining = self.remaining.chars().skip(length).collect();
+        }
     }
 
-    /// Delete a string at the given index after copying the original string up
-    /// to that index from the last insertion or deletion.
-    pub fn delete(&mut self, range: core::ops::Range<usize>) {
-        self.copy_until(range.start);
-        self.last_old_char_index += range.len();
-    }
+    /// Copy `length` characters from the original string to the built buffer.
+    pub fn retain(&mut self, length: usize) {
+        self.buffer.extend(self.original.by_ref().take(length));
 
-    fn copy_until(&mut self, index: usize) {
-        let current_char_count = self.buffer.chars().count();
-        debug_assert!(
-            index >= current_char_count,
-            "String builder only support building in order"
-        );
-
-        let jump = index - current_char_count;
-
-        self.buffer.push_str(
-            &self
-                .original
-                .chars()
-                .skip(self.last_old_char_index)
-                .take(jump)
-                .collect::<String>(),
-        );
-        self.last_old_char_index += jump;
+        if cfg!(debug_assertions) {
+            self.remaining = self.remaining.chars().skip(length).collect();
+        }
     }
 
     /// Finish building the string after copying the remaining original string
     /// since the last insertion or deletion.
-    pub fn build(mut self) -> String {
-        self.buffer.push_str(
-            &self
-                .original
-                .chars()
-                .skip(self.last_old_char_index)
-                .collect::<String>(),
-        );
+    pub fn build(self) -> String { self.buffer }
 
-        self.buffer
-    }
-
-    #[allow(dead_code)]
+    #[cfg(debug_assertions)]
+    /// Get a slice of the built string and the remaining original string.
+    /// The implementation is quite suboptimal but it's only used for debugging.
     pub fn get_slice(&self, range: Range<usize>) -> String {
         let result = self
             .buffer
             .chars()
-            .chain(self.original.chars().skip(self.last_old_char_index))
+            .chain(self.remaining.chars())
             .skip(range.start)
             .take(range.end - range.start)
             .collect::<String>();
@@ -85,6 +74,8 @@ impl StringBuilder<'_> {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]
@@ -92,20 +83,74 @@ mod tests {
         let original = "aaa bbb ccc";
         let mut builder = StringBuilder::new(original);
 
-        builder.insert(0, "ddd ");
-        builder.delete(4..8);
-        builder.insert(11, " eee");
+        builder.insert("ddd");
+        builder.delete(3);
+        builder.retain(8);
+        builder.insert(" eee");
 
         assert_eq!(builder.build(), "ddd bbb ccc eee");
-    }
 
-    #[test]
-    fn test_string_builder2() {
         let original = "abcde";
         let mut builder = StringBuilder::new(original);
 
-        builder.delete(1..4);
+        builder.retain(1);
+        builder.delete(3);
+        builder.retain(1);
 
         assert_eq!(builder.build(), "ae");
+    }
+
+    #[test]
+    fn test_empty_original() {
+        let original = "";
+        let mut builder = StringBuilder::new(original);
+
+        builder.insert("test");
+        assert_eq!(builder.build(), "test");
+    }
+
+    #[test]
+    fn test_unicode_characters() {
+        let original = "こんにちは";
+        let mut builder = StringBuilder::new(original);
+
+        builder.retain(3);
+        builder.insert("世界, "); // Insert "World, "
+        builder.retain(2);
+
+        assert_eq!(builder.build(), "こんに世界, ちは");
+    }
+
+    #[test]
+    fn test_get_slice() {
+        let original = "abcdef";
+        let builder = StringBuilder::new(original);
+
+        // Test getting a slice of the original string
+        assert_eq!(builder.get_slice(1..4), "bcd");
+
+        // Test getting a slice that includes both buffer and remaining original
+        let mut builder = StringBuilder::new(original);
+        builder.retain(2); // "ab" in buffer
+        assert_eq!(builder.get_slice(1..5), "bcde");
+    }
+
+    #[test]
+    fn test_retain_all() {
+        let original = "Hello, world!";
+        let mut builder = StringBuilder::new(original);
+
+        builder.retain(original.len());
+        assert_eq!(builder.build(), original);
+    }
+
+    #[test]
+    fn test_delete_all() {
+        let original = "Hello";
+        let mut builder = StringBuilder::new(original);
+
+        builder.delete(original.len());
+        builder.insert("Hi");
+        assert_eq!(builder.build(), "Hi");
     }
 }
