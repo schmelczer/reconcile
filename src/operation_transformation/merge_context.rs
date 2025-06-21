@@ -52,22 +52,24 @@ where
     /// threshold operation. This updates the `shift` in case the last operation
     /// was a delete.
     pub fn consume_last_operation_if_it_is_too_behind(&mut self, threshold_index: i64) {
-        if let Some(last_operation) = self.last_operation.as_ref() {
-            if let Operation::Delete {
-                deleted_character_count,
-                ..
-            } = last_operation
-            {
-                if threshold_index + self.shift > last_operation.end_index() as i64 {
+        match self.last_operation.as_ref() {
+            Some(
+                op @ Operation::Delete {
+                    deleted_character_count,
+                    ..
+                },
+            ) => {
+                if threshold_index + self.shift > op.end_index() as i64 {
                     self.shift -= *deleted_character_count as i64;
                     self.last_operation = None;
                 }
-            } else if let Operation::Insert { .. } = last_operation
-                && threshold_index + self.shift - last_operation.len() as i64
-                    > last_operation.end_index() as i64
-            {
-                self.last_operation = None;
             }
+            Some(op @ Operation::Insert { .. }) | Some(op @ Operation::Equal { .. }) => {
+                if threshold_index + self.shift - op.len() as i64 > op.end_index() as i64 {
+                    self.last_operation = None;
+                }
+            }
+            _ => {}
         }
     }
 }

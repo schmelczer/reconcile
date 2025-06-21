@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{Token, operation_transformation::Operation};
+use crate::{operation_transformation::Operation, Token};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
@@ -17,9 +17,14 @@ impl<T> OrderedOperation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
-    pub fn get_sort_key(&self) -> (usize, usize, String) {
+    pub fn get_sort_key(&self) -> (usize, usize, usize, String) {
         (
             self.order,
+            match &self.operation {
+                Operation::Delete { .. } => 1,
+                Operation::Insert { .. } => 2,
+                Operation::Equal { .. } => 3,
+            },
             self.operation.start_index(),
             // Make sure that the ordering is deterministic regardless of which text
             // is left or right.

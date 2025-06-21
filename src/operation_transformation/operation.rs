@@ -6,16 +6,16 @@ use serde::{Deserialize, Serialize};
 
 use super::merge_context::MergeContext;
 use crate::{
-    Token,
     utils::{
         find_longest_prefix_contained_within::find_longest_prefix_contained_within,
         string_builder::StringBuilder,
     },
+    Token,
 };
 
 /// Represents a change that can be applied on a `StringBuilder`.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Operation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
@@ -42,39 +42,39 @@ where
     },
 }
 
-impl<T> PartialEq for Operation<T>
-where
-    T: PartialEq + Clone + std::fmt::Debug,
-{
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (
-                Operation::Equal { length, .. },
-                Operation::Equal {
-                    length: other_length,
-                    ..
-                },
-            ) => length == other_length,
-            (
-                Operation::Insert { text, .. },
-                Operation::Insert {
-                    text: other_text, ..
-                },
-            ) => text == other_text,
-            (
-                Operation::Delete {
-                    deleted_character_count,
-                    ..
-                },
-                Operation::Delete {
-                    deleted_character_count: other_deleted_character_count,
-                    ..
-                },
-            ) => deleted_character_count == other_deleted_character_count,
-            _ => false,
-        }
-    }
-}
+// impl<T> PartialEq for Operation<T>
+// where
+//     T: PartialEq + Clone + std::fmt::Debug,
+// {
+//     fn eq(&self, other: &Self) -> bool {
+//         match (self, other) {
+//             (
+//                 Operation::Equal { length, .. },
+//                 Operation::Equal {
+//                     length: other_length,
+//                     ..
+//                 },
+//             ) => length == other_length,
+//             (
+//                 Operation::Insert { text, .. },
+//                 Operation::Insert {
+//                     text: other_text, ..
+//                 },
+//             ) => text == other_text,
+//             (
+//                 Operation::Delete {
+//                     deleted_character_count,
+//                     ..
+//                 },
+//                 Operation::Delete {
+//                     deleted_character_count: other_deleted_character_count,
+//                     ..
+//                 },
+//             ) => deleted_character_count == other_deleted_character_count,
+//             _ => false,
+//         }
+//     }
+// }
 
 impl<T> Operation<T>
 where
@@ -192,7 +192,7 @@ where
                     deleted_text
                         .as_ref()
                         .is_none_or(|text| builder.get_slice(self.range()) == *text),
-                    "Text to delete (`{}`) does not match the text in the range: {}",
+                    "Text to-be-deleted `{}` does not match the text in the range: `{}`",
                     deleted_text.as_ref().unwrap_or(&"".to_owned()),
                     builder.get_slice(self.range())
                 );
@@ -531,11 +531,9 @@ mod tests {
     #[test]
     #[should_panic(expected = "Shifted index must be non-negative")]
     fn test_shifting_error() {
-        insta::assert_debug_snapshot!(
-            Operation::create_insert(1, vec!["hi".into()])
-                .unwrap()
-                .with_shifted_index(-2)
-        );
+        insta::assert_debug_snapshot!(Operation::create_insert(1, vec!["hi".into()])
+            .unwrap()
+            .with_shifted_index(-2));
     }
 
     #[test]

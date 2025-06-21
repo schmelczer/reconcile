@@ -67,7 +67,7 @@ expected: market| placemarket|space
 parent: A B C D
 left: A X B D|
 right: A B Y|
-expected: A X B |Y|
+expected: A X B Y||
 
 ---
 parent: Please submit your assignment by Friday
