@@ -8,7 +8,7 @@ use crate::{
         cook_operations::cook_operations, elongate_operations::elongate_operations,
     },
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
-    utils::{side::Side, string_builder::StringBuilder},
+    utils::{history::History, side::Side, string_builder::StringBuilder},
 };
 
 /// A text document and a sequence of operations that can be applied to the text
@@ -42,8 +42,8 @@ impl<'a> EditedText<'a, String> {
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
     #[must_use]
-    pub fn from_strings(original: &'a str, updated: TextWithCursors<'a>) -> Self {
-        Self::from_strings_with_tokenizer(original, updated, &word_tokenizer)
+    pub fn from_strings(original: &'a str, updated: TextWithCursors<'a>, side: Side) -> Self {
+        Self::from_strings_with_tokenizer(original, updated, &word_tokenizer, side)
     }
 }
 
@@ -60,6 +60,7 @@ where
         original: &'a str,
         updated: TextWithCursors<'a>,
         tokenizer: &Tokenizer<T>,
+        side: Side,
     ) -> Self {
         let original_tokens = (tokenizer)(original);
         let updated_tokens = (tokenizer)(&updated.text);
@@ -68,7 +69,7 @@ where
 
         Self::new(
             original,
-            cook_operations(elongate_operations(diff)).collect(),
+            cook_operations(elongate_operations(diff), side).collect(),
             updated.cursors,
         )
     }
@@ -223,6 +224,39 @@ where
 
         builder.build()
     }
+
+    #[must_use]
+    pub fn apply_with_history(&self) -> Vec<(History, String)> {
+        let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
+
+        let mut history = Vec::with_capacity(self.operations.len());
+
+        for operation in &self.operations {
+            builder = operation.apply(builder);
+
+            match operation {
+                Operation::Equal { .. } => history.push((History::Unchanged, builder.take())),
+                Operation::Insert { side, .. } => match side {
+                    Side::Left => history.push((History::AddedFromLeft, builder.take())),
+                    Side::Right => history.push((History::AddedFromRight, builder.take())),
+                },
+                Operation::Delete {
+                    deleted_character_count,
+                    order,
+                    side,
+                    ..
+                } => {
+                    let deleted = self.text[*order..*order + *deleted_character_count].to_string();
+                    match side {
+                        Side::Left => history.push((History::RemovedFromLeft, deleted)),
+                        Side::Right => history.push((History::RemovedFromRight, deleted)),
+                    }
+                }
+            }
+        }
+
+        history
+    }
 }
 
 #[cfg(test)]
@@ -237,7 +271,7 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = EditedText::from_strings(left, right.into());
+        let operations = EditedText::from_strings(left, right.into(), Side::Right);
 
         insta::assert_debug_snapshot!(operations);
 
@@ -249,7 +283,7 @@ mod tests {
     fn test_calculate_operations_with_no_diff() {
         let text = "hello world!";
 
-        let operations = EditedText::from_strings(text, text.into());
+        let operations = EditedText::from_strings(text, text.into(), Side::Right);
 
         assert_debug_snapshot!(operations);
 
@@ -264,8 +298,8 @@ mod tests {
         let right = "Hello world! How are you?";
         let expected = "Hello world! How are you? I'm Andras.";
 
-        let operations_1 = EditedText::from_strings(original, left.into());
-        let operations_2 = EditedText::from_strings(original, right.into());
+        let operations_1 = EditedText::from_strings(original, left.into(), Side::Left);
+        let operations_2 = EditedText::from_strings(original, right.into(), Side::Right);
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply(), expected);

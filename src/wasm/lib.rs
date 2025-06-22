@@ -13,7 +13,7 @@ use core::str;
 
 use wasm_bindgen::prelude::*;
 
-use crate::wasm::cursor::JsTextWithCursors;
+use crate::wasm::types::{JsTextWithCursors, JsTextWithHistory};
 
 /// Merge two documents with a common parent. Relies on `reconcile::reconcile`
 /// for texts and returns the right document as-is if either of the updated
@@ -56,6 +56,18 @@ pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
     set_panic_hook();
 
     crate::reconcile(parent, left, right)
+}
+
+/// WASM wrapper around `crate::reconcile` for merging text.
+#[wasm_bindgen(js_name = mergeTextWithHistory)]
+#[must_use]
+pub fn merge_text_with_history(parent: &str, left: &str, right: &str) -> Vec<JsTextWithHistory> {
+    set_panic_hook();
+
+    crate::reconcile_with_history(parent, left, right)
+        .into_iter()
+        .map(Into::into)
+        .collect()
 }
 
 /// WASM wrapper around `reconcile::reconcile_with_cursors` for merging text.

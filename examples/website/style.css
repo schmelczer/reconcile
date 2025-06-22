@@ -1,6 +1,7 @@
 * {
     box-sizing: border-box;
     margin: 0;
+    user-select: none;
 }
 
 html,
@@ -40,7 +41,7 @@ main {
     flex: 1;
     display: grid;
     grid-template-rows: auto auto auto;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     justify-items: center;
     align-items: center;
@@ -58,33 +59,7 @@ main {
 }
 
 .diamond-right {
-    grid-column: 3;
-    grid-row: 2;
-}
-
-#merge-button {
     grid-column: 2;
-    grid-row: 2;
-    padding: 12px 36px;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #2451a6 0%, #3486eb 100%);
-    color: #fff;
-    font-size: 1.15rem;
-    font-weight: 600;
-    box-shadow: 0 2px 12px 0 rgba(36, 81, 166, 0.08);
-    cursor: pointer;
-    align-self: center;
-    transition: transform 0.2s;
-    margin: 0 32px;
-}
-
-#merge-button:hover {
-    transform: scale(1.1);
-}
-
-.diamond-right {
-    grid-column: 3;
     grid-row: 2;
 }
 
@@ -93,10 +68,9 @@ main {
     grid-row: 3;
     display: flex;
     align-items: center;
-    pointer-events: none;
 }
 
-.text-area {
+.text-area-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -115,6 +89,15 @@ label {
     color: #2451a6;
 }
 
+.box {
+    width: 1ch;
+    height: 1ch;
+    border-radius: 50%;
+    margin-left: 6px;
+    display: inline-block;
+    transform: scale(1.5);
+}
+
 textarea {
     width: 100%;
     border: none;
@@ -128,6 +111,29 @@ textarea {
     height: 100%;
 }
 
+#merged {
+    width: 100%;
+    text-align: left;
+    user-select: text;
+}
+
+.Left,
+.AddedFromLeft,
+.RemovedFromLeft {
+    background: #12d197;
+}
+
+.Right,
+.AddedFromRight,
+.RemovedFromRight {
+    background: #8575ed;
+}
+
+.RemovedFromLeft,
+.RemovedFromRight {
+    text-decoration: line-through;
+}
+
 @media (max-width: 900px) {
     main {
         padding: 24px 2vw;
@@ -139,29 +145,25 @@ textarea {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto auto auto;
     }
+
+    main > * {
+        grid-column: 1;
+    }
+
     .diamond-parent {
         grid-row: 1;
-        grid-column: 1;
     }
 
     .diamond-left {
         grid-row: 2;
-        grid-column: 1;
     }
 
     .diamond-right {
         grid-row: 3;
-        grid-column: 1;
-    }
-
-    #merge-button {
-        grid-row: 4;
-        grid-column: 1;
     }
 
     .diamond-result {
         grid-row: 5;
-        grid-column: 1;
     }
 }
 
@@ -178,6 +180,7 @@ footer {
 
 .github-link > svg {
     position: absolute;
+    color: #5a6272;
     top: 50%;
     right: 36px;
     transform: translateY(-50%);

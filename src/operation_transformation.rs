@@ -7,7 +7,10 @@ pub use cursor::{CursorPosition, TextWithCursors};
 pub use edited_text::EditedText;
 pub use operation::Operation;
 
-use crate::Tokenizer;
+use crate::{
+    Tokenizer,
+    utils::{history::History, side::Side},
+};
 
 #[must_use]
 pub fn reconcile(original: &str, left: &str, right: &str) -> String {
@@ -17,13 +20,21 @@ pub fn reconcile(original: &str, left: &str, right: &str) -> String {
 }
 
 #[must_use]
+pub fn reconcile_with_history(original: &str, left: &str, right: &str) -> Vec<(History, String)> {
+    let left_operations = EditedText::from_strings(original, left.into(), Side::Left);
+    let right_operations = EditedText::from_strings(original, right.into(), Side::Right);
+
+    left_operations.merge(right_operations).apply_with_history()
+}
+
+#[must_use]
 pub fn reconcile_with_cursors<'a>(
     original: &'a str,
     left: TextWithCursors<'a>,
     right: TextWithCursors<'a>,
 ) -> TextWithCursors<'static> {
-    let left_operations = EditedText::from_strings(original, left);
-    let right_operations = EditedText::from_strings(original, right);
+    let left_operations = EditedText::from_strings(original, left, Side::Left);
+    let right_operations = EditedText::from_strings(original, right, Side::Right);
 
     let merged_operations = left_operations.merge(right_operations);
 
@@ -40,8 +51,10 @@ pub fn reconcile_with_tokenizer<'a, F, T>(
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
-    let left_operations = EditedText::from_strings_with_tokenizer(original, left, tokenizer);
-    let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);
+    let left_operations =
+        EditedText::from_strings_with_tokenizer(original, left, tokenizer, Side::Left);
+    let right_operations =
+        EditedText::from_strings_with_tokenizer(original, right, tokenizer, Side::Right);
 
     let merged_operations = left_operations.merge(right_operations);
 

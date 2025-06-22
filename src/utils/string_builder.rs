@@ -35,7 +35,8 @@ impl StringBuilder<'_> {
 
         self.original.nth(length - 1);
 
-        if cfg!(debug_assertions) {
+        #[cfg(debug_assertions)]
+        {
             self.remaining = self.remaining.chars().skip(length).collect();
         }
     }
@@ -44,20 +45,28 @@ impl StringBuilder<'_> {
     pub fn retain(&mut self, length: usize) {
         self.buffer.extend(self.original.by_ref().take(length));
 
-        if cfg!(debug_assertions) {
+        #[cfg(debug_assertions)]
+        {
             self.remaining = self.remaining.chars().skip(length).collect();
         }
+    }
+
+    /// Returns the currently built buffer and clears it.
+    pub fn take(&mut self) -> String {
+        let result = self.buffer.clone();
+        self.buffer.clear();
+        result
     }
 
     /// Finish building the string after copying the remaining original string
     /// since the last insertion or deletion.
     pub fn build(self) -> String { self.buffer }
 
-    #[cfg(debug_assertions)]
     /// Get a slice of the remaining original string. The slice starts from
     /// where the next delete/retain operation would start and is of length
     /// `length`. The implementation is quite suboptimal but it's only used
     /// for debugging.
+    #[cfg(debug_assertions)]
     pub fn get_slice_from_remaining(&self, length: usize) -> String {
         let result = self.remaining.chars().take(length).collect::<String>();
 
