@@ -23,6 +23,8 @@
         <link rel="stylesheet" href="style.css" />
     </head>
     <body>
+        <div class="background"></div>
+
         <div class="page-wrapper">
             <header>
                 <h1>3-Way Text Merge</h1>
@@ -66,34 +68,40 @@
 
             <main>
                 <div class="text-area-card diamond-parent">
-                    <label for="original">Original</label>
+                    <label
+                        for="original"
+                        title="The text document's content before any concurrent edits occurred."
+                        >Original</label
+                    >
                     <textarea id="original" name="original"></textarea>
                 </div>
 
                 <div class="text-area-card diamond-left">
-                    <label for="left">
+                    <label
+                        for="left"
+                        title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour green."
+                    >
                         First concurrent edit
-                        <div
-                            class="box Left"
-                            title="Colour-coded tokens mark the origin of each token, including ones that got deleted."
-                        ></div>
+                        <div class="box Left"></div>
                     </label>
                     <textarea id="left" name="left"></textarea>
                 </div>
 
                 <div class="text-area-card diamond-right">
-                    <label for="right"
-                        >Second concurrent edit
-                        <div
-                            class="box Right"
-                            title="Colour-coded tokens mark the origin of each token, including ones that got deleted."
-                        ></div>
+                    <label
+                        for="right"
+                        title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour blue."
+                    >
+                        Second concurrent edit
+                        <div class="box Right"></div>
                     </label>
                     <textarea id="right" name="right"></textarea>
                 </div>
 
                 <div class="text-area-card diamond-result">
-                    <label>
+                    <label
+                        title="Read-only. Change the above text boxes to change the content of this box."
+                    >
                         Deconflicted result
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -105,7 +113,6 @@
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            title="Read-only. Change the above text boxes to change the content of this box."
                         >
                             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                             <path

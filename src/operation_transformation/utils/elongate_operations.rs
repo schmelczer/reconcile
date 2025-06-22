@@ -78,7 +78,7 @@ mod tests {
     }
 
     fn ins_custom(text: &str, lj: bool, rj: bool) -> RawOperation<String> {
-        RawOperation::Insert(vec![Token::new(text.to_string(), text.to_string(), lj, rj)])
+        RawOperation::Insert(vec![Token::new(text.to_owned(), text.to_owned(), lj, rj)])
     }
 
     #[test]
@@ -88,7 +88,10 @@ mod tests {
         assert_eq!(result.len(), 1);
         match &result[0] {
             RawOperation::Insert(tokens) => {
-                let originals: String = tokens.iter().map(|t| t.original()).collect();
+                let originals: String = tokens
+                    .iter()
+                    .map(crate::tokenizer::token::Token::original)
+                    .collect();
                 assert_eq!(originals, "abc");
             }
             _ => panic!("Expected single Insert operation"),
