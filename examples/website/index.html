@@ -23,39 +23,110 @@
         <link rel="stylesheet" href="style.css" />
     </head>
     <body>
-        <header>
-            <h1>3-Way Text Merge</h1>
-            <p>Use this tool to merge three versions of a text.</p>
-        </header>
+        <div class="page-wrapper">
+            <header>
+                <h1>3-Way Text Merge</h1>
+                <p>
+                    The
+                    <a
+                        href="https://github.com/schmelczer/reconcile"
+                        target="_blank"
+                        >reconcile</a
+                    >
+                    solves a fundamental challenge in collaborative editing:
+                    what happens when multiple people edit the same text
+                    simultaneously?
+                    <code
+                        >reconcile(parent: str, left: str, right: str) ->
+                        str</code
+                    >
+                    takes conflicting concurrent edits and intelligently merges
+                    them into a unified result. Beyond basic conflict
+                    resolution, it offers sophisticated merging heuristics,
+                    flexible tokenization options, and cursor position tracking.
+                </p>
+                <p>
+                    The algorithm begins with your chosen tokenizer, then
+                    applies Myers' diff algorithm to compare the original text
+                    with both conflicting versions. These diffs undergo
+                    transformation to preserve meaningful change sequences,
+                    before a final merge strategy—inspired by Operational
+                    Transformation (OT)—reconciles all conflicting modifications
+                    without losing any edits.
+                </p>
+                <p>
+                    For more details, see the
+                    <a
+                        href="https://github.com/schmelczer/reconcile"
+                        target="_blank"
+                        >README</a
+                    >.
+                </p>
+            </header>
 
-        <main>
-            <div class="text-area-card diamond-parent">
-                <label for="original">Original</label>
-                <textarea id="original" name="original"></textarea>
-            </div>
+            <main>
+                <div class="text-area-card diamond-parent">
+                    <label for="original">Original</label>
+                    <textarea id="original" name="original"></textarea>
+                </div>
 
-            <div class="text-area-card diamond-left">
-                <label for="left">
-                    First concurrent edit
-                    <div class="box Left"></div>
-                </label>
-                <textarea id="left" name="left"></textarea>
-            </div>
+                <div class="text-area-card diamond-left">
+                    <label for="left">
+                        First concurrent edit
+                        <div
+                            class="box Left"
+                            title="Colour-coded tokens mark the origin of each token, including ones that got deleted."
+                        ></div>
+                    </label>
+                    <textarea id="left" name="left"></textarea>
+                </div>
 
-            <div class="text-area-card diamond-right">
-                <label for="right"
-                    >Second concurrent edit
-                    <div
-                        class="box Right"
-                        title="Indicates changes from the second concurrent edit"
-                    ></div>
-                </label>
-                <textarea id="right" name="right"></textarea>
-            </div>
+                <div class="text-area-card diamond-right">
+                    <label for="right"
+                        >Second concurrent edit
+                        <div
+                            class="box Right"
+                            title="Colour-coded tokens mark the origin of each token, including ones that got deleted."
+                        ></div>
+                    </label>
+                    <textarea id="right" name="right"></textarea>
+                </div>
 
-            <div class="text-area-card diamond-result">
-                <label
-                    ><svg
+                <div class="text-area-card diamond-result">
+                    <label>
+                        Deconflicted result
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            title="Read-only. Change the above text boxes to change the content of this box."
+                        >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M10 10l-6 6v4h4l6 -6m1.99 -1.99l2.504 -2.504a2.828 2.828 0 1 0 -4 -4l-2.5 2.5"
+                            />
+                            <path d="M13.5 6.5l4 4" />
+                            <path d="M3 3l18 18" />
+                        </svg>
+                    </label>
+                    <div id="merged"></div>
+                </div>
+            </main>
+
+            <footer>
+                <p>2025 Andras Schmelczer</p>
+                <a
+                    href="https://github.com/schmelczer/reconcile"
+                    class="github-link"
+                    aria-label="GitHub repository"
+                >
+                    <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
                         height="24"
@@ -68,42 +139,12 @@
                     >
                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                         <path
-                            d="M10 10l-6 6v4h4l6 -6m1.99 -1.99l2.504 -2.504a2.828 2.828 0 1 0 -4 -4l-2.5 2.5"
+                            d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"
                         />
-                        <path d="M13.5 6.5l4 4" />
-                        <path d="M3 3l18 18" />
                     </svg>
-                    Deconflicted result (readonly)</label
-                >
-                <div id="merged"></div>
-            </div>
-        </main>
-
-        <footer>
-            <p>2025 Andras Schmelczer</p>
-            <a
-                href="https://github.com/schmelczer/reconcile"
-                class="github-link"
-                aria-label="GitHub repository"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path
-                        d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"
-                    />
-                </svg>
-            </a>
-        </footer>
+                </a>
+            </footer>
+        </div>
 
         <script type="module" src="script.js"></script>
     </body>

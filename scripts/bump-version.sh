@@ -28,8 +28,6 @@ cargo set-version --bump $1
 
 wasm-pack build --target web --features wasm
 
-
-
 # Commit and tag
 git add .
 git commit -m "Bump versions to $TAG"

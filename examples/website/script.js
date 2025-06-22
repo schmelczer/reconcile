@@ -5,13 +5,7 @@ const leftTextArea = document.getElementById("left");
 const rightTextArea = document.getElementById("right");
 const mergedTextArea = document.getElementById("merged");
 
-const sampleTexts = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
-    "A journey of a thousand miles begins with a single step.",
-    "To be, or not to be, that is the question.",
-];
+const sampleText = `The \`reconcile\` Rust library is embedded on this page a WASM module and it powers these text boxes. Experiment with the "Original", "First concurrent edit", and "Second concurrent edit" text boxes to watch competing changes merge in real-time within the "Deconflicted result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenization strategy, for example, deciding how casing or white-spacing is taken into account.`;
 
 async function run() {
     await init();
@@ -19,6 +13,7 @@ async function run() {
     originalTextArea.addEventListener("input", updateMergedText);
     leftTextArea.addEventListener("input", updateMergedText);
     rightTextArea.addEventListener("input", updateMergedText);
+    window.addEventListener("resize", resizeTextAreas);
 
     loadSample();
     updateMergedText();
@@ -29,7 +24,15 @@ async function run() {
     leftTextArea.selectionEnd = leftTextArea.value.length;
 }
 
+function resizeTextAreas() {
+    autoResize(originalTextArea);
+    autoResize(leftTextArea);
+    autoResize(rightTextArea);
+}
+
 function updateMergedText() {
+    resizeTextAreas();
+
     const original = originalTextArea.value;
     const left = leftTextArea.value;
     const right = rightTextArea.value;
@@ -48,11 +51,18 @@ function updateMergedText() {
 }
 
 function loadSample() {
-    const randomIndex = Math.floor(Math.random() * sampleTexts.length);
-    const text = sampleTexts[randomIndex];
-    originalTextArea.value = text;
-    leftTextArea.value = text;
-    rightTextArea.value = text;
+    originalTextArea.value = sampleText;
+    leftTextArea.value =
+        sampleText.replace("color", "colour") +
+        " Check out what's the most complex conflict you can come up with!";
+    rightTextArea.value = sampleText
+        .replace(", for example,", " such as")
+        .replace("WASM", "WebAssembly");
+}
+
+function autoResize(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
 }
 
 run();
