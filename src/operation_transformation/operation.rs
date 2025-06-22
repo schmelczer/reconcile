@@ -245,7 +245,7 @@ where
                         Operation::create_delete_with_text(
                             order + overlap,
                             text.chars()
-                                .skip((deleted_character_count - new_length) as usize)
+                                .skip(deleted_character_count - new_length)
                                 .collect::<String>(),
                         )
                     },

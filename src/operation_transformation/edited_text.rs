@@ -7,7 +7,7 @@ use crate::{
     operation_transformation::utils::{
         cook_operations::cook_operations, elongate_operations::elongate_operations,
     },
-    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
+    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{side::Side, string_builder::StringBuilder},
 };
 
