@@ -6,38 +6,14 @@ snapshot_kind: text
 EditedText {
     text: "hello world! How are you?  Adam",
     operations: [
-        OrderedOperation {
-            order: 0,
-            operation: <delete 'hello world!'>,
-        },
-        OrderedOperation {
-            order: 12,
-            operation: <insert 'Hello, my friend!'>,
-        },
-        OrderedOperation {
-            order: 12,
-            operation: <equal ' '>,
-        },
-        OrderedOperation {
-            order: 13,
-            operation: <equal 'How'>,
-        },
-        OrderedOperation {
-            order: 16,
-            operation: <equal ' '>,
-        },
-        OrderedOperation {
-            order: 17,
-            operation: <equal 'are'>,
-        },
-        OrderedOperation {
-            order: 20,
-            operation: <delete ' you?  Adam'>,
-        },
-        OrderedOperation {
-            order: 31,
-            operation: <insert ' you doing? Albert'>,
-        },
+        <delete 'hello world!' from 0>,
+        <insert 'Hello, my friend!' at 12>,
+        <equal ' ' from 12>,
+        <equal 'How' from 13>,
+        <equal ' ' from 16>,
+        <equal 'are' from 17>,
+        <delete ' you?  Adam' from 20>,
+        <insert ' you doing? Albert' at 31>,
     ],
     cursors: [],
 }

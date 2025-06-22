@@ -1,12 +1,10 @@
 use core::fmt::{Debug, Display};
-use std::ops::Range;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{
     Token,
-    operation_transformation::ordered_operation::OrderedOperation,
     utils::{
         find_longest_prefix_contained_within::find_longest_prefix_contained_within,
         string_builder::StringBuilder,
@@ -21,6 +19,7 @@ where
     T: PartialEq + Clone + std::fmt::Debug,
 {
     Equal {
+        order: usize,
         length: usize,
 
         #[cfg(debug_assertions)]
@@ -28,10 +27,12 @@ where
     },
 
     Insert {
+        order: usize,
         text: Vec<Token<T>>,
     },
 
     Delete {
+        order: usize,
         deleted_character_count: usize,
 
         #[cfg(debug_assertions)]
@@ -46,8 +47,9 @@ where
     /// Creates an equal operation with the given index.
     /// This operation is used to indicate that the text at the given index
     /// is unchanged.
-    pub fn create_equal(length: usize) -> Self {
+    pub fn create_equal(order: usize, length: usize) -> Self {
         Operation::Equal {
+            order,
             length,
 
             #[cfg(debug_assertions)]
@@ -55,8 +57,9 @@ where
         }
     }
 
-    pub fn create_equal_with_text(text: String) -> Self {
+    pub fn create_equal_with_text(order: usize, text: String) -> Self {
         Operation::Equal {
+            order,
             length: text.chars().count(),
 
             #[cfg(debug_assertions)]
@@ -65,12 +68,15 @@ where
     }
 
     /// Creates an insert operation with the given index and text.
-    pub fn create_insert(text: Vec<Token<T>>) -> Self { Operation::Insert { text } }
+    pub fn create_insert(order: usize, text: Vec<Token<T>>) -> Self {
+        Operation::Insert { order, text }
+    }
 
     /// Creates a delete operation with the given index and number of
     /// to-be-deleted characters.
-    pub fn create_delete(deleted_character_count: usize) -> Self {
+    pub fn create_delete(order: usize, deleted_character_count: usize) -> Self {
         Operation::Delete {
+            order,
             deleted_character_count,
 
             #[cfg(debug_assertions)]
@@ -78,13 +84,46 @@ where
         }
     }
 
-    pub fn create_delete_with_text(text: String) -> Self {
+    pub fn create_delete_with_text(order: usize, text: String) -> Self {
         Operation::Delete {
+            order,
             deleted_character_count: text.chars().count(),
 
             #[cfg(debug_assertions)]
             deleted_text: Some(text),
         }
+    }
+
+    fn order(&self) -> usize {
+        match self {
+            Operation::Equal { order, .. } => *order,
+            Operation::Insert { order, .. } => *order,
+            Operation::Delete { order, .. } => *order,
+        }
+    }
+
+    pub fn get_sort_key(&self, insertion_index: usize) -> (usize, usize, usize, String) {
+        (
+            self.order(),
+            match self {
+                Operation::Delete { .. } => 1,
+                Operation::Insert { .. } => 2,
+                Operation::Equal { .. } => 3,
+            },
+            insertion_index,
+            // Make sure that the ordering is deterministic regardless of which text
+            // is left or right.
+            match self {
+                Operation::Equal { length, .. } => length.to_string(),
+                Operation::Insert { text, .. } => {
+                    text.iter().map(Token::original).collect::<String>()
+                }
+                Operation::Delete {
+                    deleted_character_count,
+                    ..
+                } => deleted_character_count.to_string(),
+            },
+        )
     }
 
     /// Applies the operation to the given `StringBuilder`, returning the
@@ -156,23 +195,14 @@ where
     /// the merging of operations in a way that is consistent with the text.
     /// The contexts are updated in-place.
     #[allow(clippy::too_many_lines)]
-    pub fn merge_operations_with_context(
-        self,
-        order: usize,
-        previous_operation: &mut Option<OrderedOperation<T>>,
-    ) -> OrderedOperation<T> {
-        println!("mergin: {self} (order {order}) - previous: {previous_operation:?}");
+    pub fn merge_operations(self, previous_operation: &mut Option<Self>) -> Operation<T> {
         let operation = self;
 
         match (operation, previous_operation) {
             (
-                Operation::Insert { text },
-                Some(OrderedOperation {
-                    operation:
-                        Operation::Insert {
-                            text: previous_inserted_text,
-                            ..
-                        },
+                Operation::Insert { order, text },
+                Some(Operation::Insert {
+                    text: previous_inserted_text,
                     ..
                 }),
             ) => {
@@ -182,29 +212,26 @@ where
                 let offset_in_tokens =
                     find_longest_prefix_contained_within(previous_inserted_text, &text);
 
-                let trimmed_operation = Operation::create_insert(text[offset_in_tokens..].to_vec());
-
-                OrderedOperation {
-                    order,
-                    operation: trimmed_operation,
-                }
+                Operation::create_insert(order, text[offset_in_tokens..].to_vec())
             }
 
             (
                 Operation::Delete {
+                    order,
+                    deleted_character_count,
+
                     #[cfg(debug_assertions)]
                     deleted_text,
-                    deleted_character_count,
                 },
-                Some(
-                    last_delete @ OrderedOperation {
-                        operation: Operation::Delete { .. },
-                        ..
-                    },
-                ),
+                Some(Operation::Delete {
+                    order: last_delete_order,
+                    deleted_character_count: last_delete_deleted_character_count,
+                    ..
+                }),
             ) => {
                 let operation_end_index = order + deleted_character_count;
-                let last_delete_end_index = last_delete.order + last_delete.operation.len();
+                let last_delete_end_index =
+                    *last_delete_order + *last_delete_deleted_character_count;
 
                 let new_length = deleted_character_count
                     .min(0.max(operation_end_index as i64 - last_delete_end_index as i64) as usize);
@@ -213,9 +240,10 @@ where
 
                 #[cfg(debug_assertions)]
                 let updated_delete = deleted_text.as_ref().map_or_else(
-                    || Operation::create_delete(new_length),
+                    || Operation::create_delete(order + overlap, new_length),
                     |text| {
                         Operation::create_delete_with_text(
+                            order + overlap,
                             text.chars()
                                 .skip((deleted_character_count - new_length) as usize)
                                 .collect::<String>(),
@@ -224,72 +252,72 @@ where
                 );
 
                 #[cfg(not(debug_assertions))]
-                let updated_delete = Operation::create_delete(new_length);
+                let updated_delete = Operation::create_delete(order + overlap, new_length);
 
-                OrderedOperation {
-                    order: order + overlap,
-                    operation: updated_delete,
-                }
+                updated_delete
             }
 
             (
-                ref operation @ Operation::Equal {
+                Operation::Equal {
+                    order,
                     length,
+
                     #[cfg(debug_assertions)]
                     ref text,
-                    ..
                 },
-                Some(
-                    last_delete @ OrderedOperation {
-                        operation: Operation::Delete { .. },
-                        ..
-                    },
-                ),
+                Some(Operation::Delete {
+                    order: last_delete_order,
+                    deleted_character_count: last_delete_deleted_character_count,
+                    ..
+                }),
             ) => {
-                let last_delete_end_index = last_delete.order + last_delete.operation.len();
+                let last_delete_end_index =
+                    *last_delete_order + *last_delete_deleted_character_count;
 
                 let overlap =
                     0.max((length as i64).min(last_delete_end_index as i64 - order as i64));
 
                 #[cfg(debug_assertions)]
                 let updated_equal = text.as_ref().map_or_else(
-                    || Operation::create_equal((length as i64 - overlap) as usize),
+                    || {
+                        Operation::create_equal(
+                            order + overlap as usize,
+                            (length as i64 - overlap) as usize,
+                        )
+                    },
                     |text| {
                         Operation::create_equal_with_text(
+                            order + overlap as usize,
                             text.chars().skip(overlap as usize).collect::<String>(),
                         )
                     },
                 );
 
                 #[cfg(not(debug_assertions))]
-                let updated_equal = Operation::create_equal((length as i64 - overlap) as usize);
+                let updated_equal = Operation::create_equal(
+                    order + overlap as usize,
+                    (length as i64 - overlap) as usize,
+                );
 
-                OrderedOperation {
-                    order: order + overlap as usize,
-                    operation: updated_equal,
-                }
+                updated_equal
             }
 
             (
-                operation @ Operation::Equal { .. },
-                Some(
-                    last_equal @ OrderedOperation {
-                        operation: Operation::Equal { .. },
-                        ..
-                    },
-                ),
-            ) => OrderedOperation {
-                order,
-                operation: if operation.len() == last_equal.operation.len()
-                    && order == last_equal.order
-                {
-                    Operation::create_equal(0)
+                ref operation @ Operation::Equal { ref order, .. },
+                Some(Operation::Equal {
+                    order: last_equal_order,
+                    length: last_equal_length,
+                    ..
+                }),
+            ) => {
+                if operation.len() == *last_equal_length && *order == *last_equal_order {
+                    Operation::create_equal(*order, 0)
                 } else {
-                    operation
-                },
-            },
+                    operation.clone()
+                }
+            }
 
-            (operation, _) => OrderedOperation { order, operation },
+            (operation, _) => operation,
         }
     }
 }
@@ -301,6 +329,7 @@ where
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Operation::Equal {
+                order,
                 length,
 
                 #[cfg(debug_assertions)]
@@ -309,21 +338,21 @@ where
                 #[cfg(debug_assertions)]
                 write!(
                     f,
-                    "<equal {}>",
+                    "<equal {} from {order}>",
                     text.as_ref()
                         .map(|text| format!("'{}'", text.replace('\n', "\\n")))
                         .unwrap_or(format!("{length} characters")),
                 )?;
 
                 #[cfg(not(debug_assertions))]
-                write!(f, "<equal {length}>")?;
+                write!(f, "<equal {length} from {order}>")?;
 
                 Ok(())
             }
-            Operation::Insert { text } => {
+            Operation::Insert { order, text } => {
                 write!(
                     f,
-                    "<insert '{}'>",
+                    "<insert '{}' at {order}>",
                     text.iter()
                         .map(Token::original)
                         .collect::<String>()
@@ -331,6 +360,7 @@ where
                 )
             }
             Operation::Delete {
+                order,
                 deleted_character_count,
 
                 #[cfg(debug_assertions)]
@@ -339,7 +369,7 @@ where
                 #[cfg(debug_assertions)]
                 write!(
                     f,
-                    "<delete {}>",
+                    "<delete {} from {order}>",
                     deleted_text
                         .as_ref()
                         .map(|text| format!("'{}'", text.replace('\n', "\\n")))
@@ -347,7 +377,10 @@ where
                 )?;
 
                 #[cfg(not(debug_assertions))]
-                write!(f, "<delete {deleted_character_count} characters>",)?;
+                write!(
+                    f,
+                    "<delete {deleted_character_count} characters from {order}>",
+                )?;
 
                 Ok(())
             }
@@ -371,8 +404,8 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
-        let delete_operation = Operation::<()>::create_delete_with_text("hello ".to_owned());
-        let retain_operation = Operation::<()>::create_equal(5);
+        let delete_operation = Operation::<()>::create_delete_with_text(0, "hello ".to_owned());
+        let retain_operation = Operation::<()>::create_equal(6, 5);
 
         let mut builder = delete_operation.apply(builder);
         builder = retain_operation.apply(builder);
@@ -384,8 +417,8 @@ mod tests {
     fn test_apply_insert() {
         let builder = StringBuilder::new("hello");
 
-        let retain_operation = Operation::<()>::create_equal(5);
-        let insert_operation = Operation::create_insert(vec![" my friend".into()]);
+        let retain_operation = Operation::<()>::create_equal(0, 5);
+        let insert_operation = Operation::create_insert(5, vec![" my friend".into()]);
 
         let mut builder = retain_operation.apply(builder);
         builder = insert_operation.apply(builder);

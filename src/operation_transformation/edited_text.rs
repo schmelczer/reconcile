@@ -1,13 +1,13 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
+use super::{CursorPosition, Operation, TextWithCursors};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
     operation_transformation::utils::{
         cook_operations::cook_operations, elongate_operations::elongate_operations,
     },
-    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
+    tokenizer::{word_tokenizer::word_tokenizer, Tokenizer},
     utils::{side::Side, string_builder::StringBuilder},
 };
 
@@ -30,7 +30,7 @@ where
     T: PartialEq + Clone + std::fmt::Debug,
 {
     text: &'a str,
-    operations: Vec<OrderedOperation<T>>,
+    operations: Vec<Operation<T>>,
     pub(crate) cursors: Vec<CursorPosition>,
 }
 
@@ -76,11 +76,7 @@ where
     /// Create a new `EditedText` with the given operations.
     /// The operations must be in the order in which they are meant to be
     /// applied. The operations must not overlap.
-    fn new(
-        text: &'a str,
-        operations: Vec<OrderedOperation<T>>,
-        mut cursors: Vec<CursorPosition>,
-    ) -> Self {
+    fn new(text: &'a str, operations: Vec<Operation<T>>, mut cursors: Vec<CursorPosition>) -> Self {
         cursors.sort_by_key(|cursor| cursor.char_index);
 
         Self {
@@ -92,7 +88,6 @@ where
 
     #[must_use]
     pub fn merge(self, other: Self) -> Self {
-        println!("\n\n\n\n\n\n----\n");
         debug_assert_eq!(
             self.text, other.text,
             "`EditedText`-s must be derived from the same text to be mergable"
@@ -102,7 +97,7 @@ where
         let mut left_cursors = self.cursors.into_iter().peekable();
         let mut right_cursors = other.cursors.into_iter().peekable();
 
-        let mut merged_operations: Vec<OrderedOperation<T>> =
+        let mut merged_operations: Vec<Operation<T>> =
             Vec::with_capacity(self.operations.len() + other.operations.len());
 
         let mut left_iter = self.operations.into_iter();
@@ -119,38 +114,24 @@ where
         let mut last_right_op = None;
 
         loop {
-            let (
-                side,
-                OrderedOperation { operation, order },
-                maybe_other_operation,
-                mut last_other_op,
-            ) = match (maybe_left_op.clone(), maybe_right_op.clone()) {
-                (Some(left_op), Some(right_op)) => {
-                    if left_op
-                        .get_sort_key(seen_left_length)
-                        .partial_cmp(&right_op.get_sort_key(seen_right_length))
-                        == Some(std::cmp::Ordering::Less)
-                    {
-                        (
-                            Side::Left,
-                            left_op,
-                            maybe_right_op.clone(),
-                            last_right_op.clone(),
-                        )
-                    } else {
-                        (
-                            Side::Right,
-                            right_op,
-                            maybe_left_op.clone(),
-                            last_left_op.clone(),
-                        )
+            let (side, operation, mut last_other_op) =
+                match (maybe_left_op.clone(), maybe_right_op.clone()) {
+                    (Some(left_op), Some(right_op)) => {
+                        if left_op
+                            .get_sort_key(seen_left_length)
+                            .partial_cmp(&right_op.get_sort_key(seen_right_length))
+                            == Some(std::cmp::Ordering::Less)
+                        {
+                            (Side::Left, left_op, last_right_op.clone())
+                        } else {
+                            (Side::Right, right_op, last_left_op.clone())
+                        }
                     }
-                }
 
-                (Some(left_op), None) => (Side::Left, left_op, None, last_right_op.clone()),
-                (None, Some(right_op)) => (Side::Right, right_op, None, last_left_op.clone()),
-                (None, None) => break,
-            };
+                    (Some(left_op), None) => (Side::Left, left_op, last_right_op.clone()),
+                    (None, Some(right_op)) => (Side::Right, right_op, last_left_op.clone()),
+                    (None, None) => break,
+                };
 
             let is_advancing_operation = matches!(
                 operation,
@@ -161,39 +142,12 @@ where
             let original_length = operation.len() as i64;
             let result = match side {
                 Side::Left => {
-                    let result = operation.merge_operations_with_context(order, &mut last_other_op);
+                    let result = operation.merge_operations(&mut last_other_op);
 
-                    if let ref op @ (OrderedOperation {
-                        operation: Operation::Insert { .. },
-                        ..
-                    }
-                    | OrderedOperation {
-                        operation: Operation::Equal { .. },
-                        ..
-                    }) = result
-                    {
-                        println!(
-                            "merrged_length: {}, seen_left_length: {}, op len {}, original_length \
-                             {}",
-                            merged_length,
-                            seen_left_length,
-                            op.operation.len(),
-                            original_length
-                        );
-                        let mut shift = merged_length as i64
-                            // - last_other_op
-                            //     .map(|op| op.operation.len() as i64)
-                            //     .unwrap_or(0) as i64
-                            - seen_left_length as i64;
-                        // if !matches!(
-                        //     op,
-                        //     OrderedOperation {
-                        //         operation: Operation::Equal { .. },
-                        //         ..
-                        //     }
-                        // ) {
-                        shift += op.operation.len() as i64 - original_length;
-                        // }
+                    if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
+                        let shift = merged_length as i64 - seen_left_length as i64
+                            + op.len() as i64
+                            - original_length;
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_left_length + original_length as usize
@@ -215,39 +169,12 @@ where
                     result
                 }
                 Side::Right => {
-                    let result = operation.merge_operations_with_context(order, &mut last_other_op);
+                    let result = operation.merge_operations(&mut last_other_op);
 
-                    if let ref op @ (OrderedOperation {
-                        operation: Operation::Insert { .. },
-                        ..
-                    }
-                    | OrderedOperation {
-                        operation: Operation::Equal { .. },
-                        ..
-                    }) = result
-                    {
-                        println!(
-                            "merrged_length: {}, seen_left_length: {}, op len {}, original_length \
-                             {}",
-                            merged_length,
-                            seen_left_length,
-                            op.operation.len(),
-                            original_length
-                        );
-                        let mut shift = merged_length as i64
-                            // - last_other_op
-                            //     .map(|op| op.operation.len() as i64)
-                            //     .unwrap_or(0) as i64
-                            - seen_right_length as i64;
-                        // if !matches!(
-                        //     op,
-                        //     OrderedOperation {
-                        //         operation: Operation::Equal { .. },
-                        //         ..
-                        //     }
-                        // ) {
-                        shift += op.operation.len() as i64 - original_length;
-                        // }
+                    if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
+                        let shift = merged_length as i64 - seen_right_length as i64
+                            + op.len() as i64
+                            - original_length;
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_right_length + original_length as usize
@@ -273,12 +200,12 @@ where
 
             println!("   = {result:?}");
 
-            if result.operation.len() == 0 {
+            if result.len() == 0 {
                 continue;
             }
 
             if is_advancing_operation {
-                merged_length += result.operation.len();
+                merged_length += result.len();
             }
 
             merged_operations.push(result);
@@ -296,9 +223,7 @@ where
     pub fn apply(&self) -> String {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
-        for OrderedOperation { operation, .. } in &self.operations {
-            println!("applying operation {operation:?}");
-
+        for operation in &self.operations {
             builder = operation.apply(builder);
         }
 

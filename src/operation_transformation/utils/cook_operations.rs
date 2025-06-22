@@ -1,10 +1,7 @@
-use crate::{
-    diffs::raw_operation::RawOperation,
-    operation_transformation::{Operation, ordered_operation::OrderedOperation},
-};
+use crate::{diffs::raw_operation::RawOperation, operation_transformation::Operation};
 
 /// Turn raw operations into ordered operations while keeping track of indexes.
-pub fn cook_operations<I, T>(raw_operations: I) -> impl Iterator<Item = OrderedOperation<T>>
+pub fn cook_operations<I, T>(raw_operations: I) -> impl Iterator<Item = Operation<T>>
 where
     I: IntoIterator<Item = RawOperation<T>>,
     T: PartialEq + Clone + std::fmt::Debug,
@@ -16,31 +13,22 @@ where
 
         match raw_operation {
             RawOperation::Equal(..) => {
-                let op = OrderedOperation {
-                    order,
-                    operation: if cfg!(debug_assertions) {
-                        Operation::create_equal_with_text(raw_operation.get_original_text())
-                    } else {
-                        Operation::create_equal(length)
-                    },
+                let op = if cfg!(debug_assertions) {
+                    Operation::create_equal_with_text(order, raw_operation.get_original_text())
+                } else {
+                    Operation::create_equal(order, length)
                 };
 
                 order += length;
 
                 op
             }
-            RawOperation::Insert(tokens) => OrderedOperation {
-                order,
-                operation: Operation::create_insert(tokens),
-            },
+            RawOperation::Insert(tokens) => Operation::create_insert(order, tokens),
             RawOperation::Delete(..) => {
-                let op = OrderedOperation {
-                    order,
-                    operation: if cfg!(debug_assertions) {
-                        Operation::create_delete_with_text(raw_operation.get_original_text())
-                    } else {
-                        Operation::create_delete(length)
-                    },
+                let op = if cfg!(debug_assertions) {
+                    Operation::create_delete_with_text(order, raw_operation.get_original_text())
+                } else {
+                    Operation::create_delete(order, length)
                 };
 
                 order += length;

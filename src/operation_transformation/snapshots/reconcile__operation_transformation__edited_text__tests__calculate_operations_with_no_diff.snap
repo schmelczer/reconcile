@@ -6,18 +6,9 @@ snapshot_kind: text
 EditedText {
     text: "hello world!",
     operations: [
-        OrderedOperation {
-            order: 0,
-            operation: <equal 'hello'>,
-        },
-        OrderedOperation {
-            order: 5,
-            operation: <equal ' '>,
-        },
-        OrderedOperation {
-            order: 6,
-            operation: <equal 'world!'>,
-        },
+        <equal 'hello' from 0>,
+        <equal ' ' from 5>,
+        <equal 'world!' from 6>,
     ],
     cursors: [],
 }

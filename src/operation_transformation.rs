@@ -1,7 +1,6 @@
 mod cursor;
 mod edited_text;
 mod operation;
-mod ordered_operation;
 mod utils;
 
 pub use cursor::{CursorPosition, TextWithCursors};
