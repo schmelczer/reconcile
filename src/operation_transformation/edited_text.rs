@@ -123,7 +123,11 @@ where
             let (side, OrderedOperation { operation, order }, maybe_other_operation) =
                 match (maybe_left_op.clone(), maybe_right_op.clone()) {
                     (Some(left_op), Some(right_op)) => {
-                        if left_op < right_op {
+                        if left_op
+                            .get_sort_key(seen_left_length)
+                            .partial_cmp(&right_op.get_sort_key(seen_right_length))
+                            == Some(std::cmp::Ordering::Less)
+                        {
                             (Side::Left, left_op, maybe_right_op.clone())
                         } else {
                             (Side::Right, right_op, maybe_left_op.clone())

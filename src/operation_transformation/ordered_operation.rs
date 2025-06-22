@@ -17,7 +17,7 @@ impl<T> OrderedOperation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
-    pub fn get_sort_key(&self) -> (usize, usize, usize, String) {
+    pub fn get_sort_key(&self, insertion_index: usize) -> (usize, usize, usize, String) {
         (
             self.order,
             match &self.operation {
@@ -25,7 +25,7 @@ where
                 Operation::Insert { .. } => 2,
                 Operation::Equal { .. } => 3,
             },
-            self.operation.start_index(),
+            insertion_index,
             // Make sure that the ordering is deterministic regardless of which text
             // is left or right.
             match &self.operation {
@@ -39,14 +39,5 @@ where
                 } => deleted_character_count.to_string(),
             },
         )
-    }
-}
-
-impl<T> PartialOrd for OrderedOperation<T>
-where
-    T: PartialEq + Clone + std::fmt::Debug,
-{
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.get_sort_key().partial_cmp(&other.get_sort_key())
     }
 }
