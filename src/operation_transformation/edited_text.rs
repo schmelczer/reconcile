@@ -4,9 +4,8 @@ use serde::{Deserialize, Serialize};
 use super::{CursorPosition, Operation, TextWithCursors, ordered_operation::OrderedOperation};
 use crate::{
     diffs::{myers::diff, raw_operation::RawOperation},
-    operation_transformation::{
-        merge_context::MergeContext,
-        utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
+    operation_transformation::utils::{
+        cook_operations::cook_operations, elongate_operations::elongate_operations,
     },
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{side::Side, string_builder::StringBuilder},
@@ -99,9 +98,6 @@ where
             "`EditedText`-s must be derived from the same text to be mergable"
         );
 
-        let mut left_merge_context = MergeContext::default();
-        let mut right_merge_context = MergeContext::default();
-
         let mut merged_cursors = Vec::with_capacity(self.cursors.len() + other.cursors.len());
         let mut left_cursors = self.cursors.into_iter().peekable();
         let mut right_cursors = other.cursors.into_iter().peekable();
@@ -148,12 +144,8 @@ where
             let original_length = operation.len() as i64;
             let result = match side {
                 Side::Left => {
-                    let result = operation.merge_operations_with_context(
-                        order,
-                        &mut right_merge_context,
-                        &mut left_merge_context,
-                        maybe_other_operation,
-                    );
+                    let result =
+                        operation.merge_operations_with_context(order, maybe_other_operation);
 
                     if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
                         result
@@ -182,12 +174,8 @@ where
                     result
                 }
                 Side::Right => {
-                    let result = operation.merge_operations_with_context(
-                        order,
-                        &mut left_merge_context,
-                        &mut right_merge_context,
-                        maybe_other_operation,
-                    );
+                    let result =
+                        operation.merge_operations_with_context(order, maybe_other_operation);
 
                     if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
                         result
