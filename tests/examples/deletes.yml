@@ -25,6 +25,12 @@ right: long with big and small
 expected: long small
 
 ---
+parent: long run of text where one barely has no changes but has cursors
+left: long| run of tex|t where one barely has no |changes but has |cursors
+right: long run one barely has no changes cursors
+expected: long| ru|n one barely has no |changes |cursors
+
+---
 parent: long text where the cursor has to be clamped after delete
 left: long text where the cursor has to be clamped after delete|
 right: long text where the cursor

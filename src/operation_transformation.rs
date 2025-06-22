@@ -1,8 +1,6 @@
 mod cursor;
 mod edited_text;
-mod merge_context;
 mod operation;
-mod ordered_operation;
 mod utils;
 
 pub use cursor::{CursorPosition, TextWithCursors};
@@ -111,8 +109,8 @@ mod test {
                     }, // inside of "s|ample" because "text" got replaced by "sample"
                     CursorPosition {
                         id: 3,
-                        char_index: 43
-                    }, // before "cursor movements"
+                        char_index: 30
+                    }, // after "complex sample"
                 ]
             )
         );

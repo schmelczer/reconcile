@@ -1,23 +1,14 @@
 ---
-source: reconcile/src/operation_transformation/edited_text.rs
+source: src/operation_transformation/edited_text.rs
 expression: operations
 snapshot_kind: text
 ---
 EditedText {
     text: "hello world!",
     operations: [
-        OrderedOperation {
-            order: 0,
-            operation: <equal 'hello' from index 0>,
-        },
-        OrderedOperation {
-            order: 5,
-            operation: <equal ' ' from index 5>,
-        },
-        OrderedOperation {
-            order: 6,
-            operation: <equal 'world!' from index 6>,
-        },
+        <equal 'hello' from 0>,
+        <equal ' ' from 5>,
+        <equal 'world!' from 6>,
     ],
     cursors: [],
 }

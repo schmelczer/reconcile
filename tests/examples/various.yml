@@ -43,7 +43,7 @@ expected: Send the |detailed |quarterly |detailed report to the |entire |team
 parent: Ready, Set go
 left: Ready! Set go|
 right: Ready, Set, go!|
-expected: Ready! Set, go!||
+expected: Ready!| Set, go!|
 
 ---
 parent: "Total: $100"
@@ -67,7 +67,7 @@ expected: market| placemarket|space
 parent: A B C D
 left: A X B D|
 right: A B Y|
-expected: A X B |Y|
+expected: A X B| Y|
 
 ---
 parent: Please submit your assignment by Friday
