@@ -1,5 +1,5 @@
 ---
-source: reconcile/src/operation_transformation/edited_text.rs
+source: src/operation_transformation/edited_text.rs
 expression: operations
 snapshot_kind: text
 ---
@@ -8,15 +8,15 @@ EditedText {
     operations: [
         OrderedOperation {
             order: 0,
-            operation: <equal 'hello' from index 0>,
+            operation: <equal 'hello'>,
         },
         OrderedOperation {
             order: 5,
-            operation: <equal ' ' from index 5>,
+            operation: <equal ' '>,
         },
         OrderedOperation {
             order: 6,
-            operation: <equal 'world!' from index 6>,
+            operation: <equal 'world!'>,
         },
     ],
     cursors: [],

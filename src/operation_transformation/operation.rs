@@ -4,7 +4,6 @@ use std::ops::Range;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::merge_context::MergeContext;
 use crate::{
     Token,
     operation_transformation::ordered_operation::OrderedOperation,
@@ -40,8 +39,6 @@ where
     },
 }
 
-
-
 impl<T> Operation<T>
 where
     T: PartialEq + Clone + std::fmt::Debug,
@@ -49,7 +46,7 @@ where
     /// Creates an equal operation with the given index.
     /// This operation is used to indicate that the text at the given index
     /// is unchanged.
-    pub fn create_equal( length: usize) -> Option<Self> {
+    pub fn create_equal(length: usize) -> Option<Self> {
         Some(Operation::Equal {
             length,
 
@@ -58,7 +55,7 @@ where
         })
     }
 
-    pub fn create_equal_with_text( text: String) -> Option<Self> {
+    pub fn create_equal_with_text(text: String) -> Option<Self> {
         if text.is_empty() {
             return None;
         }
@@ -127,11 +124,11 @@ where
                 #[cfg(debug_assertions)]
                 debug_assert!(
                     text.as_ref()
-                        .is_none_or(|text| builder.get_slice(self.range()) == *text),
+                        .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
                     "Text (`{}`) which is supposed to be equal does not match the text in the \
                      range: `{}`",
                     text.as_ref().unwrap_or(&"".to_owned()),
-                    builder.get_slice(self.range())
+                    builder.get_slice_from_remaining(self.len())
                 );
 
                 builder.retain(*length)
@@ -149,10 +146,10 @@ where
                 debug_assert!(
                     deleted_text
                         .as_ref()
-                        .is_none_or(|text| builder.get_slice(self.range()) == *text),
+                        .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
                     "Text to-be-deleted `{}` does not match the text in the range: `{}`",
                     deleted_text.as_ref().unwrap_or(&"".to_owned()),
-                    builder.get_slice(self.range())
+                    builder.get_slice_from_remaining(self.len())
                 );
 
                 builder.delete(*deleted_character_count)
@@ -161,7 +158,6 @@ where
 
         builder
     }
-
 
     /// Returns the number of affected characters. It is always greater than 0
     /// because empty operations cannot be created.
@@ -176,9 +172,6 @@ where
         }
     }
 
-   
-
-
     /// Merges the operation with the given context, producing a new operation
     /// and updating the context. This implements a comples FSM that handles
     /// the merging of operations in a way that is consistent with the text.
@@ -187,24 +180,24 @@ where
     pub fn merge_operations_with_context(
         self,
         order: usize,
-        affecting_context: &mut MergeContext<T>,
-        produced_context: &mut MergeContext<T>,
+        previous_operation: &mut Option<OrderedOperation<T>>,
         other_operation: Option<OrderedOperation<T>>,
-    ) -> Option<Operation<T>> {
-        affecting_context.consume_last_operation_if_it_is_too_behind(self.start_index() as i64);
-        let operation = self.with_shifted_index(affecting_context.shift);
+    ) -> Option<OrderedOperation<T>> {
+        println!(
+            "mergin: {self} (order {order}) - previous: {previous_operation:?} - other: \
+             {other_operation:?}"
+        );
+        let operation = self;
 
-        match (operation, affecting_context.last_operation()) {
-            (operation @ Operation::Insert { .. }, None | Some(Operation::Equal { .. })) => {
-                produced_context.shift += operation.len() as i64;
-                produced_context.consume_and_replace_last_operation(Some(operation.clone()));
-                Some(operation)
-            }
-
+        match (operation, previous_operation) {
             (
-                Operation::Insert { text, index },
-                Some(Operation::Insert {
-                    text: previous_inserted_text,
+                Operation::Insert { text },
+                Some(OrderedOperation {
+                    operation:
+                        Operation::Insert {
+                            text: previous_inserted_text,
+                            ..
+                        },
                     ..
                 }),
             ) => {
@@ -213,86 +206,54 @@ where
                 // This way, we don't end up duplicating text.
                 let offset_in_tokens =
                     find_longest_prefix_contained_within(previous_inserted_text, &text);
-                let offset_in_length = text
-                    .iter()
-                    .take(offset_in_tokens)
-                    .map(Token::get_original_length)
-                    .sum::<usize>();
-                let trimmed_operation =
-                    Operation::create_insert(index, text[offset_in_tokens..].to_vec());
 
-                affecting_context.shift -= offset_in_length as i64;
-                produced_context.shift += trimmed_operation
-                    .as_ref()
-                    .map(Operation::len)
-                    .unwrap_or_default() as i64;
-                produced_context.consume_and_replace_last_operation(trimmed_operation.clone());
+                let trimmed_operation = Operation::create_insert(text[offset_in_tokens..].to_vec());
 
-                trimmed_operation
+                trimmed_operation.map(|operation| OrderedOperation { order, operation })
             }
 
             (
-                operation @ Operation::Delete { .. },
-                None | Some(Operation::Insert { .. } | Operation::Equal { .. }),
+                Operation::Delete {
+                    #[cfg(debug_assertions)]
+                    deleted_text,
+                    deleted_character_count,
+                },
+                Some(
+                    last_delete @ OrderedOperation {
+                        operation: Operation::Delete { .. },
+                        ..
+                    },
+                ),
             ) => {
-                produced_context.consume_and_replace_last_operation(Some(operation.clone()));
-                Some(operation)
-            }
+                let operation_end_index = order + deleted_character_count;
+                let last_delete_end_index = last_delete.order + last_delete.operation.len();
 
-            (
-                operation @ Operation::Insert { .. },
-                Some(last_delete @ Operation::Delete { .. }),
-            ) => {
-                produced_context.shift += operation.len() as i64;
+                let new_length = deleted_character_count
+                    .min(0.max(operation_end_index as i64 - last_delete_end_index as i64) as usize);
 
-                debug_assert!(
-                    last_delete.range().contains(&operation.start_index()),
-                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
-                     not contained in it"
+                let overlap = deleted_character_count - new_length;
+
+                #[cfg(debug_assertions)]
+                let updated_delete = deleted_text.as_ref().map_or_else(
+                    || Operation::create_delete(new_length),
+                    |text| {
+                        Operation::create_delete_with_text(
+                            text.chars()
+                                .skip((deleted_character_count - new_length) as usize)
+                                .collect::<String>(),
+                        )
+                    },
                 );
 
-                let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
+                #[cfg(not(debug_assertions))]
+                let updated_delete = Operation::create_delete(new_length);
 
-                let moved_operation = operation.with_index(last_delete.start_index());
-
-                affecting_context.replace_last_operation(Operation::create_delete(
-                    moved_operation.end_index(),
-                    (last_delete.len() as i64 - difference) as usize,
-                ));
-                affecting_context.shift -= difference;
-
-                produced_context.consume_and_replace_last_operation(Some(moved_operation.clone()));
-
-                Some(moved_operation)
+                updated_delete.map(|operation| OrderedOperation {
+                    order: order + overlap,
+                    operation,
+                })
             }
 
-            (
-                operation @ Operation::Delete { .. },
-                Some(last_delete @ Operation::Delete { .. }),
-            ) => {
-                debug_assert!(
-                    last_delete.range().contains(&operation.start_index()),
-                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
-                     not contained in it"
-                );
-
-                let difference = operation.start_index() as i64 - last_delete.start_index() as i64;
-
-                let updated_delete = Operation::create_delete(
-                    last_delete.start_index(),
-                    0.max(operation.end_index() as i64 - last_delete.end_index() as i64) as usize,
-                );
-
-                affecting_context.replace_last_operation(Operation::create_delete(
-                    last_delete.start_index(),
-                    0.max(last_delete.end_index() as i64 - operation.end_index() as i64) as usize,
-                ));
-                affecting_context.shift -= difference;
-
-                produced_context.consume_and_replace_last_operation(updated_delete.clone());
-
-                updated_delete
-            }
             (
                 ref operation @ Operation::Equal {
                     length,
@@ -300,61 +261,68 @@ where
                     ref text,
                     ..
                 },
-                Some(last_delete @ Operation::Delete { .. }),
+                Some(
+                    last_delete @ OrderedOperation {
+                        operation: Operation::Delete { .. },
+                        ..
+                    },
+                ),
             ) => {
-                debug_assert!(
-                    last_delete.range().contains(&operation.start_index()),
-                    "There is a last delete ({last_delete}) but the operation ({operation}) is \
-                     not contained in it"
-                );
+                if let Some(other_operation) = other_operation {
+                    if matches!(other_operation.operation, Operation::Equal { .. })
+                        && operation.len() == other_operation.operation.len()
+                        && order == other_operation.order
+                    {
+                        println!("   !!!equal to next");
+                        return Some(OrderedOperation {
+                            order,
+                            operation: Operation::create_equal(0).unwrap(),
+                        });
+                    }
+                }
 
-                let overlap = (length as i64)
-                    .min(last_delete.end_index() as i64 - operation.start_index() as i64);
+                let last_delete_end_index = last_delete.order + last_delete.operation.len();
+
+                let overlap =
+                    0.max((length as i64).min(last_delete_end_index as i64 - order as i64));
 
                 #[cfg(debug_assertions)]
-                let result = text.as_ref().map_or_else(
-                    || {
-                        Operation::create_equal(
-                            operation.end_index().min(last_delete.end_index()) - 1,
-                            (length as i64 - overlap) as usize,
-                        )
-                    },
+                let updated_equal = text.as_ref().map_or_else(
+                    || Operation::create_equal((length as i64 - overlap) as usize),
                     |text| {
                         Operation::create_equal_with_text(
-                            operation.end_index().min(last_delete.end_index()) - 1,
                             text.chars().skip(overlap as usize).collect::<String>(),
                         )
                     },
                 );
 
                 #[cfg(not(debug_assertions))]
-                let result = Operation::create_equal(
-                    operation.end_index().min(last_delete.end_index()),
-                    (length as i64 - overlap) as usize,
-                );
+                let updated_equal = Operation::create_equal((length as i64 - overlap) as usize);
 
-                result
+                updated_equal.map(|operation| OrderedOperation {
+                    order: order + overlap as usize,
+                    operation,
+                })
             }
 
             (operation @ Operation::Equal { .. }, _) => {
-                let result = if let Some(other_operation) = other_operation {
+                if let Some(other_operation) = other_operation {
                     if matches!(other_operation.operation, Operation::Equal { .. })
                         && operation.len() == other_operation.operation.len()
                         && order == other_operation.order
                     {
                         println!("   !!!equal to next");
-                        Operation::create_equal(operation.start_index(), 0)
+                        Operation::create_equal(0)
                     } else {
                         Some(operation)
                     }
                 } else {
                     Some(operation)
-                };
-
-                produced_context.consume_and_replace_last_operation(result.clone());
-
-                result
+                }
+                .map(|operation| OrderedOperation { order, operation })
             }
+
+            (operation, _) => Some(OrderedOperation { order, operation }),
         }
     }
 }
@@ -412,10 +380,7 @@ where
                 )?;
 
                 #[cfg(not(debug_assertions))]
-                write!(
-                    f,
-                    "<delete {deleted_character_count} characters>",
-                )?;
+                write!(f, "<delete {deleted_character_count} characters>",)?;
 
                 Ok(())
             }
@@ -436,13 +401,12 @@ mod tests {
 
     use super::*;
 
-
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
         let delete_operation =
             Operation::<()>::create_delete_with_text("hello ".to_owned()).unwrap();
-        let retain_operation = Operation::<()>::create_equal( 5).unwrap();
+        let retain_operation = Operation::<()>::create_equal(5).unwrap();
 
         let mut builder = delete_operation.apply(builder);
         builder = retain_operation.apply(builder);

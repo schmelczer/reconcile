@@ -115,25 +115,42 @@ where
         let mut seen_right_length: usize = 0;
         let mut merged_length: usize = 0;
 
-        loop {
-            let (side, OrderedOperation { operation, order }, maybe_other_operation) =
-                match (maybe_left_op.clone(), maybe_right_op.clone()) {
-                    (Some(left_op), Some(right_op)) => {
-                        if left_op
-                            .get_sort_key(seen_left_length)
-                            .partial_cmp(&right_op.get_sort_key(seen_right_length))
-                            == Some(std::cmp::Ordering::Less)
-                        {
-                            (Side::Left, left_op, maybe_right_op.clone())
-                        } else {
-                            (Side::Right, right_op, maybe_left_op.clone())
-                        }
-                    }
+        let mut last_left_op = None;
+        let mut last_right_op = None;
 
-                    (Some(left_op), None) => (Side::Left, left_op, None),
-                    (None, Some(right_op)) => (Side::Right, right_op, None),
-                    (None, None) => break,
-                };
+        loop {
+            let (
+                side,
+                OrderedOperation { operation, order },
+                maybe_other_operation,
+                mut last_other_op,
+            ) = match (maybe_left_op.clone(), maybe_right_op.clone()) {
+                (Some(left_op), Some(right_op)) => {
+                    if left_op
+                        .get_sort_key(seen_left_length)
+                        .partial_cmp(&right_op.get_sort_key(seen_right_length))
+                        == Some(std::cmp::Ordering::Less)
+                    {
+                        (
+                            Side::Left,
+                            left_op,
+                            maybe_right_op.clone(),
+                            last_right_op.clone(),
+                        )
+                    } else {
+                        (
+                            Side::Right,
+                            right_op,
+                            maybe_left_op.clone(),
+                            last_left_op.clone(),
+                        )
+                    }
+                }
+
+                (Some(left_op), None) => (Side::Left, left_op, None, last_right_op.clone()),
+                (None, Some(right_op)) => (Side::Right, right_op, None, last_left_op.clone()),
+                (None, None) => break,
+            };
 
             let is_advancing_operation = matches!(
                 operation,
@@ -144,15 +161,32 @@ where
             let original_length = operation.len() as i64;
             let result = match side {
                 Side::Left => {
-                    let result =
-                        operation.merge_operations_with_context(order, maybe_other_operation);
+                    let result = operation.merge_operations_with_context(
+                        order,
+                        &mut last_other_op,
+                        maybe_other_operation,
+                    );
 
-                    if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
-                        result
+                    if let Some(
+                        ref op @ (OrderedOperation {
+                            operation: Operation::Insert { .. },
+                            ..
+                        }
+                        | OrderedOperation {
+                            operation: Operation::Equal { .. },
+                            ..
+                        }),
+                    ) = result
                     {
                         let mut shift = merged_length as i64 - seen_left_length as i64;
-                        if !matches!(op, Operation::Equal { .. }) {
-                            shift += op.len() as i64 - original_length;
+                        if !matches!(
+                            op,
+                            OrderedOperation {
+                                operation: Operation::Equal { .. },
+                                ..
+                            }
+                        ) {
+                            shift += op.operation.len() as i64 - original_length;
                         }
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
@@ -170,19 +204,37 @@ where
                     }
 
                     maybe_left_op = left_iter.next();
+                    last_left_op = result.clone();
 
                     result
                 }
                 Side::Right => {
-                    let result =
-                        operation.merge_operations_with_context(order, maybe_other_operation);
+                    let result = operation.merge_operations_with_context(
+                        order,
+                        &mut last_other_op,
+                        maybe_other_operation,
+                    );
 
-                    if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
-                        result
+                    if let Some(
+                        ref op @ (OrderedOperation {
+                            operation: Operation::Insert { .. },
+                            ..
+                        }
+                        | OrderedOperation {
+                            operation: Operation::Equal { .. },
+                            ..
+                        }),
+                    ) = result
                     {
                         let mut shift = merged_length as i64 - seen_right_length as i64;
-                        if !matches!(op, Operation::Equal { .. }) {
-                            shift += op.len() as i64 - original_length;
+                        if !matches!(
+                            op,
+                            OrderedOperation {
+                                operation: Operation::Equal { .. },
+                                ..
+                            }
+                        ) {
+                            shift += op.operation.len() as i64 - original_length;
                         }
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
@@ -200,6 +252,7 @@ where
                     }
 
                     maybe_right_op = right_iter.next();
+                    last_right_op = result.clone();
 
                     result
                 }
@@ -208,15 +261,15 @@ where
             println!("   = {result:?}");
 
             if let Some(operation) = result {
-                if operation.len() == 0 {
+                if operation.operation.len() == 0 {
                     continue;
                 }
 
                 if is_advancing_operation {
-                    merged_length += operation.len();
+                    merged_length += operation.operation.len();
                 }
 
-                merged_operations.push(OrderedOperation { order, operation });
+                merged_operations.push(operation);
             }
         }
 

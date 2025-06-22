@@ -8,35 +8,35 @@ EditedText {
     operations: [
         OrderedOperation {
             order: 0,
-            operation: <delete 'hello world!' from index 0>,
+            operation: <delete 'hello world!'>,
         },
         OrderedOperation {
             order: 12,
-            operation: <insert 'Hello, my friend!' from index 0>,
+            operation: <insert 'Hello, my friend!'>,
         },
         OrderedOperation {
             order: 12,
-            operation: <equal ' ' from index 17>,
+            operation: <equal ' '>,
         },
         OrderedOperation {
             order: 13,
-            operation: <equal 'How' from index 18>,
+            operation: <equal 'How'>,
         },
         OrderedOperation {
             order: 16,
-            operation: <equal ' ' from index 21>,
+            operation: <equal ' '>,
         },
         OrderedOperation {
             order: 17,
-            operation: <equal 'are' from index 22>,
+            operation: <equal 'are'>,
         },
         OrderedOperation {
             order: 20,
-            operation: <delete ' you?  Adam' from index 25>,
+            operation: <delete ' you?  Adam'>,
         },
         OrderedOperation {
             order: 31,
-            operation: <insert ' you doing? Albert' from index 25>,
+            operation: <insert ' you doing? Albert'>,
         },
     ],
     cursors: [],

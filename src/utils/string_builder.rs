@@ -55,18 +55,14 @@ impl StringBuilder<'_> {
     pub fn build(self) -> String { self.buffer }
 
     #[cfg(debug_assertions)]
-    /// Get a slice of the built string and the remaining original string.
-    /// The implementation is quite suboptimal but it's only used for debugging.
-    pub fn get_slice(&self, range: Range<usize>) -> String {
-        let result = self
-            .buffer
-            .chars()
-            .chain(self.remaining.chars())
-            .skip(range.start)
-            .take(range.end - range.start)
-            .collect::<String>();
+    /// Get a slice of the remaining original string. The slice starts from
+    /// where the next delete/retain operation would start and is of length
+    /// `length`. The implementation is quite suboptimal but it's only used
+    /// for debugging.
+    pub fn get_slice_from_remaining(&self, length: usize) -> String {
+        let result = self.remaining.chars().take(length).collect::<String>();
 
-        debug_assert_eq!(result.chars().count(), range.len(), "Range out of bounds",);
+        debug_assert_eq!(result.chars().count(), length, "Range out of bounds");
 
         result
     }
@@ -127,12 +123,12 @@ mod tests {
         let builder = StringBuilder::new(original);
 
         // Test getting a slice of the original string
-        assert_eq!(builder.get_slice(1..4), "bcd");
+        assert_eq!(builder.get_slice_from_remaining(3), "abc");
 
         // Test getting a slice that includes both buffer and remaining original
         let mut builder = StringBuilder::new(original);
         builder.retain(2); // "ab" in buffer
-        assert_eq!(builder.get_slice(1..5), "bcde");
+        assert_eq!(builder.get_slice_from_remaining(2), "cd");
     }
 
     #[test]

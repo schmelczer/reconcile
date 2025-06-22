@@ -9,20 +9,20 @@ use crate::Token;
 /// old: [0, 1, 9, 0, 2, 5]
 /// new:       [9, 0, 2, 5, 1]
 /// ```
-/// > results in an length of 4
+/// > results in a length of 4
 ///
 ///
 /// ```not_rust
 /// old: [0, 1, 9, 0, 2, 5]
 /// new:          [0, 2]
 /// ```
-/// > results in an length of 2
+/// > results in a length of 2
 ///
 /// ```not_rust
 /// old: [0, 1, 9, 0, 2, 5]
 /// new:          [0, 4]
 /// ```
-/// > results in an length of 1
+/// > results in a length of 1
 pub fn find_longest_prefix_contained_within<T>(old: &[Token<T>], new: &[Token<T>]) -> usize
 where
     T: PartialEq + Clone + std::fmt::Debug,
