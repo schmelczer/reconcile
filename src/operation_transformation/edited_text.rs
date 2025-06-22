@@ -120,18 +120,18 @@ where
         let mut merged_length: usize = 0;
 
         loop {
-            let (side, OrderedOperation { operation, order }) =
+            let (side, OrderedOperation { operation, order }, maybe_other_operation) =
                 match (maybe_left_op.clone(), maybe_right_op.clone()) {
                     (Some(left_op), Some(right_op)) => {
                         if left_op < right_op {
-                            (Side::Left, left_op)
+                            (Side::Left, left_op, maybe_right_op.clone())
                         } else {
-                            (Side::Right, right_op)
+                            (Side::Right, right_op, maybe_left_op.clone())
                         }
                     }
 
-                    (Some(left_op), None) => (Side::Left, left_op),
-                    (None, Some(right_op)) => (Side::Right, right_op),
+                    (Some(left_op), None) => (Side::Left, left_op, None),
+                    (None, Some(right_op)) => (Side::Right, right_op, None),
                     (None, None) => break,
                 };
 
@@ -145,24 +145,25 @@ where
             let result = match side {
                 Side::Left => {
                     let result = operation.merge_operations_with_context(
+                        order,
                         &mut right_merge_context,
                         &mut left_merge_context,
+                        maybe_other_operation,
                     );
 
                     if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
                         result
                     {
-                        println!("merged_length {merged_length}, idx {}", op.start_index());
-                        // assert_eq!(op.start_index() as i64, merged_length as i64);
-                        let shift = op.start_index() as i64 - seen_left_length as i64
-                            + op.len() as i64
-                            - original_length;
+                        let mut shift = merged_length as i64 - seen_left_length as i64;
+                        if !matches!(op, Operation::Equal { .. }) {
+                            shift += op.len() as i64 - original_length;
+                        }
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_left_length + original_length as usize
                         }) {
                             merged_cursors.push(cursor.with_index(
-                                (op.start_index() as i64).max(cursor.char_index as i64 + shift)
+                                (merged_length as i64).max(cursor.char_index as i64 + shift)
                                     as usize,
                             ));
                         }
@@ -178,25 +179,25 @@ where
                 }
                 Side::Right => {
                     let result = operation.merge_operations_with_context(
+                        order,
                         &mut left_merge_context,
                         &mut right_merge_context,
+                        maybe_other_operation,
                     );
 
                     if let Some(ref op @ (Operation::Insert { .. } | Operation::Equal { .. })) =
                         result
                     {
-                        println!("merged_length {merged_length}, idx {}", op.start_index());
-                        // assert_eq!(op.start_index() as i64, merged_length as i64);
-
-                        let shift = op.start_index() as i64 - seen_right_length as i64
-                            + op.len() as i64
-                            - original_length;
+                        let mut shift = merged_length as i64 - seen_right_length as i64;
+                        if !matches!(op, Operation::Equal { .. }) {
+                            shift += op.len() as i64 - original_length;
+                        }
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_right_length + original_length as usize
                         }) {
                             merged_cursors.push(cursor.with_index(
-                                (op.start_index() as i64).max(cursor.char_index as i64 + shift)
+                                (merged_length as i64).max(cursor.char_index as i64 + shift)
                                     as usize,
                             ));
                         }
@@ -215,15 +216,8 @@ where
             println!("   = {result:?}");
 
             if let Some(operation) = result {
-                let last_operation = merged_operations.last();
-                if let Some(last_operation) = last_operation {
-                    if matches!(last_operation.operation, Operation::Equal { .. })
-                        && matches!(operation, Operation::Equal { .. })
-                        && last_operation.operation.eq(&operation)
-                    {
-                        println!("skipping equal");
-                        continue;
-                    }
+                if operation.len() == 0 {
+                    continue;
                 }
 
                 if is_advancing_operation {

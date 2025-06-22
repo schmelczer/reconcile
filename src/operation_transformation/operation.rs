@@ -6,11 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use super::merge_context::MergeContext;
 use crate::{
+    Token,
+    operation_transformation::ordered_operation::OrderedOperation,
     utils::{
         find_longest_prefix_contained_within::find_longest_prefix_contained_within,
         string_builder::StringBuilder,
     },
-    Token,
 };
 
 /// Represents a change that can be applied on a `StringBuilder`.
@@ -84,10 +85,6 @@ where
     /// This operation is used to indicate that the text at the given index
     /// is unchanged.
     pub fn create_equal(index: usize, length: usize) -> Option<Self> {
-        if length == 0 {
-            return None;
-        }
-
         Some(Operation::Equal {
             index,
             length,
@@ -213,18 +210,12 @@ where
         }
     }
 
-    /// Returns the index of the last character that the operation affects.
-    pub fn end_index(&self) -> usize {
-        debug_assert!(
-            self.len() > 0,
-            " len() must be greater than 0 because operations must be non-empty"
-        );
-        self.start_index() + self.len() - 1
-    }
+    /// Returns the first index after the last character that the operation
+    /// affects.
+    pub fn end_index(&self) -> usize { self.start_index() + self.len() }
 
     /// Returns the range of indices of characters that the operation affects.
-    #[allow(clippy::range_plus_one)]
-    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() + 1 }
+    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() }
 
     /// Returns the number of affected characters. It is always greater than 0
     /// because empty operations cannot be created.
@@ -294,8 +285,10 @@ where
     #[allow(clippy::too_many_lines)]
     pub fn merge_operations_with_context(
         self,
+        order: usize,
         affecting_context: &mut MergeContext<T>,
         produced_context: &mut MergeContext<T>,
+        other_operation: Option<OrderedOperation<T>>,
     ) -> Option<Operation<T>> {
         affecting_context.consume_last_operation_if_it_is_too_behind(self.start_index() as i64);
         let operation = self.with_shifted_index(affecting_context.shift);
@@ -362,7 +355,7 @@ where
                 let moved_operation = operation.with_index(last_delete.start_index());
 
                 affecting_context.replace_last_operation(Operation::create_delete(
-                    moved_operation.end_index() + 1,
+                    moved_operation.end_index(),
                     (last_delete.len() as i64 - difference) as usize,
                 ));
                 affecting_context.shift -= difference;
@@ -415,19 +408,19 @@ where
                 );
 
                 let overlap = (length as i64)
-                    .min(last_delete.end_index() as i64 - operation.start_index() as i64 + 1);
+                    .min(last_delete.end_index() as i64 - operation.start_index() as i64);
 
                 #[cfg(debug_assertions)]
                 let result = text.as_ref().map_or_else(
                     || {
                         Operation::create_equal(
-                            operation.end_index().min(last_delete.end_index()),
+                            operation.end_index().min(last_delete.end_index()) - 1,
                             (length as i64 - overlap) as usize,
                         )
                     },
                     |text| {
                         Operation::create_equal_with_text(
-                            operation.end_index().min(last_delete.end_index()),
+                            operation.end_index().min(last_delete.end_index()) - 1,
                             text.chars().skip(overlap as usize).collect::<String>(),
                         )
                     },
@@ -441,7 +434,26 @@ where
 
                 result
             }
-            (operation @ Operation::Equal { .. }, _) => Some(operation),
+
+            (operation @ Operation::Equal { .. }, _) => {
+                let result = if let Some(other_operation) = other_operation {
+                    if matches!(other_operation.operation, Operation::Equal { .. })
+                        && operation.len() == other_operation.operation.len()
+                        && order == other_operation.order
+                    {
+                        println!("   !!!equal to next");
+                        Operation::create_equal(operation.start_index(), 0)
+                    } else {
+                        Some(operation)
+                    }
+                } else {
+                    Some(operation)
+                };
+
+                produced_context.consume_and_replace_last_operation(result.clone());
+
+                result
+            }
         }
     }
 }
@@ -531,9 +543,11 @@ mod tests {
     #[test]
     #[should_panic(expected = "Shifted index must be non-negative")]
     fn test_shifting_error() {
-        insta::assert_debug_snapshot!(Operation::create_insert(1, vec!["hi".into()])
-            .unwrap()
-            .with_shifted_index(-2));
+        insta::assert_debug_snapshot!(
+            Operation::create_insert(1, vec!["hi".into()])
+                .unwrap()
+                .with_shifted_index(-2)
+        );
     }
 
     #[test]

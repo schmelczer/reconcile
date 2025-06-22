@@ -59,13 +59,13 @@ where
                     ..
                 },
             ) => {
-                if threshold_index + self.shift > op.end_index() as i64 {
+                if threshold_index + self.shift >= op.end_index() as i64 {
                     self.shift -= *deleted_character_count as i64;
                     self.last_operation = None;
                 }
             }
             Some(op @ Operation::Insert { .. }) | Some(op @ Operation::Equal { .. }) => {
-                if threshold_index + self.shift - op.len() as i64 > op.end_index() as i64 {
+                if threshold_index + self.shift - op.len() as i64 >= op.end_index() as i64 {
                     self.last_operation = None;
                 }
             }
