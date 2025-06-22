@@ -22,7 +22,6 @@ where
     T: PartialEq + Clone + std::fmt::Debug,
 {
     Equal {
-        index: usize,
         length: usize,
 
         #[cfg(debug_assertions)]
@@ -30,12 +29,10 @@ where
     },
 
     Insert {
-        index: usize,
         text: Vec<Token<T>>,
     },
 
     Delete {
-        index: usize,
         deleted_character_count: usize,
 
         #[cfg(debug_assertions)]
@@ -43,39 +40,7 @@ where
     },
 }
 
-// impl<T> PartialEq for Operation<T>
-// where
-//     T: PartialEq + Clone + std::fmt::Debug,
-// {
-//     fn eq(&self, other: &Self) -> bool {
-//         match (self, other) {
-//             (
-//                 Operation::Equal { length, .. },
-//                 Operation::Equal {
-//                     length: other_length,
-//                     ..
-//                 },
-//             ) => length == other_length,
-//             (
-//                 Operation::Insert { text, .. },
-//                 Operation::Insert {
-//                     text: other_text, ..
-//                 },
-//             ) => text == other_text,
-//             (
-//                 Operation::Delete {
-//                     deleted_character_count,
-//                     ..
-//                 },
-//                 Operation::Delete {
-//                     deleted_character_count: other_deleted_character_count,
-//                     ..
-//                 },
-//             ) => deleted_character_count == other_deleted_character_count,
-//             _ => false,
-//         }
-//     }
-// }
+
 
 impl<T> Operation<T>
 where
@@ -84,9 +49,8 @@ where
     /// Creates an equal operation with the given index.
     /// This operation is used to indicate that the text at the given index
     /// is unchanged.
-    pub fn create_equal(index: usize, length: usize) -> Option<Self> {
+    pub fn create_equal( length: usize) -> Option<Self> {
         Some(Operation::Equal {
-            index,
             length,
 
             #[cfg(debug_assertions)]
@@ -94,13 +58,12 @@ where
         })
     }
 
-    pub fn create_equal_with_text(index: usize, text: String) -> Option<Self> {
+    pub fn create_equal_with_text( text: String) -> Option<Self> {
         if text.is_empty() {
             return None;
         }
 
         Some(Operation::Equal {
-            index,
             length: text.chars().count(),
 
             #[cfg(debug_assertions)]
@@ -111,24 +74,23 @@ where
     /// Creates an insert operation with the given index and text.
     /// If the text is empty (meaning that the operation would be a no-op),
     /// returns None.
-    pub fn create_insert(index: usize, text: Vec<Token<T>>) -> Option<Self> {
+    pub fn create_insert(text: Vec<Token<T>>) -> Option<Self> {
         if text.is_empty() {
             return None;
         }
 
-        Some(Operation::Insert { index, text })
+        Some(Operation::Insert { text })
     }
 
     /// Creates a delete operation with the given index and number of
     /// to-be-deleted characters. If the operation would delete 0 (meaning
     /// that the operation would be a no-op), returns None.
-    pub fn create_delete(index: usize, deleted_character_count: usize) -> Option<Self> {
+    pub fn create_delete(deleted_character_count: usize) -> Option<Self> {
         if deleted_character_count == 0 {
             return None;
         }
 
         Some(Operation::Delete {
-            index,
             deleted_character_count,
 
             #[cfg(debug_assertions)]
@@ -136,13 +98,12 @@ where
         })
     }
 
-    pub fn create_delete_with_text(index: usize, text: String) -> Option<Self> {
+    pub fn create_delete_with_text(text: String) -> Option<Self> {
         if text.is_empty() {
             return None;
         }
 
         Some(Operation::Delete {
-            index,
             deleted_character_count: text.chars().count(),
 
             #[cfg(debug_assertions)]
@@ -201,21 +162,6 @@ where
         builder
     }
 
-    /// Returns the index of the first character that the operation affects.
-    pub fn start_index(&self) -> usize {
-        match self {
-            Operation::Equal { index, .. }
-            | Operation::Insert { index, .. }
-            | Operation::Delete { index, .. } => *index,
-        }
-    }
-
-    /// Returns the first index after the last character that the operation
-    /// affects.
-    pub fn end_index(&self) -> usize { self.start_index() + self.len() }
-
-    /// Returns the range of indices of characters that the operation affects.
-    pub fn range(&self) -> Range<usize> { self.start_index()..self.end_index() }
 
     /// Returns the number of affected characters. It is always greater than 0
     /// because empty operations cannot be created.
@@ -230,53 +176,8 @@ where
         }
     }
 
-    /// Creates a new operation with the same type and text but with the given
-    /// index.
-    pub fn with_index(self, index: usize) -> Self {
-        match self {
-            Operation::Equal {
-                length,
+   
 
-                #[cfg(debug_assertions)]
-                text,
-                ..
-            } => Operation::Equal {
-                index,
-                length,
-
-                #[cfg(debug_assertions)]
-                text,
-            },
-            Operation::Insert { text, .. } => Operation::Insert { index, text },
-            Operation::Delete {
-                deleted_character_count,
-
-                #[cfg(debug_assertions)]
-                deleted_text,
-                ..
-            } => Operation::Delete {
-                index,
-                deleted_character_count,
-
-                #[cfg(debug_assertions)]
-                deleted_text,
-            },
-        }
-    }
-
-    /// Creates a new operation with the same type and text but with the index
-    /// shifted by the given offset. The offset can be negative but the
-    /// resulting index must be non-negative.
-    ///
-    /// # Panics
-    ///
-    /// In debug mode, panics if the resulting index is negative.
-    pub fn with_shifted_index(self, offset: i64) -> Self {
-        let index = self.start_index() as i64 + offset;
-        debug_assert!(index >= 0, "Shifted index must be non-negative");
-
-        self.with_index(index as usize)
-    }
 
     /// Merges the operation with the given context, producing a new operation
     /// and updating the context. This implements a comples FSM that handles
@@ -465,7 +366,6 @@ where
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Operation::Equal {
-                index,
                 length,
 
                 #[cfg(debug_assertions)]
@@ -474,31 +374,28 @@ where
                 #[cfg(debug_assertions)]
                 write!(
                     f,
-                    "<equal {} from index {}>",
+                    "<equal {}>",
                     text.as_ref()
                         .map(|text| format!("'{}'", text.replace('\n', "\\n")))
                         .unwrap_or(format!("{length} characters")),
-                    index
                 )?;
 
                 #[cfg(not(debug_assertions))]
-                write!(f, "<equal {length} from index {index}>")?;
+                write!(f, "<equal {length}>")?;
 
                 Ok(())
             }
-            Operation::Insert { index, text } => {
+            Operation::Insert { text } => {
                 write!(
                     f,
-                    "<insert '{}' from index {}>",
+                    "<insert '{}'>",
                     text.iter()
                         .map(Token::original)
                         .collect::<String>()
                         .replace('\n', "\\n"),
-                    index
                 )
             }
             Operation::Delete {
-                index,
                 deleted_character_count,
 
                 #[cfg(debug_assertions)]
@@ -507,18 +404,17 @@ where
                 #[cfg(debug_assertions)]
                 write!(
                     f,
-                    "<delete {} from index {}>",
+                    "<delete {}>",
                     deleted_text
                         .as_ref()
                         .map(|text| format!("'{}'", text.replace('\n', "\\n")))
                         .unwrap_or(format!("{deleted_character_count} characters")),
-                    index
                 )?;
 
                 #[cfg(not(debug_assertions))]
                 write!(
                     f,
-                    "<delete {deleted_character_count} characters from index {index}>",
+                    "<delete {deleted_character_count} characters>",
                 )?;
 
                 Ok(())
@@ -540,22 +436,13 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    #[should_panic(expected = "Shifted index must be non-negative")]
-    fn test_shifting_error() {
-        insta::assert_debug_snapshot!(
-            Operation::create_insert(1, vec!["hi".into()])
-                .unwrap()
-                .with_shifted_index(-2)
-        );
-    }
 
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
         let delete_operation =
-            Operation::<()>::create_delete_with_text(0, "hello ".to_owned()).unwrap();
-        let retain_operation = Operation::<()>::create_equal(5, 5).unwrap();
+            Operation::<()>::create_delete_with_text("hello ".to_owned()).unwrap();
+        let retain_operation = Operation::<()>::create_equal( 5).unwrap();
 
         let mut builder = delete_operation.apply(builder);
         builder = retain_operation.apply(builder);
@@ -567,8 +454,8 @@ mod tests {
     fn test_apply_insert() {
         let builder = StringBuilder::new("hello");
 
-        let retain_operation = Operation::<()>::create_equal(5, 5).unwrap();
-        let insert_operation = Operation::create_insert(5, vec![" my friend".into()]).unwrap();
+        let retain_operation = Operation::<()>::create_equal(5).unwrap();
+        let insert_operation = Operation::create_insert(vec![" my friend".into()]).unwrap();
 
         let mut builder = retain_operation.apply(builder);
         builder = insert_operation.apply(builder);

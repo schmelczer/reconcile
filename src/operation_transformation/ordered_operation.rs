@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{Token, operation_transformation::Operation};
+use crate::{operation_transformation::Operation, Token};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
@@ -29,7 +29,7 @@ where
             // Make sure that the ordering is deterministic regardless of which text
             // is left or right.
             match &self.operation {
-                Operation::Equal { index, .. } => index.to_string(),
+                Operation::Equal { length, .. } => length.to_string(),
                 Operation::Insert { text, .. } => {
                     text.iter().map(Token::original).collect::<String>()
                 }
