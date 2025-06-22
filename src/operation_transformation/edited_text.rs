@@ -137,7 +137,6 @@ where
                 operation,
                 Operation::Insert { .. } | Operation::Equal { .. }
             );
-            println!("{side} {operation:?} ({maybe_left_op:?}, {maybe_right_op:?})");
 
             let original_length = operation.len() as i64;
             let result = match side {
@@ -152,7 +151,6 @@ where
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_left_length + original_length as usize
                         }) {
-                            println!("cursor {}", cursor.char_index);
                             merged_cursors.push(
                                 cursor.with_index((cursor.char_index as i64 + shift) as usize),
                             );
@@ -179,8 +177,6 @@ where
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_right_length + original_length as usize
                         }) {
-                            println!("cursor {}", cursor.char_index);
-
                             merged_cursors.push(
                                 cursor.with_index((cursor.char_index as i64 + shift) as usize),
                             );
@@ -197,8 +193,6 @@ where
                     result
                 }
             };
-
-            println!("   = {result:?}");
 
             if result.len() == 0 {
                 continue;
@@ -233,8 +227,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::env;
-
     use insta::assert_debug_snapshot;
     use pretty_assertions::assert_eq;
 

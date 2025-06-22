@@ -96,9 +96,9 @@ where
 
     fn order(&self) -> usize {
         match self {
-            Operation::Equal { order, .. } => *order,
-            Operation::Insert { order, .. } => *order,
-            Operation::Delete { order, .. } => *order,
+            Operation::Equal { order, .. }
+            | Operation::Insert { order, .. }
+            | Operation::Delete { order, .. } => *order,
         }
     }
 
@@ -145,14 +145,14 @@ where
                         .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
                     "Text (`{}`) which is supposed to be equal does not match the text in the \
                      range: `{}`",
-                    text.as_ref().unwrap_or(&"".to_owned()),
+                    text.as_ref().unwrap_or(&String::new()),
                     builder.get_slice_from_remaining(self.len())
                 );
 
-                builder.retain(*length)
+                builder.retain(*length);
             }
             Operation::Insert { text, .. } => {
-                builder.insert(&text.iter().map(Token::original).collect::<String>())
+                builder.insert(&text.iter().map(Token::original).collect::<String>());
             }
             Operation::Delete {
                 #[cfg(debug_assertions)]
@@ -166,11 +166,11 @@ where
                         .as_ref()
                         .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
                     "Text to-be-deleted `{}` does not match the text in the range: `{}`",
-                    deleted_text.as_ref().unwrap_or(&"".to_owned()),
+                    deleted_text.as_ref().unwrap_or(&String::new()),
                     builder.get_slice_from_remaining(self.len())
                 );
 
-                builder.delete(*deleted_character_count)
+                builder.delete(*deleted_character_count);
             }
         }
 

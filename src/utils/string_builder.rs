@@ -19,7 +19,7 @@ impl StringBuilder<'_> {
             buffer: String::with_capacity(original.len()),
 
             #[cfg(debug_assertions)]
-            remaining: original.to_string(),
+            remaining: original.to_owned(),
         }
     }
 
