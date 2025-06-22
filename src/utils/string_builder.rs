@@ -1,4 +1,3 @@
-use core::ops::Range;
 use std::iter::Iterator;
 
 /// A helper for building a string in-order based on an original string and a

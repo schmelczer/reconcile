@@ -11,31 +11,37 @@ where
 {
     let mut order = 0; // this is the start index of the operation on the original text
 
-    raw_operations.into_iter().filter_map(move |raw_operation| {
+    raw_operations.into_iter().map(move |raw_operation| {
         let length = raw_operation.original_text_length();
 
         match raw_operation {
             RawOperation::Equal(..) => {
-                let op = if cfg!(debug_assertions) {
-                    Operation::create_equal_with_text(raw_operation.get_original_text())
-                } else {
-                    Operation::create_equal(length)
-                }
-                .map(|operation| OrderedOperation { order, operation });
+                let op = OrderedOperation {
+                    order,
+                    operation: if cfg!(debug_assertions) {
+                        Operation::create_equal_with_text(raw_operation.get_original_text())
+                    } else {
+                        Operation::create_equal(length)
+                    },
+                };
 
                 order += length;
 
                 op
             }
-            RawOperation::Insert(tokens) => Operation::create_insert(tokens)
-                .map(|operation| OrderedOperation { order, operation }),
+            RawOperation::Insert(tokens) => OrderedOperation {
+                order,
+                operation: Operation::create_insert(tokens),
+            },
             RawOperation::Delete(..) => {
-                let op = if cfg!(debug_assertions) {
-                    Operation::create_delete_with_text(raw_operation.get_original_text())
-                } else {
-                    Operation::create_delete(length)
-                }
-                .map(|operation| OrderedOperation { order, operation });
+                let op = OrderedOperation {
+                    order,
+                    operation: if cfg!(debug_assertions) {
+                        Operation::create_delete_with_text(raw_operation.get_original_text())
+                    } else {
+                        Operation::create_delete(length)
+                    },
+                };
 
                 order += length;
 

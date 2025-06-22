@@ -46,66 +46,45 @@ where
     /// Creates an equal operation with the given index.
     /// This operation is used to indicate that the text at the given index
     /// is unchanged.
-    pub fn create_equal(length: usize) -> Option<Self> {
-        Some(Operation::Equal {
+    pub fn create_equal(length: usize) -> Self {
+        Operation::Equal {
             length,
 
             #[cfg(debug_assertions)]
             text: None,
-        })
+        }
     }
 
-    pub fn create_equal_with_text(text: String) -> Option<Self> {
-        if text.is_empty() {
-            return None;
-        }
-
-        Some(Operation::Equal {
+    pub fn create_equal_with_text(text: String) -> Self {
+        Operation::Equal {
             length: text.chars().count(),
 
             #[cfg(debug_assertions)]
             text: Some(text),
-        })
+        }
     }
 
     /// Creates an insert operation with the given index and text.
-    /// If the text is empty (meaning that the operation would be a no-op),
-    /// returns None.
-    pub fn create_insert(text: Vec<Token<T>>) -> Option<Self> {
-        if text.is_empty() {
-            return None;
-        }
-
-        Some(Operation::Insert { text })
-    }
+    pub fn create_insert(text: Vec<Token<T>>) -> Self { Operation::Insert { text } }
 
     /// Creates a delete operation with the given index and number of
-    /// to-be-deleted characters. If the operation would delete 0 (meaning
-    /// that the operation would be a no-op), returns None.
-    pub fn create_delete(deleted_character_count: usize) -> Option<Self> {
-        if deleted_character_count == 0 {
-            return None;
-        }
-
-        Some(Operation::Delete {
+    /// to-be-deleted characters.
+    pub fn create_delete(deleted_character_count: usize) -> Self {
+        Operation::Delete {
             deleted_character_count,
 
             #[cfg(debug_assertions)]
             deleted_text: None,
-        })
+        }
     }
 
-    pub fn create_delete_with_text(text: String) -> Option<Self> {
-        if text.is_empty() {
-            return None;
-        }
-
-        Some(Operation::Delete {
+    pub fn create_delete_with_text(text: String) -> Self {
+        Operation::Delete {
             deleted_character_count: text.chars().count(),
 
             #[cfg(debug_assertions)]
             deleted_text: Some(text),
-        })
+        }
     }
 
     /// Applies the operation to the given `StringBuilder`, returning the
@@ -181,12 +160,8 @@ where
         self,
         order: usize,
         previous_operation: &mut Option<OrderedOperation<T>>,
-        other_operation: Option<OrderedOperation<T>>,
-    ) -> Option<OrderedOperation<T>> {
-        println!(
-            "mergin: {self} (order {order}) - previous: {previous_operation:?} - other: \
-             {other_operation:?}"
-        );
+    ) -> OrderedOperation<T> {
+        println!("mergin: {self} (order {order}) - previous: {previous_operation:?}");
         let operation = self;
 
         match (operation, previous_operation) {
@@ -209,7 +184,10 @@ where
 
                 let trimmed_operation = Operation::create_insert(text[offset_in_tokens..].to_vec());
 
-                trimmed_operation.map(|operation| OrderedOperation { order, operation })
+                OrderedOperation {
+                    order,
+                    operation: trimmed_operation,
+                }
             }
 
             (
@@ -248,10 +226,10 @@ where
                 #[cfg(not(debug_assertions))]
                 let updated_delete = Operation::create_delete(new_length);
 
-                updated_delete.map(|operation| OrderedOperation {
+                OrderedOperation {
                     order: order + overlap,
-                    operation,
-                })
+                    operation: updated_delete,
+                }
             }
 
             (
@@ -268,19 +246,6 @@ where
                     },
                 ),
             ) => {
-                if let Some(other_operation) = other_operation {
-                    if matches!(other_operation.operation, Operation::Equal { .. })
-                        && operation.len() == other_operation.operation.len()
-                        && order == other_operation.order
-                    {
-                        println!("   !!!equal to next");
-                        return Some(OrderedOperation {
-                            order,
-                            operation: Operation::create_equal(0).unwrap(),
-                        });
-                    }
-                }
-
                 let last_delete_end_index = last_delete.order + last_delete.operation.len();
 
                 let overlap =
@@ -299,30 +264,32 @@ where
                 #[cfg(not(debug_assertions))]
                 let updated_equal = Operation::create_equal((length as i64 - overlap) as usize);
 
-                updated_equal.map(|operation| OrderedOperation {
+                OrderedOperation {
                     order: order + overlap as usize,
-                    operation,
-                })
-            }
-
-            (operation @ Operation::Equal { .. }, _) => {
-                if let Some(other_operation) = other_operation {
-                    if matches!(other_operation.operation, Operation::Equal { .. })
-                        && operation.len() == other_operation.operation.len()
-                        && order == other_operation.order
-                    {
-                        println!("   !!!equal to next");
-                        Operation::create_equal(0)
-                    } else {
-                        Some(operation)
-                    }
-                } else {
-                    Some(operation)
+                    operation: updated_equal,
                 }
-                .map(|operation| OrderedOperation { order, operation })
             }
 
-            (operation, _) => Some(OrderedOperation { order, operation }),
+            (
+                operation @ Operation::Equal { .. },
+                Some(
+                    last_equal @ OrderedOperation {
+                        operation: Operation::Equal { .. },
+                        ..
+                    },
+                ),
+            ) => OrderedOperation {
+                order,
+                operation: if operation.len() == last_equal.operation.len()
+                    && order == last_equal.order
+                {
+                    Operation::create_equal(0)
+                } else {
+                    operation
+                },
+            },
+
+            (operation, _) => OrderedOperation { order, operation },
         }
     }
 }
@@ -404,9 +371,8 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
-        let delete_operation =
-            Operation::<()>::create_delete_with_text("hello ".to_owned()).unwrap();
-        let retain_operation = Operation::<()>::create_equal(5).unwrap();
+        let delete_operation = Operation::<()>::create_delete_with_text("hello ".to_owned());
+        let retain_operation = Operation::<()>::create_equal(5);
 
         let mut builder = delete_operation.apply(builder);
         builder = retain_operation.apply(builder);
@@ -418,8 +384,8 @@ mod tests {
     fn test_apply_insert() {
         let builder = StringBuilder::new("hello");
 
-        let retain_operation = Operation::<()>::create_equal(5).unwrap();
-        let insert_operation = Operation::create_insert(vec![" my friend".into()]).unwrap();
+        let retain_operation = Operation::<()>::create_equal(5);
+        let insert_operation = Operation::create_insert(vec![" my friend".into()]);
 
         let mut builder = retain_operation.apply(builder);
         builder = insert_operation.apply(builder);
