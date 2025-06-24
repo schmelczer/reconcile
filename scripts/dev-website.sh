@@ -11,4 +11,4 @@ cp -R pkg/reconcile_bg.wasm examples/website/
 
 cd examples/website/
 
-python3 -m http.server $1
+python3 -m http.server $1 --bind 0.0.0.0

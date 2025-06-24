@@ -20,8 +20,8 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     z-index: -1;
 }
 
@@ -138,6 +138,7 @@ textarea {
     resize: none;
     outline: none;
     margin-bottom: 0;
+    field-sizing: content; /* Doesn't work in Safari yet */
 }
 
 #merged {
@@ -145,26 +146,44 @@ textarea {
     user-select: text;
 }
 
-.Left,
+.Unchanged {
+    user-select: text;
+}
+
 .AddedFromLeft,
 .RemovedFromLeft {
+    user-select: text;
     background: #12d197;
 }
 
 .Right,
 .AddedFromRight,
 .RemovedFromRight {
+    user-select: text;
     background: #85bff7;
 }
 
 .RemovedFromLeft,
 .RemovedFromRight {
+    user-select: none;
     text-decoration: line-through;
 }
 
 @media (max-width: 900px) {
+    header {
+        padding: 32px 18px 0 18px;
+    }
+
+    header > h1 {
+        margin-bottom: 18px;
+    }
+
+    header > p {
+        font-size: 1rem;
+    }
+
     main {
-        padding: 24px 2vw;
+        padding: 18px;
     }
 }
 
@@ -203,7 +222,6 @@ footer {
     justify-content: center;
     align-items: center;
     color: #5a6272;
-    border-radius: 32px;
 }
 
 .github-link > svg {

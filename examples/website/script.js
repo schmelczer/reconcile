@@ -1,4 +1,4 @@
-import init, { mergeText, mergeTextWithHistory } from "./reconcile.js";
+import init, { mergeTextWithHistory } from "./reconcile.js";
 
 const originalTextArea = document.getElementById("original");
 const leftTextArea = document.getElementById("left");
@@ -7,7 +7,7 @@ const mergedTextArea = document.getElementById("merged");
 
 const sampleText = `The \`reconcile\` Rust library is embedded on this page a WASM module and it powers these text boxes. Experiment with the "Original", "First concurrent edit", and "Second concurrent edit" text boxes to watch competing changes merge in real-time within the "Deconflicted result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenization strategy, for example, deciding how casing or white-spacing is taken into account.`;
 
-async function run() {
+async function main() {
     await init();
 
     originalTextArea.addEventListener("input", updateMergedText);
@@ -17,17 +17,17 @@ async function run() {
 
     loadSample();
     updateMergedText();
-
-    // Put cursor at the end of the text in leftTextArea
-    leftTextArea.focus();
-    leftTextArea.selectionStart = leftTextArea.value.length;
-    leftTextArea.selectionEnd = leftTextArea.value.length;
+    focusTextArea(leftTextArea);
 }
 
-function resizeTextAreas() {
-    autoResize(originalTextArea);
-    autoResize(leftTextArea);
-    autoResize(rightTextArea);
+function loadSample() {
+    originalTextArea.value = sampleText;
+    leftTextArea.value =
+        sampleText.replace("color", "colour") +
+        " Check out what's the most complex conflict you can come up with!";
+    rightTextArea.value = sampleText
+        .replace(", for example,", " such as")
+        .replace("WASM", "WebAssembly");
 }
 
 function updateMergedText() {
@@ -50,14 +50,12 @@ function updateMergedText() {
     }
 }
 
-function loadSample() {
-    originalTextArea.value = sampleText;
-    leftTextArea.value =
-        sampleText.replace("color", "colour") +
-        " Check out what's the most complex conflict you can come up with!";
-    rightTextArea.value = sampleText
-        .replace(", for example,", " such as")
-        .replace("WASM", "WebAssembly");
+function resizeTextAreas() {
+    if (!CSS.supports("field-sizing", "content")) {
+        autoResize(originalTextArea);
+        autoResize(leftTextArea);
+        autoResize(rightTextArea);
+    }
 }
 
 function autoResize(textarea) {
@@ -65,4 +63,10 @@ function autoResize(textarea) {
     textarea.style.height = textarea.scrollHeight + "px";
 }
 
-run();
+function focusTextArea(textarea) {
+    textarea.focus();
+    textarea.selectionStart = textarea.value.length;
+    textarea.selectionEnd = textarea.value.length;
+}
+
+main();
