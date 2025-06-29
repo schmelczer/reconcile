@@ -1,6 +1,6 @@
 use core::iter;
 
-use crate::diffs::raw_operation::RawOperation;
+use crate::raw_operation::RawOperation;
 
 /// Elongates the operations by merging adjacent insertions and deletions that
 /// can be joined. This makes the subsequent merging of operations more
@@ -24,7 +24,7 @@ where
         .flat_map(|next| match next {
             RawOperation::Insert(..) => match maybe_previous_insert.take() {
                 Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_insert = Some(prev.extend(next));
+                    maybe_previous_insert = Some(prev.join(next));
                     Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
                 prev => {
@@ -34,7 +34,7 @@ where
             },
             RawOperation::Delete(..) => match maybe_previous_delete.take() {
                 Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_delete = Some(prev.extend(next));
+                    maybe_previous_delete = Some(prev.join(next));
                     Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
                 prev => {

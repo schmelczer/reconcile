@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use super::{CursorPosition, Operation, TextWithCursors};
 use crate::{
-    diffs::{myers::diff, raw_operation::RawOperation},
     operation_transformation::utils::{
         cook_operations::cook_operations, elongate_operations::elongate_operations,
     },
+    raw_operation::RawOperation,
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
     utils::{history::History, side::Side, string_builder::StringBuilder},
 };
@@ -65,7 +65,7 @@ where
         let original_tokens = (tokenizer)(original);
         let updated_tokens = (tokenizer)(&updated.text);
 
-        let diff: Vec<RawOperation<T>> = diff(&original_tokens, &updated_tokens);
+        let diff: Vec<RawOperation<T>> = RawOperation::vec_from(&original_tokens, &updated_tokens);
 
         Self::new(
             original,
