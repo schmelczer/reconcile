@@ -10,7 +10,8 @@ use crate::{
     },
     raw_operation::RawOperation,
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
-    utils::{history::History, side::Side, string_builder::StringBuilder},
+    types::{history::History, side::Side, text_with_history::TextWithHistory},
+    utils::string_builder::StringBuilder,
 };
 
 /// A text document and a sequence of operations that can be applied to the text
@@ -228,7 +229,7 @@ where
     }
 
     #[must_use]
-    pub fn apply_with_history(&self) -> Vec<(History, String)> {
+    pub fn apply_with_history(&self) -> Vec<TextWithHistory> {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         let mut history = Vec::with_capacity(self.operations.len());
@@ -237,10 +238,17 @@ where
             builder = operation.apply(builder);
 
             match operation {
-                Operation::Equal { .. } => history.push((History::Unchanged, builder.take())),
+                Operation::Equal { .. } => {
+                    history.push(TextWithHistory::new(History::Unchanged, builder.take()))
+                }
                 Operation::Insert { side, .. } => match side {
-                    Side::Left => history.push((History::AddedFromLeft, builder.take())),
-                    Side::Right => history.push((History::AddedFromRight, builder.take())),
+                    Side::Left => {
+                        history.push(TextWithHistory::new(History::AddedFromLeft, builder.take()))
+                    }
+                    Side::Right => history.push(TextWithHistory::new(
+                        History::AddedFromRight,
+                        builder.take(),
+                    )),
                 },
                 Operation::Delete {
                     deleted_character_count,
@@ -250,8 +258,12 @@ where
                 } => {
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
                     match side {
-                        Side::Left => history.push((History::RemovedFromLeft, deleted)),
-                        Side::Right => history.push((History::RemovedFromRight, deleted)),
+                        Side::Left => {
+                            history.push(TextWithHistory::new(History::RemovedFromLeft, deleted))
+                        }
+                        Side::Right => {
+                            history.push(TextWithHistory::new(History::RemovedFromRight, deleted))
+                        }
                     }
                 }
             }

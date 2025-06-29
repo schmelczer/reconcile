@@ -1,3 +1,6 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use crate::History;
@@ -87,25 +90,4 @@ impl From<crate::CursorPosition> for JsCursorPosition {
             char_index: cursor.char_index,
         }
     }
-}
-
-/// Wrapper type to expose `(History, String)` to JS.
-#[wasm_bindgen]
-#[derive(Debug, Clone, PartialEq)]
-pub struct JsTextWithHistory {
-    history: History,
-    text: String,
-}
-
-impl From<(History, String)> for JsTextWithHistory {
-    fn from((history, text): (History, String)) -> Self { JsTextWithHistory { history, text } }
-}
-
-#[wasm_bindgen]
-impl JsTextWithHistory {
-    #[must_use]
-    pub fn history(&self) -> History { self.history }
-
-    #[must_use]
-    pub fn text(&self) -> String { self.text.clone() }
 }

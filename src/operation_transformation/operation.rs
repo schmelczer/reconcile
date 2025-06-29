@@ -4,9 +4,9 @@ use core::fmt::{Debug, Display};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Token,
+    Side, Token,
     utils::{
-        find_longest_prefix_contained_within::find_longest_prefix_contained_within, side::Side,
+        find_longest_prefix_contained_within::find_longest_prefix_contained_within,
         string_builder::StringBuilder,
     },
 };
