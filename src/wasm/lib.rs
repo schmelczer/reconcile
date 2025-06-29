@@ -99,17 +99,6 @@ pub fn is_binary(data: &[u8]) -> bool {
     std::str::from_utf8(data).is_err()
 }
 
-/// We don't want to support merging structured data like JSON, YAML, etc.
-#[wasm_bindgen(js_name = isFileTypeMergable)]
-#[must_use]
-pub fn is_file_type_mergable(path_or_file_name: &str) -> bool {
-    set_panic_hook();
-
-    let file_extension = path_or_file_name.split('.').next_back().unwrap_or_default();
-
-    matches!(file_extension.to_lowercase().as_str(), "md" | "txt")
-}
-
 fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
     #[cfg(feature = "console_error_panic_hook")]

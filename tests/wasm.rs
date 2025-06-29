@@ -1,7 +1,7 @@
 #![cfg(feature = "wasm")]
 
 use reconcile::wasm::{
-    lib::{is_binary, is_file_type_mergable, merge, merge_text, merge_text_with_cursors},
+    lib::{is_binary, merge, merge_text, merge_text_with_cursors},
     types::{JsCursorPosition, JsTextWithCursors},
 };
 use wasm_bindgen_test::*;
@@ -64,17 +64,4 @@ fn test_is_binary() {
 #[wasm_bindgen_test(unsupported = test)]
 fn test_is_binary_empty() {
     assert!(!is_binary(b""));
-}
-
-#[wasm_bindgen_test(unsupported = test)]
-fn test_is_file_type_mergable() {
-    assert!(is_file_type_mergable(".md"));
-    assert!(is_file_type_mergable("hi.md"));
-    assert!(is_file_type_mergable("my/path/to/my/document.md"));
-    assert!(is_file_type_mergable("hi.MD"));
-    assert!(is_file_type_mergable("my/path/to/my/DOCUMENT.MD"));
-
-    assert!(!is_file_type_mergable(".json"));
-    assert!(!is_file_type_mergable("HELLO.JSON"));
-    assert!(!is_file_type_mergable("my/config.yml"));
 }
