@@ -1,7 +1,7 @@
 {
     "files.exclude": {
-        "**/dist": true,
-        "**/node_modules": true,
-        "**/snapshots": true,
+        "**/snapshots": true, // cargo-insta outputs
+        "pkg": true, // wasm-pack build directory
+        "target": true, // rust build directory
     }
 }
