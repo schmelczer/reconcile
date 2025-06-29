@@ -1,4 +1,5 @@
 mod word_tokenizer;
+mod character_tokenizer;
 
 use std::ops::Deref;
 
@@ -35,7 +36,7 @@ impl Deref for BuiltinTokenizer {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            BuiltinTokenizer::Character => todo!(),
+            BuiltinTokenizer::Character =>&character_tokenizer::character_tokenizer,
             BuiltinTokenizer::Word => &word_tokenizer::word_tokenizer,
             #[cfg(feature = "wasm")]
             BuiltinTokenizer::__Invalid => panic!("Unexpected tokenizer type"),
