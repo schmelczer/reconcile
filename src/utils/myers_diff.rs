@@ -24,8 +24,8 @@ use std::{
     vec,
 };
 
-use super::raw_operation::RawOperation;
 use crate::{
+    raw_operation::RawOperation,
     tokenizer::token::Token,
     utils::{common_prefix_len::common_prefix_len, common_suffix_len::common_suffix_len},
 };
@@ -35,8 +35,8 @@ use crate::{
 /// Diff `old`, between indices `old_range` and `new` between indices
 /// `new_range`.
 ///
-/// The returned `RawOperations` all have a token count of 1.
-pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
+/// The returned `RawOperations` each wrap a single token.
+pub fn myers_diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone + std::fmt::Debug,
 {
@@ -57,7 +57,7 @@ where
 
     debug_assert!(
         result.iter().all(|op| op.tokens().len() == 1),
-        "All operations should be of length 1"
+        "All operations must be of length 1"
     );
 
     result
@@ -80,7 +80,7 @@ where
 #[derive(Debug)]
 struct V {
     offset: isize,
-    v: Vec<usize>, // Look into initializing this to -1 and storing isize
+    v: Vec<usize>,
 }
 
 impl V {
@@ -312,14 +312,14 @@ mod tests {
     fn test_empty_diff() {
         let old: Vec<Token<String>> = vec![];
         let new: Vec<Token<String>> = vec![];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_eq!(result.len(), 0);
     }
 
     #[test]
     fn test_identical_content() {
         let content = vec!["a".into(), "b".into(), "c".into()];
-        let result = diff(&content, &content);
+        let result = myers_diff(&content, &content);
         assert_debug_snapshot!(result);
     }
 
@@ -327,7 +327,7 @@ mod tests {
     fn test_insert_only() {
         let old: Vec<Token<String>> = vec![];
         let new: Vec<Token<String>> = vec!["a".into(), "b".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -335,7 +335,7 @@ mod tests {
     fn test_delete_only() {
         let old = vec!["a".into(), "b".into()];
         let new: Vec<Token<String>> = vec![];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -343,7 +343,7 @@ mod tests {
     fn test_prefix_and_suffix() {
         let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
         let new = vec!["a".into(), "x".into(), "d".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -351,7 +351,7 @@ mod tests {
     fn test_complex_diff() {
         let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
         let new = vec!["a".into(), "x".into(), "c".into(), "y".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 }

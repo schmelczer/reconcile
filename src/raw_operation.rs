@@ -1,9 +1,15 @@
-use crate::tokenizer::token::Token;
+use std::fmt::Debug;
 
+use crate::{tokenizer::token::Token, utils::myers_diff::myers_diff};
+
+/// Text editing operation containing the to-be-changed `Tokens`-s.
+///
+/// RawOperations can be joined together when the underlying tokens
+/// allow for joining subseqeunt operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RawOperation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     Insert(Vec<Token<T>>),
     Delete(Vec<Token<T>>),
@@ -12,8 +18,10 @@ where
 
 impl<T> RawOperation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
+    pub fn vec_from(left: &[Token<T>], right: &[Token<T>]) -> Vec<Self> { myers_diff(left, right) }
+
     pub fn tokens(&self) -> &Vec<Token<T>> {
         match self {
             RawOperation::Insert(tokens)
@@ -41,7 +49,7 @@ where
     /// Extends the operation with another operation. Only operations of the
     /// same type as self can be used to extend self, otherwise the function
     /// will panic.
-    pub fn extend(self, other: RawOperation<T>) -> RawOperation<T> {
+    pub fn join(self, other: RawOperation<T>) -> RawOperation<T> {
         debug_assert!(
             std::mem::discriminant(&self) == std::mem::discriminant(&other),
             "Cannot extend operations of different types. This should have been handled before \
