@@ -3,27 +3,33 @@ mod example_document;
 use std::{fs, path::Path};
 
 use example_document::ExampleDocument;
-use reconcile::{reconcile, reconcile_with_cursors};
+use reconcile::{BuiltinTokenizer, reconcile};
 use serde::Deserialize;
 
 #[test]
 fn test_document_one_way_without_cursors() {
     for doc in &get_all_documents() {
-        doc.assert_eq_without_cursors(&reconcile(
-            &doc.parent(),
-            &doc.left().text(),
-            &doc.right().text(),
-        ));
+        doc.assert_eq_without_cursors(
+            &reconcile(
+                &doc.parent(),
+                &doc.left().text().into(),
+                &doc.right().text().into(),
+                &*BuiltinTokenizer::Word,
+            )
+            .apply()
+            .text(),
+        );
     }
 }
 
 #[test]
 fn test_document_one_way_with_cursors() {
     for doc in &get_all_documents() {
-        doc.assert_eq(&reconcile_with_cursors(
+        doc.assert_eq(&reconcile(
             &doc.parent(),
             &doc.left(),
             &doc.right(),
+            &*BuiltinTokenizer::Word,
         ));
     }
 }
@@ -31,21 +37,27 @@ fn test_document_one_way_with_cursors() {
 #[test]
 fn test_document_inverse_way_without_cursors() {
     for doc in &get_all_documents() {
-        doc.assert_eq_without_cursors(&reconcile(
-            &doc.parent(),
-            &doc.right().text(),
-            &doc.left().text(),
-        ));
+        doc.assert_eq_without_cursors(
+            &reconcile(
+                &doc.parent(),
+                &doc.right().text().into(),
+                &doc.left().text().into(),
+                &*BuiltinTokenizer::Word,
+            )
+            .apply()
+            .text(),
+        );
     }
 }
 
 #[test]
 fn test_document_inverse_way_with_cursors() {
     for doc in &get_all_documents() {
-        doc.assert_eq(&reconcile_with_cursors(
+        doc.assert_eq(&reconcile(
             &doc.parent(),
             &doc.right(),
             &doc.left(),
+            &*BuiltinTokenizer::Word,
         ));
     }
 }

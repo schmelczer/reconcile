@@ -13,9 +13,40 @@ use core::str;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    TextWithCursors, TextWithHistory, reconcile, reconcile_with_cursors, reconcile_with_history,
-};
+use crate::{BuiltinTokenizer, CursorPosition, TextWithCursors, TextWithHistory};
+
+/// WASM wrapper around `crate::reconcile` for merging text.
+#[wasm_bindgen(js_name = reconcile)]
+#[must_use]
+pub fn reconcile(
+    parent: &str,
+    left: &TextWithCursors,
+    right: &TextWithCursors,
+    tokenizer: BuiltinTokenizer,
+) -> TextWithCursors {
+    set_panic_hook();
+
+    crate::reconcile(parent, left, right, &*tokenizer).apply()
+}
+
+/// WASM wrapper around `crate::reconcile` for merging text.
+#[wasm_bindgen(js_name = reconcileWithHistory)]
+#[must_use]
+pub fn reconcile_with_history(
+    parent: &str,
+    left: &TextWithCursors,
+    right: &TextWithCursors,
+    tokenizer: BuiltinTokenizer,
+) -> TextWithCursorsAndHistory {
+    set_panic_hook();
+    let reconciled = crate::reconcile(parent, left, right, &*tokenizer);
+    let text_with_cursors = reconciled.apply();
+
+    TextWithCursorsAndHistory {
+        text_with_cursors,
+        history: reconciled.apply_with_history(),
+    }
+}
 
 /// Merge two documents with a common parent. Relies on `reconcile::reconcile`
 /// for texts and returns the right document as-is if either of the updated
@@ -34,54 +65,33 @@ use crate::{
 /// # Panics
 ///
 /// If any of the input documents are not valid UTF-8 strings.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = genericReconcile)]
 #[must_use]
-pub fn merge(parent: &[u8], left: &[u8], right: &[u8]) -> Vec<u8> {
+pub fn generic_reconcile(
+    parent: &[u8],
+    left: &[u8],
+    right: &[u8],
+    tokenizer: BuiltinTokenizer,
+) -> Vec<u8> {
     set_panic_hook();
 
-    if is_binary(parent) || is_binary(left) || is_binary(right) {
+    if crate::is_binary(parent) || crate::is_binary(left) || crate::is_binary(right) {
         right.to_vec()
     } else {
-        reconcile(
+        crate::reconcile(
             str::from_utf8(parent).expect("parent must be valid UTF-8 because it's not binary"),
-            str::from_utf8(left).expect("left must be valid UTF-8 because it's not binary"),
-            str::from_utf8(right).expect("right must be valid UTF-8 because it's not binary"),
+            &str::from_utf8(left)
+                .expect("left must be valid UTF-8 because it's not binary")
+                .into(),
+            &str::from_utf8(right)
+                .expect("right must be valid UTF-8 because it's not binary")
+                .into(),
+            &*tokenizer,
         )
+        .apply()
+        .text()
         .into_bytes()
     }
-}
-
-/// WASM wrapper around `reconcile` for merging text.
-#[wasm_bindgen(js_name = mergeText)]
-#[must_use]
-pub fn merge_text(parent: &str, left: &str, right: &str) -> String {
-    set_panic_hook();
-
-    reconcile(parent, left, right)
-}
-
-/// WASM wrapper around `reconcile` for merging text.
-#[wasm_bindgen(js_name = mergeTextWithHistory)]
-#[must_use]
-pub fn merge_text_with_history(parent: &str, left: &str, right: &str) -> Vec<TextWithHistory> {
-    set_panic_hook();
-
-    reconcile_with_history(parent, left, right)
-        .into_iter()
-        .collect()
-}
-
-/// WASM wrapper around `reconcile::reconcile_with_cursors` for merging text.
-#[wasm_bindgen(js_name = mergeTextWithCursors)]
-#[must_use]
-pub fn merge_text_with_cursors(
-    parent: &str,
-    left: &TextWithCursors,
-    right: &TextWithCursors,
-) -> TextWithCursors {
-    set_panic_hook();
-
-    reconcile_with_cursors(parent, left, right)
 }
 
 /// Heuristically determine if the given data is a binary or a text file's
@@ -97,4 +107,23 @@ fn set_panic_hook() {
     // https://github.com/rustwasm/console_error_panic_hook#readme
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct TextWithCursorsAndHistory {
+    text_with_cursors: TextWithCursors,
+    history: Vec<TextWithHistory>,
+}
+
+#[wasm_bindgen]
+impl TextWithCursorsAndHistory {
+    #[must_use]
+    pub fn text(&self) -> String { self.text_with_cursors.text() }
+
+    #[must_use]
+    pub fn cursors(&self) -> Vec<CursorPosition> { self.text_with_cursors.cursors() }
+
+    #[must_use]
+    pub fn history(&self) -> Vec<TextWithHistory> { self.history.clone() }
 }

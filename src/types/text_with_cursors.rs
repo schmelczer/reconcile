@@ -32,15 +32,30 @@ impl TextWithCursors {
 
     #[must_use]
     pub fn cursors(&self) -> Vec<CursorPosition> { self.cursors.clone() }
-
-    #[must_use]
-    pub fn new_owned(text: String, cursors: Vec<CursorPosition>) -> Self { Self { text, cursors } }
 }
 
 impl<'a> From<&'a str> for TextWithCursors {
     fn from(text: &'a str) -> Self {
         Self {
             text: text.into(),
+            cursors: Vec::new(),
+        }
+    }
+}
+
+impl From<&String> for TextWithCursors {
+    fn from(text: &String) -> Self {
+        Self {
+            text: text.to_owned(),
+            cursors: Vec::new(),
+        }
+    }
+}
+
+impl From<String> for TextWithCursors {
+    fn from(text: String) -> Self {
+        Self {
+            text,
             cursors: Vec::new(),
         }
     }

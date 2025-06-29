@@ -4,13 +4,13 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CursorPosition, TextWithCursors,
+    BuiltinTokenizer, CursorPosition, TextWithCursors,
     operation_transformation::{
         Operation,
         utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
     raw_operation::RawOperation,
-    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
+    tokenizer::Tokenizer,
     types::{history::History, side::Side, text_with_history::TextWithHistory},
     utils::string_builder::StringBuilder,
 };
@@ -27,6 +27,7 @@ use crate::{
 /// in the original text. The cursor positions are updated when the operations
 /// are applied, so that the cursor positions can be used to restore the
 /// cursor positions in the updated text.
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
@@ -35,7 +36,7 @@ where
 {
     text: &'a str,
     operations: Vec<Operation<T>>,
-    pub(crate) cursors: Vec<CursorPosition>,
+    cursors: Vec<CursorPosition>,
 }
 
 impl<'a> EditedText<'a, String> {
@@ -47,7 +48,7 @@ impl<'a> EditedText<'a, String> {
     /// whitespaces.
     #[must_use]
     pub fn from_strings(original: &'a str, updated: &TextWithCursors, side: Side) -> Self {
-        Self::from_strings_with_tokenizer(original, updated, &word_tokenizer, side)
+        Self::from_strings_with_tokenizer(original, updated, &*BuiltinTokenizer::Word, side)
     }
 }
 
@@ -219,14 +220,14 @@ where
 
     /// Apply the operations to the text and return the resulting text.
     #[must_use]
-    pub fn apply(&self) -> String {
+    pub fn apply(&self) -> TextWithCursors {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         for operation in &self.operations {
             builder = operation.apply(builder);
         }
 
-        builder.take()
+        TextWithCursors::new(builder.take(), self.cursors.clone())
     }
 
     #[must_use]
@@ -291,7 +292,7 @@ mod tests {
         insta::assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-        assert_eq!(new_right.to_string(), right);
+        assert_eq!(new_right.text(), right);
     }
 
     #[test]
@@ -303,7 +304,7 @@ mod tests {
         assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-        assert_eq!(new_right.to_string(), text);
+        assert_eq!(new_right.text(), text);
     }
 
     #[test]
@@ -317,6 +318,6 @@ mod tests {
         let operations_2 = EditedText::from_strings(original, &right.into(), Side::Right);
 
         let operations = operations_1.merge(operations_2);
-        assert_eq!(operations.apply(), expected);
+        assert_eq!(operations.apply().text(), expected);
     }
 }

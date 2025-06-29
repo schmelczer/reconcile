@@ -1,5 +1,5 @@
 use pretty_assertions::assert_eq;
-use reconcile::{CursorPosition, TextWithCursors};
+use reconcile::{CursorPosition, EditedText, TextWithCursors};
 use serde::Deserialize;
 
 /// `ExampleDocument` represents a test case for the reconciliation process.
@@ -37,7 +37,7 @@ impl ExampleDocument {
     ///
     /// If the result string does not match the expected string, the program
     /// will panic.
-    pub fn assert_eq(&self, result: &TextWithCursors) {
+    pub fn assert_eq(&self, result: &EditedText<'_, String>) {
         let result_str = ExampleDocument::text_with_cursors_to_string(result);
         assert_eq!(
             self.expected, result_str,
@@ -60,14 +60,16 @@ impl ExampleDocument {
         );
     }
 
-    fn text_with_cursors_to_string(document: &TextWithCursors) -> String {
-        let mut result = document.text().clone();
-        for (i, cursor) in document.cursors().iter().enumerate() {
+    fn text_with_cursors_to_string(document: &EditedText<'_, String>) -> String {
+        let merged = document.apply();
+        let mut result = merged.text();
+        for (i, cursor) in merged.cursors().iter().enumerate() {
             assert!(
                 cursor.char_index <= result.len(), // equals in case of insert at the end
-                "Cursor index out of bounds: {} > {} when testing for '{result}'",
+                "Cursor index out of bounds: {} > {} when testing for '{}.'",
                 cursor.char_index,
-                result.len()
+                result.len(),
+                result
             );
 
             result.insert(
@@ -85,7 +87,7 @@ impl ExampleDocument {
     fn string_to_text_with_cursors(text: &str) -> TextWithCursors {
         let cursors = Self::parse_cursors(text);
         let text = text.replace('|', "");
-        TextWithCursors::new_owned(text, cursors)
+        TextWithCursors::new(text, cursors)
     }
 
     fn parse_cursors(text: &str) -> Vec<CursorPosition> {
