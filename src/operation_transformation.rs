@@ -2,6 +2,7 @@ mod cursor;
 mod edited_text;
 mod operation;
 mod utils;
+use std::fmt::Debug;
 
 pub use cursor::{CursorPosition, TextWithCursors};
 pub use edited_text::EditedText;
@@ -49,7 +50,7 @@ pub fn reconcile_with_tokenizer<'a, F, T>(
     tokenizer: &Tokenizer<T>,
 ) -> TextWithCursors<'static>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let left_operations =
         EditedText::from_strings_with_tokenizer(original, left, tokenizer, Side::Left);

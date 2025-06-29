@@ -1,4 +1,5 @@
 use core::iter;
+use std::fmt::Debug;
 
 use crate::raw_operation::RawOperation;
 
@@ -8,7 +9,7 @@ use crate::raw_operation::RawOperation;
 pub fn elongate_operations<I, T>(raw_operations: I) -> Vec<RawOperation<T>>
 where
     I: IntoIterator<Item = RawOperation<T>>,
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     // This might look bad, but this makes sense. The inserts and deltes can be
     // interleaved, such as: IDIDID and we need to turn this into IIIDDD.

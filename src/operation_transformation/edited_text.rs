@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +29,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     text: &'a str,
     operations: Vec<Operation<T>>,
@@ -49,7 +51,7 @@ impl<'a> EditedText<'a, String> {
 
 impl<'a, T> EditedText<'a, T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     /// Create an `EditedText` from the given original (old) and updated (new)
     /// strings. The returned `EditedText` represents the changes from the

@@ -20,6 +20,7 @@
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
 use std::{
+    fmt::Debug,
     ops::{Index, IndexMut, Range},
     vec,
 };
@@ -38,7 +39,7 @@ use crate::{
 /// The returned `RawOperations` each wrap a single token.
 pub fn myers_diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let max_d = (old.len() + new.len()).div_ceil(2) + 1;
     let mut vb = V::new(max_d);
@@ -130,7 +131,7 @@ fn find_middle_snake<T>(
     vb: &mut V,
 ) -> Option<(usize, usize)>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let n = old_range.len();
     let m = new_range.len();
@@ -236,7 +237,7 @@ fn conquer<T>(
     vb: &mut V,
     result: &mut Vec<RawOperation<T>>,
 ) where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());

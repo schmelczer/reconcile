@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 pub struct Token<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     /// The normalised form of the token used deriving the diff.
     normalised: T,
@@ -35,7 +37,7 @@ impl From<&str> for Token<String> {
 
 impl<T> Token<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     pub fn new(
         normalised: T,
@@ -62,7 +64,7 @@ where
 
 impl<T> PartialEq for Token<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     fn eq(&self, other: &Self) -> bool { self.normalised == other.normalised }
 }

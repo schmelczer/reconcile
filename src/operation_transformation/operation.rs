@@ -16,7 +16,7 @@ use crate::{
 #[derive(Clone, PartialEq)]
 pub enum Operation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     Equal {
         order: usize,
@@ -46,7 +46,7 @@ where
 
 impl<T> Operation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     /// Creates an equal operation with the given index.
     /// This operation is used to indicate that the text at the given index
@@ -332,7 +332,7 @@ where
 
 impl<T> Display for Operation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -400,7 +400,7 @@ where
 
 impl<T> Debug for Operation<T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { write!(f, "{self}") }
 }

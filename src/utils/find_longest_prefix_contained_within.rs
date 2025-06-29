@@ -1,7 +1,9 @@
+use std::fmt::Debug;
+
 use crate::Token;
 
-/// Given two lists of tokens, returns `length` where `old` list somewhere
-/// within contains the `length` prefix of the `new` list.
+/// Given two lists of tokens, returns `length` where the `old` list
+/// somewhere within contains the `length` prefix of the `new` list.
 ///
 /// ## Example
 ///
@@ -25,7 +27,7 @@ use crate::Token;
 /// > results in a length of 1
 pub fn find_longest_prefix_contained_within<T>(old: &[Token<T>], new: &[Token<T>]) -> usize
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let max_possible = new.len().min(old.len());
 
