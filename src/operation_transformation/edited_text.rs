@@ -3,10 +3,11 @@ use std::fmt::Debug;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{CursorPosition, Operation, TextWithCursors};
 use crate::{
-    operation_transformation::utils::{
-        cook_operations::cook_operations, elongate_operations::elongate_operations,
+    CursorPosition, TextWithCursors,
+    operation_transformation::{
+        Operation,
+        utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
     raw_operation::RawOperation,
     tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
@@ -45,7 +46,7 @@ impl<'a> EditedText<'a, String> {
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
     #[must_use]
-    pub fn from_strings(original: &'a str, updated: TextWithCursors<'a>, side: Side) -> Self {
+    pub fn from_strings(original: &'a str, updated: &TextWithCursors, side: Side) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &word_tokenizer, side)
     }
 }
@@ -61,19 +62,19 @@ where
     /// function is used to tokenize the text.
     pub fn from_strings_with_tokenizer(
         original: &'a str,
-        updated: TextWithCursors<'a>,
+        updated: &TextWithCursors,
         tokenizer: &Tokenizer<T>,
         side: Side,
     ) -> Self {
         let original_tokens = (tokenizer)(original);
-        let updated_tokens = (tokenizer)(&updated.text);
+        let updated_tokens = (tokenizer)(&updated.text());
 
         let diff: Vec<RawOperation<T>> = RawOperation::vec_from(&original_tokens, &updated_tokens);
 
         Self::new(
             original,
             cook_operations(elongate_operations(diff), side).collect(),
-            updated.cursors,
+            updated.cursors(),
         )
     }
 
@@ -239,11 +240,11 @@ where
 
             match operation {
                 Operation::Equal { .. } => {
-                    history.push(TextWithHistory::new(History::Unchanged, builder.take()))
+                    history.push(TextWithHistory::new(History::Unchanged, builder.take()));
                 }
                 Operation::Insert { side, .. } => match side {
                     Side::Left => {
-                        history.push(TextWithHistory::new(History::AddedFromLeft, builder.take()))
+                        history.push(TextWithHistory::new(History::AddedFromLeft, builder.take()));
                     }
                     Side::Right => history.push(TextWithHistory::new(
                         History::AddedFromRight,
@@ -259,10 +260,10 @@ where
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
                     match side {
                         Side::Left => {
-                            history.push(TextWithHistory::new(History::RemovedFromLeft, deleted))
+                            history.push(TextWithHistory::new(History::RemovedFromLeft, deleted));
                         }
                         Side::Right => {
-                            history.push(TextWithHistory::new(History::RemovedFromRight, deleted))
+                            history.push(TextWithHistory::new(History::RemovedFromRight, deleted));
                         }
                     }
                 }
@@ -285,7 +286,7 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = EditedText::from_strings(left, right.into(), Side::Right);
+        let operations = EditedText::from_strings(left, &right.into(), Side::Right);
 
         insta::assert_debug_snapshot!(operations);
 
@@ -297,7 +298,7 @@ mod tests {
     fn test_calculate_operations_with_no_diff() {
         let text = "hello world!";
 
-        let operations = EditedText::from_strings(text, text.into(), Side::Right);
+        let operations = EditedText::from_strings(text, &text.into(), Side::Right);
 
         assert_debug_snapshot!(operations);
 
@@ -312,8 +313,8 @@ mod tests {
         let right = "Hello world! How are you?";
         let expected = "Hello world! How are you? I'm Andras.";
 
-        let operations_1 = EditedText::from_strings(original, left.into(), Side::Left);
-        let operations_2 = EditedText::from_strings(original, right.into(), Side::Right);
+        let operations_1 = EditedText::from_strings(original, &left.into(), Side::Left);
+        let operations_2 = EditedText::from_strings(original, &right.into(), Side::Right);
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply(), expected);

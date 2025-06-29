@@ -1,9 +1,6 @@
 #![cfg(feature = "wasm")]
 
-use reconcile::wasm::{
-    lib::{is_binary, merge, merge_text, merge_text_with_cursors},
-    types::{JsCursorPosition, JsTextWithCursors},
-};
+use reconcile::{CursorPosition, TextWithCursors, wasm::*};
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test(unsupported = test)]
@@ -31,18 +28,18 @@ fn test_merge_text() {
 fn test_merge_text_with_cursors() {
     let result = merge_text_with_cursors(
         "hi",
-        JsTextWithCursors::new("hi world".to_owned(), vec![]),
-        JsTextWithCursors::new(
+        &TextWithCursors::new("hi world".to_owned(), vec![]),
+        &TextWithCursors::new(
             "hi".to_owned(),
-            vec![JsCursorPosition::new(0, 1), JsCursorPosition::new(1, 2)],
+            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)],
         ),
     );
 
     assert_eq!(
         result,
-        JsTextWithCursors::new(
+        TextWithCursors::new(
             "hi world".to_owned(),
-            vec![JsCursorPosition::new(0, 1), JsCursorPosition::new(1, 2)]
+            vec![CursorPosition::new(0, 1), CursorPosition::new(1, 2)]
         ),
     );
 }

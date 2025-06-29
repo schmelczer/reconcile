@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::types::history::History;
 
-/// Wrapper type to expose `(History, String)` to JS.
+/// Wrapper type for `(History, String)`
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
@@ -16,6 +16,7 @@ pub struct TextWithHistory {
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl TextWithHistory {
+    #[must_use]
     pub fn new(history: History, text: String) -> Self { TextWithHistory { history, text } }
 
     #[must_use]

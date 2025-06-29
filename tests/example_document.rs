@@ -21,12 +21,12 @@ impl ExampleDocument {
     pub fn parent(&self) -> String { self.parent.clone() }
 
     #[must_use]
-    pub fn left(&self) -> TextWithCursors<'static> {
+    pub fn left(&self) -> TextWithCursors {
         ExampleDocument::string_to_text_with_cursors(&self.left)
     }
 
     #[must_use]
-    pub fn right(&self) -> TextWithCursors<'static> {
+    pub fn right(&self) -> TextWithCursors {
         ExampleDocument::string_to_text_with_cursors(&self.right)
     }
 
@@ -37,7 +37,7 @@ impl ExampleDocument {
     ///
     /// If the result string does not match the expected string, the program
     /// will panic.
-    pub fn assert_eq(&self, result: &TextWithCursors<'static>) {
+    pub fn assert_eq(&self, result: &TextWithCursors) {
         let result_str = ExampleDocument::text_with_cursors_to_string(result);
         assert_eq!(
             self.expected, result_str,
@@ -53,16 +53,16 @@ impl ExampleDocument {
     /// If the result string does not match the expected string, the program
     /// will panic.
     pub fn assert_eq_without_cursors(&self, result: &str) {
-        let expected = ExampleDocument::string_to_text_with_cursors(&self.expected).text;
+        let expected = ExampleDocument::string_to_text_with_cursors(&self.expected).text();
         assert_eq!(
             expected, result,
             "Left (expected) isn't equal to right (actual), Actual: ```\n{result}```",
         );
     }
 
-    fn text_with_cursors_to_string(text: &TextWithCursors<'_>) -> String {
-        let mut result = text.text.clone().into_owned();
-        for (i, cursor) in text.cursors.iter().enumerate() {
+    fn text_with_cursors_to_string(document: &TextWithCursors) -> String {
+        let mut result = document.text().clone();
+        for (i, cursor) in document.cursors().iter().enumerate() {
             assert!(
                 cursor.char_index <= result.len(), // equals in case of insert at the end
                 "Cursor index out of bounds: {} > {} when testing for '{result}'",
@@ -82,7 +82,7 @@ impl ExampleDocument {
         result
     }
 
-    fn string_to_text_with_cursors(text: &str) -> TextWithCursors<'static> {
+    fn string_to_text_with_cursors(text: &str) -> TextWithCursors {
         let cursors = Self::parse_cursors(text);
         let text = text.replace('|', "");
         TextWithCursors::new_owned(text, cursors)

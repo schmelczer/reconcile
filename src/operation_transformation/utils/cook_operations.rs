@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{operation_transformation::Operation, raw_operation::RawOperation, utils::side::Side};
+use crate::{operation_transformation::Operation, raw_operation::RawOperation, types::side::Side};
 
 /// Turn raw operations into ordered operations while keeping track of the
 /// original token's indexes.

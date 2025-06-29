@@ -11,8 +11,8 @@ fn test_document_one_way_without_cursors() {
     for doc in &get_all_documents() {
         doc.assert_eq_without_cursors(&reconcile(
             &doc.parent(),
-            &doc.left().text,
-            &doc.right().text,
+            &doc.left().text(),
+            &doc.right().text(),
         ));
     }
 }
@@ -22,8 +22,8 @@ fn test_document_one_way_with_cursors() {
     for doc in &get_all_documents() {
         doc.assert_eq(&reconcile_with_cursors(
             &doc.parent(),
-            doc.left(),
-            doc.right(),
+            &doc.left(),
+            &doc.right(),
         ));
     }
 }
@@ -33,8 +33,8 @@ fn test_document_inverse_way_without_cursors() {
     for doc in &get_all_documents() {
         doc.assert_eq_without_cursors(&reconcile(
             &doc.parent(),
-            &doc.right().text,
-            &doc.left().text,
+            &doc.right().text(),
+            &doc.left().text(),
         ));
     }
 }
@@ -44,8 +44,8 @@ fn test_document_inverse_way_with_cursors() {
     for doc in &get_all_documents() {
         doc.assert_eq(&reconcile_with_cursors(
             &doc.parent(),
-            doc.right(),
-            doc.left(),
+            &doc.right(),
+            &doc.left(),
         ));
     }
 }
