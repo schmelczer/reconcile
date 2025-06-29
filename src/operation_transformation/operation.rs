@@ -421,7 +421,7 @@ mod tests {
         let mut builder = delete_operation.apply(builder);
         builder = retain_operation.apply(builder);
 
-        assert_eq!(builder.build(), "world");
+        assert_eq!(builder.take(), "world");
     }
 
     #[test]
@@ -434,6 +434,6 @@ mod tests {
         let mut builder = retain_operation.apply(builder);
         builder = insert_operation.apply(builder);
 
-        assert_eq!(builder.build(), "hello my friend");
+        assert_eq!(builder.take(), "hello my friend");
     }
 }

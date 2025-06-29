@@ -222,7 +222,7 @@ where
             builder = operation.apply(builder);
         }
 
-        builder.build()
+        builder.take()
     }
 
     #[must_use]

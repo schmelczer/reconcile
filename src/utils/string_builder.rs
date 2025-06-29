@@ -51,21 +51,17 @@ impl StringBuilder<'_> {
         }
     }
 
-    /// Returns the currently built buffer and clears it.
+    /// Returns the currently built buffer and clears it to allow consuming
+    /// the result incrementally.
     pub fn take(&mut self) -> String {
-        let result = self.buffer.clone();
+        let result = self.buffer.clone(); // TODO: try removing this clone
         self.buffer.clear();
         result
     }
 
-    /// Finish building the string after copying the remaining original string
-    /// since the last insertion or deletion.
-    pub fn build(self) -> String { self.buffer }
-
     /// Get a slice of the remaining original string. The slice starts from
     /// where the next delete/retain operation would start and is of length
-    /// `length`. The implementation is quite suboptimal but it's only used
-    /// for debugging.
+    /// `length`.
     #[cfg(debug_assertions)]
     pub fn get_slice_from_remaining(&self, length: usize) -> String {
         let result = self.remaining.chars().take(length).collect::<String>();
@@ -92,7 +88,7 @@ mod tests {
         builder.retain(8);
         builder.insert(" eee");
 
-        assert_eq!(builder.build(), "ddd bbb ccc eee");
+        assert_eq!(builder.take(), "ddd bbb ccc eee");
 
         let original = "abcde";
         let mut builder = StringBuilder::new(original);
@@ -101,7 +97,7 @@ mod tests {
         builder.delete(3);
         builder.retain(1);
 
-        assert_eq!(builder.build(), "ae");
+        assert_eq!(builder.take(), "ae");
     }
 
     #[test]
@@ -110,7 +106,7 @@ mod tests {
         let mut builder = StringBuilder::new(original);
 
         builder.insert("test");
-        assert_eq!(builder.build(), "test");
+        assert_eq!(builder.take(), "test");
     }
 
     #[test]
@@ -122,7 +118,7 @@ mod tests {
         builder.insert("世界, "); // Insert "World, "
         builder.retain(2);
 
-        assert_eq!(builder.build(), "こんに世界, ちは");
+        assert_eq!(builder.take(), "こんに世界, ちは");
     }
 
     #[test]
@@ -145,7 +141,7 @@ mod tests {
         let mut builder = StringBuilder::new(original);
 
         builder.retain(original.len());
-        assert_eq!(builder.build(), original);
+        assert_eq!(builder.take(), original);
     }
 
     #[test]
@@ -155,6 +151,6 @@ mod tests {
 
         builder.delete(original.len());
         builder.insert("Hi");
-        assert_eq!(builder.build(), "Hi");
+        assert_eq!(builder.take(), "Hi");
     }
 }
