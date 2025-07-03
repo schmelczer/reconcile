@@ -11,9 +11,16 @@
 
 use core::str;
 
+use cfg_if::cfg_if;
 use wasm_bindgen::prelude::*;
 
 use crate::{BuiltinTokenizer, CursorPosition, TextWithCursors, TextWithHistory};
+cfg_if! {
+    if #[cfg(feature = "wee_alloc")] {
+        #[global_allocator]
+        static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
+    }
+}
 
 /// WASM wrapper around `crate::reconcile` for merging text.
 #[wasm_bindgen(js_name = reconcile)]
