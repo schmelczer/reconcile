@@ -14,3 +14,8 @@ updates:
     directories: ["**"]
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "npm"
+    directories: ["/reconcile-js"]
+    schedule:
+      interval: "daily"
