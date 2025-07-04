@@ -10,6 +10,12 @@ right: Party A shall receive from Party B
 expected: Party C shall receive from Party B
 
 ---
+parent: hello
+left: hel|lo
+right: hi
+expected: "|hi"
+
+---
 parent:
 left: hi my friend|
 right: hi there|

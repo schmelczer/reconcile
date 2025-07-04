@@ -144,21 +144,21 @@ where
                 Operation::Insert { .. } | Operation::Equal { .. }
             );
 
-            let original_length = operation.len() as i64;
+            let original_length = operation.len() as isize;
             let result = match side {
                 Side::Left => {
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as i64 - seen_left_length as i64
-                            + op.len() as i64
+                        let shift = merged_length as isize - seen_left_length as isize
+                            + op.len() as isize
                             - original_length;
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_left_length + original_length as usize
                         }) {
                             merged_cursors.push(
-                                cursor.with_index((cursor.char_index as i64 + shift) as usize),
+                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
                             );
                         }
                     }
@@ -176,15 +176,15 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as i64 - seen_right_length as i64
-                            + op.len() as i64
+                        let shift = merged_length as isize - seen_right_length as isize
+                            + op.len() as isize
                             - original_length;
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
                             cursor.char_index <= seen_right_length + original_length as usize
                         }) {
                             merged_cursors.push(
-                                cursor.with_index((cursor.char_index as i64 + shift) as usize),
+                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
                             );
                         }
                     }

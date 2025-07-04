@@ -20,7 +20,9 @@ impl TextWithCursors {
             debug_assert!(
                 cursor.char_index <= length,
                 // cursor.char_index == length means that the cursor is at the end
-                "Cursor positions must be contained within the text or just after the end"
+                "Cursor positions ({}) must be contained within the text (of length {length}) or \
+                 just after the end",
+                cursor.char_index
             );
         }
 
