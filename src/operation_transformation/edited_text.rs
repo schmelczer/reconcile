@@ -11,7 +11,7 @@ use crate::{
     },
     raw_operation::RawOperation,
     tokenizer::Tokenizer,
-    types::{history::History, side::Side, text_with_history::TextWithHistory},
+    types::{history::History, side::Side, span_with_history::SpanWithHistory},
     utils::string_builder::StringBuilder,
 };
 
@@ -231,7 +231,7 @@ where
     }
 
     #[must_use]
-    pub fn apply_with_history(&self) -> Vec<TextWithHistory> {
+    pub fn apply_with_history(&self) -> Vec<SpanWithHistory> {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         let mut history = Vec::with_capacity(self.operations.len());
@@ -241,13 +241,13 @@ where
 
             match operation {
                 Operation::Equal { .. } => {
-                    history.push(TextWithHistory::new(History::Unchanged, builder.take()));
+                    history.push(SpanWithHistory::new(History::Unchanged, builder.take()));
                 }
                 Operation::Insert { side, .. } => match side {
                     Side::Left => {
-                        history.push(TextWithHistory::new(History::AddedFromLeft, builder.take()));
+                        history.push(SpanWithHistory::new(History::AddedFromLeft, builder.take()));
                     }
-                    Side::Right => history.push(TextWithHistory::new(
+                    Side::Right => history.push(SpanWithHistory::new(
                         History::AddedFromRight,
                         builder.take(),
                     )),
@@ -261,10 +261,10 @@ where
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
                     match side {
                         Side::Left => {
-                            history.push(TextWithHistory::new(History::RemovedFromLeft, deleted));
+                            history.push(SpanWithHistory::new(History::RemovedFromLeft, deleted));
                         }
                         Side::Right => {
-                            history.push(TextWithHistory::new(History::RemovedFromRight, deleted));
+                            history.push(SpanWithHistory::new(History::RemovedFromRight, deleted));
                         }
                     }
                 }

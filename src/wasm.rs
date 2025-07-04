@@ -14,7 +14,7 @@ use core::str;
 use cfg_if::cfg_if;
 use wasm_bindgen::prelude::*;
 
-use crate::{BuiltinTokenizer, CursorPosition, TextWithCursors, TextWithHistory};
+use crate::{BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors};
 cfg_if! {
     if #[cfg(feature = "wee_alloc")] {
         #[global_allocator]
@@ -120,7 +120,7 @@ fn set_panic_hook() {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct TextWithCursorsAndHistory {
     text_with_cursors: TextWithCursors,
-    history: Vec<TextWithHistory>,
+    history: Vec<SpanWithHistory>,
 }
 
 #[wasm_bindgen]
@@ -132,5 +132,5 @@ impl TextWithCursorsAndHistory {
     pub fn cursors(&self) -> Vec<CursorPosition> { self.text_with_cursors.cursors() }
 
     #[must_use]
-    pub fn history(&self) -> Vec<TextWithHistory> { self.history.clone() }
+    pub fn history(&self) -> Vec<SpanWithHistory> { self.history.clone() }
 }

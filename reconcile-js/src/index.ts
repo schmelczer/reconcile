@@ -2,7 +2,7 @@ import wasmInit, {
     CursorPosition as wasmCursorPosition,
     reconcile as wasmReconcile,
     TextWithCursors as wasmTextWithCursors,
-    TextWithHistory as wasmTextWithHistory,
+    SpanWithHistory as wasmSpanWithHistory,
     BuiltinTokenizer,
     reconcileWithHistory as wasmReconcileWithHistory,
     History,
@@ -32,10 +32,10 @@ export interface TextWithCursorsAndHistory {
     /** List of cursor positions, can be null or undefined if there are no cursors */
     cursors: null | undefined | CursorPosition[];
     /** List of operations leading to `text` from the 3 ancestors */
-    history: TextWithHistory[];
+    history: SpanWithHistory[];
 }
 
-export interface TextWithHistory {
+export interface SpanWithHistory {
     /** Span of text associated with the historical opearion */
     text: string;
     /** Origin of the `text` span */
@@ -139,7 +139,7 @@ export function reconcileWithHistory(
     rightCursor.free();
 
     const jsResult = toTextWithCursors(result);
-    const history = result.history().map(toTextWithHistory);
+    const history = result.history().map(toSpanWithHistory);
     result.free();
 
     return {
@@ -184,9 +184,9 @@ function toCursorPosition(cursor: wasmCursorPosition): CursorPosition {
     };
 }
 
-function toTextWithHistory(
-    textWithHistory: wasmTextWithHistory
-): TextWithHistory {
+function toSpanWithHistory(
+    textWithHistory: wasmSpanWithHistory
+): SpanWithHistory {
     return {
         text: textWithHistory.text(),
         history: textWithHistory.history(),

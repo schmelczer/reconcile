@@ -9,15 +9,15 @@ use crate::types::history::History;
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
-pub struct TextWithHistory {
+pub struct SpanWithHistory {
     history: History,
     text: String,
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
-impl TextWithHistory {
+impl SpanWithHistory {
     #[must_use]
-    pub fn new(history: History, text: String) -> Self { TextWithHistory { history, text } }
+    pub fn new(history: History, text: String) -> Self { SpanWithHistory { history, text } }
 
     #[must_use]
     pub fn history(&self) -> History { self.history }
