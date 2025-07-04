@@ -3,3 +3,9 @@
 
 # Rust build folder
 target
+
+# Node dependencies
+node_modules
+
+# WebPack build output
+dist
