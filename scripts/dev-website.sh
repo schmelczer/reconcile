@@ -2,10 +2,11 @@
 
 set -e
 
-wasm-pack build --target web --features wasm
+wasm-pack build --target web --features wasm,wee_alloc
 cd reconcile-js
 npm run build
-cp -R dist ../examples/website
+mkdir -p ../examples/website/dist
+cp -R dist/index.js ../examples/website/dist/index.js
 
 cd ../examples/website
 
