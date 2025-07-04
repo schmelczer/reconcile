@@ -49,6 +49,9 @@ export type Tokenizer = "word" | "character";
 
 let isInitialised = false;
 
+const UNINITIALISED_MODULE_ERROR =
+    "Reconcile module has not been initialized. Please call init() before using any other functions.";
+
 /**
  * Initializes the WASM module for text reconciliation.
  * Must be called before using any other functions.
@@ -83,6 +86,10 @@ export function reconcile(
     right: string | TextWithCursors,
     tokenizer: BuiltinTokenizer = "Word"
 ): TextWithCursors {
+    if (!isInitialised) {
+        throw new Error(UNINITIALISED_MODULE_ERROR);
+    }
+
     const leftCursor = toWasmTextWithCursors(left);
     const rightCursor = toWasmTextWithCursors(right);
 
@@ -114,6 +121,10 @@ export function reconcileWithHistory(
     right: string | TextWithCursors,
     tokenizer: BuiltinTokenizer = "Word"
 ): TextWithCursorsAndHistory {
+    if (!isInitialised) {
+        throw new Error(UNINITIALISED_MODULE_ERROR);
+    }
+
     const leftCursor = toWasmTextWithCursors(left);
     const rightCursor = toWasmTextWithCursors(right);
 
