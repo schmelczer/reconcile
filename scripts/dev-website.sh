@@ -2,13 +2,11 @@
 
 set -e
 
-rm -rf pkg
-
 wasm-pack build --target web --features wasm
+cd reconcile-js
+npm run build
+cp -R dist ../examples/website
 
-cp -R pkg/reconcile.js examples/website/
-cp -R pkg/reconcile_bg.wasm examples/website/
-
-cd examples/website/
+cd ../examples/website
 
 python3 -m http.server $1 --bind 0.0.0.0

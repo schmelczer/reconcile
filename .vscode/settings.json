@@ -3,5 +3,6 @@
         "**/snapshots": true, // cargo-insta outputs
         "pkg": true, // wasm-pack build directory
         "target": true, // rust build directory
+        "**/node_modules": true, // node.js dependencies
     }
 }

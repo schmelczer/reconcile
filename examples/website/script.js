@@ -1,4 +1,4 @@
-import init, { mergeTextWithHistory } from "./reconcile.js";
+import { init, reconcileWithHistory } from "./dist/index.js";
 
 const originalTextArea = document.getElementById("original");
 const leftTextArea = document.getElementById("left");
@@ -37,16 +37,15 @@ function updateMergedText() {
     const left = leftTextArea.value;
     const right = rightTextArea.value;
 
-    const results = mergeTextWithHistory(original, left, right);
+    const results = reconcileWithHistory(original, left, right);
 
     mergedTextArea.innerHTML = "";
 
-    for (const result of results) {
+    for (const {text, history} of results.history) {
         const span = document.createElement("span");
-        span.className = result.history();
-        span.textContent = result.text();
+        span.className = history;
+        span.textContent = text;
         mergedTextArea.appendChild(span);
-        result.free();
     }
 }
 
