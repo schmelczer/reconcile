@@ -20,53 +20,112 @@
 //!
 //! Merging is done on the token level, the granularity of which is
 //! configurable. By default, words are the atoms for merging and thus words
-//! can't get jumbled up at the end of reconciling. However, to maintain
-//! gramatical correctness after merging, we could choose to treat individual
-//! sentences as tokens:
+//! can't get jumbled up at the end of reconciling.
+//!
+//! ### Word-level tokenization (default)
 //!
 //! ```
+//! use reconcile::{reconcile, BuiltinTokenizer};
+//!
+//! let parent = "The quick brown fox";
+//! let left = "The very quick brown fox";
+//! let right = "The quick red fox";
+//!
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+//! assert_eq!(result.apply().text(), "The very quick red fox");
 //! ```
 //!
-//! > Beware, that if conflicting edits happen within a sentence (therefore each
-//! > creating a new token), the sentences will appear duplicated.
-//!
-//! ```
-//! ```
+//! ### Character-level tokenization
 //!
 //! If finer grained merging is required, we can make every UTF-8 character
 //! become its own token:
 //!
+//! ```
+//! use reconcile::{reconcile, BuiltinTokenizer};
+//!
+//! let parent = "Hello";
+//! let left = "Helo";    // deleted 'l'
+//! let right = "Hello!"; // added '!'
+//!
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Character);
+//! assert_eq!(result.apply().text(), "Helo!");
+//! ```
+//!
+//! ### Custom tokenization
 //!
 //! If something custom is needed, for instance, to better support structured
-//! text such as Markdown or HTML, a custom tokenizer can be implemented
+//! text such as Markdown or HTML, a custom tokenizer can be implemented:
 //!
+//! ```
+//! use reconcile::{reconcile, Token, BuiltinTokenizer};
+//!
+//! // Example with custom tokenizer - split by sentences
+//! let sentence_tokenizer = |text: &str| {
+//!     text.split(". ")
+//!         .map(|sentence| Token::new(sentence.to_string(), sentence.to_string(), true, true))
+//!         .collect::<Vec<_>>()
+//! };
+//!
+//! let parent = "Hello world. This is a test.";
+//! let left = "Hello beautiful world. This is a test.";
+//! let right = "Hello world. This is a great test.";
+//!
+//! // Using built-in tokenizer is usually sufficient
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+//! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
+//! ```
 //!
 //! ## Cursors and selection ranges
 //!
-//! Additionally, it supports updating cursor &
-//! selection ranges during the merging too for interactive workflows.
+//! The library supports updating cursor and selection ranges during the merging
+//! for interactive workflows:
 //!
+//! ```
+//! use reconcile::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
+//!
+//! let parent = "Hello world";
+//! let left = TextWithCursors::new(
+//!     "Hello beautiful world".to_string(),
+//!     vec![CursorPosition { id: 1, char_index: 6 }] // After "Hello "
+//! );
+//! let right = TextWithCursors::new(
+//!     "Hi world".to_string(),
+//!     vec![CursorPosition { id: 2, char_index: 0 }] // At beginning
+//! );
+//!
+//! let result = reconcile(parent, &left, &right, &*BuiltinTokenizer::Word);
+//! let merged = result.apply();
+//!
+//! assert_eq!(merged.text(), "Hi beautiful world");
+//! // Cursors are automatically repositioned
+//! assert_eq!(merged.cursors().len(), 2);
+//! ```
 //!
 //! ## The algorithm
 //!
-//! The algorithm starts similarly to `diff3`. Its inputs are a **Parent**
-//! document `P` and two conflicting versions: `left` and `right` which have
-//! been created from `P` through any series of concurrent edits. When calling
-//! `reconcile(parent, left, right)`, first, the 2-way diff of (`parent` &
-//! `left`) and (`parent` & `right`) are taken using Myers' algorithm.
+//! The algorithm starts similarly to `diff3`. Its inputs are a **parent**
+//! document and two conflicting versions: `left` and `right` which have
+//! been created from the parent through any series of concurrent edits.
 //!
-//! The
+//! When calling `reconcile(parent, left, right)`:
 //!
-//! Then, the
-//! resulting edits are weaved together using the principles of operational
-//! transformations ensuring that no change from either `left` or `right` is
-//! lost: if either inserted some text, that string will end up in the result
-//! and similarly for deletes.
+//! 1. **Diff calculation**: 2-way diffs of (parent & left) and (parent & right)
+//!    are computed using Myers' algorithm
+//! 2. **Tokenization**: The text is split into tokens at the configured
+//!    granularity
+//! 3. **Operation transformation**: The resulting edits are weaved together
+//!    using operational transformation principles, ensuring no changes are lost
+//! 4. **Conflict resolution**: Unlike traditional merge tools, conflicts are
+//!    automatically resolved without producing conflict markers
 //!
-//! The
+//! The key insight is that both insertions and deletions are preserved:
+//! - If either side inserted text, it appears in the result
+//! - If either side deleted text, the deletion is applied
+//! - Insertions into deleted regions are still preserved
 //!
-//! The `reconcile` library
-//!  
+//! This approach works well for human-readable text where some "fuzziness" in
+//! conflict resolution is acceptable, unlike source code where precision is
+//! critical.
 
 mod operation_transformation;
 mod raw_operation;
