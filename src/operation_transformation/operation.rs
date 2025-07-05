@@ -241,7 +241,7 @@ where
                     *last_delete_order + *last_delete_deleted_character_count;
 
                 let new_length = deleted_character_count
-                    .min(0.max(operation_end_index as i64 - last_delete_end_index as i64) as usize);
+                    .min(operation_end_index.saturating_sub(last_delete_end_index));
 
                 let overlap = deleted_character_count - new_length;
 
@@ -282,30 +282,21 @@ where
                 let last_delete_end_index =
                     *last_delete_order + *last_delete_deleted_character_count;
 
-                let overlap =
-                    0.max((length as i64).min(last_delete_end_index as i64 - order as i64));
+                let overlap = length.min(last_delete_end_index.saturating_sub(order));
 
                 #[cfg(debug_assertions)]
                 let updated_equal = text.as_ref().map_or_else(
-                    || {
-                        Operation::create_equal(
-                            order + overlap as usize,
-                            (length as i64 - overlap) as usize,
-                        )
-                    },
+                    || Operation::create_equal(order + overlap, length - overlap),
                     |text| {
                         Operation::create_equal_with_text(
-                            order + overlap as usize,
-                            text.chars().skip(overlap as usize).collect::<String>(),
+                            order + overlap,
+                            text.chars().skip(overlap).collect::<String>(),
                         )
                     },
                 );
 
                 #[cfg(not(debug_assertions))]
-                let updated_equal = Operation::create_equal(
-                    order + overlap as usize,
-                    (length as i64 - overlap) as usize,
-                );
+                let updated_equal = Operation::create_equal(order + overlap, length - overlap);
 
                 updated_equal
             }

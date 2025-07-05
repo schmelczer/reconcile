@@ -86,8 +86,10 @@ struct V {
 
 impl V {
     fn new(max_d: usize) -> Self {
+        // max_d should fit in isize for the algorithm to work correctly
+        let offset = isize::try_from(max_d).unwrap_or(isize::MAX);
         Self {
-            offset: max_d as isize,
+            offset,
             v: vec![0; 2 * max_d],
         }
     }
@@ -98,12 +100,17 @@ impl V {
 impl Index<isize> for V {
     type Output = usize;
 
-    fn index(&self, index: isize) -> &Self::Output { &self.v[(index + self.offset) as usize] }
+    fn index(&self, index: isize) -> &Self::Output {
+        let idx = usize::try_from(index + self.offset).unwrap_or(usize::MAX);
+        &self.v[idx.min(self.v.len().saturating_sub(1))]
+    }
 }
 
 impl IndexMut<isize> for V {
     fn index_mut(&mut self, index: isize) -> &mut Self::Output {
-        &mut self.v[(index + self.offset) as usize]
+        let idx = usize::try_from(index + self.offset).unwrap_or(usize::MAX);
+        let len = self.v.len();
+        &mut self.v[idx.min(len.saturating_sub(1))]
     }
 }
 
@@ -138,7 +145,7 @@ where
 
     // By Lemma 1 in the paper, the optimal edit script length is odd or even as
     // `delta` is odd or even.
-    let delta = n as isize - m as isize;
+    let delta = isize::try_from(n).unwrap_or(isize::MAX) - isize::try_from(m).unwrap_or(isize::MAX);
     let odd = delta & 1 == 1;
 
     // The initial point at (0, -1)
@@ -150,7 +157,8 @@ where
     assert!(vf.len() >= d_max);
     assert!(vb.len() >= d_max);
 
-    for d in 0..d_max as isize {
+    let d_max_isize = isize::try_from(d_max).unwrap_or(isize::MAX);
+    for d in 0..d_max_isize {
         // Forward path
         for k in (-d..=d).rev().step_by(2) {
             let mut x = if k == -d || (k != d && vf[k - 1] < vf[k + 1]) {
@@ -158,7 +166,7 @@ where
             } else {
                 vf[k - 1] + 1
             };
-            let y = (x as isize - k) as usize;
+            let y = usize::try_from(isize::try_from(x).unwrap_or(isize::MAX) - k).unwrap_or(0);
 
             // The coordinate of the start of a snake
             let (x0, y0) = (x, y);
@@ -196,7 +204,7 @@ where
             } else {
                 vb[k - 1] + 1
             };
-            let mut y = (x as isize - k) as usize;
+            let mut y = usize::try_from(isize::try_from(x).unwrap_or(isize::MAX) - k).unwrap_or(0);
 
             // The coordinate of the start of a snake
             if x < n && y < m {

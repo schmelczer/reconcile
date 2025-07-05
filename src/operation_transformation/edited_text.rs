@@ -144,18 +144,26 @@ where
                 Operation::Insert { .. } | Operation::Equal { .. }
             );
 
-            let original_length = operation.len() as isize;
+            let original_length = operation.len();
             let result = match side {
                 Side::Left => {
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as isize - seen_left_length as isize
-                            + op.len() as isize
-                            - original_length;
+                        // Calculate shift using safe casts - preserving original logic
+                        let merged_length_signed =
+                            isize::try_from(merged_length).unwrap_or(isize::MAX);
+                        let seen_left_length_signed =
+                            isize::try_from(seen_left_length).unwrap_or(isize::MAX);
+                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
+                        let original_length_signed =
+                            isize::try_from(original_length).unwrap_or(isize::MAX);
+
+                        let shift = merged_length_signed - seen_left_length_signed + op_len_signed
+                            - original_length_signed;
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_left_length + original_length as usize
+                            cursor.char_index <= seen_left_length + original_length
                         }) {
                             merged_cursors.push(
                                 cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
@@ -164,7 +172,7 @@ where
                     }
 
                     if is_advancing_operation {
-                        seen_left_length += original_length as usize;
+                        seen_left_length += original_length;
                     }
 
                     maybe_left_op = left_iter.next();
@@ -176,12 +184,20 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as isize - seen_right_length as isize
-                            + op.len() as isize
-                            - original_length;
+                        // Calculate shift using safe casts - preserving original logic
+                        let merged_length_signed =
+                            isize::try_from(merged_length).unwrap_or(isize::MAX);
+                        let seen_right_length_signed =
+                            isize::try_from(seen_right_length).unwrap_or(isize::MAX);
+                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
+                        let original_length_signed =
+                            isize::try_from(original_length).unwrap_or(isize::MAX);
+
+                        let shift = merged_length_signed - seen_right_length_signed + op_len_signed
+                            - original_length_signed;
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_right_length + original_length as usize
+                            cursor.char_index <= seen_right_length + original_length
                         }) {
                             merged_cursors.push(
                                 cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
@@ -190,7 +206,7 @@ where
                     }
 
                     if is_advancing_operation {
-                        seen_right_length += original_length as usize;
+                        seen_right_length += original_length;
                     }
 
                     maybe_right_op = right_iter.next();
