@@ -43,3 +43,44 @@ jobs:
           cargo test --features serde
           cargo test --features wasm
           wasm-pack test --node --features wasm
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.2.0
+        with:
+          node-version: "22.x"
+          check-latest: true
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup rust
+        run: |
+          cargo install wasm-pack
+
+      - name: Build wasm
+        run: |
+          wasm-pack build --target web --features wasm
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
+        continue-on-error: true
+
+      - name: Build reconcile-js
+        run: |
+          cd reconcile-js
+          npm ci
+          npm run build
+
+      - name: Publish reconcile-js to NPM
+        run: |
+          cd reconcile-js
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
