@@ -54,8 +54,8 @@
 //!         .map(|sentence| Token::new(
 //!             sentence.to_string(),
 //!             sentence.to_string(),
-//!             false, // don't allow joining token with the preceeding on
-//!             false // don't allow joining token with the following one
+//!             false, // don't allow joining token with the preceding one
+//!             false, // don't allow joining token with the following one
 //!         ))
 //!         .collect::<Vec<_>>()
 //! };
@@ -68,7 +68,7 @@
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
-//! > By setting the joinability to `false`, longer runs of inserts with be
+//! > By setting the joinability to `false`, longer runs of inserts will be
 //! > interleaved like LRLRLR instead of LLLRRR.
 //!
 //! ## Cursors and selection ranges

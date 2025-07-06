@@ -34,7 +34,7 @@ console_error_panic_hook = [ "dep:console_error_panic_hook" ]
 insta = "1.42.2"
 pretty_assertions = "1.4.1"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_yaml ="0.9.34"
+serde_yaml = "0.9.34"
 test-case = "3.3.1"
 wasm-bindgen-test = "0.3.49"
 
@@ -42,7 +42,7 @@ wasm-bindgen-test = "0.3.49"
 codegen-units = 1
 lto = true
 opt-level = 3
-strip="symbols"
+strip = "symbols"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-O4', '--enable-bulk-memory']
@@ -84,7 +84,7 @@ large_stack_arrays = { level = "allow", priority = 1 } # https://github.com/rust
 
 # Silly lints
 implicit_return = { level = "allow", priority = 1 }
-question_mark_used =  { level = "allow", priority = 1 }
+question_mark_used = { level = "allow", priority = 1 }
 struct_field_names = { level = "allow", priority = 1 }
 single_char_lifetime_names = { level = "allow", priority = 1 }
 single_call_fn = { level = "allow", priority = 1 }

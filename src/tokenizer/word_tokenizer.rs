@@ -1,7 +1,7 @@
 use super::token::Token;
 
-/// Splits text on word boundaries creating tokens of alternating words and
-/// whitespaces with the whitespaces getting unique IDs.
+/// Splits text on word boundaries, creating tokens of alternating words and
+/// whitespace with the whitespace getting unique IDs.
 ///
 /// ## Example
 ///
@@ -9,7 +9,7 @@ use super::token::Token;
 /// "Hi there!" -> ["Hi", " ", "there!"]
 /// ```
 pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
-    let mut result: Vec<Token<String>> = Vec::new();
+    let mut result = Vec::new();
 
     let mut previous_boundary_index = 0;
     let mut previous_char_is_whitespace = text.chars().next().is_none_or(char::is_whitespace);
@@ -32,10 +32,11 @@ pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
         return result;
     }
 
+    // normalize whitespace tokens by concatenating with the following token
     for i in 0..result.len() - 1 {
         if result[i].original().chars().all(char::is_whitespace) {
-            let normalised = result[i].normalised().to_owned() + result[i + 1].original();
-            result[i].set_normalised(normalised);
+            let normalized = result[i].normalized().to_owned() + result[i + 1].original();
+            result[i].set_normalized(normalized);
         }
     }
 
