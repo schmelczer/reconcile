@@ -8,18 +8,18 @@
     />
     <meta
       name="description"
-      content="Easily merge three versions of a text document with this 3-way text merge tool."
+      content="3-way text merging that automatically resolves conflicts. No more Git conflict markers — just clean, merged results."
     />
     <meta property="og:title" content="3-Way Text Merge" />
     <meta
       property="og:description"
-      content="Easily merge three versions of a text document with this 3-way text merge tool."
+      content="3-way text merging that automatically resolves conflicts. No more Git conflict markers — just clean, merged results."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://github.com/schmelczer/reconcile" />
+    <meta property="og:url" content="https://schmelczer.dev/reconcile" />
     <meta property="og:image" content="/favicon.ico" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <title>3-Way Text Merge</title>
+    <title>Reconcile: conflict-free text merging</title>
     <link inline inline-asset="index.css" inline-asset-delete />
   </head>
   <body>
@@ -28,49 +28,58 @@
     <div class="scroll-container">
       <div class="page-wrapper">
         <header>
-          <h1>Reconcile: automated 3-way text merge</h1>
+          <h1>Reconcile: conflict-free 3-way text merging</h1>
           <p>
-            The
-            <a
-              href="https://github.com/schmelczer/reconcile"
-              target="_blank"
-              rel="noopener noreferrer"
-              >reconcile</a
-            >
-            library solves a fundamental challenge in collaborative editing: what happens
-            when multiple users edit the same text simultaneously but we can only capture
-            the end result, not the intermediary edits? Essentially, it's
+            Think
             <a
               href="https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html"
               target="_blank"
               rel="noopener noreferrer"
               >diff3</a
             >
-            (or <code>git merge</code>) but with automatic conflict resolution.
-          </p>
-          <p>
-            The
-            <code>reconcile(parent: str, left: str, right: str) -> str</code>
-            takes conflicting concurrent edits and intelligently merges them into a
-            unified result. Beyond basic conflict resolution, it offers sophisticated
-            merging heuristics, flexible tokenization options, and cursor position
-            tracking.
-          </p>
-          <p>
-            The algorithm begins with your chosen tokenizer, then applies Myers' diff
-            algorithm to compare the original text with both conflicting versions. These
-            diffs undergo transformation to preserve meaningful change sequences, before a
-            final merge strategy—inspired by Operational Transformation reconciles all
-            conflicting modifications without losing any edits.
-          </p>
-          <p>
-            For more details, see the
-            <a href="https://github.com/schmelczer/reconcile" target="_blank">README</a>.
+            or <code>git merge</code>, but with intelligent conflict resolution that
+            requires no user intervention. The
+            <a
+              href="https://github.com/schmelczer/reconcile"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Reconcile</a
+            >
+            library tackles a fundamental challenge in collaborative editing: what happens
+            when multiple users edit the same text simultaneously, but the conflict
+            resolver only has access to the final results, not the intermediate steps?
           </p>
 
           <p>
-            Use the tokenization options below to experiment with different strategies.
-            The library supports user-defined tokenizers as well.
+            Where traditional merge tools leave you with conflict markers to resolve
+            manually, Reconcile automatically weaves changes together. The
+            <code>reconcile(parent, left, right)</code> function takes conflicting edits
+            and produces clean, unified results using an algorithm inspired by Operational
+            Transformation. No more <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers
+            cluttering your text.
+          </p>
+
+          <p>
+            The process starts with your chosen tokenisation strategy, then applies Myers'
+            diff algorithm to compare the original with both modified versions. These
+            diffs are optimised and transformed to preserve meaningful changes, before a
+            final merge strategy combines all modifications without losing any edits.
+          </p>
+
+          <p>
+            Ready to dive deeper? Check out the
+            <a
+              href="https://github.com/schmelczer/reconcile"
+              target="_blank"
+              rel="noopener noreferrer"
+              >documentation</a
+            >
+            or try editing the text boxes below to see Reconcile in action.
+          </p>
+
+          <p>
+            Use the tokenisation options below to experiment with different approaches —
+            the library also supports custom tokenisers.
           </p>
         </header>
 
@@ -87,7 +96,9 @@
                 <span class="radio-custom" aria-hidden="true"></span>
                 <div class="radio-content">
                   <span class="radio-label">Character</span>
-                  <span class="radio-description">Split by individual characters</span>
+                  <span class="radio-description"
+                    >Fine-grained character-level merging</span
+                  >
                 </div>
               </label>
               <label class="radio-option">
@@ -101,7 +112,7 @@
                 <span class="radio-custom" aria-hidden="true"></span>
                 <div class="radio-content">
                   <span class="radio-label">Word</span>
-                  <span class="radio-description">Split by words (default)</span>
+                  <span class="radio-description">Retain full words (default)</span>
                 </div>
               </label>
               <label class="radio-option">
@@ -110,7 +121,7 @@
                 <div class="radio-content">
                   <span class="radio-label">Line</span>
                   <span class="radio-description"
-                    >Split by lines similarly to <code>git merge</code></span
+                    >Line-by-line like <code>git merge</code></span
                   >
                 </div>
               </label>
@@ -120,7 +131,7 @@
           <div class="text-area-card diamond-parent">
             <label
               for="original"
-              title="The text document's content before any concurrent edits occurred."
+              title="The original text before any concurrent edits were made."
               >Original</label
             >
             <textarea id="original" name="original"></textarea>
@@ -129,9 +140,9 @@
           <div class="text-area-card diamond-left">
             <label
               for="left"
-              title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour green."
+              title="First user's edits — changes from this box appear in green in the result."
             >
-              First concurrent edit
+              First user's edits
               <div class="box Left"></div>
             </label>
             <textarea id="left" name="left"></textarea>
@@ -140,9 +151,9 @@
           <div class="text-area-card diamond-right">
             <label
               for="right"
-              title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour blue."
+              title="Second user's edits — changes from this box appear in blue in the result."
             >
-              Second concurrent edit
+              Second user's edits
               <div class="box Right"></div>
             </label>
             <textarea id="right" name="right"></textarea>
@@ -151,9 +162,9 @@
           <div class="text-area-card diamond-result">
             <label
               for="merged"
-              title="Read-only. Change the above text boxes to change the content of this box."
+              title="The automatically merged result — edit the boxes above to see changes in real-time."
             >
-              Deconflicted result
+              Merged result
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

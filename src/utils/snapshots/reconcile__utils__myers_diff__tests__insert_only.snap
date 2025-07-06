@@ -1,12 +1,13 @@
 ---
 source: src/utils/myers_diff.rs
 expression: result
+snapshot_kind: text
 ---
 [
     Insert(
         [
             Token {
-                normalised: "a",
+                normalized: "a",
                 original: "a",
                 is_left_joinable: true,
                 is_right_joinable: true,
@@ -16,7 +17,7 @@ expression: result
     Insert(
         [
             Token {
-                normalised: "b",
+                normalized: "b",
                 original: "b",
                 is_left_joinable: true,
                 is_right_joinable: true,

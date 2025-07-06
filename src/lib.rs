@@ -1,80 +1,86 @@
-//! # Reconcile
+//! # Reconcile: conflict-free 3-way text merging
 //!
-//! [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) (or `git merge`)
-//! but with automatic conflict resolution.
+//! Think [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) or `git merge`,
+//! but with intelligent conflict resolution.
 //!
-//! Reconcile is a Rust and JavaScript (through WebAssembly) library for merging
-//! text without user intervention. It automatically resolves conflicts that
-//! would typically require user action in traditional 3-way merge tools.
+//! Reconcile is a Rust and JavaScript (via WebAssembly) library that merges
+//! conflicting text edits without requiring manual intervention. Where
+//! traditional 3-way merge tools would leave you with conflict markers to
+//! resolve by hand, Reconcile automatically weaves changes together using
+//! sophisticated algorithms inspired by Operational Transformation.
 //!
-//! Try out the [interactive demo](https://schmelczer.dev/reconcile)!
+//! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
 //!
 //! ```
 //! use reconcile::{reconcile, BuiltinTokenizer};
 //!
+//! // Start with original text
 //! let parent = "Merging text is hard!";
-//! let left = "Merging text is easy!";
-//! let right = "With reconcile, merging documents is hard!";
+//! // Two people edit simultaneously  
+//! let left = "Merging text is easy!";                    // Changed "hard" to "easy"
+//! let right = "With reconcile, merging documents is hard!"; // Added prefix and changed word
 //!
-//! let deconflicted = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
-//! assert_eq!(deconflicted.apply().text(), "With reconcile, merging documents is easy!");
+//! // Reconcile combines both changes intelligently
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+//! assert_eq!(result.apply().text(), "With reconcile, merging documents is easy!");
 //! ```
-//! > You can also try out an interactive demo at [schmelczer.dev/reconcile](https://schmelczer.dev/reconcile).
 //!
-//! ## Tokenizing
+//! ## Tokenisation strategies
 //!
-//! Merging is done on the token level, the granularity of which is
-//! configurable. By default, words are the atoms for merging and thus words
-//! can't get jumbled up at the end of reconciling.
+//! Merging happens at the token level, where you control the granularity.
+//! By default, words serve as the atomic units for merging, ensuring words
+//! remain intact during the reconciliation process.
 //!
-//! ### Built-in tokenizers
+//! ### Built-in tokenisers
 //!
 //! ```
 //! use reconcile::{reconcile, BuiltinTokenizer};
 //!
 //! let parent = "The quick brown fox\n";
-//! let left = "The very quick brown fox\n";
-//! let right = "The quick red fox\n";
+//! let left = "The very quick brown fox\n";   // Added "very"
+//! let right = "The quick red fox\n";         // Changed "brown" to "red"
 //!
+//! // Using line-based tokenisation
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Line);
 //! assert_eq!(result.apply().text(), "The quick red foxThe very quick brown fox\n");
 //! ```
 //!
-//! ### Custom tokenization
+//! ### Custom tokenisation
 //!
-//! If something custom is needed, for instance, to better support structured
-//! text such as Markdown or HTML, a custom tokenizer can be implemented:
+//! For specialised use cases—such as structured text like Markdown or HTML—
+//! you can implement custom tokenisation logic:
 //!
 //! ```
 //! use reconcile::{reconcile, Token, BuiltinTokenizer};
 //!
-//! // Example with custom tokenizer - split by sentences
-//! let sentence_tokenizer = |text: &str| {
+//! // Example: custom sentence-based tokeniser
+//! let sentence_tokeniser = |text: &str| {
 //!     text.split(". ")
 //!         .map(|sentence| Token::new(
 //!             sentence.to_string(),
 //!             sentence.to_string(),
-//!             false, // don't allow joining token with the preceding one
-//!             false, // don't allow joining token with the following one
+//!             false, // don't allow joining with the preceding token
+//!             false, // don't allow joining with the following token
 //!         ))
 //!         .collect::<Vec<_>>()
 //! };
 //!
 //! let parent = "Hello world. This is a test.";
-//! let left = "Hello beautiful world. This is a test.";
-//! let right = "Hello world. This is a great test.";
+//! let left = "Hello beautiful world. This is a test.";  // Added "beautiful"
+//! let right = "Hello world. This is a great test.";     // Changed "a" to "great"
 //!
-//! // Using built-in tokenizer is usually sufficient
+//! // For most cases, the built-in word tokeniser works perfectly
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
-//! > By setting the joinability to `false`, longer runs of inserts will be
-//! > interleaved like LRLRLR instead of LLLRRR.
+//! > **Tip**: Setting joinability to `false` causes longer runs of insertions
+//! > to interleave (LRLRLR) rather than group together (LLLRRR), which can
+//! > produce more natural-looking merged text.
 //!
-//! ## Cursors and selection ranges
+//! ## Cursor tracking
 //!
-//! The library supports updating cursor and selection ranges during the merging
-//! for interactive workflows:
+//! Perfect for collaborative editors—the library automatically repositions
+//! cursors and selection ranges during merging:
 //!
 //! ```
 //! use reconcile::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
@@ -86,21 +92,21 @@
 //! );
 //! let right = TextWithCursors::new(
 //!     "Hi world".to_string(),
-//!     vec![CursorPosition { id: 2, char_index: 0 }] // At beginning
+//!     vec![CursorPosition { id: 2, char_index: 0 }] // At the beginning
 //! );
 //!
 //! let result = reconcile(parent, &left, &right, &*BuiltinTokenizer::Word);
 //! let merged = result.apply();
 //!
 //! assert_eq!(merged.text(), "Hi beautiful world");
-//! // Cursors are automatically repositioned
+//! // Cursors are automatically repositioned in the merged text
 //! assert_eq!(merged.cursors().len(), 2);
 //! ```
 //!
-//! ## The algorithm
+//! ## How it works
 //!
-//! For a discussion of the algorithm and architecture, see the
-//! [README](README.md#algorithm) page.
+//! For a detailed explanation of the algorithm and architecture, see the
+//! [README](README.md#how-it-works).
 
 mod operation_transformation;
 mod raw_operation;
@@ -108,8 +114,8 @@ mod tokenizer;
 mod types;
 mod utils;
 
-pub use operation_transformation::{EditedText, reconcile};
-pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
+pub use operation_transformation::{reconcile, EditedText};
+pub use tokenizer::{token::Token, BuiltinTokenizer, Tokenizer};
 pub use types::{
     cursor_position::CursorPosition, history::History, side::Side,
     span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,

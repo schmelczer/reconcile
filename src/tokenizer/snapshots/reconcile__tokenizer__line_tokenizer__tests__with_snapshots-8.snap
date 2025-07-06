@@ -5,13 +5,13 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,

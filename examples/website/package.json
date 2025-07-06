@@ -1,38 +1,32 @@
 {
-  "name": "portfolio",
-  "description": "An easily configurable timeline of projects.",
+  "name": "reconcile-example-website",
+  "description": "",
   "private": true,
   "scripts": {
     "start": "webpack serve --open --mode development",
-    "format": "prettier --write \"src/**/*.(ts|scss|json|html)\"",
+    "format": "prettier --write \"./**/*.(ts|scss|json|html)\"",
     "build": "webpack --mode production"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/schmelczer/schmelczer.github.io.git"
+    "url": "git+https://github.com/schmelczer/reconcile.git"
   },
-  "keywords": [
-    "CV",
-    "curriculum",
-    "vitae",
-    "portfolio",
-    "resumé"
-  ],
+  "keywords": [],
   "author": "Andras Schmelczer",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/schmelczer/schmelczer.github.io/issues"
+    "url": "https://github.com/schmelczer/reconcile/issues"
   },
   "browserslist": [
     "defaults"
   ],
-  "homepage": "https://github.com/schmelczer/schmelczer.github.io#readme",
+  "homepage": "https://github.com/schmelczer/reconcile#readme",
   "devDependencies": {
     "reconcile": "file:../../reconcile-js",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.3",
-    "inline-source-webpack-plugin": "^3.0.1",
     "mini-css-extract-plugin": "^2.9.2",
+    "inline-source-webpack-plugin": "^3.0.1",
     "prettier": "^3.6.2",
     "resolve-url-loader": "^5.0.0",
     "sass": "^1.89.2",
