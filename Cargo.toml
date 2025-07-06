@@ -44,6 +44,9 @@ lto = true
 opt-level = 3
 strip="symbols"
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-O4', '--enable-bulk-memory']
+
 [lints.rust]
 unsafe_code = "forbid"
 rust_2018_idioms = { level = "warn", priority = -1 }
