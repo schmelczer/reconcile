@@ -3,8 +3,5 @@
   "printWidth": 90,
   "tabWidth": 2,
   "singleQuote": true,
-  "endOfLine": "lf",
-  "importOrder": ["^[./]", ".*", ".scss$"],
-  "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true
+  "endOfLine": "lf"
 }

@@ -1,24 +1,26 @@
 {
-    "name": "reconcile",
-    "version": "0.4.0",
-    "main": "dist/index.js",
-    "types": "dist/types/index.d.ts",
-    "files": [
-        "dist/*"
-    ],
-    "scripts": {
-        "build": "webpack --mode production",
-        "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
-    },
-    "devDependencies": {
-        "@types/jest": "^30.0.0",
-        "jest": "^30.0.4",
-        "reconcile": "file:../pkg",
-        "ts-jest": "^29.4.0",
-        "ts-loader": "^9.5.2",
-        "tslib": "2.8.1",
-        "typescript": "5.8.3",
-        "webpack": "^5.99.9",
-        "webpack-cli": "^6.0.1"
-    }
+  "name": "reconcile",
+  "version": "0.4.0",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist/*"
+  ],
+  "scripts": {
+    "build": "webpack --mode production",
+    "format": "prettier --write \"./**/*.(ts|scss|json|html)\"",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.4",
+    "reconcile": "file:../pkg",
+    "ts-jest": "^29.4.0",
+    "ts-loader": "^9.5.2",
+    "tslib": "2.8.1",
+    "typescript": "5.8.3",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1",
+    "prettier": "^3.6.2"
+  }
 }
