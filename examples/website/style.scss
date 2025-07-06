@@ -12,6 +12,11 @@ body {
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   color: #23272f;
+}
+
+.scroll-container {
+  height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
 }
 
