@@ -174,7 +174,7 @@ function toTextWithCursors(
 function toCursorPosition(cursor: wasmCursorPosition): CursorPosition {
     return {
         id: cursor.id(),
-        position: cursor.characterPosition(),
+        position: cursor.characterIndex(),
     };
 }
 

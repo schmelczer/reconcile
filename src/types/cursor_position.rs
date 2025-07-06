@@ -30,7 +30,7 @@ impl CursorPosition {
     #[must_use]
     pub fn id(&self) -> usize { self.id }
 
-    #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = characterPosition))]
+    #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = characterIndex))]
     #[must_use]
     pub fn char_index(&self) -> usize { self.char_index }
 }

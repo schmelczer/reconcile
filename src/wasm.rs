@@ -1,14 +1,4 @@
-//! This crate provides utilities for easily communicating between backend &
-//! frontend and ensuring the same logic for encoding and decoding binary data,
-//! and 3-way-merging documents in Rust and JavaScript.
-//!
-//! The crate is designed to be used as a Rust library and as a
-//! TypeScript/JavaScript package through WebAssembly (WASM).
-//!
-//! # Modules
-//!
-//! - `errors`: Contains error types used in this crate.
-
+//! Expose the `reconcile` crate's functionality to WebAssembly.
 use core::str;
 
 use cfg_if::cfg_if;
@@ -116,6 +106,7 @@ fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
+/// WASM wrapper type for the return value of `reconcile_with_history`
 #[wasm_bindgen]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct TextWithCursorsAndHistory {

@@ -5,19 +5,20 @@ use wasm_bindgen::prelude::*;
 
 use crate::types::history::History;
 
-/// Wrapper type for `(History, String)`
+/// Wrapper type for `(String, History)` where History describes the origin of
+/// `text`.
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpanWithHistory {
-    history: History,
     text: String,
+    history: History,
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl SpanWithHistory {
     #[must_use]
-    pub fn new(history: History, text: String) -> Self { SpanWithHistory { history, text } }
+    pub fn new(text: String, history: History) -> Self { SpanWithHistory { text, history } }
 
     #[must_use]
     pub fn history(&self) -> History { self.history }

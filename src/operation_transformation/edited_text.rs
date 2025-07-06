@@ -257,15 +257,15 @@ where
 
             match operation {
                 Operation::Equal { .. } => {
-                    history.push(SpanWithHistory::new(History::Unchanged, builder.take()));
+                    history.push(SpanWithHistory::new(builder.take(), History::Unchanged));
                 }
                 Operation::Insert { side, .. } => match side {
                     Side::Left => {
-                        history.push(SpanWithHistory::new(History::AddedFromLeft, builder.take()));
+                        history.push(SpanWithHistory::new(builder.take(), History::AddedFromLeft));
                     }
                     Side::Right => history.push(SpanWithHistory::new(
-                        History::AddedFromRight,
                         builder.take(),
+                        History::AddedFromRight,
                     )),
                 },
                 Operation::Delete {
@@ -277,10 +277,10 @@ where
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
                     match side {
                         Side::Left => {
-                            history.push(SpanWithHistory::new(History::RemovedFromLeft, deleted));
+                            history.push(SpanWithHistory::new(deleted, History::RemovedFromLeft));
                         }
                         Side::Right => {
-                            history.push(SpanWithHistory::new(History::RemovedFromRight, deleted));
+                            history.push(SpanWithHistory::new(deleted, History::RemovedFromRight));
                         }
                     }
                 }
