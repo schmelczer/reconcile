@@ -1,161 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-        />
-        <meta
-            name="description"
-            content="Easily merge three versions of a text document with this 3-way text merge tool."
-        />
-        <meta property="og:title" content="3-Way Text Merge" />
-        <meta
-            property="og:description"
-            content="Easily merge three versions of a text document with this 3-way text merge tool."
-        />
-        <meta property="og:type" content="website" />
-        <meta
-            property="og:url"
-            content="https://github.com/schmelczer/reconcile"
-        />
-        <meta property="og:image" content="/favicon.ico" />
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <title>3-Way Text Merge</title>
-        <link rel="stylesheet" href="style.css" />
-    </head>
-    <body>
-        <div class="background"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Easily merge three versions of a text document with this 3-way text merge tool."
+    />
+    <meta property="og:title" content="3-Way Text Merge" />
+    <meta
+      property="og:description"
+      content="Easily merge three versions of a text document with this 3-way text merge tool."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://github.com/schmelczer/reconcile" />
+    <meta property="og:image" content="/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <title>3-Way Text Merge</title>
+    <link inline inline-asset="index.css" inline-asset-delete />
+  </head>
+  <body>
+    <div class="background"></div>
 
-        <div class="page-wrapper">
-            <header>
-                <h1>3-Way Text Merge</h1>
-                <p>
-                    The
-                    <a
-                        href="https://github.com/schmelczer/reconcile"
-                        target="_blank"
-                        >reconcile</a
-                    >
-                    solves a fundamental challenge in collaborative editing:
-                    what happens when multiple people edit the same text
-                    simultaneously?
-                    <code
-                        >reconcile(parent: str, left: str, right: str) ->
-                        str</code
-                    >
-                    takes conflicting concurrent edits and intelligently merges
-                    them into a unified result. Beyond basic conflict
-                    resolution, it offers sophisticated merging heuristics,
-                    flexible tokenization options, and cursor position tracking.
-                </p>
-                <p>
-                    The algorithm begins with your chosen tokenizer, then
-                    applies Myers' diff algorithm to compare the original text
-                    with both conflicting versions. These diffs undergo
-                    transformation to preserve meaningful change sequences,
-                    before a final merge strategy—inspired by Operational
-                    Transformation (OT)—reconciles all conflicting modifications
-                    without losing any edits.
-                </p>
-                <p>
-                    For more details, see the
-                    <a
-                        href="https://github.com/schmelczer/reconcile"
-                        target="_blank"
-                        >README</a
-                    >.
-                </p>
-            </header>
+    <div class="scroll-container">
+      <div class="page-wrapper">
+        <header>
+          <h1>Reconcile: automated 3-way text merge</h1>
+          <p>
+            The
+            <a
+              href="https://github.com/schmelczer/reconcile"
+              target="_blank"
+              rel="noopener noreferrer"
+              >reconcile</a
+            >
+            library solves a fundamental challenge in collaborative editing: what happens
+            when multiple users edit the same text simultaneously but we can only capture
+            the end result, not the intermediary edits? Essentially, it's
+            <a
+              href="https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >diff3</a
+            >
+            (or <code>git merge</code>) but with automatic conflict resolution.
+          </p>
+          <p>
+            The
+            <code>reconcile(parent: str, left: str, right: str) -> str</code>
+            takes conflicting concurrent edits and intelligently merges them into a
+            unified result. Beyond basic conflict resolution, it offers sophisticated
+            merging heuristics, flexible tokenization options, and cursor position
+            tracking.
+          </p>
+          <p>
+            The algorithm begins with your chosen tokenizer, then applies Myers' diff
+            algorithm to compare the original text with both conflicting versions. These
+            diffs undergo transformation to preserve meaningful change sequences, before a
+            final merge strategy—inspired by Operational Transformation reconciles all
+            conflicting modifications without losing any edits.
+          </p>
+          <p>
+            For more details, see the
+            <a href="https://github.com/schmelczer/reconcile" target="_blank">README</a>.
+          </p>
 
-            <main>
-                <div class="text-area-card diamond-parent">
-                    <label
-                        for="original"
-                        title="The text document's content before any concurrent edits occurred."
-                        >Original</label
-                    >
-                    <textarea id="original" name="original"></textarea>
+          <p>
+            Use the tokenization options below to experiment with different strategies.
+            The library supports user-defined tokenizers as well.
+          </p>
+        </header>
+
+        <main>
+          <section class="tokenizer-selector">
+            <div class="radio-group" role="radiogroup" aria-label="Tokenization strategy">
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  name="tokenizer"
+                  value="Character"
+                  id="tokenizer-character"
+                />
+                <span class="radio-custom" aria-hidden="true"></span>
+                <div class="radio-content">
+                  <span class="radio-label">Character</span>
+                  <span class="radio-description">Split by individual characters</span>
                 </div>
-
-                <div class="text-area-card diamond-left">
-                    <label
-                        for="left"
-                        title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour green."
-                    >
-                        First concurrent edit
-                        <div class="box Left"></div>
-                    </label>
-                    <textarea id="left" name="left"></textarea>
+              </label>
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  name="tokenizer"
+                  value="Word"
+                  id="tokenizer-word"
+                  checked
+                />
+                <span class="radio-custom" aria-hidden="true"></span>
+                <div class="radio-content">
+                  <span class="radio-label">Word</span>
+                  <span class="radio-description">Split by words (default)</span>
                 </div>
-
-                <div class="text-area-card diamond-right">
-                    <label
-                        for="right"
-                        title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour blue."
-                    >
-                        Second concurrent edit
-                        <div class="box Right"></div>
-                    </label>
-                    <textarea id="right" name="right"></textarea>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="tokenizer" value="Line" id="tokenizer-line" />
+                <span class="radio-custom" aria-hidden="true"></span>
+                <div class="radio-content">
+                  <span class="radio-label">Line</span>
+                  <span class="radio-description"
+                    >Split by lines similarly to <code>git merge</code></span
+                  >
                 </div>
+              </label>
+            </div>
+          </section>
 
-                <div class="text-area-card diamond-result">
-                    <label
-                        title="Read-only. Change the above text boxes to change the content of this box."
-                    >
-                        Deconflicted result
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                            <path
-                                d="M10 10l-6 6v4h4l6 -6m1.99 -1.99l2.504 -2.504a2.828 2.828 0 1 0 -4 -4l-2.5 2.5"
-                            />
-                            <path d="M13.5 6.5l4 4" />
-                            <path d="M3 3l18 18" />
-                        </svg>
-                    </label>
-                    <div id="merged"></div>
-                </div>
-            </main>
+          <div class="text-area-card diamond-parent">
+            <label
+              for="original"
+              title="The text document's content before any concurrent edits occurred."
+              >Original</label
+            >
+            <textarea id="original" name="original"></textarea>
+          </div>
 
-            <footer>
-                <p>2025 Andras Schmelczer</p>
-                <a
-                    href="https://github.com/schmelczer/reconcile"
-                    class="github-link"
-                    aria-label="GitHub repository"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                        <path
-                            d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"
-                        />
-                    </svg>
-                </a>
-            </footer>
-        </div>
+          <div class="text-area-card diamond-left">
+            <label
+              for="left"
+              title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour green."
+            >
+              First concurrent edit
+              <div class="box Left"></div>
+            </label>
+            <textarea id="left" name="left"></textarea>
+          </div>
 
-        <script type="module" src="script.js"></script>
-    </body>
+          <div class="text-area-card diamond-right">
+            <label
+              for="right"
+              title="Colour-coded tokens mark the origin of each token in the result. This text box is marked with the colour blue."
+            >
+              Second concurrent edit
+              <div class="box Right"></div>
+            </label>
+            <textarea id="right" name="right"></textarea>
+          </div>
+
+          <div class="text-area-card diamond-result">
+            <label
+              for="merged"
+              title="Read-only. Change the above text boxes to change the content of this box."
+            >
+              Deconflicted result
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path
+                  d="M10 10l-6 6v4h4l6 -6m1.99 -1.99l2.504 -2.504a2.828 2.828 0 1 0 -4 -4l-2.5 2.5"
+                ></path>
+                <path d="M13.5 6.5l4 4"></path>
+                <path d="M3 3l18 18"></path>
+              </svg>
+            </label>
+            <div id="merged" role="textbox" aria-readonly="true" aria-live="polite"></div>
+          </div>
+        </main>
+
+        <footer>
+          <p>2025 Andras Schmelczer</p>
+          <a
+            href="https://github.com/schmelczer/reconcile"
+            class="github-link"
+            aria-label="GitHub repository"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path
+                d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"
+              />
+            </svg>
+          </a>
+        </footer>
+      </div>
+    </div>
+
+    <noscript>JavaScript is required for this website to function properly.</noscript>
+
+    <script inline inline-asset="index.js" inline-asset-delete></script>
+  </body>
 </html>

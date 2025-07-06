@@ -1,0 +1,48 @@
+{
+  "name": "portfolio",
+  "description": "An easily configurable timeline of projects.",
+  "private": true,
+  "scripts": {
+    "start": "webpack serve --open --mode development",
+    "format": "prettier --write \"src/**/*.(ts|scss|json|html)\"",
+    "build": "webpack --mode production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/schmelczer/schmelczer.github.io.git"
+  },
+  "keywords": [
+    "CV",
+    "curriculum",
+    "vitae",
+    "portfolio",
+    "resumé"
+  ],
+  "author": "Andras Schmelczer",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/schmelczer/schmelczer.github.io/issues"
+  },
+  "browserslist": [
+    "defaults"
+  ],
+  "homepage": "https://github.com/schmelczer/schmelczer.github.io#readme",
+  "devDependencies": {
+    "reconcile": "file:../../reconcile-js",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.6.3",
+    "inline-source-webpack-plugin": "^3.0.1",
+    "mini-css-extract-plugin": "^2.9.2",
+    "prettier": "^3.6.2",
+    "resolve-url-loader": "^5.0.0",
+    "sass": "^1.89.2",
+    "sass-loader": "^16.0.5",
+    "svg-inline-loader": "^0.8.2",
+    "terser-webpack-plugin": "^5.3.14",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  }
+}

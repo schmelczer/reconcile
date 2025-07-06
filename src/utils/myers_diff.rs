@@ -44,7 +44,7 @@ where
     let max_d = (old.len() + new.len()).div_ceil(2) + 1;
     let mut vb = V::new(max_d);
     let mut vf = V::new(max_d);
-    let mut result: Vec<RawOperation<T>> = vec![];
+    let mut result = Vec::new();
 
     conquer(
         old,
