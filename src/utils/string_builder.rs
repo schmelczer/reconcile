@@ -54,9 +54,7 @@ impl StringBuilder<'_> {
     /// Returns the currently built buffer and clears it to allow consuming
     /// the result incrementally.
     pub fn take(&mut self) -> String {
-        let result = self.buffer.clone(); // TODO: try removing this clone
-        self.buffer.clear();
-        result
+        std::mem::take(&mut self.buffer)
     }
 
     /// Get a slice of the remaining original string. The slice starts from
