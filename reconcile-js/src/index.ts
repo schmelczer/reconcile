@@ -16,9 +16,6 @@ export interface TextWithCursors {
     cursors: null | undefined | CursorPosition[];
 }
 
-/**
- * Represents a cursor position with a unique identifier.
- */
 export interface CursorPosition {
     /** Unique identifier for the cursor */
     id: number;
@@ -42,9 +39,6 @@ export interface SpanWithHistory {
     history: History;
 }
 
-/**
- * Supported tokenizer types for text processing.
- */
 export type Tokenizer = "word" | "character";
 
 let isInitialised = false;
