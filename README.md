@@ -1,13 +1,15 @@
 # Reconcile: conflict-free 3-way text merging
 
-> [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) but with automatic conflict resolution.
-
 [![Check](https://github.com/schmelczer/reconcile/actions/workflows/check.yml/badge.svg)](https://github.com/schmelczer/reconcile/actions/workflows/check.yml)
 [![Publish to GitHub Pages](https://github.com/schmelczer/reconcile/actions/workflows/gh-pages.yml/badge.svg)](https://github.com/schmelczer/reconcile/actions/workflows/gh-pages.yml)
 
-TODO: add links for crates and npm
+> [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) (or `git merge`) but with automatic conflict resolution.
 
 Reconcile is a Rust and JavaScript (through WebAssembly) library for merging text without user intervention. It automatically resolves conflicts that would typically require user action in traditional 3-way merge tools.
+
+Try out the [interactive demo](https://schmelczer.dev/reconcile)!
+
+TODO: add links for crates and npm
 
 ## Features
 
