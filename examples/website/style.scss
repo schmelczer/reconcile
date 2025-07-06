@@ -68,7 +68,7 @@ header > p:not(:first-of-type) {
 
 main {
   display: grid;
-  grid-template-rows: min-content;
+  grid-template-rows: min-content min-content min-content;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   justify-items: center;
@@ -76,23 +76,120 @@ main {
   padding: 32px;
 }
 
+.tokenizer-selector {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(36, 81, 166, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  min-width: 180px;
+  position: relative;
+}
+
+.radio-option:hover {
+  box-shadow: 0 4px 16px rgba(36, 81, 166, 0.12);
+  transform: translateY(-2px);
+}
+
+.radio-option:has(input:checked) {
+  background: #f0f7ff;
+  border-color: #2451a6;
+  box-shadow: 0 4px 16px rgba(36, 81, 166, 0.16);
+}
+
+.radio-option input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.radio-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.radio-option:has(input:checked) .radio-custom {
+  border-color: #2451a6;
+  background: #2451a6;
+}
+
+.radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s ease;
+}
+
+.radio-option:has(input:checked) .radio-custom::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radio-label {
+  font-weight: 600;
+  color: #2451a6;
+  font-size: 0.95rem;
+}
+
+.radio-description {
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
 .diamond-parent {
   grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 .diamond-left {
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 3;
 }
 
 .diamond-right {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 3;
 }
 
 .diamond-result {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
 }
 
 .diamond-result label {
@@ -196,27 +293,42 @@ textarea {
 @media (max-width: 768px) {
   main {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto;
   }
 
-  .diamond-parent {
+  .tokenizer-selector {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .diamond-left {
+  .diamond-parent {
     grid-column: 1;
     grid-row: 2;
   }
 
-  .diamond-right {
+  .diamond-left {
     grid-column: 1;
     grid-row: 3;
   }
 
-  .diamond-result {
+  .diamond-right {
     grid-column: 1;
     grid-row: 4;
+  }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .radio-option {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .diamond-result {
+    grid-column: 1;
+    grid-row: 5;
   }
 }
 
