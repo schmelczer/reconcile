@@ -1,0 +1,242 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  user-select: none;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #23272f;
+  overflow-y: auto;
+}
+
+.background {
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+header {
+  padding: 32px 32px 0 32px;
+}
+
+header > h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2451a6;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+p,
+p * {
+  user-select: text;
+}
+
+header > p {
+  color: #5a6272;
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+header > p:not(:first-of-type) {
+  margin-top: 16px;
+}
+
+main {
+  display: grid;
+  grid-template-rows: min-content;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  justify-items: center;
+  align-items: center;
+  padding: 32px;
+}
+
+.diamond-parent {
+  grid-column: 1 / -1;
+}
+
+.diamond-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.diamond-right {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.diamond-result {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+
+.diamond-result label {
+  display: flex;
+  align-items: center;
+}
+
+.diamond-result svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+}
+
+.text-area-card {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px 0 rgba(36, 81, 166, 0.06);
+  padding: 18px 20px 16px 20px;
+  margin-bottom: 0;
+}
+
+label {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2451a6;
+  cursor: help;
+}
+
+.box {
+  width: 1ch;
+  height: 1ch;
+  border-radius: 50%;
+  margin-left: 6px;
+  display: inline-block;
+  transform: scale(1.5);
+}
+
+textarea {
+  width: 100%;
+  border: none;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #23272f;
+  box-sizing: border-box;
+  resize: none;
+  outline: none;
+  margin-bottom: 0;
+  field-sizing: content; /* Doesn't work in Safari yet */
+}
+
+#merged {
+  width: 100%;
+  user-select: text;
+}
+
+.Unchanged {
+  user-select: text;
+}
+
+.Left,
+.AddedFromLeft,
+.RemovedFromLeft {
+  user-select: text;
+  background: #12d197;
+}
+
+.Right,
+.AddedFromRight,
+.RemovedFromRight {
+  user-select: text;
+  background: #85bff7;
+}
+
+.RemovedFromLeft,
+.RemovedFromRight {
+  user-select: none;
+  text-decoration: line-through;
+}
+
+@media (max-width: 900px) {
+  header {
+    padding: 32px 18px 0 18px;
+  }
+
+  header > h1 {
+    margin-bottom: 18px;
+  }
+
+  header > p {
+    font-size: 1rem;
+  }
+
+  main {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .diamond-parent {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .diamond-left {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .diamond-right {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .diamond-result {
+    grid-column: 1;
+    grid-row: 4;
+  }
+}
+
+footer {
+  padding: 16px;
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #5a6272;
+}
+
+.github-link > svg {
+  position: absolute;
+  color: #5a6272;
+  top: 50%;
+  right: 36px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  transition: transform 0.2s;
+}
+
+.github-link > svg:hover {
+  cursor: pointer;
+  transform: translateY(-50%) scale(1.15);
+}

@@ -5,17 +5,17 @@
 
 version: 2
 updates:
-  - package-ecosystem: "cargo"
-    directories: ["**"]
+  - package-ecosystem: 'cargo'
+    directories: ['**']
     schedule:
-      interval: "daily"
+      interval: 'daily'
 
-  - package-ecosystem: "github-actions"
-    directories: ["**"]
+  - package-ecosystem: 'github-actions'
+    directories: ['**']
     schedule:
-      interval: "daily"
+      interval: 'daily'
 
-  - package-ecosystem: "npm"
-    directories: ["/reconcile-js"]
+  - package-ecosystem: 'npm'
+    directories: ['/reconcile-js', '/examples/website']
     schedule:
-      interval: "daily"
+      interval: 'daily'
