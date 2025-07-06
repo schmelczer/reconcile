@@ -150,7 +150,6 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        // Calculate shift using safe casts - preserving original logic
                         let merged_length_signed =
                             isize::try_from(merged_length).unwrap_or(isize::MAX);
                         let seen_left_length_signed =
@@ -184,7 +183,6 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        // Calculate shift using safe casts - preserving original logic
                         let merged_length_signed =
                             isize::try_from(merged_length).unwrap_or(isize::MAX);
                         let seen_right_length_signed =

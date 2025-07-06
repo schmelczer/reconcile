@@ -20,9 +20,10 @@ use crate::{
 /// insert the same span with a common prefix, that prefix will only
 /// be present once in the output.
 ///
-/// Deletes are preserved from both sides. This means that an insert
-/// from one side into a deleted span from the other side will result
-/// in the removal of the original span but keeping the inserted text.
+/// When both sides delete the same span, it will be deleted in the
+/// return value. If one side deletes a span and the other side inserts
+/// into that span, the inserted text will be present in the return
+/// value.
 ///
 /// The function supports UTF-8. The arguments are tokenized at the
 /// granularity of words.
