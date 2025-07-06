@@ -5,5 +5,8 @@
         "**/dist": true, // webpack build directory
         "pkg": true, // wasm-pack build directory
         "target": true, // rust build directory
-    }
+    },
+    "rust-analyzer.cargo.features": [
+        "all"
+    ]
 }
