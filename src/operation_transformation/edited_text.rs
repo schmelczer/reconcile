@@ -27,7 +27,6 @@ use crate::{
 /// in the original text. The cursor positions are updated when the operations
 /// are applied, so that the cursor positions can be used to restore the
 /// cursor positions in the updated text.
-
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
@@ -93,6 +92,7 @@ where
     }
 
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn merge(self, other: Self) -> Self {
         debug_assert_eq!(
             self.text, other.text,

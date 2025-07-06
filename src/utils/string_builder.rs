@@ -53,9 +53,7 @@ impl StringBuilder<'_> {
 
     /// Returns the currently built buffer and clears it to allow consuming
     /// the result incrementally.
-    pub fn take(&mut self) -> String {
-        std::mem::take(&mut self.buffer)
-    }
+    pub fn take(&mut self) -> String { std::mem::take(&mut self.buffer) }
 
     /// Get a slice of the remaining original string. The slice starts from
     /// where the next delete/retain operation would start and is of length

@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 
 // CursorPosition represents the position of an identifiable cursor in a text
 // document based on its (UTF-8) character index.
+#[allow(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]

@@ -11,7 +11,7 @@ use super::token::Token;
 pub fn line_tokenizer(text: &str) -> Vec<Token<String>> {
     let mut result = Vec::new();
     let mut line_start = 0;
-    
+
     let mut chars = text.char_indices().peekable();
     while let Some((i, c)) = chars.next() {
         if c == '\n' {
@@ -32,12 +32,12 @@ pub fn line_tokenizer(text: &str) -> Vec<Token<String>> {
             line_start = i + 2;
         }
     }
-    
+
     // Add final line if any
     if line_start < text.len() {
         result.push(text[line_start..].into());
     }
-    
+
     result
 }
 
