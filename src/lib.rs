@@ -1,8 +1,13 @@
 //! # Reconcile
 //!
-//! A library for automatically merging two conflicting versions of a
-//! document. `Reconcile` is essentially `git merge` but without any conflict
-//! markers (or lost edits) in the output.
+//! [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) (or `git merge`)
+//! but with automatic conflict resolution.
+//!
+//! Reconcile is a Rust and JavaScript (through WebAssembly) library for merging
+//! text without user intervention. It automatically resolves conflicts that
+//! would typically require user action in traditional 3-way merge tools.
+//!
+//! Try out the [interactive demo](https://schmelczer.dev/reconcile)!
 //!
 //! ```
 //! use reconcile::{reconcile, BuiltinTokenizer};
@@ -22,33 +27,17 @@
 //! configurable. By default, words are the atoms for merging and thus words
 //! can't get jumbled up at the end of reconciling.
 //!
-//! ### Word-level tokenization (default)
+//! ### Built-in tokenizers
 //!
 //! ```
 //! use reconcile::{reconcile, BuiltinTokenizer};
 //!
-//! let parent = "The quick brown fox";
-//! let left = "The very quick brown fox";
-//! let right = "The quick red fox";
+//! let parent = "The quick brown fox\n";
+//! let left = "The very quick brown fox\n";
+//! let right = "The quick red fox\n";
 //!
-//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
-//! assert_eq!(result.apply().text(), "The very quick red fox");
-//! ```
-//!
-//! ### Character-level tokenization
-//!
-//! If finer grained merging is required, we can make every UTF-8 character
-//! become its own token:
-//!
-//! ```
-//! use reconcile::{reconcile, BuiltinTokenizer};
-//!
-//! let parent = "Hello";
-//! let left = "Helo";    // deleted 'l'
-//! let right = "Hello!"; // added '!'
-//!
-//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Character);
-//! assert_eq!(result.apply().text(), "Helo!");
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Line);
+//! assert_eq!(result.apply().text(), "The quick red foxThe very quick brown fox\n");
 //! ```
 //!
 //! ### Custom tokenization
@@ -62,7 +51,12 @@
 //! // Example with custom tokenizer - split by sentences
 //! let sentence_tokenizer = |text: &str| {
 //!     text.split(". ")
-//!         .map(|sentence| Token::new(sentence.to_string(), sentence.to_string(), true, true))
+//!         .map(|sentence| Token::new(
+//!             sentence.to_string(),
+//!             sentence.to_string(),
+//!             false, // don't allow joining token with the preceeding on
+//!             false // don't allow joining token with the following one
+//!         ))
 //!         .collect::<Vec<_>>()
 //! };
 //!
@@ -74,6 +68,8 @@
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
+//! > By setting the joinability to `false`, longer runs of inserts with be
+//! > interleaved like LRLRLR instead of LLLRRR.
 //!
 //! ## Cursors and selection ranges
 //!
@@ -103,29 +99,8 @@
 //!
 //! ## The algorithm
 //!
-//! The algorithm starts similarly to `diff3`. Its inputs are a **parent**
-//! document and two conflicting versions: `left` and `right` which have
-//! been created from the parent through any series of concurrent edits.
-//!
-//! When calling `reconcile(parent, left, right)`:
-//!
-//! 1. **Diff calculation**: 2-way diffs of (parent & left) and (parent & right)
-//!    are computed using Myers' algorithm
-//! 2. **Tokenization**: The text is split into tokens at the configured
-//!    granularity
-//! 3. **Operation transformation**: The resulting edits are weaved together
-//!    using operational transformation principles, ensuring no changes are lost
-//! 4. **Conflict resolution**: Unlike traditional merge tools, conflicts are
-//!    automatically resolved without producing conflict markers
-//!
-//! The key insight is that both insertions and deletions are preserved:
-//! - If either side inserted text, it appears in the result
-//! - If either side deleted text, the deletion is applied
-//! - Insertions into deleted regions are still preserved
-//!
-//! This approach works well for human-readable text where some "fuzziness" in
-//! conflict resolution is acceptable, unlike source code where precision is
-//! critical.
+//! For a discussion of the algorithm and architecture, see the
+//! [README](README.md#algorithm) page.
 
 mod operation_transformation;
 mod raw_operation;

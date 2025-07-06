@@ -1,4 +1,5 @@
 mod character_tokenizer;
+mod line_tokenizer;
 mod word_tokenizer;
 
 use std::ops::Deref;
@@ -20,6 +21,7 @@ pub type Tokenizer<T> = dyn Fn(&str) -> Vec<Token<T>>;
 #[cfg(feature = "wasm")]
 pub enum BuiltinTokenizer {
     Character = "Character",
+    Line = "Line",
     Word = "Word",
 }
 
@@ -28,6 +30,7 @@ pub enum BuiltinTokenizer {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum BuiltinTokenizer {
     Character,
+    Line,
     Word,
 }
 
@@ -37,6 +40,7 @@ impl Deref for BuiltinTokenizer {
     fn deref(&self) -> &Self::Target {
         match self {
             BuiltinTokenizer::Character => &character_tokenizer::character_tokenizer,
+            BuiltinTokenizer::Line => &line_tokenizer::line_tokenizer,
             BuiltinTokenizer::Word => &word_tokenizer::word_tokenizer,
             #[cfg(feature = "wasm")]
             BuiltinTokenizer::__Invalid => panic!("Unexpected tokenizer type"),

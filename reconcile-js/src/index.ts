@@ -39,12 +39,17 @@ export interface SpanWithHistory {
     history: History;
 }
 
-export type Tokenizer = "word" | "character";
+export type Tokenizer = "Line" | "Word" | "Character";
+const TOKENIZERS = ["Line", "Word", "Character"];
 
 let isInitialised = false;
 
 const UNINITIALISED_MODULE_ERROR =
     "Reconcile module has not been initialized. Please call init() before using any other functions.";
+
+const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${TOKENIZERS.join(
+    ", "
+)} are supported.`;
 
 /**
  * Initializes the WASM module for text reconciliation.
@@ -84,6 +89,10 @@ export function reconcile(
         throw new Error(UNINITIALISED_MODULE_ERROR);
     }
 
+    if (!TOKENIZERS.includes(tokenizer)) {
+        throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
+    }
+
     const leftCursor = toWasmTextWithCursors(left);
     const rightCursor = toWasmTextWithCursors(right);
 
@@ -117,6 +126,10 @@ export function reconcileWithHistory(
 ): TextWithCursorsAndHistory {
     if (!isInitialised) {
         throw new Error(UNINITIALISED_MODULE_ERROR);
+    }
+
+    if (!TOKENIZERS.includes(tokenizer)) {
+        throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
     }
 
     const leftCursor = toWasmTextWithCursors(left);

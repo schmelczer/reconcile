@@ -1,0 +1,13 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"\\n\")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

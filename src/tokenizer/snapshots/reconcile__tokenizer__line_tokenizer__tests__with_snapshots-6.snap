@@ -1,0 +1,49 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"Multi\\nLine\\nText\\nHere\")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "Multi",
+        original: "Multi",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "Line",
+        original: "Line",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "Text",
+        original: "Text",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "Here",
+        original: "Here",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]
