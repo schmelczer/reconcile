@@ -1,53 +1,53 @@
 ---
-source: reconcile/src/tokenizer/word_tokenizer.rs
+source: src/tokenizer/word_tokenizer.rs
 expression: "word_tokenizer(\" hello, \\nwhere are you?\")"
 snapshot_kind: text
 ---
 [
     Token {
-        normalised: " hello,",
+        normalized: " hello,",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "hello,",
+        normalized: "hello,",
         original: "hello,",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: " \nwhere",
+        normalized: " \nwhere",
         original: " \n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "where",
+        normalized: "where",
         original: "where",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: " are",
+        normalized: " are",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "are",
+        normalized: "are",
         original: "are",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: " you?",
+        normalized: " you?",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "you?",
+        normalized: "you?",
         original: "you?",
         is_left_joinable: true,
         is_right_joinable: true,

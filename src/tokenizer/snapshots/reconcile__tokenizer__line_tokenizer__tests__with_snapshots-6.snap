@@ -5,43 +5,43 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "Multi",
+        normalized: "Multi",
         original: "Multi",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "Line",
+        normalized: "Line",
         original: "Line",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "Text",
+        normalized: "Text",
         original: "Text",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "Here",
+        normalized: "Here",
         original: "Here",
         is_left_joinable: true,
         is_right_joinable: true,

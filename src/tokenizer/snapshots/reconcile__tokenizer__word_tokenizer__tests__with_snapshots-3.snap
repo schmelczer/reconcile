@@ -1,23 +1,23 @@
 ---
-source: reconcile/src/tokenizer/word_tokenizer.rs
+source: src/tokenizer/word_tokenizer.rs
 expression: "word_tokenizer(\" what? \")"
 snapshot_kind: text
 ---
 [
     Token {
-        normalised: " what?",
+        normalized: " what?",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "what?",
+        normalized: "what?",
         original: "what?",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: " ",
+        normalized: " ",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,

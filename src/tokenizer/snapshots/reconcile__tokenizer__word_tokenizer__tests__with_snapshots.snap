@@ -1,23 +1,23 @@
 ---
-source: reconcile/src/tokenizer/word_tokenizer.rs
+source: src/tokenizer/word_tokenizer.rs
 expression: "word_tokenizer(\"Hi there!\")"
 snapshot_kind: text
 ---
 [
     Token {
-        normalised: "Hi",
+        normalized: "Hi",
         original: "Hi",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: " there!",
+        normalized: " there!",
         original: " ",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "there!",
+        normalized: "there!",
         original: "there!",
         is_left_joinable: true,
         is_right_joinable: true,

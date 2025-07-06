@@ -5,25 +5,25 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "Start",
+        normalized: "Start",
         original: "Start",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "End",
+        normalized: "End",
         original: "End",
         is_left_joinable: true,
         is_right_joinable: true,

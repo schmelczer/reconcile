@@ -5,19 +5,19 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "Hello",
+        normalized: "Hello",
         original: "Hello",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\n",
+        normalized: "\n",
         original: "\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "World",
+        normalized: "World",
         original: "World",
         is_left_joinable: true,
         is_right_joinable: true,

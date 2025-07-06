@@ -5,19 +5,19 @@ snapshot_kind: text
 ---
 [
     Token {
-        normalised: "Line 1",
+        normalized: "Line 1",
         original: "Line 1",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "\r\n",
+        normalized: "\r\n",
         original: "\r\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalised: "Line 2",
+        normalized: "Line 2",
         original: "Line 2",
         is_left_joinable: true,
         is_right_joinable: true,
