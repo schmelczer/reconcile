@@ -1,14 +1,18 @@
+use std::fmt::Debug;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::{CursorPosition, Operation, TextWithCursors};
 use crate::{
-    diffs::{myers::diff, raw_operation::RawOperation},
-    operation_transformation::utils::{
-        cook_operations::cook_operations, elongate_operations::elongate_operations,
+    BuiltinTokenizer, CursorPosition, TextWithCursors,
+    operation_transformation::{
+        Operation,
+        utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
-    tokenizer::{Tokenizer, word_tokenizer::word_tokenizer},
-    utils::{history::History, side::Side, string_builder::StringBuilder},
+    raw_operation::RawOperation,
+    tokenizer::Tokenizer,
+    types::{history::History, side::Side, span_with_history::SpanWithHistory},
+    utils::string_builder::StringBuilder,
 };
 
 /// A text document and a sequence of operations that can be applied to the text
@@ -27,11 +31,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     text: &'a str,
     operations: Vec<Operation<T>>,
-    pub(crate) cursors: Vec<CursorPosition>,
+    cursors: Vec<CursorPosition>,
 }
 
 impl<'a> EditedText<'a, String> {
@@ -42,14 +46,14 @@ impl<'a> EditedText<'a, String> {
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
     #[must_use]
-    pub fn from_strings(original: &'a str, updated: TextWithCursors<'a>, side: Side) -> Self {
-        Self::from_strings_with_tokenizer(original, updated, &word_tokenizer, side)
+    pub fn from_strings(original: &'a str, updated: &TextWithCursors, side: Side) -> Self {
+        Self::from_strings_with_tokenizer(original, updated, &*BuiltinTokenizer::Word, side)
     }
 }
 
 impl<'a, T> EditedText<'a, T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     /// Create an `EditedText` from the given original (old) and updated (new)
     /// strings. The returned `EditedText` represents the changes from the
@@ -58,19 +62,19 @@ where
     /// function is used to tokenize the text.
     pub fn from_strings_with_tokenizer(
         original: &'a str,
-        updated: TextWithCursors<'a>,
+        updated: &TextWithCursors,
         tokenizer: &Tokenizer<T>,
         side: Side,
     ) -> Self {
         let original_tokens = (tokenizer)(original);
-        let updated_tokens = (tokenizer)(&updated.text);
+        let updated_tokens = (tokenizer)(&updated.text());
 
-        let diff: Vec<RawOperation<T>> = diff(&original_tokens, &updated_tokens);
+        let diff: Vec<RawOperation<T>> = RawOperation::vec_from(&original_tokens, &updated_tokens);
 
         Self::new(
             original,
             cook_operations(elongate_operations(diff), side).collect(),
-            updated.cursors,
+            updated.cursors(),
         )
     }
 
@@ -88,6 +92,7 @@ where
     }
 
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn merge(self, other: Self) -> Self {
         debug_assert_eq!(
             self.text, other.text,
@@ -139,27 +144,34 @@ where
                 Operation::Insert { .. } | Operation::Equal { .. }
             );
 
-            let original_length = operation.len() as i64;
+            let original_length = operation.len();
             let result = match side {
                 Side::Left => {
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as i64 - seen_left_length as i64
-                            + op.len() as i64
-                            - original_length;
+                        let merged_length_signed =
+                            isize::try_from(merged_length).unwrap_or(isize::MAX);
+                        let seen_left_length_signed =
+                            isize::try_from(seen_left_length).unwrap_or(isize::MAX);
+                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
+                        let original_length_signed =
+                            isize::try_from(original_length).unwrap_or(isize::MAX);
+
+                        let shift = merged_length_signed - seen_left_length_signed + op_len_signed
+                            - original_length_signed;
 
                         while let Some(cursor) = left_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_left_length + original_length as usize
+                            cursor.char_index <= seen_left_length + original_length
                         }) {
                             merged_cursors.push(
-                                cursor.with_index((cursor.char_index as i64 + shift) as usize),
+                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
                             );
                         }
                     }
 
                     if is_advancing_operation {
-                        seen_left_length += original_length as usize;
+                        seen_left_length += original_length;
                     }
 
                     maybe_left_op = left_iter.next();
@@ -171,21 +183,28 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let shift = merged_length as i64 - seen_right_length as i64
-                            + op.len() as i64
-                            - original_length;
+                        let merged_length_signed =
+                            isize::try_from(merged_length).unwrap_or(isize::MAX);
+                        let seen_right_length_signed =
+                            isize::try_from(seen_right_length).unwrap_or(isize::MAX);
+                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
+                        let original_length_signed =
+                            isize::try_from(original_length).unwrap_or(isize::MAX);
+
+                        let shift = merged_length_signed - seen_right_length_signed + op_len_signed
+                            - original_length_signed;
 
                         while let Some(cursor) = right_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_right_length + original_length as usize
+                            cursor.char_index <= seen_right_length + original_length
                         }) {
                             merged_cursors.push(
-                                cursor.with_index((cursor.char_index as i64 + shift) as usize),
+                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
                             );
                         }
                     }
 
                     if is_advancing_operation {
-                        seen_right_length += original_length as usize;
+                        seen_right_length += original_length;
                     }
 
                     maybe_right_op = right_iter.next();
@@ -215,18 +234,18 @@ where
 
     /// Apply the operations to the text and return the resulting text.
     #[must_use]
-    pub fn apply(&self) -> String {
+    pub fn apply(&self) -> TextWithCursors {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         for operation in &self.operations {
             builder = operation.apply(builder);
         }
 
-        builder.build()
+        TextWithCursors::new(builder.take(), self.cursors.clone())
     }
 
     #[must_use]
-    pub fn apply_with_history(&self) -> Vec<(History, String)> {
+    pub fn apply_with_history(&self) -> Vec<SpanWithHistory> {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         let mut history = Vec::with_capacity(self.operations.len());
@@ -235,10 +254,17 @@ where
             builder = operation.apply(builder);
 
             match operation {
-                Operation::Equal { .. } => history.push((History::Unchanged, builder.take())),
+                Operation::Equal { .. } => {
+                    history.push(SpanWithHistory::new(builder.take(), History::Unchanged));
+                }
                 Operation::Insert { side, .. } => match side {
-                    Side::Left => history.push((History::AddedFromLeft, builder.take())),
-                    Side::Right => history.push((History::AddedFromRight, builder.take())),
+                    Side::Left => {
+                        history.push(SpanWithHistory::new(builder.take(), History::AddedFromLeft));
+                    }
+                    Side::Right => history.push(SpanWithHistory::new(
+                        builder.take(),
+                        History::AddedFromRight,
+                    )),
                 },
                 Operation::Delete {
                     deleted_character_count,
@@ -248,8 +274,12 @@ where
                 } => {
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
                     match side {
-                        Side::Left => history.push((History::RemovedFromLeft, deleted)),
-                        Side::Right => history.push((History::RemovedFromRight, deleted)),
+                        Side::Left => {
+                            history.push(SpanWithHistory::new(deleted, History::RemovedFromLeft));
+                        }
+                        Side::Right => {
+                            history.push(SpanWithHistory::new(deleted, History::RemovedFromRight));
+                        }
                     }
                 }
             }
@@ -271,24 +301,24 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = EditedText::from_strings(left, right.into(), Side::Right);
+        let operations = EditedText::from_strings(left, &right.into(), Side::Right);
 
         insta::assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-        assert_eq!(new_right.to_string(), right);
+        assert_eq!(new_right.text(), right);
     }
 
     #[test]
     fn test_calculate_operations_with_no_diff() {
         let text = "hello world!";
 
-        let operations = EditedText::from_strings(text, text.into(), Side::Right);
+        let operations = EditedText::from_strings(text, &text.into(), Side::Right);
 
         assert_debug_snapshot!(operations);
 
         let new_right = operations.apply();
-        assert_eq!(new_right.to_string(), text);
+        assert_eq!(new_right.text(), text);
     }
 
     #[test]
@@ -298,10 +328,10 @@ mod tests {
         let right = "Hello world! How are you?";
         let expected = "Hello world! How are you? I'm Andras.";
 
-        let operations_1 = EditedText::from_strings(original, left.into(), Side::Left);
-        let operations_2 = EditedText::from_strings(original, right.into(), Side::Right);
+        let operations_1 = EditedText::from_strings(original, &left.into(), Side::Left);
+        let operations_2 = EditedText::from_strings(original, &right.into(), Side::Right);
 
         let operations = operations_1.merge(operations_2);
-        assert_eq!(operations.apply(), expected);
+        assert_eq!(operations.apply().text(), expected);
     }
 }

@@ -1,0 +1,144 @@
+---
+source: src/tokenizer/character_tokenizer.rs
+expression: "character_tokenizer(\" hello, \\nwhere are you?\")"
+---
+[
+    Token {
+        normalised: " ",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "h",
+        original: "h",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "e",
+        original: "e",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "l",
+        original: "l",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "l",
+        original: "l",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "o",
+        original: "o",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: ",",
+        original: ",",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " ",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "w",
+        original: "w",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "h",
+        original: "h",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "e",
+        original: "e",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "r",
+        original: "r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "e",
+        original: "e",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " ",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "a",
+        original: "a",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "r",
+        original: "r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "e",
+        original: "e",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: " ",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "y",
+        original: "y",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "o",
+        original: "o",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "u",
+        original: "u",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalised: "?",
+        original: "?",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

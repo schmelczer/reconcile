@@ -20,12 +20,13 @@
 //! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
 
 use std::{
+    fmt::Debug,
     ops::{Index, IndexMut, Range},
     vec,
 };
 
-use super::raw_operation::RawOperation;
 use crate::{
+    raw_operation::RawOperation,
     tokenizer::token::Token,
     utils::{common_prefix_len::common_prefix_len, common_suffix_len::common_suffix_len},
 };
@@ -35,10 +36,10 @@ use crate::{
 /// Diff `old`, between indices `old_range` and `new` between indices
 /// `new_range`.
 ///
-/// The returned `RawOperations` all have a token count of 1.
-pub fn diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
+/// The returned `RawOperations` each wrap a single token.
+pub fn myers_diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let max_d = (old.len() + new.len()).div_ceil(2) + 1;
     let mut vb = V::new(max_d);
@@ -57,7 +58,7 @@ where
 
     debug_assert!(
         result.iter().all(|op| op.tokens().len() == 1),
-        "All operations should be of length 1"
+        "All operations must be of length 1"
     );
 
     result
@@ -80,13 +81,15 @@ where
 #[derive(Debug)]
 struct V {
     offset: isize,
-    v: Vec<usize>, // Look into initializing this to -1 and storing isize
+    v: Vec<usize>,
 }
 
 impl V {
     fn new(max_d: usize) -> Self {
+        // max_d should fit in isize for the algorithm to work correctly
+        let offset = isize::try_from(max_d).unwrap_or(isize::MAX);
         Self {
-            offset: max_d as isize,
+            offset,
             v: vec![0; 2 * max_d],
         }
     }
@@ -97,12 +100,17 @@ impl V {
 impl Index<isize> for V {
     type Output = usize;
 
-    fn index(&self, index: isize) -> &Self::Output { &self.v[(index + self.offset) as usize] }
+    fn index(&self, index: isize) -> &Self::Output {
+        let idx = usize::try_from(index + self.offset).unwrap_or(usize::MAX);
+        &self.v[idx.min(self.v.len().saturating_sub(1))]
+    }
 }
 
 impl IndexMut<isize> for V {
     fn index_mut(&mut self, index: isize) -> &mut Self::Output {
-        &mut self.v[(index + self.offset) as usize]
+        let idx = usize::try_from(index + self.offset).unwrap_or(usize::MAX);
+        let len = self.v.len();
+        &mut self.v[idx.min(len.saturating_sub(1))]
     }
 }
 
@@ -130,14 +138,14 @@ fn find_middle_snake<T>(
     vb: &mut V,
 ) -> Option<(usize, usize)>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let n = old_range.len();
     let m = new_range.len();
 
     // By Lemma 1 in the paper, the optimal edit script length is odd or even as
     // `delta` is odd or even.
-    let delta = n as isize - m as isize;
+    let delta = isize::try_from(n).unwrap_or(isize::MAX) - isize::try_from(m).unwrap_or(isize::MAX);
     let odd = delta & 1 == 1;
 
     // The initial point at (0, -1)
@@ -149,7 +157,8 @@ where
     assert!(vf.len() >= d_max);
     assert!(vb.len() >= d_max);
 
-    for d in 0..d_max as isize {
+    let d_max_isize = isize::try_from(d_max).unwrap_or(isize::MAX);
+    for d in 0..d_max_isize {
         // Forward path
         for k in (-d..=d).rev().step_by(2) {
             let mut x = if k == -d || (k != d && vf[k - 1] < vf[k + 1]) {
@@ -157,7 +166,7 @@ where
             } else {
                 vf[k - 1] + 1
             };
-            let y = (x as isize - k) as usize;
+            let y = usize::try_from(isize::try_from(x).unwrap_or(isize::MAX) - k).unwrap_or(0);
 
             // The coordinate of the start of a snake
             let (x0, y0) = (x, y);
@@ -195,7 +204,7 @@ where
             } else {
                 vb[k - 1] + 1
             };
-            let mut y = (x as isize - k) as usize;
+            let mut y = usize::try_from(isize::try_from(x).unwrap_or(isize::MAX) - k).unwrap_or(0);
 
             // The coordinate of the start of a snake
             if x < n && y < m {
@@ -236,7 +245,7 @@ fn conquer<T>(
     vb: &mut V,
     result: &mut Vec<RawOperation<T>>,
 ) where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     // Check for common prefix
     let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
@@ -312,14 +321,14 @@ mod tests {
     fn test_empty_diff() {
         let old: Vec<Token<String>> = vec![];
         let new: Vec<Token<String>> = vec![];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_eq!(result.len(), 0);
     }
 
     #[test]
     fn test_identical_content() {
         let content = vec!["a".into(), "b".into(), "c".into()];
-        let result = diff(&content, &content);
+        let result = myers_diff(&content, &content);
         assert_debug_snapshot!(result);
     }
 
@@ -327,7 +336,7 @@ mod tests {
     fn test_insert_only() {
         let old: Vec<Token<String>> = vec![];
         let new: Vec<Token<String>> = vec!["a".into(), "b".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -335,7 +344,7 @@ mod tests {
     fn test_delete_only() {
         let old = vec!["a".into(), "b".into()];
         let new: Vec<Token<String>> = vec![];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -343,7 +352,7 @@ mod tests {
     fn test_prefix_and_suffix() {
         let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
         let new = vec!["a".into(), "x".into(), "d".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 
@@ -351,7 +360,7 @@ mod tests {
     fn test_complex_diff() {
         let old = vec!["a".into(), "b".into(), "c".into(), "d".into()];
         let new = vec!["a".into(), "x".into(), "c".into(), "y".into()];
-        let result = diff(&old, &new);
+        let result = myers_diff(&old, &new);
         assert_debug_snapshot!(result);
     }
 }

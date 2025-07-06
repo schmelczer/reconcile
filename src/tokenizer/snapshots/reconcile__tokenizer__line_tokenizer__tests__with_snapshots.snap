@@ -1,0 +1,6 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"\")"
+snapshot_kind: text
+---
+[]

@@ -1,7 +1,6 @@
 ---
-source: reconcile/src/diffs/myers.rs
+source: src/utils/myers_diff.rs
 expression: result
-snapshot_kind: text
 ---
 [
     Equal(

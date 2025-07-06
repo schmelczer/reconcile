@@ -1,13 +1,13 @@
-use crate::{
-    diffs::raw_operation::RawOperation, operation_transformation::Operation, utils::side::Side,
-};
+use std::fmt::Debug;
+
+use crate::{operation_transformation::Operation, raw_operation::RawOperation, types::side::Side};
 
 /// Turn raw operations into ordered operations while keeping track of the
 /// original token's indexes.
 pub fn cook_operations<I, T>(raw_operations: I, side: Side) -> impl Iterator<Item = Operation<T>>
 where
     I: IntoIterator<Item = RawOperation<T>>,
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let mut original_text_index = 0; // this is the start index of the operation on the original text
 

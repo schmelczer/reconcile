@@ -1,64 +1,59 @@
-mod cursor;
 mod edited_text;
 mod operation;
 mod utils;
+use std::fmt::Debug;
 
-pub use cursor::{CursorPosition, TextWithCursors};
 pub use edited_text::EditedText;
 pub use operation::Operation;
 
 use crate::{
     Tokenizer,
-    utils::{history::History, side::Side},
+    types::{side::Side, text_with_cursors::TextWithCursors},
 };
 
+/// Given an `original` document and two concurrent edits to it,
+/// return a document containing all changes from both `left`
+/// and `right`.
+///
+/// If a span has been inserted in either the `left` or `right`
+/// versions, it will be present in the return value. If both sides
+/// insert the same span with a common prefix, that prefix will only
+/// be present once in the output.
+///
+/// When both sides delete the same span, it will be deleted in the
+/// return value. If one side deletes a span and the other side inserts
+/// into that span, the inserted text will be present in the return
+/// value.
+///
+/// The function supports UTF-8. The arguments are tokenized at the
+/// granularity of words.
+///
+/// ```
+/// use reconcile::{reconcile, BuiltinTokenizer};
+///
+/// let parent = "Merging text is hard!";
+/// let left = "Merging text is easy!";
+/// let right = "With reconcile, merging documents is hard!";
+///
+/// let deconflicted = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+/// assert_eq!(deconflicted.apply().text(), "With reconcile, merging documents is easy!");
+/// ```
 #[must_use]
-pub fn reconcile(original: &str, left: &str, right: &str) -> String {
-    reconcile_with_cursors(original, left.into(), right.into())
-        .text
-        .to_string()
-}
-
-#[must_use]
-pub fn reconcile_with_history(original: &str, left: &str, right: &str) -> Vec<(History, String)> {
-    let left_operations = EditedText::from_strings(original, left.into(), Side::Left);
-    let right_operations = EditedText::from_strings(original, right.into(), Side::Right);
-
-    left_operations.merge(right_operations).apply_with_history()
-}
-
-#[must_use]
-pub fn reconcile_with_cursors<'a>(
+pub fn reconcile<'a, T>(
     original: &'a str,
-    left: TextWithCursors<'a>,
-    right: TextWithCursors<'a>,
-) -> TextWithCursors<'static> {
-    let left_operations = EditedText::from_strings(original, left, Side::Left);
-    let right_operations = EditedText::from_strings(original, right, Side::Right);
-
-    let merged_operations = left_operations.merge(right_operations);
-
-    TextWithCursors::new_owned(merged_operations.apply(), merged_operations.cursors)
-}
-
-#[must_use]
-pub fn reconcile_with_tokenizer<'a, F, T>(
-    original: &str,
-    left: TextWithCursors<'a>,
-    right: TextWithCursors<'a>,
+    left: &TextWithCursors,
+    right: &TextWithCursors,
     tokenizer: &Tokenizer<T>,
-) -> TextWithCursors<'static>
+) -> EditedText<'a, T>
 where
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     let left_operations =
         EditedText::from_strings_with_tokenizer(original, left, tokenizer, Side::Left);
     let right_operations =
         EditedText::from_strings_with_tokenizer(original, right, tokenizer, Side::Right);
 
-    let merged_operations = left_operations.merge(right_operations);
-
-    TextWithCursors::new_owned(merged_operations.apply(), merged_operations.cursors)
+    left_operations.merge(right_operations)
 }
 
 #[cfg(test)]
@@ -69,13 +64,13 @@ mod test {
     use test_case::test_matrix;
 
     use super::*;
-    use crate::CursorPosition;
+    use crate::{BuiltinTokenizer, CursorPosition, types::text_with_cursors::TextWithCursors};
 
     #[test]
     fn test_cursor_complex() {
-        let original = "this is some complex text to test cursor positions";
+        let original: &'static str = "this is some complex text to test cursor positions";
         let left = TextWithCursors::new(
-            "this is really complex text for testing cursor positions",
+            "this is really complex text for testing cursor positions".to_owned(),
             vec![
                 CursorPosition {
                     id: 0,
@@ -88,7 +83,7 @@ mod test {
             ],
         );
         let right = TextWithCursors::new(
-            "that was some complex sample to test cursor movements",
+            "that was some complex sample to test cursor movements".to_owned(),
             vec![
                 CursorPosition {
                     id: 2,
@@ -101,31 +96,31 @@ mod test {
             ],
         );
 
-        let merged = reconcile_with_cursors(original, left, right);
-
+        let merged = reconcile(original, &left, &right, &*BuiltinTokenizer::Word).apply();
         assert_eq!(
-            merged,
-            TextWithCursors::new(
-                "that was really complex sample for testing cursor movements",
-                vec![
-                    CursorPosition {
-                        id: 2,
-                        char_index: 5
-                    }, // unchanged
-                    CursorPosition {
-                        id: 0,
-                        char_index: 9
-                    }, // before "really"
-                    CursorPosition {
-                        id: 1,
-                        char_index: 23
-                    }, // inside of "s|ample" because "text" got replaced by "sample"
-                    CursorPosition {
-                        id: 3,
-                        char_index: 30
-                    }, // after "complex sample"
-                ]
-            )
+            &merged.text(),
+            "that was really complex sample for testing cursor movements"
+        );
+        assert_eq!(
+            merged.cursors(),
+            vec![
+                CursorPosition {
+                    id: 2,
+                    char_index: 5
+                }, // unchanged
+                CursorPosition {
+                    id: 0,
+                    char_index: 9
+                }, // before "really"
+                CursorPosition {
+                    id: 1,
+                    char_index: 23
+                }, // inside of "s|ample" because "text" got replaced by "sample"
+                CursorPosition {
+                    id: 3,
+                    char_index: 30
+                }, // after "complex sample"
+            ]
         );
     }
 
@@ -173,6 +168,11 @@ mod test {
             })
             .collect::<Vec<_>>();
 
-        let _ = reconcile(&contents[0], &contents[1], &contents[2]);
+        let _ = reconcile(
+            &contents[0],
+            &(&contents[1]).into(),
+            &(&contents[2]).into(),
+            &*BuiltinTokenizer::Word,
+        );
     }
 }

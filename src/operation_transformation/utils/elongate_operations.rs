@@ -1,6 +1,7 @@
 use core::iter;
+use std::fmt::Debug;
 
-use crate::diffs::raw_operation::RawOperation;
+use crate::raw_operation::RawOperation;
 
 /// Elongates the operations by merging adjacent insertions and deletions that
 /// can be joined. This makes the subsequent merging of operations more
@@ -8,7 +9,7 @@ use crate::diffs::raw_operation::RawOperation;
 pub fn elongate_operations<I, T>(raw_operations: I) -> Vec<RawOperation<T>>
 where
     I: IntoIterator<Item = RawOperation<T>>,
-    T: PartialEq + Clone + std::fmt::Debug,
+    T: PartialEq + Clone + Debug,
 {
     // This might look bad, but this makes sense. The inserts and deltes can be
     // interleaved, such as: IDIDID and we need to turn this into IIIDDD.
@@ -24,7 +25,7 @@ where
         .flat_map(|next| match next {
             RawOperation::Insert(..) => match maybe_previous_insert.take() {
                 Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_insert = Some(prev.extend(next));
+                    maybe_previous_insert = Some(prev.join(next));
                     Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
                 prev => {
@@ -34,7 +35,7 @@ where
             },
             RawOperation::Delete(..) => match maybe_previous_delete.take() {
                 Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_delete = Some(prev.extend(next));
+                    maybe_previous_delete = Some(prev.join(next));
                     Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
                 }
                 prev => {

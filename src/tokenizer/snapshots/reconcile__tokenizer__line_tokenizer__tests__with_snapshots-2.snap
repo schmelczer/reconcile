@@ -1,0 +1,13 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"Hello\")"
+snapshot_kind: text
+---
+[
+    Token {
+        normalised: "Hello",
+        original: "Hello",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

@@ -1,7 +1,12 @@
 {
     "files.exclude": {
-        "**/dist": true,
-        "**/node_modules": true,
-        "**/snapshots": true,
-    }
+        "**/snapshots": true, // cargo-insta outputs
+        "**/node_modules": true, // node.js dependencies
+        "**/dist": true, // webpack build directory
+        "pkg": true, // wasm-pack build directory
+        "target": true, // rust build directory
+    },
+    "rust-analyzer.cargo.features": [
+        "all"
+    ]
 }

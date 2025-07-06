@@ -1,7 +1,6 @@
 ---
-source: reconcile/src/diffs/myers.rs
+source: src/utils/myers_diff.rs
 expression: result
-snapshot_kind: text
 ---
 [
     Equal(
@@ -9,16 +8,6 @@ snapshot_kind: text
             Token {
                 normalised: "a",
                 original: "a",
-                is_left_joinable: true,
-                is_right_joinable: true,
-            },
-        ],
-    ),
-    Insert(
-        [
-            Token {
-                normalised: "x",
-                original: "x",
                 is_left_joinable: true,
                 is_right_joinable: true,
             },
@@ -34,7 +23,7 @@ snapshot_kind: text
             },
         ],
     ),
-    Equal(
+    Delete(
         [
             Token {
                 normalised: "c",
@@ -47,14 +36,14 @@ snapshot_kind: text
     Insert(
         [
             Token {
-                normalised: "y",
-                original: "y",
+                normalised: "x",
+                original: "x",
                 is_left_joinable: true,
                 is_right_joinable: true,
             },
         ],
     ),
-    Delete(
+    Equal(
         [
             Token {
                 normalised: "d",
