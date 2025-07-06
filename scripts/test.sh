@@ -9,6 +9,7 @@ cargo test --features wasm,wee_alloc
 wasm-pack test --node --features wasm,wee_alloc
 
 cd reconcile-js
+npm install
 npm run test
 cd -
 
