@@ -167,6 +167,7 @@ Here's the key insight: whilst incorrect merges in source code can introduce dev
 - **Run tests**: `scripts/test.sh`
 - **Lint and format**: `scripts/lint.sh`
 - **Build demo website**: `scripts/dev-website.sh`
+- **Build demo website**: `scripts/build-website.sh`
 - **Publish new version**: `scripts/bump-version.sh patch`
 
 TODO: license
