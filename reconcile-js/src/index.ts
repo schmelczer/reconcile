@@ -6,8 +6,10 @@ import wasmInit, {
   BuiltinTokenizer,
   reconcileWithHistory as wasmReconcileWithHistory,
   History,
-  InitInput,
+  initSync,
 } from 'reconcile';
+
+import wasm from 'reconcile/reconcile_bg.wasm';
 
 export interface TextWithCursors {
   /** The document's entire content */
@@ -44,31 +46,9 @@ const TOKENIZERS = ['Line', 'Word', 'Character'];
 
 let isInitialised = false;
 
-const UNINITIALISED_MODULE_ERROR =
-  'Reconcile module has not been initialized. Please call init() before using any other functions.';
-
 const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${TOKENIZERS.join(
   ', '
 )} are supported.`;
-
-/**
- * Initializes the WASM module for text reconciliation.
- * Must be called before using any other functions.
- *
- * The function is idempotent.
- *
- * @param content - Optional initialization input for the WASM module during testing.
- * @returns Promise that resolves when initialization is complete
- */
-export async function init(content?: InitInput) {
-  if (isInitialised) {
-    return;
-  }
-
-  await wasmInit(content);
-
-  isInitialised = true;
-}
 
 /**
  * Merges three versions of text (original, left, right) and cursor positions.
@@ -85,9 +65,7 @@ export function reconcile(
   right: string | TextWithCursors,
   tokenizer: BuiltinTokenizer = 'Word'
 ): TextWithCursors {
-  if (!isInitialised) {
-    throw new Error(UNINITIALISED_MODULE_ERROR);
-  }
+  init();
 
   if (!TOKENIZERS.includes(tokenizer)) {
     throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
@@ -124,9 +102,7 @@ export function reconcileWithHistory(
   right: string | TextWithCursors,
   tokenizer: BuiltinTokenizer = 'Word'
 ): TextWithCursorsAndHistory {
-  if (!isInitialised) {
-    throw new Error(UNINITIALISED_MODULE_ERROR);
-  }
+  init();
 
   if (!TOKENIZERS.includes(tokenizer)) {
     throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
@@ -148,6 +124,16 @@ export function reconcileWithHistory(
     ...jsResult,
     history,
   };
+}
+
+function init() {
+  if (isInitialised) {
+    return;
+  }
+
+  initSync({ module: (wasm as any).default });
+
+  isInitialised = true;
 }
 
 function toWasmTextWithCursors(text: string | TextWithCursors): wasmTextWithCursors {

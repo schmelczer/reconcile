@@ -1,4 +1,4 @@
-import { init, reconcileWithHistory } from 'reconcile';
+import { reconcileWithHistory } from 'reconcile';
 import type { Tokenizer } from 'reconcile';
 import './style.scss';
 
@@ -13,8 +13,6 @@ const tokenizerRadios = document.querySelectorAll(
 const sampleText = `The \`reconcile\` Rust library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First concurrent edit", and "Second concurrent edit" text boxes to see competing changes get merged in real-time within the "Deconflicted result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenization strategy, for example, deciding how casing or whitespace is taken into account.`;
 
 async function main(): Promise<void> {
-  await init();
-
   originalTextArea.addEventListener('input', updateMergedText);
   leftTextArea.addEventListener('input', updateMergedText);
   rightTextArea.addEventListener('input', updateMergedText);

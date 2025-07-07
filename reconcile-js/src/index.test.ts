@@ -1,24 +1,11 @@
-import { init, reconcile, reconcileWithHistory } from './index';
-import * as fs from 'fs';
+import { reconcile, reconcileWithHistory } from './index';
 
 describe('reconcile', () => {
-  it('tries calling functions without init', () => {
-    expect(() => reconcile('Hello', 'Hello world', 'Hi world')).toThrow(/call init()/);
-
-    expect(() => reconcileWithHistory('Hello', 'Hello world', 'Hi world')).toThrow(
-      /call init()/
-    );
-  });
-
-  it('call reconcile without cursors', async () => {
-    await initWasm();
-
+  it('call reconcile without cursors', () => {
     expect(reconcile('Hello', 'Hello world', 'Hi world').text).toEqual('Hi world');
   });
 
-  it('call reconcile with cursors', async () => {
-    await initWasm();
-
+  it('call reconcile with cursors', () => {
     const result = reconcile(
       'Hello',
       {
@@ -50,17 +37,10 @@ describe('reconcile', () => {
     ]);
   });
 
-  it('call reconcileWithHistory', async () => {
-    await initWasm();
-
+  it('call reconcileWithHistory', () => {
     const result = reconcileWithHistory('Hello', 'Hello world', 'Hi world');
 
     expect(result.text).toEqual('Hi world');
     expect(result.history.length).toBeGreaterThan(0);
   });
 });
-
-async function initWasm() {
-  const wasmBin = fs.readFileSync('../pkg/reconcile_bg.wasm');
-  await init({ module_or_path: wasmBin });
-}

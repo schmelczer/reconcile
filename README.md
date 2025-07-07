@@ -59,9 +59,6 @@ Then use in your application:
 ```javascript
 import { init, reconcile } from 'reconcile';
 
-// One-time setup: initialise the WASM module
-await init();
-
 // Same example as above
 const parent = 'Hello world';
 const left = 'Hello beautiful world';
