@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "target": "ESNext",
+    "target": "ES2017",
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
-    "declaration": true,
-    "declarationDir": "./dist/types",
     "outDir": "./dist",
     "rootDir": ".",
     "skipLibCheck": true,
     "inlineSourceMap": true
   },
-  "exclude": ["./dist"]
+  "exclude": [
+    "./dist"
+  ]
 }

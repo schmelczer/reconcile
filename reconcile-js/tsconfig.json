@@ -1,17 +1,17 @@
 {
-  "compilerOptions": {
-    "module": "ESNext",
-    "target": "ESNext",
-    "strict": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "moduleResolution": "bundler",
-    "declaration": true,
-    "declarationDir": "./dist/types",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "skipLibCheck": true,
-    "inlineSourceMap": true
-  },
-  "exclude": ["./dist"]
+    "compilerOptions": {
+        "module": "ESNext",
+        "target": "ESNext",
+        "strict": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "bundler",
+        "declaration": true,
+        "declarationDir": "./dist/types",
+        "skipLibCheck": true,
+        "inlineSourceMap": true
+    },
+    "exclude": [
+        "./dist",
+        "**/*.test.ts"
+    ]
 }
