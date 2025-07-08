@@ -3,18 +3,6 @@ const { merge } = require('webpack-merge');
 
 const common = {
   entry: './src/index.ts',
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        use: ['ts-loader'],
-      },
-      {
-        test: /\.wasm$/,
-        type: 'asset/inline',
-      },
-    ],
-  },
   optimization: {
     // the consuming project should take care of minification
     minimize: false,
@@ -27,7 +15,25 @@ const common = {
     },
   },
   performance: {
-    hints: false, // it's a library, no need to warn about its size
+    hints: false,
+  },
+  experiments: {
+    asyncWebAssembly: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        use: ['ts-loader'],
+      },
+      {
+        test: /\.wasm$/,
+        type: 'asset/inline',
+        generator: {
+          dataUrl: (content) => content.toString('base64'),
+        },
+      },
+    ],
   },
 };
 

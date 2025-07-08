@@ -1,4 +1,4 @@
-import wasmInit, {
+import {
   CursorPosition as wasmCursorPosition,
   reconcile as wasmReconcile,
   TextWithCursors as wasmTextWithCursors,
@@ -9,7 +9,7 @@ import wasmInit, {
   initSync,
 } from 'reconcile';
 
-import wasm from 'reconcile/reconcile_bg.wasm';
+import wasmBytes from 'reconcile/reconcile_bg.wasm';
 
 export interface TextWithCursors {
   /** The document's entire content */
@@ -131,7 +131,10 @@ function init() {
     return;
   }
 
-  initSync({ module: (wasm as any).default });
+  const wasmBinary = Uint8Array.from(atob(wasmBytes as unknown as string), (c) =>
+    c.charCodeAt(0)
+  );
+  initSync({ module: wasmBinary });
 
   isInitialised = true;
 }
