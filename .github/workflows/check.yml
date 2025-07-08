@@ -39,7 +39,7 @@ jobs:
 
       - name: Test
         run: |
-          cargo test --verbose -- --include-ignored
+          cargo test --verbose
           cargo test --features serde
           cargo test --features wasm
           wasm-pack test --node --features wasm
