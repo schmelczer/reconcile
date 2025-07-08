@@ -1,6 +1,6 @@
 {
   "name": "reconcile",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "main": "dist/reconcile.node.js",
   "browser": "dist/reconcile.web.js",
   "types": "dist/types/index.d.ts",
