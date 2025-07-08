@@ -2,13 +2,13 @@ name: Check
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   pull_request:
-    branches: ["main"]
+    branches: ['main']
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-Dwarnings"
+  RUSTFLAGS: '-Dwarnings'
 
 jobs:
   build:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.2.0
         with:
-          node-version: "22.x"
+          node-version: '22.x'
           check-latest: true
 
       - name: Setup rust
@@ -48,14 +48,14 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.2.0
         with:
-          node-version: "22.x"
+          node-version: '22.x'
           check-latest: true
           registry-url: 'https://registry.npmjs.org'
 
@@ -68,8 +68,7 @@ jobs:
           wasm-pack build --target web --features wasm
 
       - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_TOKEN }}
-        continue-on-error: true
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
 
       - name: Build reconcile-js
         run: |
@@ -83,4 +82,3 @@ jobs:
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true
