@@ -23,13 +23,18 @@ else
 fi
 
 echo "Bumping versions"
-cd backend
 cargo set-version --bump $1
 
-wasm-pack build --target web --features wasm
+wasm-pack build --target web --features wasm,wee_alloc
 
-# Commit and tag
+cd reconcile-js
+npm version $1
+
+cd -
+
 git add .
+TAG=$(node -p "require('./reconcile-js/package.json').version")
+
 git commit -m "Bump versions to $TAG"
 
 git push
