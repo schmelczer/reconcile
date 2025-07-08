@@ -114,8 +114,8 @@ mod tokenizer;
 mod types;
 mod utils;
 
-pub use operation_transformation::{reconcile, EditedText};
-pub use tokenizer::{token::Token, BuiltinTokenizer, Tokenizer};
+pub use operation_transformation::{EditedText, reconcile};
+pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
 pub use types::{
     cursor_position::CursorPosition, history::History, side::Side,
     span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
