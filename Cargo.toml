@@ -1,11 +1,17 @@
 [package]
 name = "reconcile"
+description = "Think diff3 or git merge, but with automated conflict resolution that requires no user intervention"
+version = "0.4.2"
 rust-version = "1.85"
 authors = ["Andras Schmelczer <andras@schmelczer.dev>"]
 edition = "2024"
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/schmelczer/reconcile"
-version = "0.4.2"
+homepage = "https://schmelczer.dev/reconcile"
+keywords = ["merge", "OT", "CRDT", "3-way", "diff"]
+categories = ["wasm", "text-processing", "text-editors", "algorithms", "data-structures"]
+exclude = ["reconcile-js", ".*", "examples/website"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
