@@ -39,7 +39,7 @@ jobs:
       - name: Setup rust
         run: |
           which wasm-pack || cargo install wasm-pack
-          which wasm-machete || cargo install wasm-machete
+          which cargo-machete || cargo install cargo-machete
 
       - name: Build wasm
         run: |
