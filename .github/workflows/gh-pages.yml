@@ -27,10 +27,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            reconcile-js/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('reconcile-js/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Build wasm
         run: |
-          cargo install wasm-pack
+          which wasm-pack || cargo install wasm-pack
           scripts/build-website.sh
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
