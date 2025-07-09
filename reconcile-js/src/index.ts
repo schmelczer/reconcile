@@ -9,7 +9,7 @@ import {
   initSync,
 } from 'reconcile-text';
 
-import wasmBytes from 'reconcile-text/reconcile_bg.wasm';
+import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
 
 export interface TextWithCursors {
   /** The document's entire content */
