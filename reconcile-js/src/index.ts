@@ -7,9 +7,9 @@ import {
   reconcileWithHistory as wasmReconcileWithHistory,
   History,
   initSync,
-} from 'reconcile';
+} from 'reconcile-text';
 
-import wasmBytes from 'reconcile/reconcile_bg.wasm';
+import wasmBytes from 'reconcile-text/reconcile_bg.wasm';
 
 export interface TextWithCursors {
   /** The document's entire content */

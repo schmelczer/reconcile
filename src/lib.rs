@@ -12,7 +12,7 @@
 //! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
 //!
 //! ```
-//! use reconcile::{reconcile, BuiltinTokenizer};
+//! use reconcile_text::{reconcile, BuiltinTokenizer};
 //!
 //! // Start with original text
 //! let parent = "Merging text is hard!";
@@ -34,7 +34,7 @@
 //! ### Built-in tokenisers
 //!
 //! ```
-//! use reconcile::{reconcile, BuiltinTokenizer};
+//! use reconcile_text::{reconcile, BuiltinTokenizer};
 //!
 //! let parent = "The quick brown fox\n";
 //! let left = "The very quick brown fox\n";   // Added "very"
@@ -51,7 +51,7 @@
 //! you can implement custom tokenisation logic:
 //!
 //! ```
-//! use reconcile::{reconcile, Token, BuiltinTokenizer};
+//! use reconcile_text::{reconcile, Token, BuiltinTokenizer};
 //!
 //! // Example: custom sentence-based tokeniser
 //! let sentence_tokeniser = |text: &str| {
@@ -83,7 +83,7 @@
 //! cursors and selection ranges during merging:
 //!
 //! ```
-//! use reconcile::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
+//! use reconcile_text::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
 //!
 //! let parent = "Hello world";
 //! let left = TextWithCursors::new(

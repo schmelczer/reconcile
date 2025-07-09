@@ -1,5 +1,5 @@
 {
-  "name": "reconcile",
+  "name": "reconcile-text",
   "version": "0.4.3",
   "description": "Think diff3 or git merge, but with automated conflict resolution that requires no user intervention",
   "main": "dist/reconcile.node.js",
@@ -39,7 +39,7 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.0.4",
     "prettier": "^3.6.2",
-    "reconcile": "file:../pkg",
+    "reconcile-text": "file:../pkg",
     "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
     "tslib": "2.8.1",

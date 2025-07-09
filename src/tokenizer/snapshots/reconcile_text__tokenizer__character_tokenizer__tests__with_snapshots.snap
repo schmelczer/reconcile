@@ -1,5 +1,6 @@
 ---
 source: src/tokenizer/character_tokenizer.rs
 expression: "character_tokenizer(\"\")"
+snapshot_kind: text
 ---
 []

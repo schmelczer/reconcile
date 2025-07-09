@@ -1,5 +1,5 @@
 use pretty_assertions::assert_eq;
-use reconcile::{CursorPosition, EditedText, TextWithCursors};
+use reconcile_text::{CursorPosition, EditedText, TextWithCursors};
 use serde::Deserialize;
 
 /// `ExampleDocument` represents a test case for the reconciliation process.

@@ -175,7 +175,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "reconcile"
+name = "reconcile-text"
 version = "0.4.3"
 dependencies = [
  "cfg-if 1.0.1",

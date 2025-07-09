@@ -3,7 +3,7 @@ mod example_document;
 use std::{fs, path::Path};
 
 use example_document::ExampleDocument;
-use reconcile::{BuiltinTokenizer, reconcile};
+use reconcile_text::{BuiltinTokenizer, reconcile};
 use serde::Deserialize;
 
 #[test]

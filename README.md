@@ -23,17 +23,17 @@ TODO: add links for crates and npm
 
 ### Rust
 
-Add `reconcile` to your `Cargo.toml`:
+Add `reconcile-text` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-reconcile = "0.4"
+reconcile-text = "0.4"
 ```
 
 Then merge away:
 
 ```rust
-use reconcile::{reconcile, BuiltinTokenizer};
+use reconcile_text::{reconcile, BuiltinTokenizer};
 
 // Start with original text
 let parent = "Hello world";
@@ -51,13 +51,13 @@ assert_eq!(result.apply().text(), "Hi beautiful world");
 Install via npm:
 
 ```bash
-npm install reconcile
+npm install reconcile-text
 ```
 
 Then use in your application:
 
 ```javascript
-import { init, reconcile } from 'reconcile';
+import { init, reconcile } from 'reconcile-text';
 
 // Same example as above
 const parent = 'Hello world';
@@ -85,7 +85,7 @@ Reconcile offers different ways to split text for merging:
 
 - **Word tokeniser** (`BuiltinTokenizer::Word`) — Splits on word boundaries (recommended for prose)
 - **Character tokeniser** (`BuiltinTokenizer::Character`) — Individual characters (fine-grained control)
-- **Line tokeniser** (`BuiltinTokenizer::Line`) — Line-by-line (similar to `git merge`)
+- **Line tokeniser** (`BuiltinTokenizer::Line`) — Line-by-line (similar to `git merge` or more precisely [`git merge-file`](https://git-scm.com/docs/git-merge-file))
 - **Custom tokeniser** — Roll your own for specialised use cases
 
 ### Cursor tracking

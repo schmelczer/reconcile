@@ -1,5 +1,5 @@
-import { reconcileWithHistory } from 'reconcile';
-import type { Tokenizer } from 'reconcile';
+import { reconcileWithHistory } from 'reconcile-text';
+import type { Tokenizer } from 'reconcile-text';
 import './style.scss';
 
 const originalTextArea = document.getElementById('original') as HTMLTextAreaElement;

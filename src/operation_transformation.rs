@@ -29,7 +29,7 @@ use crate::{
 /// granularity of words.
 ///
 /// ```
-/// use reconcile::{reconcile, BuiltinTokenizer};
+/// use reconcile_text::{reconcile, BuiltinTokenizer};
 ///
 /// let parent = "Merging text is hard!";
 /// let left = "Merging text is easy!";

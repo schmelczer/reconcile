@@ -1,6 +1,6 @@
 #![cfg(feature = "wasm")]
 
-use reconcile::{BuiltinTokenizer, CursorPosition, TextWithCursors, wasm::*};
+use reconcile_text::{BuiltinTokenizer, CursorPosition, TextWithCursors, wasm::*};
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test(unsupported = test)]

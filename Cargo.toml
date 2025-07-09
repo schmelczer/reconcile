@@ -1,5 +1,5 @@
 [package]
-name = "reconcile"
+name = "reconcile-text"
 description = "Think diff3 or git merge, but with automated conflict resolution that requires no user intervention"
 version = "0.4.3"
 rust-version = "1.85"
@@ -15,6 +15,10 @@ exclude = ["reconcile-js", ".*", "examples/website"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[example]]
+name = "merge-file"
+path = "examples/merge-file.rs"
 
 [dependencies]
 serde = { version = "1.0.219", optional = true, features = ["derive"] }
