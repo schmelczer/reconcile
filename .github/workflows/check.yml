@@ -44,7 +44,17 @@ jobs:
           cargo test --features wasm
           wasm-pack test --node --features wasm
 
-  publish:
+  publish-crate:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+
+  publish-npm:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -66,9 +76,6 @@ jobs:
       - name: Build wasm
         run: |
           wasm-pack build --target web --features wasm
-
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
 
       - name: Build reconcile-js
         run: |
