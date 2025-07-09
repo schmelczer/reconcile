@@ -1,8 +1,31 @@
 {
   "name": "reconcile",
   "version": "0.4.2",
+  "description": "Think diff3 or git merge, but with automated conflict resolution that requires no user intervention",
   "main": "dist/reconcile.node.js",
   "browser": "dist/reconcile.web.js",
+  "keywords": [
+    "text editing",
+    "sync",
+    "collaborative editing",
+    "3-way",
+    "merge",
+    "conflict resolution",
+    "OT",
+    "operational transformation",
+    "CRDT"
+  ],
+  "homepage": "https://schmelczer.dev/reconcile/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schmelczer/reconcile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/schmelczer/reconcile/issues",
+    "email": "andras@schmelczer.dev"
+  },
+  "author": "András Schmelczer",
+  "license": "MIT",
   "types": "dist/types/index.d.ts",
   "files": [
     "dist/**/*"
