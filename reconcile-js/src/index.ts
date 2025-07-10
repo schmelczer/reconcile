@@ -11,36 +11,82 @@ import {
 
 import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
 
+/**
+ * Represents a text document with associated cursor positions.
+ * 
+ * This interface is used both as input to reconcile functions (to specify where
+ * cursors are positioned in the original documents) and as output (with cursors
+ * automatically repositioned after merging).
+ */
 export interface TextWithCursors {
-  /** The document's entire content */
+  /** The document's entire content as a string */
   text: string;
-  /** List of cursor positions, can be null or undefined if there are no cursors */
+  /** 
+   * Array of cursor positions within the text. Can be null, undefined, or empty
+   * if there are no cursors to track. Each cursor has a unique ID and position.
+   */
   cursors: null | undefined | CursorPosition[];
 }
 
+/**
+ * Represents a cursor position within a text document.
+ * 
+ * Cursors are automatically repositioned during text merging to maintain their
+ * relative positions as text is inserted, deleted, or modified around them.
+ */
 export interface CursorPosition {
-  /** Unique identifier for the cursor */
+  /** Unique identifier for the cursor (can be any number, must be unique within the document) */
   id: number;
-  /** Character position in the text, 0-based */
+  /** Character position in the text, 0-based index from the beginning of the document */
   position: number;
 }
 
+/**
+ * Represents a merged text document with cursor positions and detailed change history.
+ * 
+ * This is the return type of `reconcileWithHistory()` and provides complete information
+ * about how the merge was performed, including which parts of the final text came from
+ * which source documents.
+ */
 export interface TextWithCursorsAndHistory {
-  /** The document's entire content */
+  /** The merged document's entire content */
   text: string;
-  /** List of cursor positions, can be null or undefined if there are no cursors */
+  /** 
+   * Array of cursor positions within the merged text. Can be null, undefined, or empty
+   * if there are no cursors to track. All cursors are automatically repositioned.
+   */
   cursors: null | undefined | CursorPosition[];
-  /** List of operations leading to `text` from the 3 ancestors */
+  /** 
+   * Detailed provenance information showing the origin of each text span in the result.
+   * Each span indicates whether it was unchanged, added from left, added from right, etc.
+   */
   history: SpanWithHistory[];
 }
 
+/**
+ * Represents a span of text in the merged result with its change history.
+ * 
+ * This shows exactly which source document contributed each piece of text to the
+ * final merged result. Useful for understanding merge decisions and creating
+ * visualisations of how documents were combined.
+ */
 export interface SpanWithHistory {
-  /** Span of text associated with the historical opearion */
+  /** The text content of this span */
   text: string;
-  /** Origin of the `text` span */
+  /** 
+   * The origin of this text span: "Unchanged" (from original), "AddedFromLeft", 
+   * "AddedFromRight", "RemovedFromLeft", or "RemovedFromRight"
+   */
   history: History;
 }
 
+/**
+ * Tokenisation strategies for text merging.
+ * 
+ * - "Word": Splits text on word boundaries (recommended for prose and most text)
+ * - "Character": Splits text into individual characters (fine-grained control)
+ * - "Line": Splits text into lines (similar to git merge or diff3)
+ */
 export type Tokenizer = 'Line' | 'Word' | 'Character';
 const TOKENIZERS = ['Line', 'Word', 'Character'];
 
@@ -51,13 +97,28 @@ const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${TOKENIZERS.jo
 )} are supported.`;
 
 /**
- * Merges three versions of text (original, left, right) and cursor positions.
+ * Merges three versions of text using intelligent conflict resolution.
+ * 
+ * This is the primary function for 3-way text merging. Unlike traditional merge tools
+ * that produce conflict markers, this function automatically resolves conflicts by
+ * applying both sets of changes where possible.
  *
- * @param original - The original/base version of the text
- * @param left - The left version of the text, either as string or TextWithCursors
- * @param right - The right version of the text, either as string or TextWithCursors
- * @param tokenizer - The tokenization strategy to use (default: "Word")
- * @returns The reconciled text with merged cursor positions
+ * @param original - The original/base version of the text that both sides diverged from
+ * @param left - The left version of the text (either string or TextWithCursors with cursor positions)
+ * @param right - The right version of the text (either string or TextWithCursors with cursor positions)
+ * @param tokenizer - The tokenisation strategy: "Word" (default, recommended for prose), 
+ *                    "Character" (fine-grained), or "Line" (similar to git merge)
+ * @returns The reconciled text with automatically repositioned cursor positions
+ * 
+ * @example
+ * ```typescript
+ * const original = "Hello world";
+ * const left = "Hello beautiful world";    // Added "beautiful"
+ * const right = "Hi world";                // Changed "Hello" to "Hi"
+ * 
+ * const result = reconcile(original, left, right);
+ * console.log(result.text); // "Hi beautiful world"
+ * ```
  */
 export function reconcile(
   original: string,
@@ -86,15 +147,32 @@ export function reconcile(
 }
 
 /**
- * Merges three versions of text and returns the result with historical information.
+ * Merges three versions of text and returns detailed provenance information.
+ * 
+ * This function behaves identically to `reconcile()` but additionally provides
+ * detailed historical information about the origin of each text span in the result.
+ * This is valuable for understanding how the merge was performed and which changes
+ * came from which source.
+ * 
+ * Note: Computing the history is computationally more expensive than the basic merge.
  *
- * Calculating the `history` is somewhat more expensive, otherwise this function behaves like `reconcile`.
- *
- * @param original - The original/base version of the text
- * @param left - The left version of the text, either as string or TextWithCursors
- * @param right - The right version of the text, either as string or TextWithCursors
- * @param tokenizer - The tokenization strategy to use (default: "Word")
- * @returns The reconciled text with cursor positions and history of changes
+ * @param original - The original/base version of the text that both sides diverged from
+ * @param left - The left version of the text (either string or TextWithCursors with cursor positions)
+ * @param right - The right version of the text (either string or TextWithCursors with cursor positions)
+ * @param tokenizer - The tokenisation strategy: "Word" (default, recommended for prose), 
+ *                    "Character" (fine-grained), or "Line" (similar to git merge)
+ * @returns The reconciled text with cursor positions and detailed change history
+ * 
+ * @example
+ * ```typescript
+ * const original = "Hello world";
+ * const left = "Hello beautiful world";
+ * const right = "Hi world";
+ * 
+ * const result = reconcileWithHistory(original, left, right);
+ * console.log(result.text); // "Hi beautiful world"
+ * console.log(result.history); // Array of SpanWithHistory objects showing change origins
+ * ```
  */
 export function reconcileWithHistory(
   original: string,
