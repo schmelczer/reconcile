@@ -1,12 +1,14 @@
 //! # Reconcile: 3-way text merging with automatic conflict resolution
 //!
 //! A library for merging conflicting text edits without manual intervention.
-//! Unlike traditional 3-way merge tools that produce conflict markers, this library
-//! automatically resolves conflicts by applying both sets of changes where possible.
+//! Unlike traditional 3-way merge tools that produce conflict markers, this
+//! library automatically resolves conflicts by applying both sets of changes
+//! where possible.
 //!
-//! Based on a combination of Myers' diff algorithm and Operational Transformation
-//! principles, it's designed for scenarios where you have a common parent text
-//! and two modified versions that need to be intelligently combined.
+//! Based on a combination of Myers' diff algorithm and Operational
+//! Transformation principles, it's designed for scenarios where you have a
+//! common parent text and two modified versions that need to be intelligently
+//! combined.
 //!
 //! **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
 //!
@@ -17,7 +19,7 @@
 //!
 //! // Start with original text
 //! let parent = "Merging text is hard!";
-//! // Two people edit simultaneously  
+//! // Two people edit simultaneously
 //! let left = "Merging text is easy!";                    // Changed "hard" to "easy"
 //! let right = "With reconcile, merging documents is hard!"; // Added prefix and changed word
 //!
@@ -33,9 +35,12 @@
 //!
 //! ### Built-in tokenisers
 //!
-//! - **`BuiltinTokenizer::Word`** (recommended): Splits on word boundaries, preserving word integrity
-//! - **`BuiltinTokenizer::Character`**: Character-level merging for fine-grained control
-//! - **`BuiltinTokenizer::Line`**: Line-based merging, similar to traditional diff tools
+//! - **`BuiltinTokenizer::Word`** (recommended): Splits on word boundaries,
+//!   preserving word integrity
+//! - **`BuiltinTokenizer::Character`**: Character-level merging for
+//!   fine-grained control
+//! - **`BuiltinTokenizer::Line`**: Line-based merging, similar to traditional
+//!   diff tools
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer};
@@ -81,7 +86,8 @@
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
 //!
-//! > **Note**: Setting token joinability to `false` causes insertions to interleave
+//! > **Note**: Setting token joinability to `false` causes insertions to
+//! > interleave
 //! > (LRLRLR) rather than group together (LLLRRR), which often produces more
 //! > natural-looking merged text.
 //!
@@ -124,12 +130,16 @@
 //!
 //! ## Algorithm overview
 //!
-//! 1. **Diff computation**: Myers' algorithm calculates differences between parent↔left and parent↔right
-//! 2. **Tokenisation**: Text is split into meaningful units (words, characters, etc.)
-//! 3. **Diff optimisation**: Operations are reordered and consolidated for coherent changes
+//! 1. **Diff computation**: Myers' algorithm calculates differences between
+//!    parent↔left and parent↔right
+//! 2. **Tokenisation**: Text is split into meaningful units (words, characters,
+//!    etc.)
+//! 3. **Diff optimisation**: Operations are reordered and consolidated for
+//!    coherent changes
 //! 4. **Operational Transformation**: Edits are combined using OT principles
 //!
-//! For detailed algorithm explanation, see the [README](README.md#how-it-works).
+//! For detailed algorithm explanation, see the
+//! [README](README.md#how-it-works).
 
 mod operation_transformation;
 mod raw_operation;

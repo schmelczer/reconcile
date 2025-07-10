@@ -189,7 +189,7 @@ where
             // odd and when there is a reciprocal k line coming from the other
             // direction.
             if odd && (k - delta).abs() <= (d - 1) {
-                // TODO optimize this so we don't have to compare against n
+                // TODO optimise this so we don't have to compare against n
                 if vf[k] + vb[-(k - delta)] >= n {
                     // Return the snake
                     return Some((x0 + old_range.start, y0 + new_range.start));
@@ -222,7 +222,7 @@ where
             vb[k] = x;
 
             if !odd && (k - delta).abs() <= d {
-                // TODO optimize this so we don't have to compare against n
+                // TODO optimise this so we don't have to compare against n
                 if vb[k] + vf[-(k - delta)] >= n {
                     // Return the snake
                     return Some((n - x + old_range.start, m - y + new_range.start));
@@ -230,7 +230,7 @@ where
             }
         }
 
-        // TODO: Maybe there's an opportunity to optimize and bail early?
+        // TODO: Maybe there's an opportunity to optimise and bail early?
     }
 
     None

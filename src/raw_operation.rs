@@ -5,7 +5,7 @@ use crate::{tokenizer::token::Token, utils::myers_diff::myers_diff};
 /// Text editing operation containing the to-be-changed `Tokens`-s.
 ///
 /// `RawOperations` can be joined together when the underlying tokens
-/// allow for joining subseqeunt operations.
+/// allow for joining subsequent operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RawOperation<T>
 where
