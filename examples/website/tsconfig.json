@@ -7,9 +7,11 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "skipLibCheck": true,
     "inlineSourceMap": true
   },
-  "exclude": ["./dist"]
+  "exclude": [
+    "./dist"
+  ]
 }

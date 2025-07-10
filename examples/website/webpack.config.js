@@ -7,7 +7,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = (_env, argv) => ({
   devtool: argv.mode === 'development' ? 'inline-source-map' : false,
   entry: {
-    index: './index.ts',
+    index: './src/index.ts',
   },
   devServer: {
     allowedHosts: 'all',
@@ -31,7 +31,7 @@ module.exports = (_env, argv) => ({
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index.html',
+      template: './src/index.html',
     }),
     new MiniCssExtractPlugin(),
     argv.mode === 'production'

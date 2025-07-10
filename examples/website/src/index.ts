@@ -16,6 +16,12 @@ async function main(): Promise<void> {
   originalTextArea.addEventListener('input', updateMergedText);
   leftTextArea.addEventListener('input', updateMergedText);
   rightTextArea.addEventListener('input', updateMergedText);
+
+  leftTextArea.addEventListener('selectionchange', updateMergedText);
+  rightTextArea.addEventListener('selectionchange', updateMergedText);
+  leftTextArea.addEventListener('select', updateMergedText);
+  rightTextArea.addEventListener('select', updateMergedText);
+
   window.addEventListener('resize', resizeTextAreas);
 
   tokenizerRadios.forEach((radio) => {
@@ -27,6 +33,7 @@ async function main(): Promise<void> {
   focusTextArea(leftTextArea);
 }
 
+// Edit the instructions to generate example edits
 function loadSample(): void {
   originalTextArea.value = sampleText;
   leftTextArea.value =
@@ -46,16 +53,97 @@ function updateMergedText(): void {
 
   const selectedTokenizer = getSelectedTokenizer();
 
-  const results = reconcileWithHistory(original, left, right, selectedTokenizer);
+  const { leftCursors, rightCursors } = getCursorsFromActiveTextArea();
 
+  const results = reconcileWithHistory(
+    original,
+    {
+      text: left,
+      cursors: leftCursors,
+    },
+    {
+      text: right,
+      cursors: rightCursors,
+    },
+    selectedTokenizer
+  );
+
+  let selectionStart: number = Number.NEGATIVE_INFINITY;
+  let selectionEnd: number = Number.NEGATIVE_INFINITY;
+  if (results.cursors?.length ?? 0 > 0) {
+    selectionStart = results.cursors![0].position;
+    selectionEnd = results.cursors![1].position;
+  }
+
+  const selectionSide = leftCursors ? 'left' : 'right';
   mergedTextArea.innerHTML = '';
 
-  for (const { text, history } of results.history) {
-    const span = document.createElement('span');
-    span.className = history;
-    span.textContent = text;
-    mergedTextArea.appendChild(span);
+  let currentPosition = 0;
+  if (selectionEnd === 0) {
+    mergedTextArea.appendChild(createCaret(selectionSide === 'left'));
   }
+
+  for (const { text, history } of results.history) {
+    for (const character of text) {
+      const span = document.createElement('span');
+      span.className = history;
+      span.textContent = character;
+
+      if (selectionStart <= currentPosition && currentPosition < selectionEnd) {
+        span.className += ` selection-${selectionSide}`;
+      }
+
+      mergedTextArea.appendChild(span);
+
+      if (currentPosition == selectionEnd - 1) {
+        mergedTextArea.appendChild(createCaret(selectionSide === 'left'));
+      }
+
+      if (history !== 'RemovedFromLeft' && history !== 'RemovedFromRight') {
+        // Only increment currentPosition for non-removed characters
+        currentPosition++;
+      }
+    }
+  }
+}
+
+function getCursorsFromActiveTextArea() {
+  const activeElement = document.activeElement;
+  let leftCursors = undefined;
+  let rightCursors = undefined;
+
+  if (activeElement === leftTextArea) {
+    leftCursors = [
+      { id: 1, position: leftTextArea.selectionStart },
+      { id: 2, position: leftTextArea.selectionEnd },
+    ];
+  } else if (activeElement === rightTextArea) {
+    rightCursors = [
+      { id: 1, position: rightTextArea.selectionStart },
+      { id: 2, position: rightTextArea.selectionEnd },
+    ];
+  }
+  return { leftCursors, rightCursors };
+}
+
+function createCaret(isLeft: boolean): HTMLSpanElement {
+  const caretSpan = document.createElement('span');
+  caretSpan.className = `selection-caret selection-caret-${isLeft ? 'left' : 'right'}`;
+
+  const stickDiv = document.createElement('div');
+  stickDiv.className = 'stick';
+  caretSpan.appendChild(stickDiv);
+
+  const dotDiv = document.createElement('div');
+  dotDiv.className = 'dot';
+  caretSpan.appendChild(dotDiv);
+
+  const infoDiv = document.createElement('div');
+  infoDiv.className = 'info';
+  infoDiv.textContent = isLeft ? "Left user's cursor" : "Right user's cursor";
+  caretSpan.appendChild(infoDiv);
+
+  return caretSpan;
 }
 
 function getSelectedTokenizer(): Tokenizer {
