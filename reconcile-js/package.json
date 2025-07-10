@@ -1,7 +1,7 @@
 {
   "name": "reconcile-text",
   "version": "0.4.8",
-  "description": "Think diff3 or git merge, but with automated conflict resolution that requires no user intervention",
+  "description": "Intelligent 3-way text merging with automated conflict resolution",
   "main": "dist/reconcile.node.js",
   "browser": "dist/reconcile.web.js",
   "keywords": [

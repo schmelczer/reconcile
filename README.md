@@ -1,23 +1,21 @@
-# Reconcile-text: conflict-free 3-way text merging
+# Reconcile-text: 3-way text merging with automatic conflict resolution
 
-> Think [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) or `git merge`, but with intelligent conflict resolution that just works.
+A library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts by applying both sets of changes where possible using algorithms inspired by Operational Transformation.
 
-Reconcile is a Rust and JavaScript (via WebAssembly) library that merges conflicting text edits without requiring manual intervention. Where traditional 3-way merge tools would leave you with conflict markers to resolve by hand, Reconcile automatically weaves changes together using sophisticated algorithms inspired by Operational Transformation.
-
-✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
+**[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
 
 Find it on:
 
 - [reconcile-text on crates.io](https://crates.io/crates/reconcile-text)
 - [reconcile-text on NPM](https://www.npmjs.com/package/reconcile-text)
 
-## What makes Reconcile special?
+## Key features
 
-- **🚫 No conflict markers** — Clean, merged output without Git's `<<<<<<<` noise
-- **📍 Cursor tracking** — Automatically repositions cursors and selections during merging
-- **🔧 Flexible tokenisation** — Word-level (default), character-level, or custom strategies
-- **🌍 Unicode-first** — Full UTF-8 support
-- **🕸️ Cross-platform** — Native Rust performance with WebAssembly for JavaScript
+- **No conflict markers** — Clean, merged output without Git's `<<<<<<<` markers
+- **Cursor tracking** — Automatically repositions cursors and selections during merging
+- **Flexible tokenisation** — Word-level (default), character-level, or custom strategies
+- **Unicode support** — Full UTF-8 support with proper handling of complex scripts
+- **Cross-platform** — Native Rust performance with WebAssembly for JavaScript
 
 ## Quick start
 
@@ -57,7 +55,7 @@ npm install reconcile-text
 Then use in your application:
 
 ```javascript
-import { init, reconcile } from 'reconcile-text';
+import { reconcile } from 'reconcile-text';
 
 // Same example as above
 const parent = 'Hello world';
@@ -90,7 +88,7 @@ Reconcile offers different ways to split text for merging:
 
 ### Cursor tracking
 
-Ideal for collaborative editors — Reconcile tracks cursor positions through merges:
+Ideal for collaborative editors — Reconcile automatically tracks cursor positions through merges:
 
 ```javascript
 const result = reconcile(
@@ -105,7 +103,8 @@ const result = reconcile(
   }
 );
 
-// Cursors are automatically repositioned in the merged text
+// Result: "Hi beautiful world" with repositioned cursors
+console.log(result.text);    // "Hi beautiful world"
 console.log(result.cursors); // [{ id: 1, position: 3 }, { id: 2, position: 0 }]
 ```
 
@@ -120,17 +119,17 @@ Reconcile builds upon the foundation of `diff3` but adds intelligent conflict re
 
 Whilst Reconcile's primary goal isn't implementing Operational Transformation, OT provides an elegant way to merge Myers' diff output. The same could be achieved with CRDTs, though the quality depends entirely on the underlying 2-way diffs. Note that `move` operations aren't supported, as Myers' algorithm decomposes them into separate `insert` and `delete` operations.
 
-## Why Reconcile exists
+## Background
 
-Collaborative editing is everywhere — multiple users editing documents simultaneously, or the same person working across devices. This creates the inevitable challenge of conflicting changes.
+Collaborative editing presents the challenge of merging conflicting changes when multiple users edit documents simultaneously, or when synchronising edits across devices.
 
-Traditional solutions like CRDTs or Operational Transformation work brilliantly when you control the entire editing environment. They capture every keystroke, cursor movement, and operation. But real-world workflows are messier: users love tools that don't lock them in. Take Obsidian's approach with plain Markdown files — users can edit with any tool they fancy, from Vim to Word.
+Traditional solutions like CRDTs or Operational Transformation work well when you control the entire editing environment and can capture every operation. However, many workflows involve users editing with different tools — for example, Obsidian users editing Markdown files with various editors from Vim to Word.
 
-This creates what's known as **Differential Synchronisation** [¹]: you only know the final state of each document, not how it got there. It's the same challenge Git tackles, but Git expects humans to resolve conflicts manually.
+This creates **Differential Synchronisation** scenarios [¹]: you only know the final state of each document, not the sequence of operations that produced it. This is the same challenge Git addresses, but Git requires manual conflict resolution.
 
-Here's the key insight: whilst incorrect merges in source code can introduce devastating bugs, human text is more forgiving. People excel at extracting meaning from imperfect text — a slightly clumsy sentence is preferable to conflict markers interrupting the flow.
+The key insight is that whilst incorrect merges in source code can introduce bugs, human text is more forgiving. A slightly imperfect sentence is often preferable to conflict markers interrupting the flow.
 
-> **Caveat**: Some text domains are less tolerant of imperfect merges. Legal contracts, for instance, could have unintended meaning changes from double-negations created by conflicting edits.
+> **Note**: Some text domains require more careful handling. Legal contracts, for instance, could have unintended meaning changes from conflicting edits that create double-negations.
 
 ## Development
 

@@ -1,15 +1,16 @@
-//! # Reconcile: conflict-free 3-way text merging
+//! # Reconcile: 3-way text merging with automatic conflict resolution
 //!
-//! Think [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) or `git merge`,
-//! but with intelligent conflict resolution.
+//! A library for merging conflicting text edits without manual intervention.
+//! Unlike traditional 3-way merge tools that produce conflict markers, this library
+//! automatically resolves conflicts by applying both sets of changes where possible.
 //!
-//! Reconcile is a Rust and JavaScript (via WebAssembly) library that merges
-//! conflicting text edits without requiring manual intervention. Where
-//! traditional 3-way merge tools would leave you with conflict markers to
-//! resolve by hand, Reconcile automatically weaves changes together using
-//! sophisticated algorithms inspired by Operational Transformation.
+//! Based on a combination of Myers' diff algorithm and Operational Transformation
+//! principles, it's designed for scenarios where you have a common parent text
+//! and two modified versions that need to be intelligently combined.
 //!
-//! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
+//! **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
+//!
+//! ## Basic usage
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer};
@@ -27,40 +28,46 @@
 //!
 //! ## Tokenisation strategies
 //!
-//! Merging happens at the token level, where you control the granularity.
-//! By default, words serve as the atomic units for merging, ensuring words
-//! remain intact during the reconciliation process.
+//! Merging operates at the token level, where you control the granularity.
+//! The choice of tokeniser significantly affects merge quality and behaviour.
 //!
 //! ### Built-in tokenisers
+//!
+//! - **`BuiltinTokenizer::Word`** (recommended): Splits on word boundaries, preserving word integrity
+//! - **`BuiltinTokenizer::Character`**: Character-level merging for fine-grained control
+//! - **`BuiltinTokenizer::Line`**: Line-based merging, similar to traditional diff tools
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer};
 //!
-//! let parent = "The quick brown fox\n";
-//! let left = "The very quick brown fox\n";   // Added "very"
-//! let right = "The quick red fox\n";         // Changed "brown" to "red"
+//! let parent = "The quick brown fox\njumps over the lazy dog";
+//! let left = "The very quick brown fox\njumps over the lazy dog";   // Added "very"
+//! let right = "The quick red fox\njumps over the lazy dog";         // Changed "brown" to "red"
 //!
-//! // Using line-based tokenisation
+//! // Word-level tokenisation (recommended for most text)
+//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+//! assert_eq!(result.apply().text(), "The very quick red fox\njumps over the lazy dog");
+//!
+//! // Line-level tokenisation (similar to git merge)
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Line);
-//! assert_eq!(result.apply().text(), "The quick red foxThe very quick brown fox\n");
+//! // Line-level produces different results as it treats each line as atomic
 //! ```
 //!
 //! ### Custom tokenisation
 //!
-//! For specialised use cases—such as structured text like Markdown or HTML—
-//! you can implement custom tokenisation logic:
+//! For specialised use cases, implement custom tokenisation logic:
 //!
 //! ```
 //! use reconcile_text::{reconcile, Token, BuiltinTokenizer};
 //!
-//! // Example: custom sentence-based tokeniser
+//! // Example: sentence-based tokeniser function
 //! let sentence_tokeniser = |text: &str| {
 //!     text.split(". ")
 //!         .map(|sentence| Token::new(
 //!             sentence.to_string(),
 //!             sentence.to_string(),
-//!             false, // don't allow joining with the preceding token
-//!             false, // don't allow joining with the following token
+//!             false, // don't allow joining with preceding token
+//!             false, // don't allow joining with following token
 //!         ))
 //!         .collect::<Vec<_>>()
 //! };
@@ -69,18 +76,19 @@
 //! let left = "Hello beautiful world. This is a test.";  // Added "beautiful"
 //! let right = "Hello world. This is a great test.";     // Changed "a" to "great"
 //!
-//! // For most cases, the built-in word tokeniser works perfectly
+//! // For most cases, the built-in word tokeniser works well
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
-//! > **Tip**: Setting joinability to `false` causes longer runs of insertions
-//! > to interleave (LRLRLR) rather than group together (LLLRRR), which can
-//! > produce more natural-looking merged text.
+//!
+//! > **Note**: Setting token joinability to `false` causes insertions to interleave
+//! > (LRLRLR) rather than group together (LLLRRR), which often produces more
+//! > natural-looking merged text.
 //!
 //! ## Cursor tracking
 //!
-//! Perfect for collaborative editors—the library automatically repositions
-//! cursors and selection ranges during merging:
+//! Automatically repositions cursors and selection ranges during merging,
+//! essential for collaborative editors:
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
@@ -101,12 +109,27 @@
 //! assert_eq!(merged.text(), "Hi beautiful world");
 //! // Cursors are automatically repositioned in the merged text
 //! assert_eq!(merged.cursors().len(), 2);
+//! // Cursor 1 moves from position 6 to position 3 (after "Hi ")
+//! // Cursor 2 stays at position 0 (beginning)
 //! ```
 //!
-//! ## How it works
+//! ## Error handling
 //!
-//! For a detailed explanation of the algorithm and architecture, see the
-//! [README](README.md#how-it-works).
+//! The library is designed to be robust and will always produce a result, even
+//! in edge cases. However, be aware that:
+//!
+//! - Binary data is detected and handled gracefully
+//! - Unicode text is fully supported
+//! - Extremely large diffs may have performance implications
+//!
+//! ## Algorithm overview
+//!
+//! 1. **Diff computation**: Myers' algorithm calculates differences between parent↔left and parent↔right
+//! 2. **Tokenisation**: Text is split into meaningful units (words, characters, etc.)
+//! 3. **Diff optimisation**: Operations are reordered and consolidated for coherent changes
+//! 4. **Operational Transformation**: Edits are combined using OT principles
+//!
+//! For detailed algorithm explanation, see the [README](README.md#how-it-works).
 
 mod operation_transformation;
 mod raw_operation;
