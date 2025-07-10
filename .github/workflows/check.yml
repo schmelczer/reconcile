@@ -137,6 +137,7 @@ jobs:
       - name: Publish reconcile-js to NPM
         run: |
           cd reconcile-js
+          cp ../README.md .
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

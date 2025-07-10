@@ -1,7 +1,4 @@
-# Reconcile: conflict-free 3-way text merging
-
-[![Check](https://github.com/schmelczer/reconcile/actions/workflows/check.yml/badge.svg)](https://github.com/schmelczer/reconcile/actions/workflows/check.yml)
-[![Publish to GitHub Pages](https://github.com/schmelczer/reconcile/actions/workflows/gh-pages.yml/badge.svg)](https://github.com/schmelczer/reconcile/actions/workflows/gh-pages.yml)
+# Reconcile-text: conflict-free 3-way text merging
 
 > Think [`diff3`](https://www.gnu.org/software/diffutils/manual/html_node/Invoking-diff3.html) or `git merge`, but with intelligent conflict resolution that just works.
 
@@ -9,7 +6,10 @@ Reconcile is a Rust and JavaScript (via WebAssembly) library that merges conflic
 
 ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
 
-TODO: add links for crates and npm
+Find it on:
+
+- [reconcile-text on crates.io](https://crates.io/crates/reconcile-text)
+- [reconcile-text on NPM](https://www.npmjs.com/package/reconcile-text)
 
 ## What makes Reconcile special?
 
@@ -23,7 +23,7 @@ TODO: add links for crates and npm
 
 ### Rust
 
-Add `reconcile-text` to your `Cargo.toml`:
+Run `cargo add reconcile-text` or add `reconcile-text` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -167,6 +167,8 @@ Here's the key insight: whilst incorrect merges in source code can introduce dev
 - **Build demo website**: `scripts/build-website.sh`
 - **Publish new version**: `scripts/bump-version.sh patch`
 
-TODO: license
+## License
+
+[MIT](./LICENSE)
 
 [¹]: https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/35605.pdf
