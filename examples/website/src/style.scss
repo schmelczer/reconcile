@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // Colour palette
 $primary-blue: #2451a6;
 $light-blue: #85bff7;
@@ -14,6 +16,10 @@ $gradient-end: #e0e7ef;
 // Function to create selection colour with opacity
 @function selection-colour($colour, $opacity: 0.3) {
   @return rgba($colour, $opacity);
+}
+
+@function caret-colour($colour, $amount: 20%) {
+  @return color.adjust($colour, $lightness: -$amount);
 }
 
 * {
@@ -36,6 +42,7 @@ body {
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .background {
@@ -274,9 +281,13 @@ textarea {
 #merged {
   width: 100%;
   user-select: text;
+  display: flex;
+  flex-wrap: wrap;
 
   > * {
     position: relative;
+    display: block;
+    white-space: pre-wrap;
   }
 }
 
@@ -328,13 +339,14 @@ $DOT_RADIUS: 4;
 
 .selection-caret {
   position: relative;
+  z-index: 1000;
 
   &.selection-caret-left {
-    background: $green;
+    background: caret-colour($green);
   }
 
   &.selection-caret-right {
-    background: $light-blue;
+    background: caret-colour($light-blue);
   }
 
   > * {
@@ -359,13 +371,24 @@ $DOT_RADIUS: 4;
     height: #{$DOT_RADIUS * 2}px;
     top: -#{$DOT_RADIUS}px;
     left: -#{$DOT_RADIUS}px;
-    transition: transform 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out;
     transform-origin: bottom center;
     box-sizing: border-box;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
   }
 
   &:hover > .dot {
-    transform: scale(0);
+    opacity: 0;
   }
 
   > .info {

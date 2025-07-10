@@ -10,7 +10,7 @@ const tokenizerRadios = document.querySelectorAll(
   'input[name="tokenizer"]'
 ) as NodeListOf<HTMLInputElement>;
 
-const sampleText = `The \`reconcile\` Rust library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First concurrent edit", and "Second concurrent edit" text boxes to see competing changes get merged in real-time within the "Deconflicted result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenization strategy, for example, deciding how casing or whitespace is taken into account.`;
+const sampleText = `The \`reconcile\` Rust library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First concurrent edit", and "Second concurrent edit" text boxes to see competing changes get merged in real-time within the "Deconflicted result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenisation strategy, for example, deciding how casing or whitespace is taken into account.`;
 
 async function main(): Promise<void> {
   originalTextArea.addEventListener('input', updateMergedText);
@@ -76,11 +76,11 @@ function updateMergedText(): void {
   }
 
   const selectionSide = leftCursors ? 'left' : 'right';
-  mergedTextArea.innerHTML = '';
+  const fragment = document.createDocumentFragment();
 
   let currentPosition = 0;
   if (selectionEnd === 0) {
-    mergedTextArea.appendChild(createCaret(selectionSide === 'left'));
+    fragment.appendChild(createCaret(selectionSide === 'left'));
   }
 
   for (const { text, history } of results.history) {
@@ -93,10 +93,10 @@ function updateMergedText(): void {
         span.className += ` selection-${selectionSide}`;
       }
 
-      mergedTextArea.appendChild(span);
+      fragment.appendChild(span);
 
-      if (currentPosition == selectionEnd - 1) {
-        mergedTextArea.appendChild(createCaret(selectionSide === 'left'));
+      if (currentPosition === selectionEnd - 1) {
+        fragment.appendChild(createCaret(selectionSide === 'left'));
       }
 
       if (history !== 'RemovedFromLeft' && history !== 'RemovedFromRight') {
@@ -105,6 +105,9 @@ function updateMergedText(): void {
       }
     }
   }
+
+  mergedTextArea.innerHTML = '';
+  mergedTextArea.appendChild(fragment);
 }
 
 function getCursorsFromActiveTextArea() {
@@ -167,8 +170,8 @@ function autoResize(textarea: HTMLTextAreaElement): void {
 
 function focusTextArea(textarea: HTMLTextAreaElement): void {
   textarea.focus();
-  textarea.selectionStart = textarea.value.length;
-  textarea.selectionEnd = textarea.value.length;
+  textarea.selectionStart = 0;
+  textarea.selectionEnd = 0;
 }
 
 main();

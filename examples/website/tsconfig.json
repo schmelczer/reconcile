@@ -11,7 +11,5 @@
     "skipLibCheck": true,
     "inlineSourceMap": true
   },
-  "exclude": [
-    "./dist"
-  ]
+  "exclude": ["./dist"]
 }
