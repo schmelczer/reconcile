@@ -44,6 +44,25 @@ export type History = (typeof HISTORY_VALUES)[number];
 export interface TextWithCursors {
   /** The document's entire content as a string */
   text: string;
+
+  /**
+   * Array of cursor positions within the text. Can be empty if there are no cursors to track.
+   * Each cursor has a unique ID and position.
+   */
+  cursors: CursorPosition[];
+}
+
+/**
+ * Represents a text document with associated cursor positions.
+ *
+ * This interface is used both as input to reconcile functions (to specify where
+ * cursors are positioned in the original documents) and as output (with cursors
+ * automatically repositioned after merging).
+ */
+export interface TextWithOptionalCursors {
+  /** The document's entire content as a string */
+  text: string;
+
   /**
    * Array of cursor positions within the text. Can be null, undefined, or empty
    * if there are no cursors to track. Each cursor has a unique ID and position.
@@ -60,6 +79,7 @@ export interface TextWithCursors {
 export interface CursorPosition {
   /** Unique identifier for the cursor (can be any number, must be unique within the document) */
   id: number;
+
   /** Character position in the text, 0-based index from the beginning of the document */
   position: number;
 }
@@ -74,11 +94,13 @@ export interface CursorPosition {
 export interface TextWithCursorsAndHistory {
   /** The merged document's entire content */
   text: string;
+
   /**
-   * Array of cursor positions within the merged text. Can be null, undefined, or empty
-   * if there are no cursors to track. All cursors are automatically repositioned.
+   * Array of cursor positions within the merged text. Can empty if there are no cursors to track.
+   * All cursors are automatically repositioned from the left and right documents.
    */
-  cursors: null | undefined | CursorPosition[];
+  cursors: CursorPosition[];
+
   /**
    * Detailed provenance information showing the origin of each text span in the result.
    * Each span indicates whether it was unchanged, added from left, added from right, etc.
@@ -96,10 +118,8 @@ export interface TextWithCursorsAndHistory {
 export interface SpanWithHistory {
   /** The text content of this span */
   text: string;
-  /**
-   * The origin of this text span: "Unchanged" (from original), "AddedFromLeft",
-   * "AddedFromRight", "RemovedFromLeft", or "RemovedFromRight"
-   */
+
+  /** The origin of this text span in the merge result */
   history: History;
 }
 
@@ -135,8 +155,8 @@ let isInitialised = false;
  */
 export function reconcile(
   original: string,
-  left: string | TextWithCursors,
-  right: string | TextWithCursors,
+  left: string | TextWithOptionalCursors,
+  right: string | TextWithOptionalCursors,
   tokenizer: BuiltinTokenizer = 'Word'
 ): TextWithCursors {
   init();
@@ -189,8 +209,8 @@ export function reconcile(
  */
 export function reconcileWithHistory(
   original: string,
-  left: string | TextWithCursors,
-  right: string | TextWithCursors,
+  left: string | TextWithOptionalCursors,
+  right: string | TextWithOptionalCursors,
   tokenizer: BuiltinTokenizer = 'Word'
 ): TextWithCursorsAndHistory {
   init();
@@ -243,7 +263,9 @@ function init() {
   isInitialised = true;
 }
 
-function toWasmTextWithCursors(text: string | TextWithCursors): wasmTextWithCursors {
+function toWasmTextWithCursors(
+  text: string | TextWithOptionalCursors
+): wasmTextWithCursors {
   const isInputString = typeof text === 'string';
   const leftText = isInputString ? text : text.text;
   const leftCursors = isInputString ? [] : (text.cursors ?? []);
