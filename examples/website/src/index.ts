@@ -1,5 +1,5 @@
 import { reconcileWithHistory } from 'reconcile-text';
-import type { Tokenizer } from 'reconcile-text';
+import type { BuiltinTokenizer } from 'reconcile-text';
 import './style.scss';
 
 const originalTextArea = document.getElementById('original') as HTMLTextAreaElement;
@@ -149,9 +149,9 @@ function createCaret(isLeft: boolean): HTMLSpanElement {
   return caretSpan;
 }
 
-function getSelectedTokenizer(): Tokenizer {
+function getSelectedTokenizer(): BuiltinTokenizer {
   const selectedRadio = Array.from(tokenizerRadios).find((radio) => radio.checked);
-  return selectedRadio?.value as Tokenizer;
+  return selectedRadio?.value as BuiltinTokenizer;
 }
 
 function resizeTextAreas(): void {
