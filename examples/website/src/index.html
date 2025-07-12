@@ -17,9 +17,11 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://schmelczer.dev/reconcile" />
-    <meta property="og:image" content="/favicon.ico" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <title>Reconcile: conflict-free text merging</title>
+    <title>reconcile-text: conflict-free 3-way text merging</title>
     <link inline inline-asset="index.css" inline-asset-delete />
   </head>
   <body>
@@ -37,13 +39,13 @@
               rel="noopener noreferrer"
               >diff3</a
             >
-            or <code>git merge</code>, but with intelligent conflict resolution that
-            requires no user intervention. The
+            (or more specifically, <code>git merge</code>), but with intelligent conflict
+            resolution that requires no user intervention. The
             <a
               href="https://github.com/schmelczer/reconcile"
               target="_blank"
               rel="noopener noreferrer"
-              >Reconcile</a
+              >reconcile-text</a
             >
             library tackles a fundamental challenge in collaborative editing: what happens
             when multiple users edit the same text simultaneously, but the conflict
@@ -52,18 +54,20 @@
 
           <p>
             Where traditional merge tools leave you with conflict markers to resolve
-            manually, Reconcile automatically weaves changes together. The
-            <code>reconcile(parent, left, right)</code> function takes conflicting edits
-            and produces clean, unified results using an algorithm inspired by Operational
-            Transformation. No more <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers
-            cluttering your text.
+            manually, <code>reconcile-text</code> automatically weaves changes together.
+            The <code>reconcile(parent, left, right)</code> function takes conflicting
+            edits and produces clean, unified results using an algorithm inspired by
+            Operational Transformation. No more
+            <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers jumbling your text.
           </p>
 
           <p>
             The process starts with your chosen tokenisation strategy, then applies Myers'
-            diff algorithm to compare the original with both modified versions. These
-            diffs are optimised and transformed to preserve meaningful changes, before a
-            final merge strategy combines all modifications without losing any edits.
+            2-way diff algorithm to compare the original with both modified versions.
+            These diffs are optimised and transformed to preserve the longest meaningful
+            changes, before a final merge strategy combines all inserts and deletes
+            without losing any edits. Cursor positions may be tracked and updated during
+            merging too.
           </p>
 
           <p>
@@ -74,12 +78,9 @@
               rel="noopener noreferrer"
               >documentation</a
             >
-            or try editing the text boxes below to see Reconcile in action.
-          </p>
-
-          <p>
-            Use the tokenisation options below to experiment with different approaches —
-            the library also supports custom tokenisers.
+            or try editing the text boxes below to see <code>reconcile-text</code> in
+            action. Use the tokenisation options below to experiment with different
+            approaches — the Rust library also supports providing a custom tokeniser.
           </p>
         </header>
 

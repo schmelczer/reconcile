@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const InlineSourceWebpackPlugin = require('inline-source-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = (_env, argv) => ({
   devtool: argv.mode === 'development' ? 'inline-source-map' : false,
@@ -34,6 +35,18 @@ module.exports = (_env, argv) => ({
       template: './src/index.html',
     }),
     new MiniCssExtractPlugin(),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/*.ico',
+          to: '[name][ext]',
+        },
+        {
+          from: 'src/*.png',
+          to: '[name][ext]',
+        },
+      ],
+    }),
     argv.mode === 'production'
       ? new InlineSourceWebpackPlugin({
           compress: true,
