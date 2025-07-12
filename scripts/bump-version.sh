@@ -25,7 +25,7 @@ fi
 echo "Bumping versions"
 cargo set-version --bump $1
 
-wasm-pack build --target web --features wasm,wee_alloc
+wasm-pack build --target web --features wasm
 
 cd reconcile-js
 npm version $1

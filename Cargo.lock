@@ -178,7 +178,6 @@ dependencies = [
 name = "reconcile-text"
 version = "0.4.10"
 dependencies = [
- "cfg-if 1.0.1",
  "console_error_panic_hook",
  "insta",
  "pretty_assertions",
