@@ -2,11 +2,11 @@
 
 set -e
 
-wasm-pack build --target web --features wasm,wee_alloc
-cargo test --verbose
+wasm-pack build --target web --features wasm
+cargo test --verbose -- --include-ignored
 cargo test --features serde
-cargo test --features wasm,wee_alloc
-wasm-pack test --node --features wasm,wee_alloc
+cargo test --features wasm
+wasm-pack test --node --features wasm
 
 cd reconcile-js
 npm install
