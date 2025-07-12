@@ -5,11 +5,15 @@ import {
   SpanWithHistory as wasmSpanWithHistory,
   BuiltinTokenizer,
   reconcileWithHistory as wasmReconcileWithHistory,
+  isBinary as wasmIsBinary,
   History,
   initSync,
 } from 'reconcile-text';
 
 import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
+
+// Re-export types from the WASM module as these are part of our API
+export { History, BuiltinTokenizer };
 
 /**
  * Represents a text document with associated cursor positions.
@@ -87,14 +91,13 @@ export interface SpanWithHistory {
  * - "Character": Splits text into individual characters (fine-grained control)
  * - "Line": Splits text into lines (similar to git merge or diff3)
  */
-export type Tokenizer = 'Line' | 'Word' | 'Character';
 const TOKENIZERS = ['Line', 'Word', 'Character'];
-
-let isInitialised = false;
 
 const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${TOKENIZERS.join(
   ', '
 )} are supported.`;
+
+let isInitialised = false;
 
 /**
  * Merges three versions of text using intelligent conflict resolution.
@@ -202,6 +205,19 @@ export function reconcileWithHistory(
     ...jsResult,
     history,
   };
+}
+
+/**
+ * Check (using heuristics) if the given data is binary or text content.
+ *
+ * Only text inputs can be reconciled using the library's functions.
+ *
+ * @param data - The data to check for binary content. This should be a Uint8Array.
+ * @returns True if the data is likely binary, false if it is likely text.
+ */
+export function isBinary(data: Uint8Array): boolean {
+  init();
+  return wasmIsBinary(data);
 }
 
 function init() {
