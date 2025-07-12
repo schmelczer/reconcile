@@ -53,11 +53,7 @@ jobs:
           cargo machete
 
       - name: Test
-        run: |
-          cargo test --verbose
-          cargo test --features serde
-          cargo test --features wasm
-          wasm-pack test --node --features wasm
+        run: scripts/test.sh
 
   publish-crate:
     needs: build
