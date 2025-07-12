@@ -3,17 +3,36 @@ import {
   reconcile as wasmReconcile,
   TextWithCursors as wasmTextWithCursors,
   SpanWithHistory as wasmSpanWithHistory,
-  BuiltinTokenizer,
   reconcileWithHistory as wasmReconcileWithHistory,
   isBinary as wasmIsBinary,
-  History,
   initSync,
 } from 'reconcile-text';
 
 import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
 
-// Re-export types from the WASM module as these are part of our API
-export { History, BuiltinTokenizer };
+// Define the enum values as const arrays to avoid duplication
+const BUILTIN_TOKENIZERS = ['Character', 'Line', 'Word'] as const;
+const HISTORY_VALUES = [
+  'Unchanged',
+  'AddedFromLeft',
+  'AddedFromRight',
+  'RemovedFromLeft',
+  'RemovedFromRight',
+] as const;
+
+/**
+ * Tokenisation strategies for text merging.
+ *
+ * These correspond to the built-in tokenizers available in the underlying WASM module.
+ */
+export type BuiltinTokenizer = (typeof BUILTIN_TOKENIZERS)[number];
+
+/**
+ * History classification for text spans in merge results.
+ *
+ * Indicates the origin of each text span in the merged document.
+ */
+export type History = (typeof HISTORY_VALUES)[number];
 
 /**
  * Represents a text document with associated cursor positions.
@@ -84,16 +103,7 @@ export interface SpanWithHistory {
   history: History;
 }
 
-/**
- * Tokenisation strategies for text merging.
- *
- * - "Word": Splits text on word boundaries (recommended for prose and most text)
- * - "Character": Splits text into individual characters (fine-grained control)
- * - "Line": Splits text into lines (similar to git merge or diff3)
- */
-const TOKENIZERS = ['Line', 'Word', 'Character'];
-
-const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${TOKENIZERS.join(
+const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${BUILTIN_TOKENIZERS.join(
   ', '
 )} are supported.`;
 
@@ -131,7 +141,7 @@ export function reconcile(
 ): TextWithCursors {
   init();
 
-  if (!TOKENIZERS.includes(tokenizer)) {
+  if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
     throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
   }
 
@@ -185,7 +195,7 @@ export function reconcileWithHistory(
 ): TextWithCursorsAndHistory {
   init();
 
-  if (!TOKENIZERS.includes(tokenizer)) {
+  if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
     throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
   }
 
