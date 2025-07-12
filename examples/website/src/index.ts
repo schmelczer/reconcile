@@ -1,4 +1,4 @@
-import { reconcileWithHistory } from 'reconcile-text';
+import { reconcile, reconcileWithHistory } from 'reconcile-text';
 import type { BuiltinTokenizer } from 'reconcile-text';
 import './style.scss';
 
@@ -21,6 +21,20 @@ async function main(): Promise<void> {
   rightTextArea.addEventListener('selectionchange', updateMergedText);
   leftTextArea.addEventListener('select', updateMergedText);
   rightTextArea.addEventListener('select', updateMergedText);
+
+  console.info(
+    reconcile(
+      'Hello world',
+      {
+        text: 'Hello beautiful world',
+        cursors: [{ id: 1, position: 6 }], // After "Hello "
+      },
+      {
+        text: 'Hi world',
+        cursors: [{ id: 2, position: 0 }], // At the beginning
+      }
+    )
+  );
 
   window.addEventListener('resize', resizeTextAreas);
 

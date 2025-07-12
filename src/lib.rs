@@ -1,18 +1,14 @@
-//! # Reconcile: 3-way text merging with automatic conflict resolution
+//! # Reconcile: conflict-free 3-way text merging
 //!
 //! A library for merging conflicting text edits without manual intervention.
-//! Unlike traditional 3-way merge tools that produce conflict markers, this
-//! library automatically resolves conflicts by applying both sets of changes
-//! where possible.
+//! Unlike traditional 3-way merge tools that produce conflict markers,
+//! reconcile-text automatically resolves conflicts by applying both sets of
+//! changes (while updating cursor positions) using an algorithm inspired by
+//! Operational Transformation.
 //!
-//! Based on a combination of Myers' diff algorithm and Operational
-//! Transformation principles, it's designed for scenarios where you have a
-//! common parent text and two modified versions that need to be intelligently
-//! combined.
+//! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
 //!
-//! **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
-//!
-//! ## Basic usage
+//! ## Simple example
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer};
@@ -30,8 +26,8 @@
 //!
 //! ## Tokenisation strategies
 //!
-//! Merging operates at the token level, where you control the granularity.
-//! The choice of tokeniser significantly affects merge quality and behaviour.
+//! Merging happens at the token level, and the choice of tokeniser
+//! significantly affects merge quality and behaviour.
 //!
 //! ### Built-in tokenisers
 //!
@@ -56,18 +52,21 @@
 //! // Line-level tokenisation (similar to git merge)
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Line);
 //! // Line-level produces different results as it treats each line as atomic
+//! assert_eq!(result.apply().text(), "The quick red foxThe very quick brown fox\njumps over the lazy dog");
 //! ```
 //!
 //! ### Custom tokenisation
 //!
-//! For specialised use cases, implement custom tokenisation logic:
+//! For specialised use cases, such as structured languages, a custom
+//! tokenisation logic can be implemented by providing a function with the
+//! signature `Fn(&str) -> Vec<Token<String>>`::
 //!
 //! ```
 //! use reconcile_text::{reconcile, Token, BuiltinTokenizer};
 //!
 //! // Example: sentence-based tokeniser function
 //! let sentence_tokeniser = |text: &str| {
-//!     text.split(". ")
+//!     text.split_inclusive(". ")
 //!         .map(|sentence| Token::new(
 //!             sentence.to_string(),
 //!             sentence.to_string(),
@@ -82,7 +81,7 @@
 //! let right = "Hello world. This is a great test.";     // Changed "a" to "great"
 //!
 //! // For most cases, the built-in word tokeniser works well
-//! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
+//! let result = reconcile(parent, &left.into(), &right.into(), &sentence_tokeniser);
 //! assert_eq!(result.apply().text(), "Hello beautiful world. This is a great test.");
 //! ```
 //!
@@ -118,28 +117,52 @@
 //! // Cursor 1 moves from position 6 to position 3 (after "Hi ")
 //! // Cursor 2 stays at position 0 (beginning)
 //! ```
+//! > The `cursors` list is sorted by the character position (not id-s).
+//!
+//! ## Change provenance
+//!
+//! Track which changes came from where:
+//!
+//! ```rust
+//! use reconcile_text::{History, SpanWithHistory, BuiltinTokenizer, reconcile};
+//!
+//! let parent = "Merging text is hard!";
+//! let left = "Merging text is easy!"; // Changed "hard" to "easy"
+//! let right = "With reconcile, merging documents is hard!"; // Added prefix and changed word
+//!
+//! let result = reconcile(
+//!     parent,
+//!     &left.into(),
+//!     &right.into(),
+//!     &*BuiltinTokenizer::Word,
+//! );
+//!
+//! assert_eq!(
+//!     result.apply_with_history(),
+//!     vec![
+//!         SpanWithHistory::new("Merging text".to_string(), History::RemovedFromRight),
+//!         SpanWithHistory::new(
+//!             "With reconcile, merging documents".to_string(),
+//!             History::AddedFromRight
+//!         ),
+//!         SpanWithHistory::new(" ".to_string(), History::Unchanged),
+//!         SpanWithHistory::new("is".to_string(), History::Unchanged),
+//!         SpanWithHistory::new(" hard!".to_string(), History::RemovedFromLeft),
+//!         SpanWithHistory::new(" easy!".to_string(), History::AddedFromLeft),
+//!     ]
+//! );
+//! ```
 //!
 //! ## Error handling
 //!
 //! The library is designed to be robust and will always produce a result, even
-//! in edge cases. However, be aware that:
-//!
-//! - Binary data is detected and handled gracefully
-//! - Unicode text is fully supported
-//! - Extremely large diffs may have performance implications
+//! in edge cases. However, be aware that extremely large diffs may have
+//! performance implications.
 //!
 //! ## Algorithm overview
 //!
-//! 1. **Diff computation**: Myers' algorithm calculates differences between
-//!    parent↔left and parent↔right
-//! 2. **Tokenisation**: Text is split into meaningful units (words, characters,
-//!    etc.)
-//! 3. **Diff optimisation**: Operations are reordered and consolidated for
-//!    coherent changes
-//! 4. **Operational Transformation**: Edits are combined using OT principles
-//!
 //! For detailed algorithm explanation, see the
-//! [README](README.md#how-it-works).
+//! [README](https://github.com/schmelczer/reconcile/blob/main/README.md#how-it-works).
 
 mod operation_transformation;
 mod raw_operation;

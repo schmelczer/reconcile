@@ -248,6 +248,40 @@ where
         TextWithCursors::new(builder.take(), self.cursors.clone())
     }
 
+    /// Apply the operations to the text and return the resulting text in chunks
+    /// together with the provenance describing where each chunk came from.
+    ///
+    /// The result includes deleted spans as well.
+    ///
+    /// ```
+    ///  use reconcile_text::{History, SpanWithHistory, BuiltinTokenizer, reconcile};
+    ///
+    ///  let parent = "Merging text is hard!";
+    ///  let left = "Merging text is easy!"; // Changed "hard" to "easy"
+    ///  let right = "With reconcile, merging documents is hard!"; // Added prefix and changed word
+    ///
+    ///  let result = reconcile(
+    ///      parent,
+    ///      &left.into(),
+    ///      &right.into(),
+    ///      &*BuiltinTokenizer::Word,
+    ///  );
+    ///
+    ///  assert_eq!(
+    ///      result.apply_with_history(),
+    ///      vec![
+    ///          SpanWithHistory::new("Merging text".to_string(), History::RemovedFromRight,),
+    ///          SpanWithHistory::new(
+    ///              "With reconcile, merging documents".to_string(),
+    ///              History::AddedFromRight,
+    ///          ),
+    ///          SpanWithHistory::new(" ".to_string(), History::Unchanged,),
+    ///          SpanWithHistory::new("is".to_string(), History::Unchanged,),
+    ///          SpanWithHistory::new(" hard!".to_string(), History::RemovedFromLeft,),
+    ///          SpanWithHistory::new(" easy!".to_string(), History::AddedFromLeft,),
+    ///      ]
+    ///  );
+    /// ```
     #[must_use]
     pub fn apply_with_history(&self) -> Vec<SpanWithHistory> {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
