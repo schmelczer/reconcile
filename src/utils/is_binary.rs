@@ -1,5 +1,7 @@
 /// Heuristically determine if the given data is a binary or a text file's
 /// content.
+///
+/// Only text inputs can be reconciled using the crate's functions.
 #[must_use]
 pub fn is_binary(data: &[u8]) -> bool {
     if data.contains(&0) {

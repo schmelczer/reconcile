@@ -91,6 +91,10 @@ where
         }
     }
 
+    /// Merge two `EditedText` instances. The two instances must be derived
+    /// from the same original text. The operations are merged using the
+    /// principles of Operational Transformation. The cursors are updated
+    /// accordingly to reflect the changes made by the merged operations.
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn merge(self, other: Self) -> Self {
