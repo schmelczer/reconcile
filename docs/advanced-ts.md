@@ -1,6 +1,6 @@
-# Advanced usage (TypeScript)
+# Advanced Usage (TypeScript)
 
-## Edit provenance
+## Edit Provenance
 
 Track which changes came from where using `reconcileWithHistory`:
 
@@ -38,17 +38,17 @@ console.log(result.history); /*
 */
 ```
 
-## Tokenisation strategies
+## Tokenisation Strategies
 
-Reconcile offers different ways to split text for merging:
+Reconcile offers different approaches to split text for merging:
 
 - **Word tokeniser** (`"Word"`) — Splits on word boundaries (recommended for prose)
 - **Character tokeniser** (`"Character"`) — Individual characters (fine-grained control)
 - **Line tokeniser** (`"Line"`) — Line-by-line (similar to `git merge` or more precisely [`git merge-file`](https://git-scm.com/docs/git-merge-file))
 
-## Cursor tracking
+## Cursor Tracking
 
-Reconcile automatically tracks cursor positions through merges which is handy in a collaborative editor.
+Reconcile automatically tracks cursor positions through merges, which is handy in collaborative editors. Selections can be tracked by providing them as a pair of cursors.
 
 ```javascript
 const result = reconcile(
@@ -67,4 +67,4 @@ const result = reconcile(
 console.log(result.text);    // "Hi beautiful world"
 console.log(result.cursors); // [{ id: 2, position: 0 }, { id: 1, position: 3 }]
 ```
-> The `cursors` list is sorted by the character position (not id-s).
+> The `cursors` list is sorted by character position (not IDs).

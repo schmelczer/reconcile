@@ -58,16 +58,16 @@
             The <code>reconcile(parent, left, right)</code> function takes conflicting
             edits and produces clean, unified results using an algorithm inspired by
             Operational Transformation. No more
-            <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers jumbling your text.
+            <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers cluttering your text.
           </p>
 
           <p>
             The process starts with your chosen tokenisation strategy, then applies Myers'
             2-way diff algorithm to compare the original with both modified versions.
             These diffs are optimised and transformed to preserve the longest meaningful
-            changes, before a final merge strategy combines all inserts and deletes
-            without losing any edits. Cursor positions may be tracked and updated during
-            merging too.
+            changes, before a final merge strategy combines all insertions and deletions
+            without losing any edits. Cursor positions can be tracked and updated during
+            merging as well.
           </p>
 
           <p>
@@ -79,8 +79,8 @@
               >documentation</a
             >
             or try editing the text boxes below to see <code>reconcile-text</code> in
-            action. Use the tokenisation options to experiment with different approaches —
-            the Rust library also supports providing a custom tokeniser.
+            action. Use the tokenisation options to experiment with different approaches—
+            the Rust library also supports custom tokenisers.
           </p>
         </header>
 

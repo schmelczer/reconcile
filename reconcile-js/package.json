@@ -24,7 +24,7 @@
     "url": "https://github.com/schmelczer/reconcile/issues",
     "email": "andras@schmelczer.dev"
   },
-  "author": "András Schmelczer",
+  "author": "András Schmelczer <andras@schmelczer.dev>",
   "license": "MIT",
   "types": "dist/types/index.d.ts",
   "files": [

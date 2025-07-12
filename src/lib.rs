@@ -16,7 +16,7 @@
 //! // Start with original text
 //! let parent = "Merging text is hard!";
 //! // Two people edit simultaneously
-//! let left = "Merging text is easy!";                    // Changed "hard" to "easy"
+//! let left = "Merging text is easy!";                       // Changed "hard" to "easy"
 //! let right = "With reconcile, merging documents is hard!"; // Added prefix and changed word
 //!
 //! // Reconcile combines both changes intelligently
@@ -57,7 +57,7 @@
 //!
 //! ### Custom tokenisation
 //!
-//! For specialised use cases, such as structured languages, a custom
+//! For specialised use cases, such as structured languages, custom
 //! tokenisation logic can be implemented by providing a function with the
 //! signature `Fn(&str) -> Vec<Token<String>>`::
 //!
@@ -86,14 +86,13 @@
 //! ```
 //!
 //! > **Note**: Setting token joinability to `false` causes insertions to
-//! > interleave
-//! > (LRLRLR) rather than group together (LLLRRR), which often produces more
-//! > natural-looking merged text.
+//! > interleave (LRLRLR) rather than group together (LLLRRR), which often
+//! > produces more natural-looking merged text.
 //!
 //! ## Cursor tracking
 //!
 //! Automatically repositions cursors and selection ranges during merging,
-//! essential for collaborative editors:
+//! which is essential for collaborative editors:
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer, TextWithCursors, CursorPosition};
@@ -115,9 +114,9 @@
 //! // Cursors are automatically repositioned in the merged text
 //! assert_eq!(merged.cursors().len(), 2);
 //! // Cursor 1 moves from position 6 to position 3 (after "Hi ")
-//! // Cursor 2 stays at position 0 (beginning)
+//! // Cursor 2 stays at position 0 (at the beginning)
 //! ```
-//! > The `cursors` list is sorted by the character position (not id-s).
+//! > The `cursors` list is sorted by character position (not IDs).
 //!
 //! ## Change provenance
 //!

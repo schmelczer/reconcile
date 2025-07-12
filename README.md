@@ -14,10 +14,10 @@ A Rust and TypeScript library for merging conflicting text edits without manual 
 ## Key features
 
 - **No conflict markers** — Clean, merged output without Git's `<<<<<<<` markers
-- **Cursor tracking** — Automatically repositions cursors (and selections) during merging
-- **Flexible tokenisation** — Word-level (default), character-level, or custom strategies
-- **Unicode support** — Full UTF-8 support with proper handling of complex scripts
-- **Cross-platform** — Native Rust performance with WebAssembly for JavaScript
+- **Cursor tracking** — Automatically repositions cursors and selections throughout the merging process
+- **Flexible tokenisation** — Word-level (default), character-level, line-level, or custom tokenisation strategies
+- **Unicode support** — Full UTF-8 support with proper handling of complex scripts and grapheme clusters
+- **Cross-platform** — Native Rust performance with WebAssembly bindings for JavaScript environments
 
 ## Quick start
 
@@ -28,19 +28,19 @@ Install via crates.io:
 cargo add reconcile-text
 ```
 
-or add `reconcile-text` to your `Cargo.toml`:
+Alternatively, add `reconcile-text` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 reconcile-text = "0.5"
 ```
 
-Then merge away:
+Then start merging:
 
 ```rust
 use reconcile_text::{reconcile, BuiltinTokenizer};
 
-// Start with original text
+// Start with the original text
 let parent = "Hello world";
 // Two users edit simultaneously
 let left = "Hello beautiful world";  // Added "beautiful"
@@ -51,7 +51,7 @@ let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::
 assert_eq!(result.apply().text(), "Hi beautiful world");
 ```
 
-See [merge-file](examples/merge-file.rs) for another example or the [library's documentation](https://docs.rs/reconcile-text/latest/reconcile_text).
+See the [merge-file example](examples/merge-file.rs) for another example or the [library's documentation](https://docs.rs/reconcile-text/latest/reconcile_text).
 
 ### JavaScript/TypeScript
 
@@ -66,7 +66,7 @@ Then use it in your application:
 ```javascript
 import { reconcile } from 'reconcile-text';
 
-// Start with original text
+// Start with the original text
 const parent = 'Hello world';
 // Two users edit simultaneously
 const left = 'Hello beautiful world';
@@ -76,17 +76,17 @@ const result = reconcile(parent, left, right);
 console.log(result.text); // "Hi beautiful world"
 ```
 
-See the [example website](examples/website/src/index.ts) for a more complex example or the [advanced examples document](https://github.com/schmelczer/reconcile/blob/main/docs/advanced-ts.md).
+See the [example website source](examples/website/src/index.ts) for a more complex example or the [advanced examples document](https://github.com/schmelczer/reconcile/blob/main/docs/advanced-ts.md).
 
 ## Motivation
 
-Collaborative editing presents the challenge of merging conflicting changes when multiple users edit documents simultaneously (or offline). Traditional solutions like Conflict-free Replicated Data Types (CRDTs) or Operational Transformation (OT) works well when you control the entire editing environment  and can capture every operation ([1]). However, many workflows involve users editing with different tools — for example, Obsidian users editing Markdown files with various editors from Vim to VS Code.
+Collaborative editing presents the challenge of merging conflicting changes when multiple users edit documents simultaneously or asynchronously whilst offline. Traditional solutions like Conflict-free Replicated Data Types (CRDTs) or Operational Transformation (OT) work well when you control the complete editing infrastructure and can capture every individual operation ([1]). However, many workflows involve users editing with various tools, for example, Obsidian users editing Markdown files with various editors ranging from Vim to VS Code.
 
-This creates **Differential Synchronisation** scenarios ([2], [3]): we only know the final state of each document, not the sequence of operations that produced it. This is the same challenge Git addresses, but Git requires manual conflict resolution. The key insight is that while incorrect merges in source code can introduce bugs, human text is more forgiving. A slightly imperfect sentence is often preferable to conflict markers interrupting the flow.
+This creates **Differential Synchronisation** scenarios ([2], [3]): we only know the final state of each document, not the sequence of operations that produced it. This is the same challenge Git addresses, but Git requires manual conflict resolution. The key insight is that while incorrect merges in source code can introduce bugs, human text is more forgiving: a slightly imperfect sentence is often preferable to conflict markers interrupting the flow.
 
-> **Note**: Some text domains require more careful handling. Legal contracts, for instance, could have unintended meaning changes from conflicting edits that create double-negations. At the same time, semantic conflicts can still arise when merging code, even in the absence of syntactical conflicts.
+> **Note**: Some text domains require more careful handling. Legal contracts, for instance, could have unintended meaning changes from conflicting edits that create double negations. At the same time, semantic conflicts can still arise when merging code, even in the absence of syntactic conflicts.
 
-Differenctial sync is implemented by [universal-sync](https://github.com/invisible-college/universal-sync) and my Obsidian plugin, [vault-link](https://github.com/schmelczer/vault-link) and it requires a merging tool which creates conflict free results for the best user experience.
+Differential sync is implemented by [universal-sync](https://github.com/invisible-college/universal-sync) and my Obsidian plugin [vault-link](https://github.com/schmelczer/vault-link), and it requires a merging tool which creates conflict-free results for the best user experience.
 
 ## How it works
 
@@ -97,9 +97,9 @@ Differenctial sync is implemented by [universal-sync](https://github.com/invisib
 3. **Diff optimisation** — Operations are reordered and consolidated to maximise chained changes
 4. **Operational Transformation** — Edits are woven together using OT principles, preserving all modifications and updating cursors
 
-While the primary goal of `reconcile-text` isn't to implement OT (you can check out [operational-transform-rs](https://github.com/spebern/operational-transform-rs) for a Rust implementation of it), OT provides an elegant way to merge Myers' diff outputs. The same could be achieved with CRDTs which many libraries implement well for text: see [Loro](https://github.com/loro-dev/loro/), [cola](https://github.com/nomad/cola), and [automerge](https://github.com/automerge/automerge) as a few great examples. 
+Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs](https://github.com/spebern/operational-transform-rs).) The same could be achieved with CRDTs, which many libraries implement well for text—see [Loro](https://github.com/loro-dev/loro/), [cola](https://github.com/nomad/cola), and [automerge](https://github.com/automerge/automerge) as excellent examples. 
 
-However, the quality of a merge, if only the end result of concurrent changes is observable, depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations can't be supported as Myers' algorithm decomposes them into separate `insert` and `delete` operations regardless the merging algorithm.
+However, when only the end result of concurrent changes is observable, merge quality depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations cannot be supported because Myers' algorithm decomposes them into separate `insert` and `delete` operations, regardless of the merging algorithm used.
 
 ## Development
 
@@ -117,7 +117,7 @@ Contributions are welcome!
    ```sh
    nvm install 22 && nvm use 22
    ```
-3. Optionally set as default: 
+3. Optionally, set as default: 
    ```sh
    nvm alias default 22
    ```
@@ -137,7 +137,7 @@ Contributions are welcome!
 
 - **Run tests**: `scripts/test.sh`
 - **Lint and format**: `scripts/lint.sh`
-- **Build demo website**: `scripts/dev-website.sh`
+- **Develop demo website**: `scripts/dev-website.sh`
 - **Build demo website**: `scripts/build-website.sh`
 - **Publish new version**: `scripts/bump-version.sh patch`
 
