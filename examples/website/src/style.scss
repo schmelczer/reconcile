@@ -76,6 +76,8 @@ header > h1 {
   text-align: center;
 }
 
+h1,
+code,
 p,
 p * {
   user-select: text;
@@ -281,12 +283,9 @@ textarea {
 #merged {
   width: 100%;
   user-select: text;
-  display: flex;
-  flex-wrap: wrap;
 
   > * {
     position: relative;
-    display: block;
     white-space: pre-wrap;
   }
 }
