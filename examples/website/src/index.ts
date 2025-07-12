@@ -74,13 +74,14 @@ function updateMergedText(): void {
     selectionStart = results.cursors![0].position;
     selectionEnd = results.cursors![1].position;
   }
+  const isSelection = selectionStart !== selectionEnd;
 
   const selectionSide = leftCursors ? 'left' : 'right';
   const fragment = document.createDocumentFragment();
 
   let currentPosition = 0;
   if (selectionEnd === 0) {
-    fragment.appendChild(createCaret(selectionSide === 'left'));
+    fragment.appendChild(createSelectionOverlay(selectionSide === 'left', isSelection));
   }
 
   for (const { text, history } of results.history) {
@@ -96,7 +97,9 @@ function updateMergedText(): void {
       fragment.appendChild(span);
 
       if (currentPosition === selectionEnd - 1) {
-        fragment.appendChild(createCaret(selectionSide === 'left'));
+        fragment.appendChild(
+          createSelectionOverlay(selectionSide === 'left', isSelection)
+        );
       }
 
       if (history !== 'RemovedFromLeft' && history !== 'RemovedFromRight') {
@@ -129,7 +132,7 @@ function getCursorsFromActiveTextArea() {
   return { leftCursors, rightCursors };
 }
 
-function createCaret(isLeft: boolean): HTMLSpanElement {
+function createSelectionOverlay(isLeft: boolean, isSelection: boolean): HTMLSpanElement {
   const caretSpan = document.createElement('span');
   caretSpan.className = `selection-caret selection-caret-${isLeft ? 'left' : 'right'}`;
 
@@ -143,7 +146,10 @@ function createCaret(isLeft: boolean): HTMLSpanElement {
 
   const infoDiv = document.createElement('div');
   infoDiv.className = 'info';
-  infoDiv.textContent = isLeft ? "Left user's cursor" : "Right user's cursor";
+  const selectionType = isSelection ? 'selection' : 'cursor';
+  infoDiv.textContent = isLeft
+    ? `Left user's ${selectionType}`
+    : `Right user's ${selectionType}`;
   caretSpan.appendChild(infoDiv);
 
   return caretSpan;
