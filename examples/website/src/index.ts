@@ -110,13 +110,14 @@ function updateMergedText(): void {
 
       fragment.appendChild(span);
 
-      if (currentPosition === selectionEnd - 1) {
+      const isDelete = history === 'RemovedFromLeft' || history === 'RemovedFromRight';
+      if (currentPosition === selectionEnd - 1 && !isDelete) {
         fragment.appendChild(
           createSelectionOverlay(selectionSide === 'left', isSelection)
         );
       }
 
-      if (history !== 'RemovedFromLeft' && history !== 'RemovedFromRight') {
+      if (!isDelete) {
         // Only increment currentPosition for non-removed characters
         currentPosition++;
       }
