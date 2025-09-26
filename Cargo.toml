@@ -21,7 +21,7 @@ name = "merge-file"
 path = "examples/merge-file.rs"
 
 [dependencies]
-serde = { version = "1.0.219", optional = true, features = ["derive"] }
+serde = { version = "1.0.227", optional = true, features = ["derive"] }
 
 wasm-bindgen = { version = "0.2.99", optional = true }
 
@@ -42,7 +42,7 @@ console_error_panic_hook = [ "dep:console_error_panic_hook" ]
 [dev-dependencies]
 insta = "1.42.2"
 pretty_assertions = "1.4.1"
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.227", features = ["derive"] }
 serde_yaml = "0.9.34"
 test-case = "3.3.1"
 wasm-bindgen-test = "0.3.49"
