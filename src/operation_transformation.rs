@@ -1,10 +1,13 @@
 mod edited_text;
 mod operation;
 mod utils;
+mod transport;
 use std::fmt::Debug;
 
-pub use edited_text::{ChangeSet, EditedText};
+
+pub use transport::{ChangeSet};
 pub use operation::Operation;
+pub use edited_text::{EditedText};
 
 use crate::{Tokenizer, types::text_with_cursors::TextWithCursors};
 

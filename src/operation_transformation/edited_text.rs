@@ -4,9 +4,10 @@ use std::{fmt::Debug, vec};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BuiltinTokenizer, CursorPosition, TextWithCursors,
+    BuiltinTokenizer, ChangeSet, CursorPosition, TextWithCursors,
     operation_transformation::{
         Operation,
+        transport::SimpleOperation,
         utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
     raw_operation::RawOperation,
@@ -37,31 +38,6 @@ where
     operations: Vec<Operation<T>>,
     operation_sides: Vec<Side>,
     cursors: Vec<CursorPosition>,
-}
-
-/// A serializable representation of the changes made to a text document
-/// without the original text.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct ChangeSet<T>
-where
-    T: PartialEq + Clone + Debug,
-{
-    operations: Vec<Operation<T>>,
-    cursors: Vec<CursorPosition>,
-}
-
-impl<'a, T> ChangeSet<T>
-where
-    T: PartialEq + Clone + Debug,
-{
-    #[must_use]
-    pub fn new(operations: Vec<Operation<T>>, cursors: Vec<CursorPosition>) -> Self {
-        Self {
-            operations,
-            cursors,
-        }
-    }
 }
 
 impl<'a> EditedText<'a, String> {
@@ -370,23 +346,31 @@ where
     }
 
     /// Serialize the `EditedText` as a `ChangeSet`, which contains only
-    /// the operations and cursor positions, without the original text.
+    /// the operations and cursor positions, but without the original text.
     /// This is useful for sending changes over the network if there's
     /// a clear consensus on the original text.
     #[must_use]
-    pub fn serialise_as_change_set(&self) -> ChangeSet<T> {
-        ChangeSet::new(self.operations.clone(), self.cursors.clone())
+    pub fn serialise_as_change_set(&self) -> ChangeSet {
+        ChangeSet::new(
+            SimpleOperation::from_operations(&self.operations),
+            self.cursors.clone(),
+        )
     }
 
     /// Deserialize an `EditedText` from a `ChangeSet` and the original text.
     /// This is useful for reconstructing the `EditedText` on the receiving
     /// end after sending only the `ChangeSet` over the network.
     #[must_use]
-    pub fn from_change_set(text: &'a str, change_set: ChangeSet<T>) -> EditedText<'a, T> {
-        let operation_count = change_set.operations.len();
+    pub fn from_change_set(
+        text: &'a str,
+        change_set: ChangeSet,
+        tokenizer: &Tokenizer<T>,
+    ) -> EditedText<'a, T> {
+        let operations = SimpleOperation::to_operations(change_set.operations, text, tokenizer);
+        let operation_count = operations.len();
         EditedText::new(
             text,
-            change_set.operations,
+            operations,
             vec![Side::Left; operation_count],
             change_set.cursors,
         )
@@ -397,6 +381,7 @@ where
 mod tests {
     use insta::assert_debug_snapshot;
     use pretty_assertions::assert_eq;
+    use serde_yaml;
 
     use super::*;
 
@@ -437,5 +422,37 @@ mod tests {
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply().text(), expected);
+    }
+
+    #[test]
+    fn test_change_set_deserialisation() {
+        let original = "Merging text is hard!";
+        let changes = "Merging text is easy with reconcile!";
+        let result = EditedText::from_strings(original, &changes.into());
+        let serialized = serde_yaml::to_string(&result.serialise_as_change_set()).unwrap();
+
+        let expected = concat!(
+            "operations:\n",
+            "- 15\n",
+            "- -6\n",
+            "- ' easy with reconcile!'\n",
+            "cursors: []\n"
+        );
+
+        assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_change_set_serialization() {
+        let original = "The quick brown fox jumps over the lazy dog.";
+        let updated = "The quick red fox jumped over the very lazy dog!";
+
+        let edited_text = EditedText::from_strings(original, &updated.into());
+
+        let change_set = edited_text.serialise_as_change_set();
+        let deserialized_edited_text =
+            EditedText::from_change_set(original, change_set, &*BuiltinTokenizer::Word);
+
+        assert_eq!(deserialized_edited_text.apply().text(), updated);
     }
 }
