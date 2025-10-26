@@ -38,6 +38,7 @@ default = []
 serde = [ "dep:serde" ]
 wasm = [ "dep:wasm-bindgen", "dep:wee_alloc" ]
 console_error_panic_hook = [ "dep:console_error_panic_hook" ]
+all = [ "serde", "wasm", "console_error_panic_hook" ]
 
 [dev-dependencies]
 insta = "1.42.2"
