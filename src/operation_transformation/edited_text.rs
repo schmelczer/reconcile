@@ -350,7 +350,7 @@ where
     /// This is useful for sending changes over the network if there's
     /// a clear consensus on the original text.
     #[must_use]
-    pub fn serialise_as_change_set(&self) -> ChangeSet {
+    pub fn to_change_set(&self) -> ChangeSet {
         ChangeSet::new(
             SimpleOperation::from_operations(&self.operations),
             self.cursors.clone(),
@@ -428,7 +428,7 @@ mod tests {
         let original = "Merging text is hard!";
         let changes = "Merging text is easy with reconcile!";
         let result = EditedText::from_strings(original, &changes.into());
-        let serialized = serde_yaml::to_string(&result.serialise_as_change_set()).unwrap();
+        let serialized = serde_yaml::to_string(&result.to_change_set()).unwrap();
 
         let expected = concat!(
             "operations:\n",
@@ -448,7 +448,7 @@ mod tests {
 
         let edited_text = EditedText::from_strings(original, &updated.into());
 
-        let change_set = edited_text.serialise_as_change_set();
+        let change_set = edited_text.to_change_set();
         let deserialized_edited_text =
             EditedText::from_change_set(original, change_set, &*BuiltinTokenizer::Word);
 

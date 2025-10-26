@@ -147,7 +147,7 @@ impl<'de> Deserialize<'de> for SimpleOperation {
             type Value = SimpleOperation;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an integer between -2^64 and 2^63 or a string")
+                formatter.write_str("an integer between -2^63 and 2^64-1 or a string")
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>

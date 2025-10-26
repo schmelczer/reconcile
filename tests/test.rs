@@ -46,12 +46,11 @@ fn test_document_one_way_with_cursors_and_serialisation() {
             &*BuiltinTokenizer::Word,
         );
 
-        let serialised_left = serde_yaml::from_str(
-            &serde_yaml::to_string(&left_operations.serialise_as_change_set()).unwrap(),
-        )
-        .unwrap();
+        let serialised_left =
+            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_change_set()).unwrap())
+                .unwrap();
         let serialised_right = serde_yaml::from_str(
-            &serde_yaml::to_string(&right_operations.serialise_as_change_set()).unwrap(),
+            &serde_yaml::to_string(&right_operations.to_change_set()).unwrap(),
         )
         .unwrap();
 

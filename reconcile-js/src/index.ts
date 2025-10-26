@@ -5,6 +5,7 @@ import {
   SpanWithHistory as wasmSpanWithHistory,
   reconcileWithHistory as wasmReconcileWithHistory,
   isBinary as wasmIsBinary,
+  getCompactDiff as wasmGetCompactDiff,
   initSync,
 } from 'reconcile-text';
 
@@ -177,6 +178,26 @@ export function reconcile(
   result.free();
 
   return jsResult;
+}
+
+export function getCompactDiff(
+  original: string,
+  changed: string | TextWithOptionalCursors,
+  tokenizer: BuiltinTokenizer = 'Word'
+): string {
+  init();
+
+  if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
+    throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
+  }
+
+  const changedWasm = toWasmTextWithCursors(changed);
+
+  const result = wasmGetCompactDiff(original, changedWasm, tokenizer);
+
+  changedWasm.free();
+
+  return result;
 }
 
 /**

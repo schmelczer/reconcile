@@ -170,7 +170,7 @@
 //!     &changes.into()
 //! );
 //!
-//! let serialized = serde_yaml::to_string(&result.serialise_as_change_set()).unwrap();
+//! let serialized = serde_yaml::to_string(&result.to_change_set()).unwrap();
 //! assert_eq!(
 //!     serialized,
 //!     concat!(

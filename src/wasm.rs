@@ -87,6 +87,25 @@ pub fn generic_reconcile(
     }
 }
 
+/// WASM wrapper around getting a compact diff representation as a JSON string
+///
+/// # Panics
+///
+/// If serialization to JSON fails which should not happen
+#[wasm_bindgen(js_name = getCompactDiff)]
+#[must_use]
+pub fn get_compact_diff(
+    parent: &str,
+    changed: &TextWithCursors,
+    tokenizer: BuiltinTokenizer,
+) -> String {
+    set_panic_hook();
+    let edited_text = crate::EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
+    let change_set = edited_text.to_change_set();
+
+    serde_json::to_string(&change_set).expect("Failed to serialize change set")
+}
+
 /// Heuristically determine if the given data is a binary or a text file's
 /// content.
 #[wasm_bindgen(js_name = isBinary)]
