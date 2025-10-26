@@ -3,9 +3,8 @@
 set -e
 
 wasm-pack build --target web --features wasm
-cargo test --verbose -- --include-ignored
-cargo test --features serde
-cargo test --features wasm
+cargo test --verbose --features serde -- --include-ignored 
+cargo test --features serde,wasm
 wasm-pack test --node --features wasm
 
 cd reconcile-js

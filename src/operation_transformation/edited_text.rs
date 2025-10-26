@@ -381,7 +381,6 @@ where
 mod tests {
     use insta::assert_debug_snapshot;
     use pretty_assertions::assert_eq;
-    use serde_yaml;
 
     use super::*;
 

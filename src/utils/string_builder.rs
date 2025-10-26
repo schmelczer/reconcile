@@ -1,4 +1,4 @@
-use std::iter::Iterator;
+use std::{fmt, iter::Iterator};
 
 /// A helper for building a string in-order based on an original string and a
 /// series of insertions, deletions, and copies applied to it. It is safe to use
@@ -10,6 +10,18 @@ pub struct StringBuilder<'a> {
 
     #[cfg(debug_assertions)]
     remaining: String,
+}
+
+impl fmt::Debug for StringBuilder<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug_struct = f.debug_struct("StringBuilder");
+        debug_struct.field("buffer", &self.buffer);
+
+        #[cfg(debug_assertions)]
+        debug_struct.field("remaining", &self.remaining);
+
+        debug_struct.finish_non_exhaustive()
+    }
 }
 
 impl StringBuilder<'_> {

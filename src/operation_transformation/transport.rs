@@ -3,8 +3,8 @@ use std::fmt::Debug;
 #[cfg(feature = "serde")]
 use serde::{
     Deserialize, Serialize,
-    de::{self, Deserializer, SeqAccess, Visitor},
-    ser::{SerializeSeq, Serializer},
+    de::{self, Deserializer, Visitor},
+    ser::Serializer,
 };
 
 use crate::{CursorPosition, Tokenizer, operation_transformation::Operation};
@@ -126,7 +126,9 @@ impl Serialize for SimpleOperation {
         match self {
             SimpleOperation::Equal { length } => serializer.serialize_u64(*length as u64),
             SimpleOperation::Insert { text } => serializer.serialize_str(text),
-            SimpleOperation::Delete { length } => serializer.serialize_i64(-(*length as i64)),
+            SimpleOperation::Delete { length } => {
+                serializer.serialize_i64(-(i64::try_from(*length).unwrap_or(i64::MAX)))
+            }
         }
     }
 }
@@ -137,12 +139,14 @@ impl<'de> Deserialize<'de> for SimpleOperation {
     where
         D: Deserializer<'de>,
     {
+        use std::fmt;
+
         struct OperationVisitor;
 
-        impl<'de> Visitor<'de> for OperationVisitor {
+        impl Visitor<'_> for OperationVisitor {
             type Value = SimpleOperation;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("an integer between -2^64 and 2^63 or a string")
             }
 
@@ -151,7 +155,7 @@ impl<'de> Deserialize<'de> for SimpleOperation {
                 E: de::Error,
             {
                 Ok(SimpleOperation::Equal {
-                    length: value as usize,
+                    length: usize::try_from(value).unwrap_or(usize::MAX),
                 })
             }
 
@@ -160,7 +164,7 @@ impl<'de> Deserialize<'de> for SimpleOperation {
                 E: de::Error,
             {
                 Ok(SimpleOperation::Delete {
-                    length: (-value) as usize,
+                    length: usize::try_from(-value).unwrap_or(usize::MAX),
                 })
             }
 
