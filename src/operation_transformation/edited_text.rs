@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, vec};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,33 @@ where
 {
     text: &'a str,
     operations: Vec<Operation<T>>,
+    operation_sides: Vec<Side>,
     cursors: Vec<CursorPosition>,
+}
+
+/// A serializable representation of the changes made to a text document
+/// without the original text.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ChangeSet<T>
+where
+    T: PartialEq + Clone + Debug,
+{
+    operations: Vec<Operation<T>>,
+    cursors: Vec<CursorPosition>,
+}
+
+impl<'a, T> ChangeSet<T>
+where
+    T: PartialEq + Clone + Debug,
+{
+    #[must_use]
+    pub fn new(operations: Vec<Operation<T>>, cursors: Vec<CursorPosition>) -> Self {
+        Self {
+            operations,
+            cursors,
+        }
+    }
 }
 
 impl<'a> EditedText<'a, String> {
@@ -46,8 +72,8 @@ impl<'a> EditedText<'a, String> {
     /// word tokenizer is used to tokenize the text which splits the text on
     /// whitespaces.
     #[must_use]
-    pub fn from_strings(original: &'a str, updated: &TextWithCursors, side: Side) -> Self {
-        Self::from_strings_with_tokenizer(original, updated, &*BuiltinTokenizer::Word, side)
+    pub fn from_strings(original: &'a str, updated: &TextWithCursors) -> Self {
+        Self::from_strings_with_tokenizer(original, updated, &*BuiltinTokenizer::Word)
     }
 }
 
@@ -64,16 +90,18 @@ where
         original: &'a str,
         updated: &TextWithCursors,
         tokenizer: &Tokenizer<T>,
-        side: Side,
     ) -> Self {
         let original_tokens = (tokenizer)(original);
         let updated_tokens = (tokenizer)(&updated.text());
 
         let diff: Vec<RawOperation<T>> = RawOperation::vec_from(&original_tokens, &updated_tokens);
+        let operations: Vec<Operation<T>> = cook_operations(elongate_operations(diff)).collect();
+        let operation_count = operations.len();
 
         Self::new(
             original,
-            cook_operations(elongate_operations(diff), side).collect(),
+            operations,
+            vec![Side::Left; operation_count],
             updated.cursors(),
         )
     }
@@ -81,12 +109,18 @@ where
     /// Create a new `EditedText` with the given operations.
     /// The operations must be in the order in which they are meant to be
     /// applied. The operations must not overlap.
-    fn new(text: &'a str, operations: Vec<Operation<T>>, mut cursors: Vec<CursorPosition>) -> Self {
+    fn new(
+        text: &'a str,
+        operations: Vec<Operation<T>>,
+        operation_sides: Vec<Side>,
+        mut cursors: Vec<CursorPosition>,
+    ) -> Self {
         cursors.sort_by_key(|cursor| cursor.char_index);
 
         Self {
             text,
             operations,
+            operation_sides,
             cursors,
         }
     }
@@ -108,6 +142,8 @@ where
         let mut right_cursors = other.cursors.into_iter().peekable();
 
         let mut merged_operations: Vec<Operation<T>> =
+            Vec::with_capacity(self.operations.len() + other.operations.len());
+        let mut merged_operation_sides: Vec<Side> =
             Vec::with_capacity(self.operations.len() + other.operations.len());
 
         let mut left_iter = self.operations.into_iter();
@@ -149,7 +185,7 @@ where
             );
 
             let original_length = operation.len();
-            let result = match side {
+            let (side, result) = match side {
                 Side::Left => {
                     let result = operation.merge_operations(&mut last_other_op);
 
@@ -181,7 +217,7 @@ where
                     maybe_left_op = left_iter.next();
                     last_left_op = Some(result.clone());
 
-                    result
+                    (Side::Left, result)
                 }
                 Side::Right => {
                     let result = operation.merge_operations(&mut last_other_op);
@@ -214,7 +250,7 @@ where
                     maybe_right_op = right_iter.next();
                     last_right_op = Some(result.clone());
 
-                    result
+                    (Side::Right, result)
                 }
             };
 
@@ -227,13 +263,21 @@ where
             }
 
             merged_operations.push(result);
+            merged_operation_sides.push(side);
         }
 
         for cursor in left_cursors.chain(right_cursors) {
             merged_cursors.push(cursor.with_index(merged_length));
         }
 
-        Self::new(self.text, merged_operations, merged_cursors)
+        debug_assert_eq!(merged_operations.len(), merged_operation_sides.len());
+
+        Self::new(
+            self.text,
+            merged_operations,
+            merged_operation_sides,
+            merged_cursors,
+        )
     }
 
     /// Apply the operations to the text and return the resulting text.
@@ -288,14 +332,14 @@ where
 
         let mut history = Vec::with_capacity(self.operations.len());
 
-        for operation in &self.operations {
+        for (operation, side) in self.operations.iter().zip(self.operation_sides.iter()) {
             builder = operation.apply(builder);
 
             match operation {
                 Operation::Equal { .. } => {
                     history.push(SpanWithHistory::new(builder.take(), History::Unchanged));
                 }
-                Operation::Insert { side, .. } => match side {
+                Operation::Insert { .. } => match side {
                     Side::Left => {
                         history.push(SpanWithHistory::new(builder.take(), History::AddedFromLeft));
                     }
@@ -307,7 +351,6 @@ where
                 Operation::Delete {
                     deleted_character_count,
                     order,
-                    side,
                     ..
                 } => {
                     let deleted = self.text[*order..*order + *deleted_character_count].to_string();
@@ -325,6 +368,29 @@ where
 
         history
     }
+
+    /// Serialize the `EditedText` as a `ChangeSet`, which contains only
+    /// the operations and cursor positions, without the original text.
+    /// This is useful for sending changes over the network if there's
+    /// a clear consensus on the original text.
+    #[must_use]
+    pub fn serialise_as_change_set(&self) -> ChangeSet<T> {
+        ChangeSet::new(self.operations.clone(), self.cursors.clone())
+    }
+
+    /// Deserialize an `EditedText` from a `ChangeSet` and the original text.
+    /// This is useful for reconstructing the `EditedText` on the receiving
+    /// end after sending only the `ChangeSet` over the network.
+    #[must_use]
+    pub fn from_change_set(text: &'a str, change_set: ChangeSet<T>) -> EditedText<'a, T> {
+        let operation_count = change_set.operations.len();
+        EditedText::new(
+            text,
+            change_set.operations,
+            vec![Side::Left; operation_count],
+            change_set.cursors,
+        )
+    }
 }
 
 #[cfg(test)]
@@ -339,7 +405,7 @@ mod tests {
         let left = "hello world! How are you?  Adam";
         let right = "Hello, my friend! How are you doing? Albert";
 
-        let operations = EditedText::from_strings(left, &right.into(), Side::Right);
+        let operations = EditedText::from_strings(left, &right.into());
 
         insta::assert_debug_snapshot!(operations);
 
@@ -351,7 +417,7 @@ mod tests {
     fn test_calculate_operations_with_no_diff() {
         let text = "hello world!";
 
-        let operations = EditedText::from_strings(text, &text.into(), Side::Right);
+        let operations = EditedText::from_strings(text, &text.into());
 
         assert_debug_snapshot!(operations);
 
@@ -366,8 +432,8 @@ mod tests {
         let right = "Hello world! How are you?";
         let expected = "Hello world! How are you? I'm Andras.";
 
-        let operations_1 = EditedText::from_strings(original, &left.into(), Side::Left);
-        let operations_2 = EditedText::from_strings(original, &right.into(), Side::Right);
+        let operations_1 = EditedText::from_strings(original, &left.into());
+        let operations_2 = EditedText::from_strings(original, &right.into());
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply().text(), expected);
