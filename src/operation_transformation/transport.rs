@@ -12,9 +12,7 @@ use crate::{CursorPosition, Tokenizer, operation_transformation::Operation};
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SimpleOperation {
     Equal { length: usize },
-
     Insert { text: String },
-
     Delete { length: usize },
 }
 
@@ -35,6 +33,7 @@ impl SimpleOperation {
                         previous_equal = Some(*length);
                     }
                 }
+
                 Operation::Insert { text, .. } => {
                     if let Some(prev_length) = previous_equal {
                         result.push(SimpleOperation::Equal {
@@ -49,6 +48,7 @@ impl SimpleOperation {
                         .collect();
                     result.push(SimpleOperation::Insert { text });
                 }
+
                 Operation::Delete {
                     deleted_character_count,
                     ..
@@ -76,6 +76,7 @@ impl SimpleOperation {
         result
     }
 
+    // This is similar to `crate::operation_transformation::utils::cook_operations`
     pub fn to_operations<T>(
         simple_operations: Vec<Self>,
         original_text: &str,
@@ -85,7 +86,6 @@ impl SimpleOperation {
         T: PartialEq + Clone + Debug,
     {
         let mut operations: Vec<Operation<T>> = Vec::with_capacity(simple_operations.len());
-
         let mut order = 0;
 
         for simple_operation in simple_operations {
@@ -101,10 +101,12 @@ impl SimpleOperation {
                         order += token.get_original_length();
                     }
                 }
+
                 SimpleOperation::Insert { text } => {
                     let tokens = tokenizer(&text);
                     operations.push(Operation::create_insert(order, tokens));
                 }
+
                 SimpleOperation::Delete { length } => {
                     operations.push(Operation::create_delete(order, length));
                     order += length;
