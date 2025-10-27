@@ -2,6 +2,8 @@
 
 set -e
 
+git pull --rebase
+
 if [[ -z $1 ]]; then
   echo "Usage: $0 {patch|minor|major}"
   exit 1
@@ -29,6 +31,7 @@ wasm-pack build --target web --features wasm
 
 cd reconcile-js
 npm version $1
+npm install
 
 cd -
 
