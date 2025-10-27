@@ -33,7 +33,10 @@ cd reconcile-js
 npm version $1
 npm install
 
-cd -
+cd ../examples/website
+npm install
+
+cd ../..
 
 git add .
 TAG=$(node -p "require('./reconcile-js/package.json').version")
