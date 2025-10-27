@@ -1,7 +1,6 @@
 ---
 source: src/operation_transformation/edited_text.rs
 expression: operations
-snapshot_kind: text
 ---
 EditedText {
     text: "hello world! How are you?  Adam",
@@ -14,6 +13,16 @@ EditedText {
         <equal 'are' from 17>,
         <delete ' you?  Adam' from 20>,
         <insert ' you doing? Albert' at 31>,
+    ],
+    operation_sides: [
+        Left,
+        Left,
+        Left,
+        Left,
+        Left,
+        Left,
+        Left,
+        Left,
     ],
     cursors: [],
 }

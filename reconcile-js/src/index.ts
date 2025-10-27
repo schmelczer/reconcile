@@ -5,6 +5,7 @@ import {
   SpanWithHistory as wasmSpanWithHistory,
   reconcileWithHistory as wasmReconcileWithHistory,
   isBinary as wasmIsBinary,
+  getCompactDiff as wasmGetCompactDiff,
   initSync,
 } from 'reconcile-text';
 
@@ -177,6 +178,40 @@ export function reconcile(
   result.free();
 
   return jsResult;
+}
+
+/**
+ * Generates a compact diff representation between an original and changed text.
+ *
+ * These can be parsed and unpacked using Rust crate's EditedText::from_change_set.
+ *
+ * This function computes the differences between two versions of text and returns
+ * a compact string representation of those changes. The returned format is
+ * serialised JSON.
+ *
+ * @param original - The original/base version of the text
+ * @param changed - The modified version of the text (either string or TextWithCursors with cursor positions)
+ * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
+ * @returns A compact string representation of the diff between original and changed text
+ */
+export function getCompactDiff(
+  original: string,
+  changed: string | TextWithOptionalCursors,
+  tokenizer: BuiltinTokenizer = 'Word'
+): string {
+  init();
+
+  if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
+    throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
+  }
+
+  const changedWasm = toWasmTextWithCursors(changed);
+
+  const result = wasmGetCompactDiff(original, changedWasm, tokenizer);
+
+  changedWasm.free();
+
+  return result;
 }
 
 /**

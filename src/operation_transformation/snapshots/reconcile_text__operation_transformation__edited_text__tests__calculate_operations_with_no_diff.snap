@@ -1,7 +1,6 @@
 ---
 source: src/operation_transformation/edited_text.rs
 expression: operations
-snapshot_kind: text
 ---
 EditedText {
     text: "hello world!",
@@ -9,6 +8,11 @@ EditedText {
         <equal 'hello' from 0>,
         <equal ' ' from 5>,
         <equal 'world!' from 6>,
+    ],
+    operation_sides: [
+        Left,
+        Left,
+        Left,
     ],
     cursors: [],
 }

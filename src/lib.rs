@@ -151,6 +151,48 @@
 //!     ]
 //! );
 //! ```
+//! ## Efficiently serialize changes
+//!
+//! The edits can be serialized into a compact representation without the full
+//! original text, making the size only depends on the changes made.
+//!
+//! ```rust
+//! use reconcile_text::{EditedText, BuiltinTokenizer};
+//! use serde_yaml;
+//! use pretty_assertions::assert_eq;
+//!
+//!
+//! let original = "Merging text is hard!";
+//! let changes = "Merging text is easy with reconcile!";
+//!
+//! let result = EditedText::from_strings(
+//!     original,
+//!     &changes.into()
+//! );
+//!
+//! let serialized = serde_yaml::to_string(&result.to_change_set()).unwrap();
+//! assert_eq!(
+//!     serialized,
+//!     concat!(
+//!         "operations:\n",
+//!         "- 15\n",
+//!         "- -6\n",
+//!         "- ' easy with reconcile!'\n",
+//!         "cursors: []\n"
+//!     )
+//! );
+//!
+//! let deserialized = serde_yaml::from_str(&serialized).unwrap();
+//! let reconstructed = EditedText::from_change_set(
+//!     original,
+//!     deserialized,
+//!     &*BuiltinTokenizer::Word
+//! );
+//! assert_eq!(
+//!     reconstructed.apply().text(),
+//!     "Merging text is easy with reconcile!"
+//! );
+//! ```
 //!
 //! ## Error handling
 //!
@@ -169,7 +211,7 @@ mod tokenizer;
 mod types;
 mod utils;
 
-pub use operation_transformation::{EditedText, reconcile};
+pub use operation_transformation::{ChangeSet, EditedText, reconcile};
 pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
 pub use types::{
     cursor_position::CursorPosition, history::History, side::Side,

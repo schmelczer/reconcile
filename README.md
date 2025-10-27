@@ -24,6 +24,7 @@ A Rust and TypeScript library for merging conflicting text edits without manual 
 ### Rust
 
 Install via crates.io:
+
 ```sh
 cargo add reconcile-text
 ```
@@ -97,7 +98,7 @@ Differential sync is implemented by [universal-sync](https://github.com/invisibl
 3. **Diff optimisation** — Operations are reordered and consolidated to maximise chained changes
 4. **Operational Transformation** — Edits are woven together using OT principles, preserving all modifications and updating cursors
 
-Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs](https://github.com/spebern/operational-transform-rs).) The same could be achieved with CRDTs, which many libraries implement well for text—see [Loro](https://github.com/loro-dev/loro/), [cola](https://github.com/nomad/cola), and [automerge](https://github.com/automerge/automerge) as excellent examples. 
+Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs](https://github.com/spebern/operational-transform-rs).) The same could be achieved with CRDTs, which many libraries implement well for text—see [Loro](https://github.com/loro-dev/loro/), [cola](https://github.com/nomad/cola), and [automerge](https://github.com/automerge/automerge) as excellent examples.
 
 However, when only the end result of concurrent changes is observable, merge quality depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations cannot be supported because Myers' algorithm decomposes them into separate `insert` and `delete` operations, regardless of the merging algorithm used.
 
@@ -146,7 +147,7 @@ Contributions are welcome!
 [MIT](./LICENSE)
 
 [1]:https://marijnhaverbeke.nl/blog/collaborative-editing-cm.html
-[2]: https://neil.fraser.name/writing/sync/ 
+[2]: https://neil.fraser.name/writing/sync/
 [3]: https://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf
 [4]: https://blog.jcoglan.com/2017/05/08/merging-with-diff3/
 [5]: https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/35605.pdf

@@ -4,7 +4,7 @@ use core::fmt::{Debug, Display};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Side, Token,
+    Token,
     utils::{
         find_longest_prefix_contained_within::find_longest_prefix_contained_within,
         string_builder::StringBuilder,
@@ -23,23 +23,21 @@ where
         length: usize,
 
         #[cfg(debug_assertions)]
+        #[cfg_attr(feature = "serde", serde(skip_serializing))]
         text: Option<String>,
     },
 
     Insert {
-        side: Side,
-
         order: usize,
         text: Vec<Token<T>>,
     },
 
     Delete {
-        side: Side,
-
         order: usize,
         deleted_character_count: usize,
 
         #[cfg(debug_assertions)]
+        #[cfg_attr(feature = "serde", serde(skip_serializing))]
         deleted_text: Option<String>,
     },
 }
@@ -72,15 +70,14 @@ where
     }
 
     /// Creates an insert operation with the given index and text.
-    pub fn create_insert(order: usize, text: Vec<Token<T>>, side: Side) -> Self {
-        Operation::Insert { side, order, text }
+    pub fn create_insert(order: usize, text: Vec<Token<T>>) -> Self {
+        Operation::Insert { order, text }
     }
 
     /// Creates a delete operation with the given index and number of
     /// to-be-deleted characters.
-    pub fn create_delete(order: usize, deleted_character_count: usize, side: Side) -> Self {
+    pub fn create_delete(order: usize, deleted_character_count: usize) -> Self {
         Operation::Delete {
-            side,
             order,
             deleted_character_count,
 
@@ -89,9 +86,8 @@ where
         }
     }
 
-    pub fn create_delete_with_text(order: usize, text: String, side: Side) -> Self {
+    pub fn create_delete_with_text(order: usize, text: String) -> Self {
         Operation::Delete {
-            side,
             order,
             deleted_character_count: text.chars().count(),
 
@@ -206,7 +202,7 @@ where
 
         match (operation, previous_operation) {
             (
-                Operation::Insert { side, order, text },
+                Operation::Insert { order, text },
                 Some(Operation::Insert {
                     text: previous_inserted_text,
                     ..
@@ -218,12 +214,11 @@ where
                 let offset_in_tokens =
                     find_longest_prefix_contained_within(previous_inserted_text, &text);
 
-                Operation::create_insert(order, text[offset_in_tokens..].to_vec(), side)
+                Operation::create_insert(order, text[offset_in_tokens..].to_vec())
             }
 
             (
                 Operation::Delete {
-                    side,
                     order,
                     deleted_character_count,
 
@@ -247,20 +242,19 @@ where
 
                 #[cfg(debug_assertions)]
                 let updated_delete = deleted_text.as_ref().map_or_else(
-                    || Operation::create_delete(order + overlap, new_length, side),
+                    || Operation::create_delete(order + overlap, new_length),
                     |text| {
                         Operation::create_delete_with_text(
                             order + overlap,
                             text.chars()
                                 .skip(deleted_character_count - new_length)
                                 .collect::<String>(),
-                            side,
                         )
                     },
                 );
 
                 #[cfg(not(debug_assertions))]
-                let updated_delete = Operation::create_delete(order + overlap, new_length, side);
+                let updated_delete = Operation::create_delete(order + overlap, new_length);
 
                 updated_delete
             }
@@ -405,8 +399,7 @@ mod tests {
     #[test]
     fn test_apply_delete_with_create() {
         let builder = StringBuilder::new("hello world");
-        let delete_operation =
-            Operation::<()>::create_delete_with_text(0, "hello ".to_owned(), Side::Left);
+        let delete_operation = Operation::<()>::create_delete_with_text(0, "hello ".to_owned());
         let retain_operation = Operation::<()>::create_equal(6, 5);
 
         let mut builder = delete_operation.apply(builder);
@@ -420,7 +413,7 @@ mod tests {
         let builder = StringBuilder::new("hello");
 
         let retain_operation = Operation::<()>::create_equal(0, 5);
-        let insert_operation = Operation::create_insert(5, vec![" my friend".into()], Side::Right);
+        let insert_operation = Operation::create_insert(5, vec![" my friend".into()]);
 
         let mut builder = retain_operation.apply(builder);
         builder = insert_operation.apply(builder);

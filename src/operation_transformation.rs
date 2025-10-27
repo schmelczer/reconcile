@@ -1,15 +1,14 @@
 mod edited_text;
 mod operation;
+mod transport;
 mod utils;
 use std::fmt::Debug;
 
 pub use edited_text::EditedText;
 pub use operation::Operation;
+pub use transport::ChangeSet;
 
-use crate::{
-    Tokenizer,
-    types::{side::Side, text_with_cursors::TextWithCursors},
-};
+use crate::{Tokenizer, types::text_with_cursors::TextWithCursors};
 
 /// Given an `original` document and two concurrent edits to it,
 /// return a document containing all changes from both `left`
@@ -48,10 +47,8 @@ pub fn reconcile<'a, T>(
 where
     T: PartialEq + Clone + Debug,
 {
-    let left_operations =
-        EditedText::from_strings_with_tokenizer(original, left, tokenizer, Side::Left);
-    let right_operations =
-        EditedText::from_strings_with_tokenizer(original, right, tokenizer, Side::Right);
+    let left_operations = EditedText::from_strings_with_tokenizer(original, left, tokenizer);
+    let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);
 
     left_operations.merge(right_operations)
 }

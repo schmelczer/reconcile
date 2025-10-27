@@ -24,6 +24,7 @@ path = "examples/merge-file.rs"
 serde = { version = "1.0.219", optional = true, features = ["derive"] }
 
 wasm-bindgen = { version = "0.2.99", optional = true }
+serde_json = { version = "1.0.145", optional = true }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -36,8 +37,9 @@ wee_alloc = { version = "0.4.2", optional = true }
 [features]
 default = []
 serde = [ "dep:serde" ]
-wasm = [ "dep:wasm-bindgen", "dep:wee_alloc" ]
+wasm = [ "dep:wasm-bindgen", "dep:wee_alloc", "dep:serde_json", "serde" ]
 console_error_panic_hook = [ "dep:console_error_panic_hook" ]
+all = [ "wasm", "console_error_panic_hook" ]
 
 [dev-dependencies]
 insta = "1.42.2"
