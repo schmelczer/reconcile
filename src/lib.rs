@@ -217,7 +217,6 @@ pub use types::{
     cursor_position::CursorPosition, history::History, side::Side,
     span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
 };
-pub use utils::is_binary::is_binary;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

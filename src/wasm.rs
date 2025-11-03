@@ -3,7 +3,10 @@ use core::str;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors};
+use crate::{
+    BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors,
+    utils::string_or_nothing::string_or_nothing,
+};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
@@ -54,10 +57,6 @@ pub fn reconcile_with_history(
 /// # Returns
 ///
 /// The merged document.
-///
-/// # Panics
-///
-/// If any of the input documents are not valid UTF-8 strings.
 #[wasm_bindgen(js_name = genericReconcile)]
 #[must_use]
 pub fn generic_reconcile(
@@ -68,22 +67,17 @@ pub fn generic_reconcile(
 ) -> Vec<u8> {
     set_panic_hook();
 
-    if crate::is_binary(parent) || crate::is_binary(left) || crate::is_binary(right) {
-        right.to_vec()
+    if let (Some(parent), Some(left), Some(right)) = (
+        string_or_nothing(parent),
+        string_or_nothing(left),
+        string_or_nothing(right),
+    ) {
+        crate::reconcile(&parent, &left.into(), &right.into(), &*tokenizer)
+            .apply()
+            .text()
+            .into_bytes()
     } else {
-        crate::reconcile(
-            str::from_utf8(parent).expect("parent must be valid UTF-8 because it's not binary"),
-            &str::from_utf8(left)
-                .expect("left must be valid UTF-8 because it's not binary")
-                .into(),
-            &str::from_utf8(right)
-                .expect("right must be valid UTF-8 because it's not binary")
-                .into(),
-            &*tokenizer,
-        )
-        .apply()
-        .text()
-        .into_bytes()
+        right.to_vec()
     }
 }
 
@@ -104,15 +98,6 @@ pub fn get_compact_diff(
     let change_set = edited_text.to_change_set();
 
     serde_json::to_string(&change_set).expect("Failed to serialize change set")
-}
-
-/// Heuristically determine if the given data is a binary or a text file's
-/// content.
-#[wasm_bindgen(js_name = isBinary)]
-#[must_use]
-pub fn is_binary(data: &[u8]) -> bool {
-    set_panic_hook();
-    crate::is_binary(data)
 }
 
 fn set_panic_hook() {

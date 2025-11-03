@@ -4,7 +4,6 @@ import {
   TextWithCursors as wasmTextWithCursors,
   SpanWithHistory as wasmSpanWithHistory,
   reconcileWithHistory as wasmReconcileWithHistory,
-  isBinary as wasmIsBinary,
   getCompactDiff as wasmGetCompactDiff,
   initSync,
 } from 'reconcile-text';
@@ -270,19 +269,6 @@ export function reconcileWithHistory(
     ...jsResult,
     history,
   };
-}
-
-/**
- * Check (using heuristics) if the given data is binary or text content.
- *
- * Only text inputs can be reconciled using the library's functions.
- *
- * @param data - The data to check for binary content. This should be a Uint8Array.
- * @returns True if the data is likely binary, false if it is likely text.
- */
-export function isBinary(data: Uint8Array): boolean {
-  init();
-  return wasmIsBinary(data);
 }
 
 function init() {
