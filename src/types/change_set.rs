@@ -6,11 +6,15 @@ use serde::{
     de::{self, Deserializer, Visitor},
     ser::Serializer,
 };
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
 
-use crate::{CursorPosition, Tokenizer, operation_transformation::Operation};
+use crate::{Tokenizer, operation_transformation::Operation};
 
+/// A serializable representation of the changes made to a text document
+/// without the original text.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum SimpleOperation {
+enum SimpleOperation {
     Equal { length: usize },
     Insert { text: String },
     Delete { length: usize },
@@ -181,24 +185,5 @@ impl<'de> Deserialize<'de> for SimpleOperation {
         }
 
         deserializer.deserialize_any(OperationVisitor)
-    }
-}
-
-/// A serializable representation of the changes made to a text document
-/// without the original text.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct ChangeSet {
-    pub operations: Vec<SimpleOperation>,
-    pub cursors: Vec<CursorPosition>,
-}
-
-impl ChangeSet {
-    #[must_use]
-    pub fn new(operations: Vec<SimpleOperation>, cursors: Vec<CursorPosition>) -> Self {
-        Self {
-            operations,
-            cursors,
-        }
     }
 }

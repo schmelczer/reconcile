@@ -1,3 +1,4 @@
+pub mod change_set;
 pub mod cursor_position;
 pub mod history;
 pub mod side;
