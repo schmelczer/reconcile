@@ -4,8 +4,8 @@ import {
   TextWithCursors as wasmTextWithCursors,
   SpanWithHistory as wasmSpanWithHistory,
   reconcileWithHistory as wasmReconcileWithHistory,
-  isBinary as wasmIsBinary,
-  getCompactDiff as wasmGetCompactDiff,
+  diff as wasmDiff,
+  undiff as wasmUndiff,
   initSync,
 } from 'reconcile-text';
 
@@ -183,22 +183,22 @@ export function reconcile(
 /**
  * Generates a compact diff representation between an original and changed text.
  *
- * These can be parsed and unpacked using Rust crate's EditedText::from_change_set.
+ * These can be parsed and unpacked using the `undiff` function or the Rust crate's EditedText::from_diff.
+ * Cursor positions are omitted from the diff result.
  *
  * This function computes the differences between two versions of text and returns
- * a compact string representation of those changes. The returned format is
- * serialised JSON.
+ * a compact representation of those changes.
  *
  * @param original - The original/base version of the text
  * @param changed - The modified version of the text (either string or TextWithCursors with cursor positions)
  * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
- * @returns A compact string representation of the diff between original and changed text
+ * @returns An array representing the compact diff, with inserts as strings and deletes as negative integers.
  */
-export function getCompactDiff(
+export function diff(
   original: string,
   changed: string | TextWithOptionalCursors,
   tokenizer: BuiltinTokenizer = 'Word'
-): string {
+): Array<number | string> {
   init();
 
   if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
@@ -207,11 +207,36 @@ export function getCompactDiff(
 
   const changedWasm = toWasmTextWithCursors(changed);
 
-  const result = wasmGetCompactDiff(original, changedWasm, tokenizer);
+  const result = wasmDiff(original, changedWasm, tokenizer);
 
   changedWasm.free();
 
   return result;
+}
+
+/**
+ * Applies a compact diff to an original text to reconstruct the changed version.
+ *
+ * This function takes an original text and a compact diff representation (as produced
+ * by the `diff` function) and reconstructs the modified text.
+ *
+ * @param original - The original/base version of the text
+ * @param diff - The compact diff array representing changes (inserts as strings, deletes as negative integers)
+ * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
+ * @returns The reconstructed changed text as a string.
+ */
+export function undiff(
+  original: string,
+  diff: Array<number | string>,
+  tokenizer: BuiltinTokenizer = 'Word'
+): string {
+  init();
+
+  if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
+    throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
+  }
+
+  return wasmUndiff(original, diff, tokenizer);
 }
 
 /**
@@ -270,19 +295,6 @@ export function reconcileWithHistory(
     ...jsResult,
     history,
   };
-}
-
-/**
- * Check (using heuristics) if the given data is binary or text content.
- *
- * Only text inputs can be reconciled using the library's functions.
- *
- * @param data - The data to check for binary content. This should be a Uint8Array.
- * @returns True if the data is likely binary, false if it is likely text.
- */
-export function isBinary(data: Uint8Array): boolean {
-  init();
-  return wasmIsBinary(data);
 }
 
 function init() {

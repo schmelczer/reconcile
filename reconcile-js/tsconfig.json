@@ -9,6 +9,5 @@
     "declarationDir": "./dist/types",
     "skipLibCheck": true,
     "inlineSourceMap": true
-  },
-  "exclude": ["./dist", "**/*.test.ts"]
+  }
 }

@@ -157,6 +157,8 @@
 //! original text, making the size only depends on the changes made.
 //!
 //! ```rust
+//! # #[cfg(feature = "serde")]
+//! # {
 //! use reconcile_text::{EditedText, BuiltinTokenizer};
 //! use serde_yaml;
 //! use pretty_assertions::assert_eq;
@@ -170,20 +172,18 @@
 //!     &changes.into()
 //! );
 //!
-//! let serialized = serde_yaml::to_string(&result.to_change_set()).unwrap();
+//! let serialized = serde_yaml::to_string(&result.to_diff()).unwrap();
 //! assert_eq!(
 //!     serialized,
 //!     concat!(
-//!         "operations:\n",
 //!         "- 15\n",
 //!         "- -6\n",
-//!         "- ' easy with reconcile!'\n",
-//!         "cursors: []\n"
+//!         "- ' easy with reconcile!'\n"
 //!     )
 //! );
 //!
 //! let deserialized = serde_yaml::from_str(&serialized).unwrap();
-//! let reconstructed = EditedText::from_change_set(
+//! let reconstructed = EditedText::from_diff(
 //!     original,
 //!     deserialized,
 //!     &*BuiltinTokenizer::Word
@@ -192,13 +192,17 @@
 //!     reconstructed.apply().text(),
 //!     "Merging text is easy with reconcile!"
 //! );
+//! # }
 //! ```
 //!
 //! ## Error handling
 //!
 //! The library is designed to be robust and will always produce a result, even
-//! in edge cases. However, be aware that extremely large diffs may have
-//! performance implications.
+//! for edge cases.
+//!
+//! ## Performance
+//!
+//! Be aware that extremely large diffs may have performance implications.
 //!
 //! ## Algorithm overview
 //!
@@ -211,13 +215,12 @@ mod tokenizer;
 mod types;
 mod utils;
 
-pub use operation_transformation::{ChangeSet, EditedText, reconcile};
+pub use operation_transformation::{EditedText, reconcile};
 pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
 pub use types::{
-    cursor_position::CursorPosition, history::History, side::Side,
-    span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
+    cursor_position::CursorPosition, history::History, number_or_string::NumberOrString,
+    side::Side, span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
 };
-pub use utils::is_binary::is_binary;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

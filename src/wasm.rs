@@ -3,7 +3,7 @@ use core::str;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors};
+use crate::{BuiltinTokenizer, CursorPosition, EditedText, SpanWithHistory, TextWithCursors};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
@@ -32,6 +32,7 @@ pub fn reconcile_with_history(
     tokenizer: BuiltinTokenizer,
 ) -> TextWithCursorsAndHistory {
     set_panic_hook();
+
     let reconciled = crate::reconcile(parent, left, right, &*tokenizer);
     let text_with_cursors = reconciled.apply();
 
@@ -54,10 +55,6 @@ pub fn reconcile_with_history(
 /// # Returns
 ///
 /// The merged document.
-///
-/// # Panics
-///
-/// If any of the input documents are not valid UTF-8 strings.
 #[wasm_bindgen(js_name = genericReconcile)]
 #[must_use]
 pub fn generic_reconcile(
@@ -68,51 +65,56 @@ pub fn generic_reconcile(
 ) -> Vec<u8> {
     set_panic_hook();
 
-    if crate::is_binary(parent) || crate::is_binary(left) || crate::is_binary(right) {
-        right.to_vec()
+    if let (Some(parent), Some(left), Some(right)) = (
+        string_or_nothing(parent),
+        string_or_nothing(left),
+        string_or_nothing(right),
+    ) {
+        crate::reconcile(&parent, &left.into(), &right.into(), &*tokenizer)
+            .apply()
+            .text()
+            .into_bytes()
     } else {
-        crate::reconcile(
-            str::from_utf8(parent).expect("parent must be valid UTF-8 because it's not binary"),
-            &str::from_utf8(left)
-                .expect("left must be valid UTF-8 because it's not binary")
-                .into(),
-            &str::from_utf8(right)
-                .expect("right must be valid UTF-8 because it's not binary")
-                .into(),
-            &*tokenizer,
-        )
-        .apply()
-        .text()
-        .into_bytes()
+        right.to_vec()
     }
 }
 
-/// WASM wrapper around getting a compact diff representation as a JSON string
+/// WASM wrapper around getting a compact diff representation of two texts as a
+/// list of numbers and strings.
+#[wasm_bindgen(js_name = diff)]
+#[must_use]
+pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer) -> Vec<JsValue> {
+    set_panic_hook();
+
+    let edited_text = EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
+    edited_text
+        .to_diff()
+        .into_iter()
+        .map(std::convert::Into::into)
+        .collect()
+}
+
+/// Inverse of `diff`, applies a compact diff representation to a parent text
 ///
 /// # Panics
 ///
-/// If serialization to JSON fails which should not happen
-#[wasm_bindgen(js_name = getCompactDiff)]
+/// Panics if the diff format is invalid or there's an integer overflow when
+/// applying the diff.
+#[wasm_bindgen(js_name = undiff)]
 #[must_use]
-pub fn get_compact_diff(
-    parent: &str,
-    changed: &TextWithCursors,
-    tokenizer: BuiltinTokenizer,
-) -> String {
+pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> String {
     set_panic_hook();
-    let edited_text = crate::EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
-    let change_set = edited_text.to_change_set();
 
-    serde_json::to_string(&change_set).expect("Failed to serialize change set")
-}
-
-/// Heuristically determine if the given data is a binary or a text file's
-/// content.
-#[wasm_bindgen(js_name = isBinary)]
-#[must_use]
-pub fn is_binary(data: &[u8]) -> bool {
-    set_panic_hook();
-    crate::is_binary(data)
+    EditedText::from_diff(
+        parent,
+        diff.into_iter()
+            .map(std::convert::TryInto::try_into)
+            .collect::<Result<_, _>>()
+            .expect("Invalid diff format"),
+        &*tokenizer,
+    )
+    .apply()
+    .text()
 }
 
 fn set_panic_hook() {
@@ -139,4 +141,31 @@ impl TextWithCursorsAndHistory {
 
     #[must_use]
     pub fn history(&self) -> Vec<SpanWithHistory> { self.history.clone() }
+}
+
+/// Returns the UTF8 parsed string if it's a text, or `None` if it's likely
+/// binary.
+#[must_use]
+fn string_or_nothing(data: &[u8]) -> Option<String> {
+    if data.contains(&0) {
+        // Even though the NUL character is valid in UTF-8, it's highly suspicious in
+        // human-readable text.
+        return None;
+    }
+
+    std::str::from_utf8(data)
+        .map(std::borrow::ToOwned::to_owned)
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_or_nothing() {
+        assert_eq!(string_or_nothing(&[0, 159, 146, 150]), None);
+        assert_eq!(string_or_nothing(&[0, 12]), None);
+        assert_eq!(string_or_nothing(b"hello"), Some("hello".into()));
+    }
 }

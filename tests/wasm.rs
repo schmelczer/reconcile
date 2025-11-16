@@ -55,22 +55,16 @@ fn test_merge_binary() {
     );
 }
 
-#[wasm_bindgen_test(unsupported = test)]
-fn test_is_binary() {
-    assert!(is_binary(&[0, 159, 146, 150]));
-    assert!(is_binary(&[0, 12]));
-    assert!(!is_binary(b"hello"));
-}
-
-#[wasm_bindgen_test(unsupported = test)]
-fn test_get_compact_diff() {
+#[wasm_bindgen_test] // JsValue isn't supported outside of wasm
+fn test_diff() {
     let parent = "hello ";
     let changed = "world";
-    let result = get_compact_diff(parent, &changed.into(), BuiltinTokenizer::Word);
-    assert_eq!(result, "{\"operations\":[-6,\"world\"],\"cursors\":[]}");
-}
 
-#[wasm_bindgen_test(unsupported = test)]
-fn test_is_binary_empty() {
-    assert!(!is_binary(b""));
+    let result = diff(parent, &changed.into(), BuiltinTokenizer::Word);
+
+    assert_eq!(result.len(), 2);
+    let first: i64 = result[0].clone().try_into().unwrap();
+    let second: String = result[1].clone().try_into().unwrap();
+    assert_eq!(first, -6);
+    assert_eq!(second, "world");
 }
