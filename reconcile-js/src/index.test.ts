@@ -50,7 +50,7 @@ describe('reconcile', () => {
   });
 });
 
-describe('test_merge_files_without_panic', () => {
+describe('test_diff_and_undiff_are_inverse', () => {
   const resourcesPath = path.join(__dirname, '../../tests/resources');
 
   const readFileSlice = (fileName: string, start: number, end: number): string => {
