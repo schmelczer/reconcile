@@ -50,16 +50,16 @@ fn test_document_one_way_with_serialisation() {
         );
 
         let serialised_left =
-            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_changes()).unwrap())
+            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_diff()).unwrap())
                 .unwrap();
         let serialised_right =
-            serde_yaml::from_str(&serde_yaml::to_string(&right_operations.to_changes()).unwrap())
+            serde_yaml::from_str(&serde_yaml::to_string(&right_operations.to_diff()).unwrap())
                 .unwrap();
 
         let restored_left_operations =
-            EditedText::from_changes(&parent, serialised_left, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(&parent, serialised_left, &*BuiltinTokenizer::Word);
         let restored_right_operations =
-            EditedText::from_changes(&parent, serialised_right, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(&parent, serialised_right, &*BuiltinTokenizer::Word);
 
         doc.assert_eq_without_cursors(
             &restored_left_operations

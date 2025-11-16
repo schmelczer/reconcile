@@ -56,11 +56,11 @@ fn test_merge_binary() {
 }
 
 #[wasm_bindgen_test] // JsValue isn't supported outside of wasm
-fn test_get_compact_diff() {
+fn test_diff() {
     let parent = "hello ";
     let changed = "world";
 
-    let result = get_compact_diff(parent, &changed.into(), BuiltinTokenizer::Word);
+    let result = diff(parent, &changed.into(), BuiltinTokenizer::Word);
 
     assert_eq!(result.len(), 2);
     let first: i64 = result[0].clone().try_into().unwrap();

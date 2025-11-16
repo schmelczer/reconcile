@@ -172,7 +172,7 @@
 //!     &changes.into()
 //! );
 //!
-//! let serialized = serde_yaml::to_string(&result.to_changes()).unwrap();
+//! let serialized = serde_yaml::to_string(&result.to_diff()).unwrap();
 //! assert_eq!(
 //!     serialized,
 //!     concat!(
@@ -183,7 +183,7 @@
 //! );
 //!
 //! let deserialized = serde_yaml::from_str(&serialized).unwrap();
-//! let reconstructed = EditedText::from_changes(
+//! let reconstructed = EditedText::from_diff(
 //!     original,
 //!     deserialized,
 //!     &*BuiltinTokenizer::Word
