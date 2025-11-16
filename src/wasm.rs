@@ -95,6 +95,11 @@ pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer
 }
 
 /// Inverse of `diff`, applies a compact diff representation to a parent text
+///
+/// # Panics
+///
+/// Panics if the diff format is invalid or there's an integer overflow when
+/// applying the diff.
 #[wasm_bindgen(js_name = undiff)]
 #[must_use]
 pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> String {
@@ -103,7 +108,7 @@ pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> 
     EditedText::from_diff(
         parent,
         diff.into_iter()
-            .map(|js_value| js_value.try_into())
+            .map(std::convert::TryInto::try_into)
             .collect::<Result<_, _>>()
             .expect("Invalid diff format"),
         &*tokenizer,

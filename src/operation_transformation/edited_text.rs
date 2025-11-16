@@ -107,6 +107,11 @@ where
     /// from the same original text. The operations are merged using the
     /// principles of Operational Transformation. The cursors are updated
     /// accordingly to reflect the changes made by the merged operations.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there's an integer overflow (in i64) when calculating new
+    /// cursor positions.
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn merge(self, other: Self) -> Self {
@@ -356,6 +361,10 @@ where
     ///
     /// Inserts are represented as strings, deletes as negative integers,
     /// and equal spans as positive integers.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there's an integer overflow in i64.
     #[must_use]
     pub fn to_diff(&self) -> Vec<NumberOrString> {
         let mut result: Vec<NumberOrString> = Vec::with_capacity(self.operations.len());
@@ -414,6 +423,10 @@ where
     }
 
     /// Deserialize an `EditedText` from a change list and the original text.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there's an integer overflow in i64.
     #[must_use]
     pub fn from_diff(
         original_text: &'a str,

@@ -144,7 +144,8 @@ where
 
     // By Lemma 1 in the paper, the optimal edit script length is odd or even as
     // `delta` is odd or even.
-    let delta = isize::try_from(n).expect("n must fit in isize") - isize::try_from(m).expect("m must fit in isize");
+    let delta = isize::try_from(n).expect("n must fit in isize")
+        - isize::try_from(m).expect("m must fit in isize");
     let odd = delta & 1 == 1;
 
     // The initial point at (0, -1)
@@ -165,7 +166,8 @@ where
             } else {
                 vf[k - 1] + 1
             };
-            let y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k).expect("x - k must be non-negative and fit in usize");
+            let y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k)
+                .expect("x - k must be non-negative and fit in usize");
 
             // The coordinate of the start of a snake
             let (x0, y0) = (x, y);
@@ -203,7 +205,8 @@ where
             } else {
                 vb[k - 1] + 1
             };
-            let mut y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k).expect("x - k must be non-negative and fit in usize");
+            let mut y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k)
+                .expect("x - k must be non-negative and fit in usize");
 
             // The coordinate of the start of a snake
             if x < n && y < m {
