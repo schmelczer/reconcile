@@ -4,15 +4,17 @@ use std::{fmt::Debug, vec};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BuiltinTokenizer, ChangeSet, CursorPosition, TextWithCursors,
+    BuiltinTokenizer, CursorPosition, TextWithCursors,
     operation_transformation::{
         Operation,
-        transport::SimpleOperation,
         utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
     raw_operation::RawOperation,
     tokenizer::Tokenizer,
-    types::{history::History, side::Side, span_with_history::SpanWithHistory},
+    types::{
+        history::History, number_or_string::NumberOrString, side::Side,
+        span_with_history::SpanWithHistory,
+    },
     utils::string_builder::StringBuilder,
 };
 
@@ -345,34 +347,105 @@ where
         history
     }
 
-    /// Serialize the `EditedText` as a `ChangeSet`, which contains only
-    /// the operations and cursor positions, but without the original text.
-    /// This is useful for sending changes over the network if there's
-    /// a clear consensus on the original text.
+    /// Convert the `EditedText` into a terse representation ready for
+    /// serialization. The result omits cursor positions and the original text.
+    /// This is useful for sending text diffs over the network if there's a
+    /// clear consensus on the original text.
+    ///
+    /// Inserts are represented as strings, deletes as negative integers,
+    /// and equal spans as positive integers.
     #[must_use]
-    pub fn to_change_set(&self) -> ChangeSet {
-        ChangeSet::new(
-            SimpleOperation::from_operations(&self.operations),
-            self.cursors.clone(),
-        )
+    pub fn to_changes(&self) -> Vec<NumberOrString> {
+        let mut result: Vec<NumberOrString> = Vec::with_capacity(self.operations.len());
+        let mut previous_equal: Option<usize> = None;
+
+        for operation in &self.operations {
+            match operation {
+                Operation::Equal { length, .. } => {
+                    if let Some(prev_length) = previous_equal {
+                        previous_equal = Some(prev_length + *length);
+                    } else {
+                        previous_equal = Some(*length);
+                    }
+                }
+
+                Operation::Insert { text, .. } => {
+                    if let Some(prev_length) = previous_equal {
+                        result.push(NumberOrString::Number(prev_length as i64));
+                        previous_equal = None;
+                    }
+
+                    let text: String = text
+                        .iter()
+                        .map(super::super::tokenizer::token::Token::original)
+                        .collect();
+                    result.push(NumberOrString::Text(text));
+                }
+
+                Operation::Delete {
+                    deleted_character_count,
+                    ..
+                } => {
+                    if let Some(prev_length) = previous_equal {
+                        result.push(NumberOrString::Number(prev_length as i64));
+                        previous_equal = None;
+                    }
+
+                    result.push(NumberOrString::Number(-(*deleted_character_count as i64)));
+                }
+            }
+        }
+
+        if let Some(prev_length) = previous_equal {
+            result.push(NumberOrString::Number(prev_length as i64));
+        }
+
+        result
     }
 
-    /// Deserialize an `EditedText` from a `ChangeSet` and the original text.
-    /// This is useful for reconstructing the `EditedText` on the receiving
-    /// end after sending only the `ChangeSet` over the network.
+    /// Deserialize an `EditedText` from a change list and the original text.
     #[must_use]
-    pub fn from_change_set(
-        text: &'a str,
-        change_set: ChangeSet,
+    pub fn from_changes(
+        original_text: &'a str,
+        simple_operations: Vec<NumberOrString>,
         tokenizer: &Tokenizer<T>,
     ) -> EditedText<'a, T> {
-        let operations = SimpleOperation::to_operations(change_set.operations, text, tokenizer);
+        let mut operations: Vec<Operation<T>> = Vec::with_capacity(simple_operations.len());
+        let mut order = 0;
+
+        for simple_operation in simple_operations {
+            match simple_operation {
+                NumberOrString::Number(length) => {
+                    if length >= 0 {
+                        let length = length as usize;
+                        let original_characters: String =
+                            original_text.chars().skip(order).take(length).collect();
+
+                        let original_tokens = tokenizer(&original_characters);
+                        for token in original_tokens {
+                            operations
+                                .push(Operation::create_equal(order, token.get_original_length()));
+                            order += token.get_original_length();
+                        }
+                    } else {
+                        let length = -length as usize;
+                        operations.push(Operation::create_delete(order, length));
+                        order += length;
+                    }
+                }
+                NumberOrString::Text(text) => {
+                    let tokens = tokenizer(&text);
+                    operations.push(Operation::create_insert(order, tokens));
+                }
+            }
+        }
+
         let operation_count = operations.len();
         EditedText::new(
-            text,
+            original_text,
             operations,
             vec![Side::Left; operation_count],
-            change_set.cursors,
+            vec![],
         )
     }
 }
@@ -423,34 +496,29 @@ mod tests {
         assert_eq!(operations.apply().text(), expected);
     }
 
+    #[cfg(feature = "serde")]
     #[test]
-    fn test_change_set_deserialisation() {
+    fn test_changes_deserialisation() {
         let original = "Merging text is hard!";
         let changes = "Merging text is easy with reconcile!";
         let result = EditedText::from_strings(original, &changes.into());
-        let serialized = serde_yaml::to_string(&result.to_change_set()).unwrap();
+        let serialized = serde_yaml::to_string(&result.to_changes()).unwrap();
 
-        let expected = concat!(
-            "operations:\n",
-            "- 15\n",
-            "- -6\n",
-            "- ' easy with reconcile!'\n",
-            "cursors: []\n"
-        );
-
+        let expected = concat!("- 15\n", "- -6\n", "- ' easy with reconcile!'\n",);
         assert_eq!(serialized, expected);
     }
 
+    #[cfg(feature = "serde")]
     #[test]
-    fn test_change_set_serialization() {
+    fn test_changes_serialization() {
         let original = "The quick brown fox jumps over the lazy dog.";
         let updated = "The quick red fox jumped over the very lazy dog!";
 
         let edited_text = EditedText::from_strings(original, &updated.into());
 
-        let change_set = edited_text.to_change_set();
+        let changes = edited_text.to_changes();
         let deserialized_edited_text =
-            EditedText::from_change_set(original, change_set, &*BuiltinTokenizer::Word);
+            EditedText::from_changes(original, changes, &*BuiltinTokenizer::Word);
 
         assert_eq!(deserialized_edited_text.apply().text(), updated);
     }

@@ -182,22 +182,21 @@ export function reconcile(
 /**
  * Generates a compact diff representation between an original and changed text.
  *
- * These can be parsed and unpacked using Rust crate's EditedText::from_change_set.
+ * These can be parsed and unpacked using Rust crate's EditedText::from_changes.
  *
  * This function computes the differences between two versions of text and returns
- * a compact string representation of those changes. The returned format is
- * serialised JSON.
+ * a compact representation of those changes.
  *
  * @param original - The original/base version of the text
  * @param changed - The modified version of the text (either string or TextWithCursors with cursor positions)
  * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
- * @returns A compact string representation of the diff between original and changed text
+ * @returns An array representing the compact diff, with inserts as strings and deletes as negative integers.
  */
 export function getCompactDiff(
   original: string,
   changed: string | TextWithOptionalCursors,
   tokenizer: BuiltinTokenizer = 'Word'
-): string {
+): Array<number | string> {
   init();
 
   if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {

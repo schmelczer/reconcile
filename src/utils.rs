@@ -3,4 +3,3 @@ pub mod common_suffix_len;
 pub mod find_longest_prefix_contained_within;
 pub mod myers_diff;
 pub mod string_builder;
-pub mod string_or_nothing;

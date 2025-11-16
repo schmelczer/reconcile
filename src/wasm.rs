@@ -3,10 +3,7 @@ use core::str;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors,
-    utils::string_or_nothing::string_or_nothing,
-};
+use crate::{BuiltinTokenizer, CursorPosition, SpanWithHistory, TextWithCursors};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
@@ -81,23 +78,22 @@ pub fn generic_reconcile(
     }
 }
 
-/// WASM wrapper around getting a compact diff representation as a JSON string
-///
-/// # Panics
-///
-/// If serialization to JSON fails which should not happen
+/// WASM wrapper around getting a compact diff representation of two texts as a
+/// list of numbers and strings.
 #[wasm_bindgen(js_name = getCompactDiff)]
 #[must_use]
 pub fn get_compact_diff(
     parent: &str,
     changed: &TextWithCursors,
     tokenizer: BuiltinTokenizer,
-) -> String {
+) -> Vec<JsValue> {
     set_panic_hook();
     let edited_text = crate::EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
-    let change_set = edited_text.to_change_set();
-
-    serde_json::to_string(&change_set).expect("Failed to serialize change set")
+    edited_text
+        .to_changes()
+        .into_iter()
+        .map(std::convert::Into::into)
+        .collect()
 }
 
 fn set_panic_hook() {
@@ -124,4 +120,31 @@ impl TextWithCursorsAndHistory {
 
     #[must_use]
     pub fn history(&self) -> Vec<SpanWithHistory> { self.history.clone() }
+}
+
+/// Returns the UTF8 parsed string if it's a text, or `None` if it's likely
+/// binary.
+#[must_use]
+pub fn string_or_nothing(data: &[u8]) -> Option<String> {
+    if data.contains(&0) {
+        // Even though the NUL character is valid in UTF-8, it's highly suspicious in
+        // human-readable text.
+        return None;
+    }
+
+    std::str::from_utf8(data)
+        .map(std::borrow::ToOwned::to_owned)
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_or_nothing() {
+        assert_eq!(string_or_nothing(&[0, 159, 146, 150]), None);
+        assert_eq!(string_or_nothing(&[0, 12]), None);
+        assert_eq!(string_or_nothing(b"hello"), Some("hello".into()));
+    }
 }

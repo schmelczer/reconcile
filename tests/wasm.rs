@@ -55,10 +55,12 @@ fn test_merge_binary() {
     );
 }
 
-#[wasm_bindgen_test(unsupported = test)]
+#[wasm_bindgen_test] // JsValue isn't supported outside of wasm
 fn test_get_compact_diff() {
     let parent = "hello ";
     let changed = "world";
     let result = get_compact_diff(parent, &changed.into(), BuiltinTokenizer::Word);
-    assert_eq!(result, "{\"operations\":[-6,\"world\"],\"cursors\":[]}");
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].as_f64().unwrap(), -6.0);
+    assert_eq!(result[1].as_string().unwrap(), "world");
 }

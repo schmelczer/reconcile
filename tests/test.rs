@@ -34,8 +34,9 @@ fn test_document_one_way_with_cursors() {
     }
 }
 
+#[cfg(feature = "serde")]
 #[test]
-fn test_document_one_way_with_cursors_and_serialisation() {
+fn test_document_one_way_with_serialisation() {
     for doc in &get_all_documents() {
         let parent = doc.parent();
         let left_operations =
@@ -47,19 +48,23 @@ fn test_document_one_way_with_cursors_and_serialisation() {
         );
 
         let serialised_left =
-            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_change_set()).unwrap())
+            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_changes()).unwrap())
                 .unwrap();
-        let serialised_right = serde_yaml::from_str(
-            &serde_yaml::to_string(&right_operations.to_change_set()).unwrap(),
-        )
-        .unwrap();
+        let serialised_right =
+            serde_yaml::from_str(&serde_yaml::to_string(&right_operations.to_changes()).unwrap())
+                .unwrap();
 
         let restored_left_operations =
-            EditedText::from_change_set(&parent, serialised_left, &*BuiltinTokenizer::Word);
+            EditedText::from_changes(&parent, serialised_left, &*BuiltinTokenizer::Word);
         let restored_right_operations =
-            EditedText::from_change_set(&parent, serialised_right, &*BuiltinTokenizer::Word);
+            EditedText::from_changes(&parent, serialised_right, &*BuiltinTokenizer::Word);
 
-        doc.assert_eq(&restored_left_operations.merge(restored_right_operations));
+        doc.assert_eq_without_cursors(
+            &restored_left_operations
+                .merge(restored_right_operations)
+                .apply()
+                .text(),
+        );
     }
 }
 
