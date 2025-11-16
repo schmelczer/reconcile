@@ -168,13 +168,14 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let merged_length_signed =
-                            isize::try_from(merged_length).unwrap_or(isize::MAX);
-                        let seen_left_length_signed =
-                            isize::try_from(seen_left_length).unwrap_or(isize::MAX);
-                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
-                        let original_length_signed =
-                            isize::try_from(original_length).unwrap_or(isize::MAX);
+                        let merged_length_signed = isize::try_from(merged_length)
+                            .expect("merged_length must fit in isize");
+                        let seen_left_length_signed = isize::try_from(seen_left_length)
+                            .expect("seen_left_length must fit in isize");
+                        let op_len_signed =
+                            isize::try_from(op.len()).expect("op.len() must fit in isize");
+                        let original_length_signed = isize::try_from(original_length)
+                            .expect("original_length must fit in isize");
 
                         let shift = merged_length_signed - seen_left_length_signed + op_len_signed
                             - original_length_signed;
@@ -201,13 +202,14 @@ where
                     let result = operation.merge_operations(&mut last_other_op);
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let merged_length_signed =
-                            isize::try_from(merged_length).unwrap_or(isize::MAX);
-                        let seen_right_length_signed =
-                            isize::try_from(seen_right_length).unwrap_or(isize::MAX);
-                        let op_len_signed = isize::try_from(op.len()).unwrap_or(isize::MAX);
-                        let original_length_signed =
-                            isize::try_from(original_length).unwrap_or(isize::MAX);
+                        let merged_length_signed = isize::try_from(merged_length)
+                            .expect("merged_length must fit in isize");
+                        let seen_right_length_signed = isize::try_from(seen_right_length)
+                            .expect("seen_right_length must fit in isize");
+                        let op_len_signed =
+                            isize::try_from(op.len()).expect("op.len() must fit in isize");
+                        let original_length_signed = isize::try_from(original_length)
+                            .expect("original_length must fit in isize");
 
                         let shift = merged_length_signed - seen_right_length_signed + op_len_signed
                             - original_length_signed;
@@ -355,7 +357,7 @@ where
     /// Inserts are represented as strings, deletes as negative integers,
     /// and equal spans as positive integers.
     #[must_use]
-    pub fn to_changes(&self) -> Vec<NumberOrString> {
+    pub fn to_diff(&self) -> Vec<NumberOrString> {
         let mut result: Vec<NumberOrString> = Vec::with_capacity(self.operations.len());
         let mut previous_equal: Option<usize> = None;
 
@@ -372,7 +374,7 @@ where
                 Operation::Insert { text, .. } => {
                     if let Some(prev_length) = previous_equal {
                         result.push(NumberOrString::Number(
-                            i64::try_from(prev_length).unwrap_or(i64::MAX),
+                            i64::try_from(prev_length).expect("prev_length must fit in i64"),
                         ));
                         previous_equal = None;
                     }
@@ -390,12 +392,13 @@ where
                 } => {
                     if let Some(prev_length) = previous_equal {
                         result.push(NumberOrString::Number(
-                            i64::try_from(prev_length).unwrap_or(i64::MAX),
+                            i64::try_from(prev_length).expect("prev_length must fit in i64"),
                         ));
                         previous_equal = None;
                     }
 
-                    let count = i64::try_from(*deleted_character_count).unwrap_or(i64::MAX);
+                    let count = i64::try_from(*deleted_character_count)
+                        .expect("deleted_character_count must fit in i64");
                     result.push(NumberOrString::Number(-count));
                 }
             }
@@ -403,7 +406,7 @@ where
 
         if let Some(prev_length) = previous_equal {
             result.push(NumberOrString::Number(
-                i64::try_from(prev_length).unwrap_or(i64::MAX),
+                i64::try_from(prev_length).expect("prev_length must fit in i64"),
             ));
         }
 
@@ -412,19 +415,19 @@ where
 
     /// Deserialize an `EditedText` from a change list and the original text.
     #[must_use]
-    pub fn from_changes(
+    pub fn from_diff(
         original_text: &'a str,
-        simple_operations: Vec<NumberOrString>,
+        diff: Vec<NumberOrString>,
         tokenizer: &Tokenizer<T>,
     ) -> EditedText<'a, T> {
-        let mut operations: Vec<Operation<T>> = Vec::with_capacity(simple_operations.len());
+        let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
         let mut order = 0;
 
-        for simple_operation in simple_operations {
-            match simple_operation {
+        for item in diff {
+            match item {
                 NumberOrString::Number(length) => {
                     if length >= 0 {
-                        let length = usize::try_from(length).unwrap_or(usize::MAX);
+                        let length = usize::try_from(length).expect("length must fit in usize");
                         let original_characters: String =
                             original_text.chars().skip(order).take(length).collect();
 
@@ -435,7 +438,8 @@ where
                             order += token.get_original_length();
                         }
                     } else {
-                        let length = usize::try_from(-length).unwrap_or(usize::MAX);
+                        let length =
+                            usize::try_from(-length).expect("negative length must fit in usize");
                         operations.push(Operation::create_delete(order, length));
                         order += length;
                     }
@@ -509,7 +513,7 @@ mod tests {
         let original = "Merging text is hard!";
         let changes = "Merging text is easy with reconcile!";
         let result = EditedText::from_strings(original, &changes.into());
-        let serialized = serde_yaml::to_string(&result.to_changes()).unwrap();
+        let serialized = serde_yaml::to_string(&result.to_diff()).unwrap();
 
         let expected = concat!("- 15\n", "- -6\n", "- ' easy with reconcile!'\n",);
         assert_eq!(serialized, expected);
@@ -523,9 +527,9 @@ mod tests {
 
         let edited_text = EditedText::from_strings(original, &updated.into());
 
-        let changes = edited_text.to_changes();
+        let changes = edited_text.to_diff();
         let deserialized_edited_text =
-            EditedText::from_changes(original, changes, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(original, changes, &*BuiltinTokenizer::Word);
 
         assert_eq!(deserialized_edited_text.apply().text(), updated);
     }
