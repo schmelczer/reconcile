@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
+#[cfg(feature = "wasm")]
+#[allow(clippy::cast_precision_loss)]
+const INTEGRAL_LIMIT: f64 = (1u64 << 53) as f64;
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[derive(Debug, Clone, PartialEq)]
@@ -20,6 +24,17 @@ impl TryFrom<JsValue> for NumberOrString {
     fn try_from(value: JsValue) -> Result<Self, Self::Error> {
         if let Ok(num) = value.clone().try_into() {
             return Ok(NumberOrString::Number(num));
+        }
+
+        if let Some(num) = value.clone().as_f64() {
+            if num.abs() > INTEGRAL_LIMIT {
+                return Err(DeserialisationError::new(
+                    "Floating-point number exceeds safe integer limit, use BigInt instead",
+                ));
+            }
+
+            #[allow(clippy::cast_possible_truncation)]
+            return Ok(NumberOrString::Number(num.round() as i64));
         }
 
         if let Ok(text) = value.try_into() {

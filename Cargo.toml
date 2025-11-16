@@ -36,9 +36,9 @@ wee_alloc = { version = "0.4.2", optional = true }
 [features]
 default = []
 serde = [ "dep:serde" ]
-wasm = [ "dep:wasm-bindgen", "dep:wee_alloc" ]
+wasm = [ "dep:wasm-bindgen", "dep:wee_alloc", "console_error_panic_hook" ]
 console_error_panic_hook = [ "dep:console_error_panic_hook" ]
-all = [ "wasm", "console_error_panic_hook", "serde" ]
+all = [ "wasm", "serde" ]
 
 [dev-dependencies]
 insta = "1.43.2"
@@ -46,7 +46,7 @@ pretty_assertions = "1.4.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 test-case = "3.3.1"
-wasm-bindgen-test = "0.3.54"
+wasm-bindgen-test = "0.3.55"
 
 [profile.release]
 codegen-units = 1
@@ -55,7 +55,7 @@ opt-level = 3
 strip = "symbols"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-O4', '--enable-bulk-memory']
+wasm-opt = ['-O4', '--enable-bulk-memory', '--enable-nontrapping-float-to-int']
 
 [lints.rust]
 unsafe_code = "forbid"

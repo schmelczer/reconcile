@@ -211,7 +211,7 @@ export function diff(
 
   changedWasm.free();
 
-  return result;
+  return result.map((item) => (typeof item === 'bigint' ? Number(item) : item));
 }
 
 /**
@@ -227,7 +227,7 @@ export function diff(
  */
 export function undiff(
   original: string,
-  diff: Array<number | string>,
+  diff: Array<number | bigint | string>,
   tokenizer: BuiltinTokenizer = 'Word'
 ): string {
   init();
