@@ -1,6 +1,6 @@
 {
   "name": "reconcile-text",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Intelligent 3-way text merging with automated conflict resolution",
   "main": "dist/reconcile.node.js",
   "browser": "dist/reconcile.web.js",
