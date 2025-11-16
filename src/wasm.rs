@@ -125,7 +125,7 @@ impl TextWithCursorsAndHistory {
 /// Returns the UTF8 parsed string if it's a text, or `None` if it's likely
 /// binary.
 #[must_use]
-pub fn string_or_nothing(data: &[u8]) -> Option<String> {
+fn string_or_nothing(data: &[u8]) -> Option<String> {
     if data.contains(&0) {
         // Even though the NUL character is valid in UTF-8, it's highly suspicious in
         // human-readable text.

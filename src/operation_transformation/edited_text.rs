@@ -371,7 +371,9 @@ where
 
                 Operation::Insert { text, .. } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrString::Number(prev_length as i64));
+                        result.push(NumberOrString::Number(
+                            i64::try_from(prev_length).unwrap_or(i64::MAX),
+                        ));
                         previous_equal = None;
                     }
 
@@ -387,17 +389,22 @@ where
                     ..
                 } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrString::Number(prev_length as i64));
+                        result.push(NumberOrString::Number(
+                            i64::try_from(prev_length).unwrap_or(i64::MAX),
+                        ));
                         previous_equal = None;
                     }
 
-                    result.push(NumberOrString::Number(-(*deleted_character_count as i64)));
+                    let count = i64::try_from(*deleted_character_count).unwrap_or(i64::MAX);
+                    result.push(NumberOrString::Number(-count));
                 }
             }
         }
 
         if let Some(prev_length) = previous_equal {
-            result.push(NumberOrString::Number(prev_length as i64));
+            result.push(NumberOrString::Number(
+                i64::try_from(prev_length).unwrap_or(i64::MAX),
+            ));
         }
 
         result
@@ -417,7 +424,7 @@ where
             match simple_operation {
                 NumberOrString::Number(length) => {
                     if length >= 0 {
-                        let length = length as usize;
+                        let length = usize::try_from(length).unwrap_or(usize::MAX);
                         let original_characters: String =
                             original_text.chars().skip(order).take(length).collect();
 
@@ -428,7 +435,7 @@ where
                             order += token.get_original_length();
                         }
                     } else {
-                        let length = -length as usize;
+                        let length = usize::try_from(-length).unwrap_or(usize::MAX);
                         operations.push(Operation::create_delete(order, length));
                         order += length;
                     }

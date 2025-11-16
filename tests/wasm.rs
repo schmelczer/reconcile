@@ -59,8 +59,12 @@ fn test_merge_binary() {
 fn test_get_compact_diff() {
     let parent = "hello ";
     let changed = "world";
+
     let result = get_compact_diff(parent, &changed.into(), BuiltinTokenizer::Word);
+
     assert_eq!(result.len(), 2);
-    assert_eq!(result[0].as_f64().unwrap(), -6.0);
-    assert_eq!(result[1].as_string().unwrap(), "world");
+    let first: i64 = result[0].clone().try_into().unwrap();
+    let second: String = result[1].clone().try_into().unwrap();
+    assert_eq!(first, -6);
+    assert_eq!(second, "world");
 }

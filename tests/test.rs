@@ -3,7 +3,7 @@ mod example_document;
 use std::{fs, path::Path};
 
 use example_document::ExampleDocument;
-use reconcile_text::{BuiltinTokenizer, EditedText, reconcile};
+use reconcile_text::{BuiltinTokenizer, reconcile};
 use serde::Deserialize;
 
 #[test]
@@ -37,6 +37,8 @@ fn test_document_one_way_with_cursors() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_document_one_way_with_serialisation() {
+    use reconcile_text::EditedText;
+
     for doc in &get_all_documents() {
         let parent = doc.parent();
         let left_operations =
