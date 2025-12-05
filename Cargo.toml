@@ -41,7 +41,7 @@ console_error_panic_hook = [ "dep:console_error_panic_hook" ]
 all = [ "wasm", "serde" ]
 
 [dev-dependencies]
-insta = "1.43.2"
+insta = "1.44.3"
 pretty_assertions = "1.4.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
