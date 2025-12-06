@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 
 #[cfg(feature = "serde")]
@@ -57,6 +58,30 @@ impl From<NumberOrString> for JsValue {
     }
 }
 
+impl From<i64> for NumberOrString {
+    fn from(value: i64) -> Self {
+        NumberOrString::Number(value)
+    }
+}
+
+impl From<String> for NumberOrString {
+    fn from(value: String) -> Self {
+        NumberOrString::Text(value)
+    }
+}
+
+impl From<&str> for NumberOrString {
+    fn from(value: &str) -> Self {
+        NumberOrString::Text(value.to_string())
+    }
+}
+
+impl<'a> From<Cow<'a, str>> for NumberOrString {
+    fn from(value: Cow<'a, str>) -> Self {
+        NumberOrString::Text(value.into_owned())
+    }
+}
+
 /// Error type for deserialisation failures
 #[cfg(feature = "wasm")]
 #[derive(Debug, Clone)]
@@ -85,5 +110,7 @@ impl std::error::Error for DeserialisationError {}
 
 #[cfg(feature = "wasm")]
 impl From<DeserialisationError> for JsValue {
-    fn from(error: DeserialisationError) -> Self { JsValue::from_str(&error.message) }
+    fn from(error: DeserialisationError) -> Self {
+        JsValue::from_str(&error.message)
+    }
 }
