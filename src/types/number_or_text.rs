@@ -12,18 +12,18 @@ const INTEGRAL_LIMIT: f64 = (1u64 << 53) as f64;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[derive(Debug, Clone, PartialEq)]
-pub enum NumberOrString {
+pub enum NumberOrText {
     Number(i64),
     Text(String),
 }
 
 #[cfg(feature = "wasm")]
-impl TryFrom<JsValue> for NumberOrString {
+impl TryFrom<JsValue> for NumberOrText {
     type Error = DeserialisationError;
 
     fn try_from(value: JsValue) -> Result<Self, Self::Error> {
         if let Ok(num) = value.clone().try_into() {
-            return Ok(NumberOrString::Number(num));
+            return Ok(NumberOrText::Number(num));
         }
 
         if let Some(num) = value.clone().as_f64() {
@@ -34,11 +34,11 @@ impl TryFrom<JsValue> for NumberOrString {
             }
 
             #[allow(clippy::cast_possible_truncation)]
-            return Ok(NumberOrString::Number(num.round() as i64));
+            return Ok(NumberOrText::Number(num.round() as i64));
         }
 
         if let Ok(text) = value.try_into() {
-            return Ok(NumberOrString::Text(text));
+            return Ok(NumberOrText::Text(text));
         }
 
         Err(DeserialisationError::new(
@@ -48,29 +48,29 @@ impl TryFrom<JsValue> for NumberOrString {
 }
 
 #[cfg(feature = "wasm")]
-impl From<NumberOrString> for JsValue {
-    fn from(value: NumberOrString) -> Self {
+impl From<NumberOrText> for JsValue {
+    fn from(value: NumberOrText) -> Self {
         match value {
-            NumberOrString::Number(num) => JsValue::from(num),
-            NumberOrString::Text(text) => JsValue::from(text),
+            NumberOrText::Number(num) => JsValue::from(num),
+            NumberOrText::Text(text) => JsValue::from(text),
         }
     }
 }
 
-impl From<i64> for NumberOrString {
-    fn from(value: i64) -> Self { NumberOrString::Number(value) }
+impl From<i64> for NumberOrText {
+    fn from(value: i64) -> Self { NumberOrText::Number(value) }
 }
 
-impl From<String> for NumberOrString {
-    fn from(value: String) -> Self { NumberOrString::Text(value) }
+impl From<String> for NumberOrText {
+    fn from(value: String) -> Self { NumberOrText::Text(value) }
 }
 
-impl From<&str> for NumberOrString {
-    fn from(value: &str) -> Self { NumberOrString::Text(value.to_owned()) }
+impl From<&str> for NumberOrText {
+    fn from(value: &str) -> Self { NumberOrText::Text(value.to_owned()) }
 }
 
-impl<'a> From<Cow<'a, str>> for NumberOrString {
-    fn from(value: Cow<'a, str>) -> Self { NumberOrString::Text(value.into_owned()) }
+impl<'a> From<Cow<'a, str>> for NumberOrText {
+    fn from(value: Cow<'a, str>) -> Self { NumberOrText::Text(value.into_owned()) }
 }
 
 /// Error type for deserialisation failures

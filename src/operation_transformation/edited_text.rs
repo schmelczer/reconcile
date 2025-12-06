@@ -12,7 +12,7 @@ use crate::{
     raw_operation::RawOperation,
     tokenizer::Tokenizer,
     types::{
-        history::History, number_or_string::NumberOrString, side::Side,
+        history::History, number_or_text::NumberOrText, side::Side,
         span_with_history::SpanWithHistory,
     },
     utils::string_builder::StringBuilder,
@@ -366,8 +366,8 @@ where
     ///
     /// Panics if there's an integer overflow in i64.
     #[must_use]
-    pub fn to_diff(&self) -> Vec<NumberOrString> {
-        let mut result: Vec<NumberOrString> = Vec::with_capacity(self.operations.len());
+    pub fn to_diff(&self) -> Vec<NumberOrText> {
+        let mut result: Vec<NumberOrText> = Vec::with_capacity(self.operations.len());
         let mut previous_equal: Option<usize> = None;
 
         for operation in &self.operations {
@@ -382,7 +382,7 @@ where
 
                 Operation::Insert { text, .. } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrString::Number(
+                        result.push(NumberOrText::Number(
                             i64::try_from(prev_length).expect("prev_length must fit in i64"),
                         ));
                         previous_equal = None;
@@ -392,7 +392,7 @@ where
                         .iter()
                         .map(super::super::tokenizer::token::Token::original)
                         .collect();
-                    result.push(NumberOrString::Text(text));
+                    result.push(NumberOrText::Text(text));
                 }
 
                 Operation::Delete {
@@ -400,7 +400,7 @@ where
                     ..
                 } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrString::Number(
+                        result.push(NumberOrText::Number(
                             i64::try_from(prev_length).expect("prev_length must fit in i64"),
                         ));
                         previous_equal = None;
@@ -408,13 +408,13 @@ where
 
                     let count = i64::try_from(*deleted_character_count)
                         .expect("deleted_character_count must fit in i64");
-                    result.push(NumberOrString::Number(-count));
+                    result.push(NumberOrText::Number(-count));
                 }
             }
         }
 
         if let Some(prev_length) = previous_equal {
-            result.push(NumberOrString::Number(
+            result.push(NumberOrText::Number(
                 i64::try_from(prev_length).expect("prev_length must fit in i64"),
             ));
         }
@@ -434,7 +434,7 @@ where
     /// Panics if there's an integer overflow in i64.
     pub fn from_diff(
         original_text: &'a str,
-        diff: Vec<NumberOrString>,
+        diff: Vec<NumberOrText>,
         tokenizer: &Tokenizer<T>,
     ) -> Result<EditedText<'a, T>, DiffError> {
         let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
@@ -442,7 +442,7 @@ where
 
         for item in diff {
             match item {
-                NumberOrString::Number(length) => {
+                NumberOrText::Number(length) => {
                     if length >= 0 {
                         let length = usize::try_from(length).expect("length must fit in usize");
 
@@ -483,7 +483,7 @@ where
                         order += length;
                     }
                 }
-                NumberOrString::Text(text) => {
+                NumberOrText::Text(text) => {
                     let tokens = tokenizer(&text);
                     operations.push(Operation::create_insert(order, tokens));
                 }

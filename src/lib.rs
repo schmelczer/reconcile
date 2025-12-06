@@ -218,8 +218,8 @@ mod utils;
 pub use operation_transformation::{DiffError, EditedText, reconcile};
 pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
 pub use types::{
-    cursor_position::CursorPosition, history::History, number_or_string::NumberOrString,
-    side::Side, span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
+    cursor_position::CursorPosition, history::History, number_or_text::NumberOrText, side::Side,
+    span_with_history::SpanWithHistory, text_with_cursors::TextWithCursors,
 };
 
 #[cfg(feature = "wasm")]
