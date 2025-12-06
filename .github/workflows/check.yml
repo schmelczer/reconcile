@@ -37,20 +37,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Setup rust
-        run: |
-          which wasm-pack || cargo install wasm-pack
-          which cargo-machete || cargo install cargo-machete
-
-      - name: Build wasm
-        run: |
-          wasm-pack build --target web --features wasm
-
       - name: Lint
-        run: |
-          cargo clippy --all-targets --all-features
-          cargo fmt --all -- --check
-          cargo machete
+        run: scripts/lint.sh
 
       - name: Test
         run: scripts/test.sh
@@ -117,19 +105,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
-      - name: Setup rust
-        run: |
-          which wasm-pack || cargo install wasm-pack
-
-      - name: Build wasm
-        run: |
-          wasm-pack build --target web --features wasm
-
-      - name: Build reconcile-js
-        run: |
-          cd reconcile-js
-          npm ci
-          npm run build
+      - name: Build website
+        run: scripts/build-website.sh
 
       - name: Publish reconcile-js to NPM
         run: |

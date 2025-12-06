@@ -2,6 +2,9 @@
 
 set -e
 
+which cargo-machete || cargo install cargo-machete
+cargo machete
+
 cargo clippy --all-targets --all-features --fix --allow-dirty --allow-staged
 cargo fmt --all
 
