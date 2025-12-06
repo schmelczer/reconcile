@@ -25,7 +25,11 @@ else
 fi
 
 echo "Bumping versions"
+
+which cargo-set-version || cargo install cargo-edit
 cargo set-version --bump $1
+
+which wasm-pack || cargo install wasm-pack
 
 wasm-pack build --target web --features wasm
 

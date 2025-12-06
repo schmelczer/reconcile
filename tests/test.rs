@@ -57,9 +57,9 @@ fn test_document_one_way_with_serialisation() {
                 .unwrap();
 
         let restored_left_operations =
-            EditedText::from_diff(&parent, serialised_left, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(&parent, serialised_left, &*BuiltinTokenizer::Word).unwrap();
         let restored_right_operations =
-            EditedText::from_diff(&parent, serialised_right, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(&parent, serialised_right, &*BuiltinTokenizer::Word).unwrap();
 
         doc.assert_eq_without_cursors(
             &restored_left_operations

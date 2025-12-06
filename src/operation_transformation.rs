@@ -1,8 +1,10 @@
+mod diff_error;
 mod edited_text;
 mod operation;
 mod utils;
 use std::fmt::Debug;
 
+pub use diff_error::DiffError;
 pub use edited_text::EditedText;
 pub use operation::Operation;
 

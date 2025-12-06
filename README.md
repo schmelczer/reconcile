@@ -125,13 +125,9 @@ Contributions are welcome!
 
 #### Rust toolchain
 
-1. Install [rustup](https://rustup.rs):
+Install [rustup](https://rustup.rs):
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-2. Install additional tools:
-   ```bash
-   cargo install wasm-pack cargo-insta cargo-edit
    ```
 
 ### Scripts

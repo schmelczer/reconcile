@@ -105,16 +105,17 @@ pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer
 pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> String {
     set_panic_hook();
 
-    EditedText::from_diff(
+    match EditedText::from_diff(
         parent,
         diff.into_iter()
             .map(std::convert::TryInto::try_into)
             .collect::<Result<_, _>>()
             .expect("Invalid diff format"),
         &*tokenizer,
-    )
-    .apply()
-    .text()
+    ) {
+        Ok(edited_text) => edited_text.apply().text(),
+        Err(e) => panic!("{}", e),
+    }
 }
 
 fn set_panic_hook() {
