@@ -2,7 +2,9 @@
 
 set -e
 
+which  wasm-pack || cargo install wasm-pack
 wasm-pack build --target web --features wasm
+
 cd reconcile-js
 npm ci
 npm run build
