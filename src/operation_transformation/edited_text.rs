@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     BuiltinTokenizer, CursorPosition, TextWithCursors,
     operation_transformation::{
-        Operation,
+        DiffError, Operation,
         utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
     },
     raw_operation::RawOperation,
@@ -424,15 +424,19 @@ where
 
     /// Deserialize an `EditedText` from a change list and the original text.
     ///
+    /// # Errors
+    ///
+    /// Returns `DiffError::LengthExceedsOriginal` if the diff references a
+    /// range that exceeds the original text length.
+    ///
     /// # Panics
     ///
     /// Panics if there's an integer overflow in i64.
-    #[must_use]
     pub fn from_diff(
         original_text: &'a str,
         diff: Vec<NumberOrString>,
         tokenizer: &Tokenizer<T>,
-    ) -> EditedText<'a, T> {
+    ) -> Result<EditedText<'a, T>, DiffError> {
         let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
         let mut order = 0;
 
@@ -441,6 +445,17 @@ where
                 NumberOrString::Number(length) => {
                     if length >= 0 {
                         let length = usize::try_from(length).expect("length must fit in usize");
+
+                        // Validate that the range doesn't exceed the original text
+                        let text_length = original_text.chars().count();
+                        if order + length > text_length {
+                            return Err(DiffError::LengthExceedsOriginal {
+                                position: order,
+                                requested: length,
+                                available: text_length.saturating_sub(order),
+                            });
+                        }
+
                         let original_characters: String =
                             original_text.chars().skip(order).take(length).collect();
 
@@ -453,6 +468,17 @@ where
                     } else {
                         let length =
                             usize::try_from(-length).expect("negative length must fit in usize");
+
+                        // Validate that the delete range doesn't exceed the original text
+                        let text_length = original_text.chars().count();
+                        if order + length > text_length {
+                            return Err(DiffError::LengthExceedsOriginal {
+                                position: order,
+                                requested: length,
+                                available: text_length.saturating_sub(order),
+                            });
+                        }
+
                         operations.push(Operation::create_delete(order, length));
                         order += length;
                     }
@@ -465,12 +491,12 @@ where
         }
 
         let operation_count = operations.len();
-        EditedText::new(
+        Ok(EditedText::new(
             original_text,
             operations,
             vec![Side::Left; operation_count],
             vec![],
-        )
+        ))
     }
 }
 
@@ -520,6 +546,49 @@ mod tests {
         assert_eq!(operations.apply().text(), expected);
     }
 
+    #[test]
+    fn test_from_diff_length_exceeds_original() {
+        let result = EditedText::from_diff(
+            "hello",
+            vec![
+                10.into(), // too large equal span - should error
+                " world".into(),
+            ],
+            &*BuiltinTokenizer::Word,
+        );
+
+        assert!(result.is_err());
+        match result {
+            Err(DiffError::LengthExceedsOriginal {
+                position,
+                requested,
+                available,
+            }) => {
+                assert_eq!(position, 0);
+                assert_eq!(requested, 10);
+                assert_eq!(available, 5);
+            }
+            _ => panic!("Expected LengthExceedsOriginal error"),
+        }
+    }
+
+    #[test]
+    fn test_from_diff_valid() {
+        let edited_text = EditedText::from_diff(
+            "hello",
+            vec![
+                5.into(), // exact length
+                " world".into(),
+            ],
+            &*BuiltinTokenizer::Word,
+        )
+        .unwrap();
+
+        let content = edited_text.apply().text();
+
+        assert_eq!(content, "hello world");
+    }
+
     #[cfg(feature = "serde")]
     #[test]
     fn test_changes_deserialisation() {
@@ -542,7 +611,7 @@ mod tests {
 
         let changes = edited_text.to_diff();
         let deserialized_edited_text =
-            EditedText::from_diff(original, changes, &*BuiltinTokenizer::Word);
+            EditedText::from_diff(original, changes, &*BuiltinTokenizer::Word).unwrap();
 
         assert_eq!(deserialized_edited_text.apply().text(), updated);
     }

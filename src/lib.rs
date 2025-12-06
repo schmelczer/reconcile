@@ -187,7 +187,7 @@
 //!     original,
 //!     deserialized,
 //!     &*BuiltinTokenizer::Word
-//! );
+//! ).unwrap();
 //! assert_eq!(
 //!     reconstructed.apply().text(),
 //!     "Merging text is easy with reconcile!"
@@ -215,7 +215,7 @@ mod tokenizer;
 mod types;
 mod utils;
 
-pub use operation_transformation::{EditedText, reconcile};
+pub use operation_transformation::{DiffError, EditedText, reconcile};
 pub use tokenizer::{BuiltinTokenizer, Tokenizer, token::Token};
 pub use types::{
     cursor_position::CursorPosition, history::History, number_or_string::NumberOrString,
