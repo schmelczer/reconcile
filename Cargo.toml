@@ -26,7 +26,7 @@ path = "examples/compare-with-diff-match-patch.rs"
 
 [dependencies]
 serde = { version = "1.0.219", optional = true, features = ["derive"] }
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 
 wasm-bindgen = { version = "0.2.99", optional = true }
 
