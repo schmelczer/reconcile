@@ -329,7 +329,12 @@ where
                     order,
                     ..
                 } => {
-                    let deleted = self.text[*order..*order + *deleted_character_count].to_string();
+                    let deleted: String = self
+                        .text
+                        .chars()
+                        .skip(*order)
+                        .take(*deleted_character_count)
+                        .collect();
                     match side {
                         Side::Left => {
                             history.push(SpanWithHistory::new(deleted, History::RemovedFromLeft));
@@ -590,6 +595,24 @@ mod tests {
 
         let expected = concat!("- 15\n", "- -6\n", "- ' easy with reconcile!'\n",);
         assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_apply_with_history_utf8() {
+        let parent = "こんにちは世界"; // "Hello World" in Japanese (7 chars, 21 bytes)
+        let left = "こんにちは宇宙"; // Changed 世界 to 宇宙
+        let right = parent;
+
+        let result = crate::reconcile(
+            parent,
+            &left.into(),
+            &right.into(),
+            &*BuiltinTokenizer::Word,
+        );
+
+        let history = result.apply_with_history();
+        assert!(!history.is_empty());
+        assert_eq!(result.apply().text(), "こんにちは宇宙");
     }
 
     #[cfg(feature = "serde")]
