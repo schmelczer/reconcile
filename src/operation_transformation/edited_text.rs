@@ -435,6 +435,7 @@ where
     ) -> Result<EditedText<'a, T>, DiffError> {
         let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
         let mut order = 0;
+        let text_length = original_text.chars().count();
 
         for item in diff {
             match item {
@@ -443,7 +444,6 @@ where
                         let length = usize::try_from(length).expect("length must fit in usize");
 
                         // Validate that the range doesn't exceed the original text
-                        let text_length = original_text.chars().count();
                         if order + length > text_length {
                             return Err(DiffError::LengthExceedsOriginal {
                                 position: order,
@@ -466,7 +466,6 @@ where
                             usize::try_from(-length).expect("negative length must fit in usize");
 
                         // Validate that the delete range doesn't exceed the original text
-                        let text_length = original_text.chars().count();
                         if order + length > text_length {
                             return Err(DiffError::LengthExceedsOriginal {
                                 position: order,
