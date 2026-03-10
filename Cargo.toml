@@ -20,6 +20,10 @@ crate-type = ["cdylib", "rlib"]
 name = "merge-file"
 path = "examples/merge-file.rs"
 
+[[example]]
+name = "compare-with-diff-match-patch"
+path = "examples/compare-with-diff-match-patch.rs"
+
 [dependencies]
 serde = { version = "1.0.219", optional = true, features = ["derive"] }
 thiserror = "2.0.17"
@@ -48,6 +52,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 test-case = "3.3.1"
 wasm-bindgen-test = "0.3.56"
+diff-match-patch-rs = "0.5"
 
 [profile.release]
 codegen-units = 1
