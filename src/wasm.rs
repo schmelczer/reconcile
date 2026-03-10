@@ -5,9 +5,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::{BuiltinTokenizer, CursorPosition, EditedText, SpanWithHistory, TextWithCursors};
 
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
-
 /// WASM wrapper around `crate::reconcile` for merging text
 #[wasm_bindgen(js_name = reconcile)]
 #[must_use]
@@ -34,11 +31,11 @@ pub fn reconcile_with_history(
     set_panic_hook();
 
     let reconciled = crate::reconcile(parent, left, right, &*tokenizer);
-    let text_with_cursors = reconciled.apply();
+    let (text_with_cursors, history) = reconciled.apply_with_all();
 
     TextWithCursorsAndHistory {
         text_with_cursors,
-        history: reconciled.apply_with_history(),
+        history,
     }
 }
 
@@ -81,17 +78,23 @@ pub fn generic_reconcile(
 
 /// WASM wrapper around getting a compact diff representation of two texts as a
 /// list of numbers and strings
+///
+/// # Errors
+///
+/// Returns a JS error if integer overflow occurs during diff computation.
 #[wasm_bindgen(js_name = diff)]
-#[must_use]
-pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer) -> Vec<JsValue> {
+pub fn diff(
+    parent: &str,
+    changed: &TextWithCursors,
+    tokenizer: BuiltinTokenizer,
+) -> Result<Vec<JsValue>, JsValue> {
     set_panic_hook();
 
     let edited_text = EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
     edited_text
         .to_diff()
-        .into_iter()
-        .map(std::convert::Into::into)
-        .collect()
+        .map(|diff| diff.into_iter().map(std::convert::Into::into).collect())
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Inverse of `diff`, applies a compact diff representation to a parent text

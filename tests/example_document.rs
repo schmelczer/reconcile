@@ -65,9 +65,9 @@ impl ExampleDocument {
         let mut result = merged.text();
         for (i, cursor) in merged.cursors().iter().enumerate() {
             assert!(
-                cursor.char_index <= result.len(), // equals in case of insert at the end
+                cursor.char_index() <= result.len(), // equals in case of insert at the end
                 "Cursor index out of bounds: {} > {} when testing for '{}.'",
-                cursor.char_index,
+                cursor.char_index(),
                 result.len(),
                 result
             );
@@ -75,7 +75,7 @@ impl ExampleDocument {
             result.insert(
                 result
                     .char_indices()
-                    .nth(cursor.char_index + i)
+                    .nth(cursor.char_index() + i)
                     .map_or_else(|| result.len(), |(byte_index, _)| byte_index), /* find the utf8 char index of the insert
                                                                                   * in byte index */
                 '|',
@@ -94,10 +94,7 @@ impl ExampleDocument {
         let mut cursors = Vec::new();
         for (i, c) in text.chars().enumerate() {
             if c == '|' {
-                cursors.push(CursorPosition {
-                    id: 0,
-                    char_index: i - cursors.len(),
-                });
+                cursors.push(CursorPosition::new(0, i - cursors.len()));
             }
         }
         cursors

@@ -49,12 +49,14 @@ fn test_document_one_way_with_serialisation() {
             &*BuiltinTokenizer::Word,
         );
 
-        let serialised_left =
-            serde_yaml::from_str(&serde_yaml::to_string(&left_operations.to_diff()).unwrap())
-                .unwrap();
-        let serialised_right =
-            serde_yaml::from_str(&serde_yaml::to_string(&right_operations.to_diff()).unwrap())
-                .unwrap();
+        let serialised_left = serde_yaml::from_str(
+            &serde_yaml::to_string(&left_operations.to_diff().unwrap()).unwrap(),
+        )
+        .unwrap();
+        let serialised_right = serde_yaml::from_str(
+            &serde_yaml::to_string(&right_operations.to_diff().unwrap()).unwrap(),
+        )
+        .unwrap();
 
         let restored_left_operations =
             EditedText::from_diff(&parent, serialised_left, &*BuiltinTokenizer::Word).unwrap();

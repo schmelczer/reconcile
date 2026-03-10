@@ -16,4 +16,11 @@ pub enum DiffError {
         /// The number of characters available from the position
         available: usize,
     },
+
+    /// A character count was too large to represent as i64
+    #[error("Integer overflow: value {value} cannot be represented as i64")]
+    IntegerOverflow {
+        /// The value that caused the overflow
+        value: usize,
+    },
 }

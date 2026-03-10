@@ -1,10 +1,10 @@
-use std::{fmt, iter::Iterator};
+use std::{fmt, str::Chars};
 
 /// A helper for building a string sequentially from an original string via
 /// insertions, deletions, and copies. All operations use character counts,
 /// safe for UTF-8. Methods must be called in-order.
 pub struct StringBuilder<'a> {
-    original: Box<dyn Iterator<Item = char> + 'a>,
+    original: Chars<'a>,
     buffer: String,
 
     #[cfg(debug_assertions)]
@@ -26,7 +26,7 @@ impl fmt::Debug for StringBuilder<'_> {
 impl StringBuilder<'_> {
     pub fn new(original: &str) -> StringBuilder<'_> {
         StringBuilder {
-            original: Box::new(original.chars()),
+            original: original.chars(),
             buffer: String::with_capacity(original.len()),
 
             #[cfg(debug_assertions)]

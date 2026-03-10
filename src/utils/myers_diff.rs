@@ -90,7 +90,7 @@ impl V {
         let offset = isize::try_from(max_d).expect("max_d must fit in isize");
         Self {
             offset,
-            v: vec![0; 2 * max_d],
+            v: vec![0; 2 * max_d + 1],
         }
     }
 

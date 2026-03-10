@@ -22,7 +22,7 @@ where
 {
     pub fn vec_from(left: &[Token<T>], right: &[Token<T>]) -> Vec<Self> { myers_diff(left, right) }
 
-    pub fn tokens(&self) -> &Vec<Token<T>> {
+    pub fn tokens(&self) -> &[Token<T>] {
         match self {
             RawOperation::Insert(tokens)
             | RawOperation::Delete(tokens)
@@ -34,7 +34,9 @@ where
         self.tokens().iter().map(Token::get_original_length).sum()
     }
 
-    pub fn get_original_text(self) -> String { self.tokens().iter().map(Token::original).collect() }
+    pub fn get_original_text(&self) -> String {
+        self.tokens().iter().map(Token::original).collect()
+    }
 
     pub fn is_left_joinable(&self) -> bool {
         let first_token = self.tokens().first();

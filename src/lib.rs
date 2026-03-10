@@ -100,11 +100,11 @@
 //! let parent = "Hello world";
 //! let left = TextWithCursors::new(
 //!     "Hello beautiful world".to_string(),
-//!     vec![CursorPosition { id: 1, char_index: 6 }] // After "Hello "
+//!     vec![CursorPosition::new(1, 6)] // After "Hello "
 //! );
 //! let right = TextWithCursors::new(
 //!     "Hi world".to_string(),
-//!     vec![CursorPosition { id: 2, char_index: 0 }] // At the beginning
+//!     vec![CursorPosition::new(2, 0)] // At the beginning
 //! );
 //!
 //! let result = reconcile(parent, &left, &right, &*BuiltinTokenizer::Word);
@@ -173,7 +173,7 @@
 //!     &changes.into()
 //! );
 //!
-//! let serialized = serde_yaml::to_string(&result.to_diff()).unwrap();
+//! let serialized = serde_yaml::to_string(&result.to_diff().unwrap()).unwrap();
 //! assert_eq!(
 //!     serialized,
 //!     concat!(

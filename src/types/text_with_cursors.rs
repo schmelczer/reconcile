@@ -39,6 +39,11 @@ impl TextWithCursors {
     pub fn cursors(&self) -> Vec<CursorPosition> { self.cursors.clone() }
 }
 
+impl TextWithCursors {
+    #[must_use]
+    pub fn text_ref(&self) -> &str { &self.text }
+}
+
 impl<'a> From<&'a str> for TextWithCursors {
     fn from(text: &'a str) -> Self {
         Self {

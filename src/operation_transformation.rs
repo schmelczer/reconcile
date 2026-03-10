@@ -156,7 +156,7 @@ mod test {
                     .unwrap()
                     .chars()
                     .skip(range.start)
-                    .take(range.end)
+                    .take(range.len())
                     .collect::<String>()
             })
             .collect::<Vec<_>>();

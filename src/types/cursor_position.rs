@@ -10,8 +10,8 @@ use wasm_bindgen::prelude::*;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct CursorPosition {
-    pub id: usize,
-    pub char_index: usize,
+    pub(crate) id: usize,
+    pub(crate) char_index: usize,
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]

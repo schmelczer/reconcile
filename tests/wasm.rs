@@ -60,7 +60,7 @@ fn test_diff() {
     let parent = "hello ";
     let changed = "world";
 
-    let result = diff(parent, &changed.into(), BuiltinTokenizer::Word);
+    let result = diff(parent, &changed.into(), BuiltinTokenizer::Word).unwrap();
 
     assert_eq!(result.len(), 2);
     let first: i64 = result[0].clone().try_into().unwrap();
