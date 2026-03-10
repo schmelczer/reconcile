@@ -85,8 +85,11 @@ fn main() {
     // reconcile-text understands both edits relative to the common ancestor
     // and keeps both.
     try_merge(
-        "We used the existing parsing approach for processing. The output was saved to the database.",
-        "We used the existing parsing approach for processing. Always validate the schema! The output was saved to the database.",
-        "We adopted a brand new analysis pipeline for execution. The results were written to cloud storage.",
+        "We used the existing parsing approach for processing. The output was saved to the \
+         database.",
+        "We used the existing parsing approach for processing. Always validate the schema! The \
+         output was saved to the database.",
+        "We adopted a brand new analysis pipeline for execution. The results were written to \
+         cloud storage.",
     );
 }

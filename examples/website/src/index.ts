@@ -28,7 +28,10 @@ async function main(): Promise<void> {
   rightTextArea.addEventListener('input', scheduleUpdate);
 
   document.addEventListener('selectionchange', () => {
-    if (document.activeElement === leftTextArea || document.activeElement === rightTextArea) {
+    if (
+      document.activeElement === leftTextArea ||
+      document.activeElement === rightTextArea
+    ) {
       scheduleUpdate();
     }
   });
@@ -112,7 +115,11 @@ function updateMergedText(): void {
 
     for (const character of text) {
       let className = history;
-      if (!isDelete && selectionStart <= currentPosition && currentPosition < selectionEnd) {
+      if (
+        !isDelete &&
+        selectionStart <= currentPosition &&
+        currentPosition < selectionEnd
+      ) {
         className += ` selection-${selectionSide}`;
       }
 
