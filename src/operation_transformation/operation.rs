@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-/// Represents a change that can be applied on a `StringBuilder`.
+/// Represents a change that can be applied on a `StringBuilder`
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq)]
 pub enum Operation<T>
@@ -47,7 +47,7 @@ where
     T: PartialEq + Clone + Debug,
 {
     /// Creates an equal (retain) operation starting at the given character
-    /// offset in the original text.
+    /// offset in the original text
     pub fn create_equal(order: usize, length: usize) -> Self {
         Operation::Equal {
             order,
@@ -69,13 +69,13 @@ where
     }
 
     /// Creates an insert operation at the given character offset with the
-    /// given tokens.
+    /// given tokens
     pub fn create_insert(order: usize, text: Vec<Token<T>>) -> Self {
         Operation::Insert { order, text }
     }
 
     /// Creates a delete operation at the given character offset for the
-    /// specified number of characters.
+    /// specified number of characters
     pub fn create_delete(order: usize, deleted_character_count: usize) -> Self {
         Operation::Delete {
             order,

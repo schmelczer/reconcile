@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::Token;
 
 /// Given two lists of tokens, returns `length` where the `old` list
-/// somewhere within contains the `length` prefix of the `new` list.
+/// somewhere within contains the `length` prefix of the `new` list
 ///
 /// ## Example
 ///

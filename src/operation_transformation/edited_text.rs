@@ -54,7 +54,7 @@ where
     T: PartialEq + Clone + Debug,
 {
     /// Create an `EditedText` from the given original and updated strings
-    /// using the provided tokenizer.
+    /// using the provided tokenizer
     pub fn from_strings_with_tokenizer(
         original: &'a str,
         updated: &TextWithCursors,
@@ -256,7 +256,7 @@ where
         )
     }
 
-    /// Apply the operations to the text and return the resulting text.
+    /// Apply the operations to the text and return the resulting text
     #[must_use]
     pub fn apply(&self) -> TextWithCursors {
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
@@ -355,8 +355,8 @@ where
     /// This is useful for sending text diffs over the network if there's a
     /// clear consensus on the original text.
     ///
-    /// Inserts are represented as strings, deletes as negative integers,
-    /// and equal spans as positive integers.
+    /// Inserts are strings, deletes are negative integers (character count),
+    /// and retained spans are positive integers (character count).
     ///
     /// # Panics
     ///

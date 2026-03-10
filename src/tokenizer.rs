@@ -12,7 +12,7 @@ use wasm_bindgen::prelude::*;
 
 pub mod token;
 
-/// Type alias for tokenizer functions that split a string into tokens.
+/// Type alias for tokenizer functions that split a string into tokens
 pub type Tokenizer<T> = dyn Fn(&str) -> Vec<Token<T>>;
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]

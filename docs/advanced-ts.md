@@ -42,9 +42,9 @@ console.log(result.history); /*
 
 `reconcile-text` offers different approaches to split text for merging:
 
-- **Word tokeniser** (`"Word"`) — Splits on word boundaries (recommended for prose)
-- **Character tokeniser** (`"Character"`) — Individual characters (fine-grained control)
-- **Line tokeniser** (`"Line"`) — Line-by-line (similar to `git merge` or more precisely [`git merge-file`](https://git-scm.com/docs/git-merge-file))
+- **Word tokeniser** (`"Word"`) - Splits on word boundaries (recommended for prose)
+- **Character tokeniser** (`"Character"`) - Individual characters (fine-grained control)
+- **Line tokeniser** (`"Line"`) - Line-by-line (similar to `git merge` or more precisely [`git merge-file`](https://git-scm.com/docs/git-merge-file))
 
 ## Cursor Tracking
 

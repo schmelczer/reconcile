@@ -54,11 +54,8 @@ export interface TextWithCursors {
 }
 
 /**
- * Represents a text document with associated cursor positions.
- *
- * This interface is used both as input to reconcile functions (to specify where
- * cursors are positioned in the original documents) and as output (with cursors
- * automatically repositioned after merging).
+ * Like `TextWithCursors`, but cursors may be null or undefined (treated as empty).
+ * Used as input where cursor tracking is optional.
  */
 export interface TextWithOptionalCursors {
   /** The document's entire content as a string */
@@ -97,7 +94,7 @@ export interface TextWithCursorsAndHistory {
   text: string;
 
   /**
-   * Array of cursor positions within the merged text. Can empty if there are no cursors to track.
+   * Array of cursor positions within the merged text. Can be empty if there are no cursors to track.
    * All cursors are automatically repositioned from the left and right documents.
    */
   cursors: CursorPosition[];
@@ -124,9 +121,9 @@ export interface SpanWithHistory {
   history: History;
 }
 
-const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer. Only ${BUILTIN_TOKENIZERS.join(
+const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer, only ${BUILTIN_TOKENIZERS.join(
   ', '
-)} are supported.`;
+)} are supported`;
 
 let isInitialised = false;
 
@@ -192,7 +189,7 @@ export function reconcile(
  * @param original - The original/base version of the text
  * @param changed - The modified version of the text (either string or TextWithCursors with cursor positions)
  * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
- * @returns An array representing the compact diff, with inserts as strings and deletes as negative integers.
+ * @returns An array of inserts (strings), deletes (negative integers), and retained spans (positive integers).
  */
 export function diff(
   original: string,
@@ -221,7 +218,7 @@ export function diff(
  * by the `diff` function) and reconstructs the modified text.
  *
  * @param original - The original/base version of the text
- * @param diff - The compact diff array representing changes (inserts as strings, deletes as negative integers)
+ * @param diff - The compact diff array (inserts as strings, deletes as negative integers, retained spans as positive integers)
  * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
  * @returns The reconstructed changed text as a string.
  */
@@ -242,7 +239,7 @@ export function undiff(
 /**
  * Merges three versions of text and returns detailed provenance information.
  *
- * This function behaves identically to `reconcile()` but additionally provides
+ * This function behaves like `reconcile()` but also provides
  * detailed historical information about the origin of each text span in the result.
  * This is valuable for understanding how the merge was performed and which changes
  * came from which source.

@@ -1,6 +1,6 @@
 use super::token::Token;
 
-/// Splits text into lines, preserving line endings as separate tokens.
+/// Splits text into lines, preserving line endings as separate tokens
 ///
 /// ## Example
 ///

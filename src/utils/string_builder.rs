@@ -34,11 +34,11 @@ impl StringBuilder<'_> {
         }
     }
 
-    /// Insert a string at the end of the built buffer.
+    /// Insert a string at the end of the built buffer
     pub fn insert(&mut self, text: &str) { self.buffer.push_str(text); }
 
     /// Skip copying `length` characters from the original string to the built
-    /// buffer.
+    /// buffer
     pub fn delete(&mut self, length: usize) {
         if length == 0 {
             return;
@@ -52,7 +52,7 @@ impl StringBuilder<'_> {
         }
     }
 
-    /// Copy `length` characters from the original string to the built buffer.
+    /// Copy `length` characters from the original string to the built buffer
     pub fn retain(&mut self, length: usize) {
         self.buffer.extend(self.original.by_ref().take(length));
 

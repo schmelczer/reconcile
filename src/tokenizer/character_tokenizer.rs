@@ -1,6 +1,6 @@
 use super::token::Token;
 
-/// Splits text into UTF-8 characters.
+/// Splits text into UTF-8 characters
 ///
 /// ```not_rust
 /// "Hey!" -> ["H", "e", "y", "!"]

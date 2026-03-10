@@ -47,7 +47,7 @@ fn try_merge(parent: &str, left: &str, right: &str) {
 }
 
 /// Demonstrates cases where diff-match-patch silently produces incorrect
-/// output, while reconcile-text preserves both users' edits correctly.
+/// output, while reconcile-text preserves both users' edits correctly
 ///
 /// Run it with:
 /// `cargo run --example compare-with-diff-match-patch`

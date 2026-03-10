@@ -152,7 +152,7 @@
 //! );
 //! ```
 //!
-//! ## Efficiently serialize changes
+//! ## Compact change serialization
 //!
 //! The edits can be serialized into a compact representation without the full
 //! original text, making the size depend only on the changes made.

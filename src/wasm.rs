@@ -8,7 +8,7 @@ use crate::{BuiltinTokenizer, CursorPosition, EditedText, SpanWithHistory, TextW
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc<'_> = wee_alloc::WeeAlloc::INIT;
 
-/// WASM wrapper around `crate::reconcile` for merging text.
+/// WASM wrapper around `crate::reconcile` for merging text
 #[wasm_bindgen(js_name = reconcile)]
 #[must_use]
 pub fn reconcile(
@@ -22,7 +22,7 @@ pub fn reconcile(
     crate::reconcile(parent, left, right, &*tokenizer).apply()
 }
 
-/// WASM wrapper around `crate::reconcile` that also returns provenance history.
+/// WASM wrapper around `crate::reconcile` that also returns provenance history
 #[wasm_bindgen(js_name = reconcileWithHistory)]
 #[must_use]
 pub fn reconcile_with_history(
@@ -48,13 +48,13 @@ pub fn reconcile_with_history(
 ///
 /// # Arguments
 ///
-/// - `parent`: The common parent document.
-/// - `left`: The left document updated by one user.
-/// - `right`: The right document updated by another user.
+/// - `parent`: The common parent document
+/// - `left`: The left document updated by one user
+/// - `right`: The right document updated by another user
 ///
 /// # Returns
 ///
-/// The merged document.
+/// The merged document
 #[wasm_bindgen(js_name = genericReconcile)]
 #[must_use]
 pub fn generic_reconcile(
@@ -80,7 +80,7 @@ pub fn generic_reconcile(
 }
 
 /// WASM wrapper around getting a compact diff representation of two texts as a
-/// list of numbers and strings.
+/// list of numbers and strings
 #[wasm_bindgen(js_name = diff)]
 #[must_use]
 pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer) -> Vec<JsValue> {
@@ -94,7 +94,7 @@ pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer
         .collect()
 }
 
-/// Inverse of `diff`, applies a compact diff representation to a parent text.
+/// Inverse of `diff`, applies a compact diff representation to a parent text
 ///
 /// # Errors
 ///

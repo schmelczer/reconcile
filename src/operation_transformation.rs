@@ -24,8 +24,7 @@ use crate::{Tokenizer, types::text_with_cursors::TextWithCursors};
 /// into that span, the inserted text will be present in the return
 /// value.
 ///
-/// The function supports UTF-8. The arguments are tokenized at the
-/// granularity of words.
+/// Supports UTF-8. Arguments are tokenized using the provided `tokenizer`.
 ///
 /// ```
 /// use reconcile_text::{reconcile, BuiltinTokenizer};

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::{operation_transformation::Operation, raw_operation::RawOperation};
 
 /// Turn raw operations into ordered operations while keeping track of the
-/// original token's indexes.
+/// original token's indexes
 pub fn cook_operations<I, T>(raw_operations: I) -> impl Iterator<Item = Operation<T>>
 where
     I: IntoIterator<Item = RawOperation<T>>,

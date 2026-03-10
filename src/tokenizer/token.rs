@@ -14,21 +14,21 @@ pub struct Token<T>
 where
     T: PartialEq + Clone + Debug,
 {
-    /// The normalized form of the token used deriving the diff.
+    /// The normalized form of the token used deriving the diff
     normalized: T,
 
-    /// The original string, that should be inserted or deleted in the document.
+    /// The original string, that should be inserted or deleted in the document
     original: String,
 
-    /// Whether the token is semantically joinable with the previous token.
+    /// Whether the token is semantically joinable with the previous token
     pub is_left_joinable: bool,
 
-    /// Whether the token is semantically joinable with the next token.
+    /// Whether the token is semantically joinable with the next token
     pub is_right_joinable: bool,
 }
 
 /// Trivial implementation of Token when the normalized form is the same as the
-/// original string.
+/// original string
 impl From<&str> for Token<String> {
     fn from(text: &str) -> Self { Token::new(text.to_owned(), text.to_owned(), true, true) }
 }

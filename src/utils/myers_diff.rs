@@ -77,7 +77,7 @@ where
 /// We can't use a traditional Vec to represent `V` since we use `k` as an index
 /// and it can take on negative values. So instead `V` is represented as a
 /// light-weight wrapper around a Vec plus an `offset` which is the maximum
-/// value `k` can take on in order to map negative `k`'s back to a value >= 0.
+/// value `k` can take on to map negative `k`'s back to a value >= 0.
 #[derive(Debug)]
 struct V {
     offset: isize,

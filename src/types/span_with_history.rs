@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::types::history::History;
 
-/// A text span annotated with its origin in a merge result.
+/// A text span annotated with its origin in a merge result
 #[allow(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

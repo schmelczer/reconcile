@@ -15,7 +15,7 @@ pub enum History {
     RemovedFromRight = "RemovedFromRight",
 }
 
-/// Provenance label for each span returned by `apply_with_history`.
+/// Provenance label for each span returned by `apply_with_history`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg(not(feature = "wasm"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
