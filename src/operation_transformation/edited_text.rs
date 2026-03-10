@@ -18,18 +18,16 @@ use crate::{
     utils::string_builder::StringBuilder,
 };
 
-/// A text document and a sequence of operations that can be applied to the text
-/// document. `EditedText` supports merging two sequences of operations using
-/// the principles of Operational Transformation.
+/// A text document with a sequence of operations derived from diffing it
+/// against an updated version. Supports merging two `EditedText` instances
+/// (from the same original) via Operational Transformation.
 ///
-/// It's mainly created through the `from_strings` method, then merged with
-/// another `EditedText` derived from the same original text and then applied to
-/// the original text to get the reconciled text of concurrent edits.
+/// Created via `from_strings`, `from_strings_with_tokenizer`, or `from_diff`,
+/// then merged with another `EditedText` and applied to get the reconciled
+/// text.
 ///
-/// In addition to text and operations, it also keeps track of cursor positions
-/// in the original text. The cursor positions are updated when the operations
-/// are applied, so that the cursor positions can be used to restore the
-/// cursor positions in the updated text.
+/// Also tracks cursor positions from the updated text, repositioning them
+/// when operations are applied.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EditedText<'a, T>
@@ -43,12 +41,8 @@ where
 }
 
 impl<'a> EditedText<'a, String> {
-    /// Create an `EditedText` from the given original (old) and updated (new)
-    /// strings. The returned `EditedText` represents the changes from the
-    /// original to the updated text. When the return value is applied to
-    /// the original text, it will result in the updated text. The default
-    /// word tokenizer is used to tokenize the text which splits the text on
-    /// whitespaces.
+    /// Create an `EditedText` from the given original and updated strings.
+    /// Uses the default word tokenizer (splits on word boundaries).
     #[must_use]
     pub fn from_strings(original: &'a str, updated: &TextWithCursors) -> Self {
         Self::from_strings_with_tokenizer(original, updated, &*BuiltinTokenizer::Word)
@@ -59,11 +53,8 @@ impl<'a, T> EditedText<'a, T>
 where
     T: PartialEq + Clone + Debug,
 {
-    /// Create an `EditedText` from the given original (old) and updated (new)
-    /// strings. The returned `EditedText` represents the changes from the
-    /// original to the updated text. When the return value is applied to
-    /// the original text, it will result in the updated text. The tokenizer
-    /// function is used to tokenize the text.
+    /// Create an `EditedText` from the given original and updated strings
+    /// using the provided tokenizer.
     pub fn from_strings_with_tokenizer(
         original: &'a str,
         updated: &TextWithCursors,
@@ -110,7 +101,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if there's an integer overflow (in i64) when calculating new
+    /// Panics if there's an integer overflow (in isize) when calculating new
     /// cursor positions.
     #[must_use]
     #[allow(clippy::too_many_lines)]
@@ -280,7 +271,7 @@ where
     /// Apply the operations to the text and return the resulting text in chunks
     /// together with the provenance describing where each chunk came from.
     ///
-    /// The result includes deleted spans as well.
+    /// Returns all spans including deletions (not present in the merged text).
     ///
     /// ```
     ///  use reconcile_text::{History, SpanWithHistory, BuiltinTokenizer, reconcile};
@@ -422,7 +413,7 @@ where
         result
     }
 
-    /// Deserialize an `EditedText` from a change list and the original text.
+    /// Reconstruct an `EditedText` from a diff and the original text.
     ///
     /// # Errors
     ///

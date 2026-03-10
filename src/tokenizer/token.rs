@@ -3,13 +3,11 @@ use std::fmt::Debug;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// A token is a string that has been normalized in some way.
+/// A token with a normalized form (used for diffing) and an original form
+/// (used when applying operations). Joinability flags control whether
+/// adjacent insertions interleave or group.
 ///
-/// A token consists of the normalized form is used for comparison, and the
-/// original form used for subsequently applying `Operation`-s to a text
-/// document.
-///
-/// It's UTF-8 compatible.
+/// UTF-8 compatible.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone)]
 pub struct Token<T>

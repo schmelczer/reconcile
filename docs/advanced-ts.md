@@ -40,7 +40,7 @@ console.log(result.history); /*
 
 ## Tokenisation Strategies
 
-Reconcile offers different approaches to split text for merging:
+`reconcile-text` offers different approaches to split text for merging:
 
 - **Word tokeniser** (`"Word"`) — Splits on word boundaries (recommended for prose)
 - **Character tokeniser** (`"Character"`) — Individual characters (fine-grained control)
@@ -48,7 +48,7 @@ Reconcile offers different approaches to split text for merging:
 
 ## Cursor Tracking
 
-Reconcile automatically tracks cursor positions through merges, which is handy in collaborative editors. Selections can be tracked by providing them as a pair of cursors.
+`reconcile-text` automatically tracks cursor positions through merges, which is useful for collaborative editors. Selections can be tracked by providing them as a pair of cursors.
 
 ```javascript
 const result = reconcile(

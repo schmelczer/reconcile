@@ -12,12 +12,15 @@ pub struct TextWithCursors {
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl TextWithCursors {
+    /// # Panics
+    ///
+    /// Panics if any cursor's `char_index` exceeds the text's character length.
     #[cfg_attr(feature = "wasm", wasm_bindgen(constructor))]
     #[must_use]
     pub fn new(text: String, cursors: Vec<CursorPosition>) -> Self {
         let length = text.chars().count();
         for cursor in &cursors {
-            debug_assert!(
+            assert!(
                 cursor.char_index <= length,
                 // cursor.char_index == length means that the cursor is at the end
                 "Cursor positions ({}) must be contained within the text (of length {length}) or \

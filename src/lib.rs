@@ -59,7 +59,7 @@
 //!
 //! For specialised use cases, such as structured languages, custom
 //! tokenisation logic can be implemented by providing a function with the
-//! signature `Fn(&str) -> Vec<Token<String>>`::
+//! signature `Fn(&str) -> Vec<Token<String>>`:
 //!
 //! ```
 //! use reconcile_text::{reconcile, Token, BuiltinTokenizer};
@@ -151,10 +151,11 @@
 //!     ]
 //! );
 //! ```
+//!
 //! ## Efficiently serialize changes
 //!
 //! The edits can be serialized into a compact representation without the full
-//! original text, making the size only depends on the changes made.
+//! original text, making the size depend only on the changes made.
 //!
 //! ```rust
 //! # #[cfg(feature = "serde")]

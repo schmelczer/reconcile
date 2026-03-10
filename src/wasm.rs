@@ -22,7 +22,7 @@ pub fn reconcile(
     crate::reconcile(parent, left, right, &*tokenizer).apply()
 }
 
-/// WASM wrapper around `crate::reconcile` for merging text.
+/// WASM wrapper around `crate::reconcile` that also returns provenance history.
 #[wasm_bindgen(js_name = reconcileWithHistory)]
 #[must_use]
 pub fn reconcile_with_history(
@@ -94,12 +94,12 @@ pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer
         .collect()
 }
 
-/// Inverse of `diff`, applies a compact diff representation to a parent text
+/// Inverse of `diff`, applies a compact diff representation to a parent text.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if the diff format is invalid or there's an integer overflow when
-/// applying the diff.
+/// Returns a JS error if the diff format is invalid or references ranges
+/// exceeding the original text length.
 #[wasm_bindgen(js_name = undiff)]
 #[must_use]
 pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> String {

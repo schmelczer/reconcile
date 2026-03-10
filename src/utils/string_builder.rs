@@ -1,9 +1,8 @@
 use std::{fmt, iter::Iterator};
 
-/// A helper for building a string in-order based on an original string and a
-/// series of insertions, deletions, and copies applied to it. It is safe to use
-/// with UTF-8 strings as all operations are based on character indices. The
-/// methods must be called in-order.
+/// A helper for building a string sequentially from an original string via
+/// insertions, deletions, and copies. All operations use character counts,
+/// safe for UTF-8. Methods must be called in-order.
 pub struct StringBuilder<'a> {
     original: Box<dyn Iterator<Item = char> + 'a>,
     buffer: String,

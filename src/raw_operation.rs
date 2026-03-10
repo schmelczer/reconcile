@@ -2,9 +2,9 @@ use std::fmt::Debug;
 
 use crate::{tokenizer::token::Token, utils::myers_diff::myers_diff};
 
-/// Text editing operation containing the to-be-changed `Tokens`-s.
+/// Text editing operation containing the affected tokens.
 ///
-/// `RawOperations` can be joined together when the underlying tokens
+/// `RawOperation`s can be joined together when the underlying tokens
 /// allow for joining subsequent operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RawOperation<T>

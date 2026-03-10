@@ -27,6 +27,10 @@ impl TryFrom<JsValue> for NumberOrText {
         }
 
         if let Some(num) = value.clone().as_f64() {
+            if num.is_nan() {
+                return Err(DeserialisationError::new("NaN is not a valid number"));
+            }
+
             if num.abs() > INTEGRAL_LIMIT {
                 return Err(DeserialisationError::new(
                     "Floating-point number exceeds safe integer limit, use BigInt instead",

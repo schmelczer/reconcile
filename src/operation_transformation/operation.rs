@@ -46,9 +46,8 @@ impl<T> Operation<T>
 where
     T: PartialEq + Clone + Debug,
 {
-    /// Creates an equal operation with the given index.
-    /// This operation is used to indicate that the text at the given index
-    /// is unchanged.
+    /// Creates an equal (retain) operation starting at the given character
+    /// offset in the original text.
     pub fn create_equal(order: usize, length: usize) -> Self {
         Operation::Equal {
             order,
@@ -69,13 +68,14 @@ where
         }
     }
 
-    /// Creates an insert operation with the given index and text.
+    /// Creates an insert operation at the given character offset with the
+    /// given tokens.
     pub fn create_insert(order: usize, text: Vec<Token<T>>) -> Self {
         Operation::Insert { order, text }
     }
 
-    /// Creates a delete operation with the given index and number of
-    /// to-be-deleted characters.
+    /// Creates a delete operation at the given character offset for the
+    /// specified number of characters.
     pub fn create_delete(order: usize, deleted_character_count: usize) -> Self {
         Operation::Delete {
             order,
@@ -179,8 +179,8 @@ where
         builder
     }
 
-    /// Returns the number of affected characters. It is always greater than 0
-    /// because empty operations cannot be created.
+    /// Returns the number of affected characters. May be 0 after
+    /// `merge_operations`.
     pub fn len(&self) -> usize {
         match self {
             Operation::Equal { length, .. } => *length,
@@ -192,10 +192,9 @@ where
         }
     }
 
-    /// Merges the operation with the given context, producing a new operation
-    /// and updating the context. This implements a comples FSM that handles
-    /// the merging of operations in a way that is consistent with the text.
-    /// The contexts are updated in-place.
+    /// Adjusts this operation based on `previous_operation` from the other side
+    /// to avoid duplicating or conflicting changes. Updates
+    /// `previous_operation` in-place.
     #[allow(clippy::too_many_lines)]
     pub fn merge_operations(self, previous_operation: &mut Option<Self>) -> Operation<T> {
         let operation = self;

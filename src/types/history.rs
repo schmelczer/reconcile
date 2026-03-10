@@ -15,8 +15,7 @@ pub enum History {
     RemovedFromRight = "RemovedFromRight",
 }
 
-/// Simple enum for describing the result of `reconcile` in a flat list.
-/// When compiled to WASM, the enum values are the same as their names.
+/// Provenance label for each span returned by `apply_with_history`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg(not(feature = "wasm"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
