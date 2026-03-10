@@ -101,21 +101,22 @@ pub fn diff(parent: &str, changed: &TextWithCursors, tokenizer: BuiltinTokenizer
 /// Returns a JS error if the diff format is invalid or references ranges
 /// exceeding the original text length.
 #[wasm_bindgen(js_name = undiff)]
-#[must_use]
-pub fn undiff(parent: &str, diff: Vec<JsValue>, tokenizer: BuiltinTokenizer) -> String {
+pub fn undiff(
+    parent: &str,
+    diff: Vec<JsValue>,
+    tokenizer: BuiltinTokenizer,
+) -> Result<String, JsValue> {
     set_panic_hook();
 
-    match EditedText::from_diff(
-        parent,
-        diff.into_iter()
-            .map(std::convert::TryInto::try_into)
-            .collect::<Result<_, _>>()
-            .expect("Invalid diff format"),
-        &*tokenizer,
-    ) {
-        Ok(edited_text) => edited_text.apply().text(),
-        Err(e) => panic!("{}", e),
-    }
+    let parsed_diff: Vec<_> = diff
+        .into_iter()
+        .map(std::convert::TryInto::try_into)
+        .collect::<Result<_, _>>()
+        .map_err(|e: crate::types::number_or_text::DeserialisationError| -> JsValue { e.into() })?;
+
+    EditedText::from_diff(parent, parsed_diff, &*tokenizer)
+        .map(|edited_text| edited_text.apply().text())
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 fn set_panic_hook() {
