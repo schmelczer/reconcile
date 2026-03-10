@@ -36,12 +36,10 @@ wasm-bindgen = { version = "0.2.99", optional = true }
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
-wee_alloc = { version = "0.4.2", optional = true }
-
 [features]
 default = []
 serde = [ "dep:serde" ]
-wasm = [ "dep:wasm-bindgen", "dep:wee_alloc", "console_error_panic_hook" ]
+wasm = [ "dep:wasm-bindgen", "console_error_panic_hook" ]
 console_error_panic_hook = [ "dep:console_error_panic_hook" ]
 all = [ "wasm", "serde" ]
 
