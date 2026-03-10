@@ -1,4 +1,4 @@
-import { reconcile, reconcileWithHistory } from 'reconcile-text';
+import { reconcileWithHistory } from 'reconcile-text';
 import type { BuiltinTokenizer } from 'reconcile-text';
 import './style.scss';
 
@@ -12,34 +12,31 @@ const tokenizerRadios = document.querySelectorAll(
 
 const sampleText = `The "reconcile-text" Rust library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First user's edit", and "Second user's edit" text boxes to see competing changes get merged in real-time within the "Merged result" box. Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenisation strategy, for example, deciding how casing or whitespace is taken into account.`;
 
+let pendingUpdate: number | null = null;
+function scheduleUpdate(): void {
+  if (pendingUpdate === null) {
+    pendingUpdate = requestAnimationFrame(() => {
+      pendingUpdate = null;
+      updateMergedText();
+    });
+  }
+}
+
 async function main(): Promise<void> {
-  originalTextArea.addEventListener('input', updateMergedText);
-  leftTextArea.addEventListener('input', updateMergedText);
-  rightTextArea.addEventListener('input', updateMergedText);
+  originalTextArea.addEventListener('input', scheduleUpdate);
+  leftTextArea.addEventListener('input', scheduleUpdate);
+  rightTextArea.addEventListener('input', scheduleUpdate);
 
-  leftTextArea.addEventListener('selectionchange', updateMergedText);
-  rightTextArea.addEventListener('selectionchange', updateMergedText);
-  leftTextArea.addEventListener('select', updateMergedText);
-  rightTextArea.addEventListener('select', updateMergedText);
-
-  console.info(
-    reconcile(
-      'Hello world',
-      {
-        text: 'Hello beautiful world',
-        cursors: [{ id: 1, position: 6 }], // After "Hello "
-      },
-      {
-        text: 'Hi world',
-        cursors: [{ id: 2, position: 0 }], // At the beginning
-      }
-    )
-  );
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === leftTextArea || document.activeElement === rightTextArea) {
+      scheduleUpdate();
+    }
+  });
 
   window.addEventListener('resize', resizeTextAreas);
 
   tokenizerRadios.forEach((radio) => {
-    radio.addEventListener('change', updateMergedText);
+    radio.addEventListener('change', scheduleUpdate);
   });
 
   loadSample();
@@ -84,7 +81,7 @@ function updateMergedText(): void {
 
   let selectionStart: number = Number.NEGATIVE_INFINITY;
   let selectionEnd: number = Number.NEGATIVE_INFINITY;
-  if (results.cursors?.length ?? 0 > 0) {
+  if ((results.cursors?.length ?? 0) > 0) {
     selectionStart = results.cursors![0].position;
     selectionEnd = results.cursors![1].position;
   }
@@ -99,29 +96,44 @@ function updateMergedText(): void {
   }
 
   for (const { text, history } of results.history) {
+    const isDelete = history === 'RemovedFromLeft' || history === 'RemovedFromRight';
+    let spanChars: string[] = [];
+    let currentClass = '';
+
+    const flushSpan = () => {
+      if (spanChars.length > 0) {
+        const span = document.createElement('span');
+        span.className = currentClass;
+        span.textContent = spanChars.join('');
+        fragment.appendChild(span);
+        spanChars = [];
+      }
+    };
+
     for (const character of text) {
-      const span = document.createElement('span');
-      span.className = history;
-      span.textContent = character;
-
-      if (selectionStart <= currentPosition && currentPosition < selectionEnd) {
-        span.className += ` selection-${selectionSide}`;
+      let className = history;
+      if (!isDelete && selectionStart <= currentPosition && currentPosition < selectionEnd) {
+        className += ` selection-${selectionSide}`;
       }
 
-      fragment.appendChild(span);
-
-      const isDelete = history === 'RemovedFromLeft' || history === 'RemovedFromRight';
-      if (currentPosition === selectionEnd - 1 && !isDelete) {
-        fragment.appendChild(
-          createSelectionOverlay(selectionSide === 'left', isSelection)
-        );
+      if (className !== currentClass) {
+        flushSpan();
+        currentClass = className;
       }
+      spanChars.push(character);
 
       if (!isDelete) {
-        // Only increment currentPosition for non-removed characters
+        if (currentPosition === selectionEnd - 1) {
+          flushSpan();
+          fragment.appendChild(
+            createSelectionOverlay(selectionSide === 'left', isSelection)
+          );
+        }
         currentPosition++;
       }
     }
+
+    flushSpan();
   }
 
   mergedTextArea.innerHTML = '';
@@ -172,7 +184,7 @@ function createSelectionOverlay(isLeft: boolean, isSelection: boolean): HTMLSpan
 
 function getSelectedTokenizer(): BuiltinTokenizer {
   const selectedRadio = Array.from(tokenizerRadios).find((radio) => radio.checked);
-  return selectedRadio?.value as BuiltinTokenizer;
+  return (selectedRadio?.value ?? 'Word') as BuiltinTokenizer;
 }
 
 function resizeTextAreas(): void {
@@ -195,4 +207,8 @@ function focusTextArea(textarea: HTMLTextAreaElement): void {
   textarea.selectionEnd = 0;
 }
 
-main();
+main().catch((error) => {
+  document.body.textContent =
+    'Failed to load the application. Please ensure your browser supports WebAssembly.';
+  console.error(error);
+});
