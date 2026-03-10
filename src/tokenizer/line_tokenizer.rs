@@ -22,14 +22,20 @@ pub fn line_tokenizer(text: &str) -> Vec<Token<String>> {
             // Add newline
             result.push("\n".into());
             line_start = i + 1;
-        } else if c == '\r' && chars.peek() == Some(&(i + 1, '\n')) {
-            // Handle \r\n
+        } else if c == '\r' {
             if i > line_start {
                 result.push(text[line_start..i].into());
             }
-            chars.next(); // consume \n
-            result.push("\r\n".into());
-            line_start = i + 2;
+            if chars.peek() == Some(&(i + 1, '\n')) {
+                // Handle \r\n
+                chars.next(); // consume \n
+                result.push("\r\n".into());
+                line_start = i + 2;
+            } else {
+                // Handle bare \r
+                result.push("\r".into());
+                line_start = i + 1;
+            }
         }
     }
 
@@ -66,5 +72,9 @@ mod tests {
         assert_debug_snapshot!(line_tokenizer("\n\n"));
 
         assert_debug_snapshot!(line_tokenizer("Start\n\nEnd"));
+
+        assert_debug_snapshot!(line_tokenizer("Old\rMac\rStyle"));
+
+        assert_debug_snapshot!(line_tokenizer("Mixed\r\nand\rbare"));
     }
 }
