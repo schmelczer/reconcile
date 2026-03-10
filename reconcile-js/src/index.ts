@@ -325,9 +325,15 @@ function toWasmCursorPosition({ id, position }: CursorPosition): wasmCursorPosit
 }
 
 function toTextWithCursors(textWithCursor: wasmTextWithCursors): TextWithCursors {
+  const wasmCursors = textWithCursor.cursors();
+  const cursors = wasmCursors.map(toCursorPosition);
+  for (const cursor of wasmCursors) {
+    cursor.free();
+  }
+
   return {
     text: textWithCursor.text(),
-    cursors: textWithCursor.cursors().map(toCursorPosition),
+    cursors,
   };
 }
 
@@ -338,9 +344,11 @@ function toCursorPosition(cursor: wasmCursorPosition): CursorPosition {
   };
 }
 
-function toSpanWithHistory(textWithHistory: wasmSpanWithHistory): SpanWithHistory {
-  return {
-    text: textWithHistory.text(),
-    history: textWithHistory.history(),
+function toSpanWithHistory(span: wasmSpanWithHistory): SpanWithHistory {
+  const result = {
+    text: span.text(),
+    history: span.history(),
   };
+  span.free();
+  return result;
 }

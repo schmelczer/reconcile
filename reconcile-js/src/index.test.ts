@@ -1,9 +1,21 @@
 import { reconcile, reconcileWithHistory, diff, undiff } from './index';
+import { installWasmLeakDetector, checkForWasmLeaks } from './wasm-leak-detector';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+installWasmLeakDetector();
+
+afterEach(() => {
+  const leaks = checkForWasmLeaks();
+  if (leaks.length > 0) {
+    throw new Error(
+      `WASM memory leak: ${leaks.length} object(s) not freed:\n  ${leaks.join('\n  ')}`
+    );
+  }
+});
 
 describe('reconcile', () => {
   it('call reconcile without cursors', () => {
