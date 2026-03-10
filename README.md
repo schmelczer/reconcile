@@ -4,12 +4,12 @@ A Rust and TypeScript library for merging conflicting text edits without manual 
 
 ## Try it
 
-✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action!
+✨ **[Try the interactive demo][8]** to see it in action!
 
 ### Install it in your project
 
-- `cargo add reconcile-text` ([reconcile-text on crates.io](https://crates.io/crates/reconcile-text))
-- `npm install reconcile-text` ([reconcile-text on NPM](https://www.npmjs.com/package/reconcile-text))
+- `cargo add reconcile-text` ([reconcile-text on crates.io][9])
+- `npm install reconcile-text` ([reconcile-text on NPM][10])
 
 ## Key features
 
@@ -52,7 +52,7 @@ let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::
 assert_eq!(result.apply().text(), "Hi beautiful world");
 ```
 
-See the [merge-file example](examples/merge-file.rs) for another example, or the [library's documentation](https://docs.rs/reconcile-text/latest/reconcile_text).
+See the [merge-file example](examples/merge-file.rs) for another example, or the [library's documentation][11].
 
 ### JavaScript/TypeScript
 
@@ -77,7 +77,7 @@ const result = reconcile(parent, left, right);
 console.log(result.text); // "Hi beautiful world"
 ```
 
-See the [example website source](examples/website/src/index.ts) for a more complex example, or the [advanced examples document](https://github.com/schmelczer/reconcile/blob/main/docs/advanced-ts.md).
+See the [example website source](examples/website/src/index.ts) for a more complex example, or the [advanced examples document](docs/advanced-ts.md).
 
 ## Motivation
 
@@ -87,7 +87,7 @@ This creates **Differential Synchronisation** scenarios ([2], [3]): we only know
 
 > **Note**: Some text domains require more careful handling. Legal contracts, for instance, could have unintended meaning changes from conflicting edits that create double negations. At the same time, semantic conflicts can still arise when merging code, even in the absence of syntactic conflicts.
 
-Differential sync is implemented by [universal-sync](https://github.com/invisible-college/universal-sync) and my Obsidian plugin [vault-link](https://github.com/schmelczer/vault-link), and it requires a merging tool that creates conflict-free results for the best user experience.
+Differential sync is implemented by [universal-sync][12], and it requires a merging tool that creates conflict-free results for the best user experience.
 
 ## How it works
 
@@ -98,7 +98,7 @@ Differential sync is implemented by [universal-sync](https://github.com/invisibl
 3. **Diff optimisation** - Operations are reordered and consolidated to maximise chained changes
 4. **Operational Transformation** - Edits are woven together using OT principles, preserving all modifications and updating cursors
 
-Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs](https://github.com/spebern/operational-transform-rs).) The same could be achieved with CRDTs, which many libraries implement well for text (see [Loro](https://github.com/loro-dev/loro/), [cola](https://github.com/nomad/cola), and [automerge](https://github.com/automerge/automerge)).
+Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs][13].) The same could be achieved with CRDTs, which many libraries implement well for text (see [Loro][14], [cola][15], and [automerge][16]).
 
 However, when only the end result of concurrent changes is observable, merge quality depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations cannot be supported because Myers' algorithm decomposes them into separate `insert` and `delete` operations, regardless of the merging algorithm used.
 
@@ -106,11 +106,11 @@ However, when only the end result of concurrent changes is observable, merge qua
 
 ### Traditional 3-way merge (diff3, Git)
 
-Tools like `diff3` ([4]) and Git produce **conflict markers** (`<<<<<<<` / `=======` / `>>>>>>>`) when both sides modify the same region. This works for source code where a human must verify correctness, but breaks the reading flow for prose. `reconcile-text` uses the same diff3-like foundation but adds an OT-inspired resolution step that eliminates conflict markers entirely. Libraries like [diffy](https://crates.io/crates/diffy), [merge3](https://github.com/breezy-team/merge3-rs) (Rust), and [node-diff3](https://github.com/bhousel/node-diff3) (JavaScript) all fall into this category.
+Tools like `diff3` ([4]) and Git produce **conflict markers** (`<<<<<<<` / `=======` / `>>>>>>>`) when both sides modify the same region. This works for source code where a human must verify correctness, but breaks the reading flow for prose. `reconcile-text` uses the same diff3-like foundation but adds an OT-inspired resolution step that eliminates conflict markers entirely. Libraries like [diffy][17], [merge3][18] (Rust), and [node-diff3][19] (JavaScript) all fall into this category.
 
 ### diff-match-patch
 
-[diff-match-patch](https://github.com/google/diff-match-patch) ([6]) is a widely-used library created by Neil Fraser at Google in 2006, providing character-level diffing (Myers' algorithm), fuzzy string matching (Bitap algorithm), and patch application. It powers Fraser's **Differential Synchronisation** protocol ([2]): compute a diff between two texts, apply the patch to a third text that may have drifted, and repeat until convergence. If a patch fails, the failure self-corrects in the next sync cycle.
+[diff-match-patch][6] is a widely-used library created by Neil Fraser at Google in 2006, providing character-level diffing (Myers' algorithm), fuzzy string matching (Bitap algorithm), and patch application. It powers Fraser's **Differential Synchronisation** protocol ([2]): compute a diff between two texts, apply the patch to a third text that may have drifted, and repeat until convergence. If a patch fails, the failure self-corrects in the next sync cycle.
 
 The key differences from `reconcile-text`:
 
@@ -128,7 +128,7 @@ See the [comparison example](examples/compare-with-diff-match-patch.rs) for conc
 
 ### CRDTs (Yjs, Automerge, Loro, diamond-types)
 
-Conflict-free Replicated Data Types guarantee convergence by mathematical construction: every operation commutes, so the order of application doesn't matter. Libraries like [Yjs](https://github.com/yjs/yjs) (and its Rust port [Yrs](https://github.com/y-crdt/y-crdt)), [Automerge](https://github.com/automerge/automerge), [Loro](https://github.com/loro-dev/loro), [cola](https://github.com/nomad/cola), and [diamond-types](https://github.com/josephg/diamond-types) implement this approach.
+Conflict-free Replicated Data Types guarantee convergence by mathematical construction: every operation commutes, so the order of application doesn't matter. Libraries like [Yjs][20] (and its Rust port [Yrs][21]), [Automerge][16], [Loro][14], [cola][15], and [diamond-types][22] implement this approach.
 
 CRDTs capture every individual keystroke or operation, assigning each a unique identity. This makes them ideal when you control the complete editing infrastructure: the editor, the transport layer, and the storage format. They work peer-to-peer, handle arbitrary numbers of concurrent editors, and never lose an edit.
 
@@ -138,7 +138,7 @@ The trade-off is that CRDTs require **maintaining document state over time** - a
 
 ### Operational Transformation (OT)
 
-OT libraries like [ot.js](https://ot.js.org/) and [ShareJS](https://github.com/josephg/ShareJS) transform concurrent operations against each other so that applying them in any order produces the same result. Like CRDTs, they capture individual operations and require infrastructure to coordinate them, typically a central server that determines the canonical operation order.
+OT libraries like [ot.js][23] and [ShareJS][24] transform concurrent operations against each other so that applying them in any order produces the same result. Like CRDTs, they capture individual operations and require infrastructure to coordinate them, typically a central server that determines the canonical operation order.
 
 `reconcile-text` borrows the *concept* of OT (transforming one side's edits against the other) but applies it to a different problem. Instead of transforming individual keystrokes in real time, it transforms the consolidated diff output of two complete edits. This means it doesn't need a server, doesn't need to capture operations as they happen, and works entirely offline.
 
@@ -152,7 +152,7 @@ Contributions are welcome!
 
 #### Node.js setup
 
-1. Install [nvm](https://github.com/nvm-sh/nvm):
+1. Install [nvm][25]:
    ```sh
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
    ```
@@ -160,14 +160,14 @@ Contributions are welcome!
    ```sh
    nvm install 22 && nvm use 22
    ```
-3. Optionally, set as default: 
+3. Optionally, set as default:
    ```sh
    nvm alias default 22
    ```
 
 #### Rust toolchain
 
-Install [rustup](https://rustup.rs):
+Install [rustup][26]:
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
@@ -191,3 +191,22 @@ Install [rustup](https://rustup.rs):
 [5]: https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/35605.pdf
 [6]: https://github.com/google/diff-match-patch
 [7]: https://github.com/google/diff-match-patch/wiki/Line-or-Word-Diffs
+[8]: https://schmelczer.dev/reconcile
+[9]: https://crates.io/crates/reconcile-text
+[10]: https://www.npmjs.com/package/reconcile-text
+[11]: https://docs.rs/reconcile-text/latest/reconcile_text
+[12]: https://github.com/invisible-college/universal-sync
+[13]: https://github.com/spebern/operational-transform-rs
+[14]: https://github.com/loro-dev/loro/
+[15]: https://github.com/nomad/cola
+[16]: https://github.com/automerge/automerge
+[17]: https://crates.io/crates/diffy
+[18]: https://github.com/breezy-team/merge3-rs
+[19]: https://github.com/bhousel/node-diff3
+[20]: https://github.com/yjs/yjs
+[21]: https://github.com/y-crdt/y-crdt
+[22]: https://github.com/josephg/diamond-types
+[23]: https://ot.js.org/
+[24]: https://github.com/josephg/ShareJS
+[25]: https://github.com/nvm-sh/nvm
+[26]: https://rustup.rs
