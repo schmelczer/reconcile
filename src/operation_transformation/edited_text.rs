@@ -1,10 +1,10 @@
-use std::{fmt::Debug, vec};
+use std::fmt::Debug;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BuiltinTokenizer, CursorPosition, TextWithCursors,
+    BuiltinTokenizer, CursorPosition, TextWithCursors, Token,
     operation_transformation::{
         DiffError, Operation,
         utils::{cook_operations::cook_operations, elongate_operations::elongate_operations},
@@ -55,6 +55,7 @@ where
 {
     /// Create an `EditedText` from the given original and updated strings
     /// using the provided tokenizer
+    #[must_use]
     pub fn from_strings_with_tokenizer(
         original: &'a str,
         updated: &TextWithCursors,
@@ -134,24 +135,21 @@ where
         let mut last_right_op = None;
 
         loop {
-            let (side, operation, mut last_other_op) =
-                match (maybe_left_op.clone(), maybe_right_op.clone()) {
-                    (Some(left_op), Some(right_op)) => {
-                        if left_op
-                            .get_sort_key(seen_left_length)
-                            .partial_cmp(&right_op.get_sort_key(seen_right_length))
-                            == Some(std::cmp::Ordering::Less)
-                        {
-                            (Side::Left, left_op, last_right_op.clone())
-                        } else {
-                            (Side::Right, right_op, last_left_op.clone())
-                        }
+            let (side, operation) = match (maybe_left_op.as_ref(), maybe_right_op.as_ref()) {
+                (Some(left_op), Some(right_op)) => {
+                    if left_op.cmp_priority(seen_left_length, right_op, seen_right_length)
+                        == std::cmp::Ordering::Less
+                    {
+                        (Side::Left, maybe_left_op.take().unwrap())
+                    } else {
+                        (Side::Right, maybe_right_op.take().unwrap())
                     }
+                }
 
-                    (Some(left_op), None) => (Side::Left, left_op, last_right_op.clone()),
-                    (None, Some(right_op)) => (Side::Right, right_op, last_left_op.clone()),
-                    (None, None) => break,
-                };
+                (Some(_), None) => (Side::Left, maybe_left_op.take().unwrap()),
+                (None, Some(_)) => (Side::Right, maybe_right_op.take().unwrap()),
+                (None, None) => break,
+            };
 
             let is_advancing_operation = matches!(
                 operation,
@@ -161,7 +159,7 @@ where
             let original_length = operation.len();
             let (side, result) = match side {
                 Side::Left => {
-                    let result = operation.merge_operations(&mut last_other_op);
+                    let result = operation.merge_operations(last_right_op.as_ref());
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
                         let merged_length_signed = isize::try_from(merged_length)
@@ -195,7 +193,7 @@ where
                     (Side::Left, result)
                 }
                 Side::Right => {
-                    let result = operation.merge_operations(&mut last_other_op);
+                    let result = operation.merge_operations(last_left_op.as_ref());
 
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
                         let merged_length_signed = isize::try_from(merged_length)
@@ -304,6 +302,7 @@ where
     /// ```
     #[must_use]
     pub fn apply_with_history(&self) -> Vec<SpanWithHistory> {
+        let chars: Vec<char> = self.text.chars().collect();
         let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
 
         let mut history = Vec::with_capacity(self.operations.len());
@@ -315,39 +314,81 @@ where
                 Operation::Equal { .. } => {
                     history.push(SpanWithHistory::new(builder.take(), History::Unchanged));
                 }
-                Operation::Insert { .. } => match side {
-                    Side::Left => {
-                        history.push(SpanWithHistory::new(builder.take(), History::AddedFromLeft));
-                    }
-                    Side::Right => history.push(SpanWithHistory::new(
-                        builder.take(),
-                        History::AddedFromRight,
-                    )),
-                },
+                Operation::Insert { .. } => {
+                    let h = match side {
+                        Side::Left => History::AddedFromLeft,
+                        Side::Right => History::AddedFromRight,
+                    };
+                    history.push(SpanWithHistory::new(builder.take(), h));
+                }
                 Operation::Delete {
                     deleted_character_count,
                     order,
                     ..
                 } => {
-                    let deleted: String = self
-                        .text
-                        .chars()
-                        .skip(*order)
-                        .take(*deleted_character_count)
+                    let deleted: String = chars[*order..*order + *deleted_character_count]
+                        .iter()
                         .collect();
-                    match side {
-                        Side::Left => {
-                            history.push(SpanWithHistory::new(deleted, History::RemovedFromLeft));
-                        }
-                        Side::Right => {
-                            history.push(SpanWithHistory::new(deleted, History::RemovedFromRight));
-                        }
-                    }
+                    let h = match side {
+                        Side::Left => History::RemovedFromLeft,
+                        Side::Right => History::RemovedFromRight,
+                    };
+                    history.push(SpanWithHistory::new(deleted, h));
                 }
             }
         }
 
         history
+    }
+
+    /// Apply the operations and return both the merged text with cursors and
+    /// the provenance history in a single pass
+    #[must_use]
+    pub fn apply_with_all(&self) -> (TextWithCursors, Vec<SpanWithHistory>) {
+        let chars: Vec<char> = self.text.chars().collect();
+        let mut builder: StringBuilder<'_> = StringBuilder::new(self.text);
+        let mut history = Vec::with_capacity(self.operations.len());
+        let mut full_text = String::new();
+
+        for (operation, side) in self.operations.iter().zip(self.operation_sides.iter()) {
+            builder = operation.apply(builder);
+
+            match operation {
+                Operation::Equal { .. } => {
+                    let span = builder.take();
+                    full_text.push_str(&span);
+                    history.push(SpanWithHistory::new(span, History::Unchanged));
+                }
+                Operation::Insert { .. } => {
+                    let span = builder.take();
+                    full_text.push_str(&span);
+                    let h = match side {
+                        Side::Left => History::AddedFromLeft,
+                        Side::Right => History::AddedFromRight,
+                    };
+                    history.push(SpanWithHistory::new(span, h));
+                }
+                Operation::Delete {
+                    deleted_character_count,
+                    order,
+                    ..
+                } => {
+                    let deleted: String = chars[*order..*order + *deleted_character_count]
+                        .iter()
+                        .collect();
+                    let h = match side {
+                        Side::Left => History::RemovedFromLeft,
+                        Side::Right => History::RemovedFromRight,
+                    };
+                    history.push(SpanWithHistory::new(deleted, h));
+                }
+            }
+        }
+
+        (
+            TextWithCursors::new(full_text, self.cursors.clone()),
+            history,
+        )
     }
 
     /// Convert the `EditedText` into a terse representation ready for
@@ -358,11 +399,11 @@ where
     /// Inserts are strings, deletes are negative integers (character count),
     /// and retained spans are positive integers (character count).
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if there's an integer overflow in i64.
-    #[must_use]
-    pub fn to_diff(&self) -> Vec<NumberOrText> {
+    /// Returns `DiffError::IntegerOverflow` if a character count exceeds
+    /// `i64::MAX`.
+    pub fn to_diff(&self) -> Result<Vec<NumberOrText>, DiffError> {
         let mut result: Vec<NumberOrText> = Vec::with_capacity(self.operations.len());
         let mut previous_equal: Option<usize> = None;
 
@@ -378,16 +419,14 @@ where
 
                 Operation::Insert { text, .. } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrText::Number(
-                            i64::try_from(prev_length).expect("prev_length must fit in i64"),
-                        ));
+                        result
+                            .push(NumberOrText::Number(i64::try_from(prev_length).map_err(
+                                |_| DiffError::IntegerOverflow { value: prev_length },
+                            )?));
                         previous_equal = None;
                     }
 
-                    let text: String = text
-                        .iter()
-                        .map(super::super::tokenizer::token::Token::original)
-                        .collect();
+                    let text: String = text.iter().map(Token::original).collect();
                     result.push(NumberOrText::Text(text));
                 }
 
@@ -396,26 +435,31 @@ where
                     ..
                 } => {
                     if let Some(prev_length) = previous_equal {
-                        result.push(NumberOrText::Number(
-                            i64::try_from(prev_length).expect("prev_length must fit in i64"),
-                        ));
+                        result
+                            .push(NumberOrText::Number(i64::try_from(prev_length).map_err(
+                                |_| DiffError::IntegerOverflow { value: prev_length },
+                            )?));
                         previous_equal = None;
                     }
 
-                    let count = i64::try_from(*deleted_character_count)
-                        .expect("deleted_character_count must fit in i64");
+                    let count = i64::try_from(*deleted_character_count).map_err(|_| {
+                        DiffError::IntegerOverflow {
+                            value: *deleted_character_count,
+                        }
+                    })?;
                     result.push(NumberOrText::Number(-count));
                 }
             }
         }
 
         if let Some(prev_length) = previous_equal {
-            result.push(NumberOrText::Number(
-                i64::try_from(prev_length).expect("prev_length must fit in i64"),
-            ));
+            result
+                .push(NumberOrText::Number(i64::try_from(prev_length).map_err(
+                    |_| DiffError::IntegerOverflow { value: prev_length },
+                )?));
         }
 
-        result
+        Ok(result)
     }
 
     /// Reconstruct an `EditedText` from a diff and the original text.
@@ -435,7 +479,8 @@ where
     ) -> Result<EditedText<'a, T>, DiffError> {
         let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
         let mut order = 0;
-        let text_length = original_text.chars().count();
+        let chars: Vec<char> = original_text.chars().collect();
+        let text_length = chars.len();
 
         for item in diff {
             match item {
@@ -453,7 +498,7 @@ where
                         }
 
                         let original_characters: String =
-                            original_text.chars().skip(order).take(length).collect();
+                            chars[order..order + length].iter().collect();
 
                         let original_tokens = tokenizer(&original_characters);
                         for token in original_tokens {
@@ -590,7 +635,7 @@ mod tests {
         let original = "Merging text is hard!";
         let changes = "Merging text is easy with reconcile!";
         let result = EditedText::from_strings(original, &changes.into());
-        let serialized = serde_yaml::to_string(&result.to_diff()).unwrap();
+        let serialized = serde_yaml::to_string(&result.to_diff().unwrap()).unwrap();
 
         let expected = concat!("- 15\n", "- -6\n", "- ' easy with reconcile!'\n",);
         assert_eq!(serialized, expected);
@@ -622,7 +667,7 @@ mod tests {
 
         let edited_text = EditedText::from_strings(original, &updated.into());
 
-        let changes = edited_text.to_diff();
+        let changes = edited_text.to_diff().unwrap();
         let deserialized_edited_text =
             EditedText::from_diff(original, changes, &*BuiltinTokenizer::Word).unwrap();
 
