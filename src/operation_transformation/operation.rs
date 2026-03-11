@@ -104,28 +104,55 @@ where
         }
     }
 
-    pub fn get_sort_key(&self, insertion_index: usize) -> (usize, usize, usize, String) {
-        (
-            self.order(),
-            match self {
-                Operation::Delete { .. } => 1,
-                Operation::Insert { .. } => 2,
-                Operation::Equal { .. } => 3,
-            },
-            insertion_index,
-            // Make sure that the ordering is deterministic regardless of which text
-            // is left or right.
-            match self {
-                Operation::Equal { length, .. } => length.to_string(),
-                Operation::Insert { text, .. } => {
-                    text.iter().map(Token::original).collect::<String>()
-                }
+    fn type_priority(&self) -> u8 {
+        match self {
+            Operation::Delete { .. } => 1,
+            Operation::Insert { .. } => 2,
+            Operation::Equal { .. } => 3,
+        }
+    }
+
+    /// Compare two operations for processing order during merging. Uses
+    /// (order, type, `insertion_index`) with a deterministic content
+    /// tiebreaker that avoids allocating.
+    pub fn cmp_priority(
+        &self,
+        self_index: usize,
+        other: &Self,
+        other_index: usize,
+    ) -> std::cmp::Ordering {
+        self.order()
+            .cmp(&other.order())
+            .then_with(|| self.type_priority().cmp(&other.type_priority()))
+            .then_with(|| self_index.cmp(&other_index))
+            .then_with(|| self.deterministic_content_cmp(other))
+    }
+
+    /// Deterministic tiebreaker based on operation content, so that merge
+    /// results are identical regardless of which side is left vs right
+    fn deterministic_content_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Operation::Insert { text: t1, .. }, Operation::Insert { text: t2, .. }) => {
+                let s1 = t1.iter().flat_map(|t| t.original().chars());
+                let s2 = t2.iter().flat_map(|t| t.original().chars());
+                s1.cmp(s2)
+            }
+            (Operation::Equal { length: l1, .. }, Operation::Equal { length: l2, .. }) => {
+                l1.cmp(l2)
+            }
+            (
                 Operation::Delete {
-                    deleted_character_count,
+                    deleted_character_count: c1,
                     ..
-                } => deleted_character_count.to_string(),
-            },
-        )
+                },
+                Operation::Delete {
+                    deleted_character_count: c2,
+                    ..
+                },
+            ) => c1.cmp(c2),
+            // Different types are already ordered by type_priority
+            _ => std::cmp::Ordering::Equal,
+        }
     }
 
     /// Applies the operation to the given `StringBuilder`, returning the
@@ -193,10 +220,9 @@ where
     }
 
     /// Adjusts this operation based on `previous_operation` from the other side
-    /// to avoid duplicating or conflicting changes. Updates
-    /// `previous_operation` in-place.
+    /// to avoid duplicating or conflicting changes
     #[allow(clippy::too_many_lines)]
-    pub fn merge_operations(self, previous_operation: &mut Option<Self>) -> Operation<T> {
+    pub fn merge_operations(self, previous_operation: Option<&Self>) -> Operation<T> {
         let operation = self;
 
         match (operation, previous_operation) {
@@ -295,14 +321,36 @@ where
             }
 
             (
-                ref operation @ Operation::Equal { ref order, .. },
+                ref operation @ Operation::Equal {
+                    ref order,
+                    #[cfg(debug_assertions)]
+                    ref text,
+                    ..
+                },
                 Some(Operation::Equal {
                     order: last_equal_order,
                     length: last_equal_length,
+                    #[cfg(debug_assertions)]
+                    text: last_equal_text,
                     ..
                 }),
             ) => {
                 if operation.len() == *last_equal_length && *order == *last_equal_order {
+                    // Both sides retained the same span from the original text,
+                    // so we deduplicate by zeroing one out. This is safe because
+                    // both EditedTexts are derived from the same original, and
+                    // matching (order, length) means they cover the same substring
+                    #[cfg(debug_assertions)]
+                    debug_assert_eq!(
+                        text, last_equal_text,
+                        "Equal operations with same order and length should have the same text, \
+                         but got {operation:?} vs {:?}",
+                        Operation::<T>::Equal {
+                            order: *last_equal_order,
+                            length: *last_equal_length,
+                            text: last_equal_text.clone(),
+                        },
+                    );
                     Operation::create_equal(*order, 0)
                 } else {
                     operation.clone()
@@ -329,18 +377,20 @@ where
                 ..
             } => {
                 #[cfg(debug_assertions)]
-                write!(
-                    f,
-                    "<equal {} from {order}>",
-                    text.as_ref()
-                        .map(|text| format!("'{}'", text.replace('\n', "\\n")))
-                        .unwrap_or(format!("{length} characters")),
-                )?;
+                {
+                    write!(
+                        f,
+                        "<equal {} from {order}>",
+                        text.as_ref()
+                            .map(|text| format!("'{}'", text.replace('\n', "\\n")))
+                            .unwrap_or(format!("{length} characters")),
+                    )
+                }
 
                 #[cfg(not(debug_assertions))]
-                write!(f, "<equal {length} from {order}>")?;
-
-                Ok(())
+                {
+                    write!(f, "<equal {length} from {order}>")
+                }
             }
             Operation::Insert { order, text, .. } => {
                 write!(
@@ -361,22 +411,24 @@ where
                 ..
             } => {
                 #[cfg(debug_assertions)]
-                write!(
-                    f,
-                    "<delete {} from {order}>",
-                    deleted_text
-                        .as_ref()
-                        .map(|text| format!("'{}'", text.replace('\n', "\\n")))
-                        .unwrap_or(format!("{deleted_character_count} characters")),
-                )?;
+                {
+                    write!(
+                        f,
+                        "<delete {} from {order}>",
+                        deleted_text
+                            .as_ref()
+                            .map(|text| format!("'{}'", text.replace('\n', "\\n")))
+                            .unwrap_or(format!("{deleted_character_count} characters")),
+                    )
+                }
 
                 #[cfg(not(debug_assertions))]
-                write!(
-                    f,
-                    "<delete {deleted_character_count} characters from {order}>",
-                )?;
-
-                Ok(())
+                {
+                    write!(
+                        f,
+                        "<delete {deleted_character_count} characters from {order}>",
+                    )
+                }
             }
         }
     }
