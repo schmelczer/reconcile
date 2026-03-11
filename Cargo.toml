@@ -25,10 +25,10 @@ name = "compare-with-diff-match-patch"
 path = "examples/compare-with-diff-match-patch.rs"
 
 [dependencies]
-serde = { version = "1.0.219", optional = true, features = ["derive"] }
+serde = { version = "1.0.228", optional = true, features = ["derive"] }
 thiserror = "2.0.18"
 
-wasm-bindgen = { version = "0.2.99", optional = true }
+wasm-bindgen = { version = "0.2.114", optional = true }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -44,13 +44,13 @@ console_error_panic_hook = [ "dep:console_error_panic_hook" ]
 all = [ "wasm", "serde" ]
 
 [dev-dependencies]
-insta = "1.44.3"
+insta = "1.46.3"
 pretty_assertions = "1.4.1"
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
 test-case = "3.3.1"
-wasm-bindgen-test = "0.3.56"
-diff-match-patch-rs = "0.5"
+wasm-bindgen-test = "0.3.64"
+diff-match-patch-rs = "0.5.1"
 
 [profile.release]
 codegen-units = 1
