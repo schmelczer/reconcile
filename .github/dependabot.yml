@@ -19,3 +19,8 @@ updates:
     directories: ['/reconcile-js', '/examples/website']
     schedule:
       interval: 'daily'
+
+  - package-ecosystem: 'pip'
+    directories: ['/reconcile-python']
+    schedule:
+      interval: 'daily'
