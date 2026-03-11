@@ -1,0 +1,48 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"Line 1\\r\\nLine 2\")"
+---
+[
+    Token {
+        normalized: "Line",
+        original: "Line",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " 1",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "1",
+        original: "1",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\r\n",
+        original: "\r\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "Line",
+        original: "Line",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " 2",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "2",
+        original: "2",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

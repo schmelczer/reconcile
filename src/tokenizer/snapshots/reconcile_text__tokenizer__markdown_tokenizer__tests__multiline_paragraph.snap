@@ -1,0 +1,78 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"First line\\nSecond line\\n\\nNew paragraph\")"
+---
+[
+    Token {
+        normalized: "First",
+        original: "First",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " line",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "line",
+        original: "line",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "Second",
+        original: "Second",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " line",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "line",
+        original: "line",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "New",
+        original: "New",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " paragraph",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "paragraph",
+        original: "paragraph",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

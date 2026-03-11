@@ -1,0 +1,48 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"- [ ] todo\\n- [x] done\\n- [X] also done\")"
+---
+[
+    Token {
+        normalized: "- [ ] todo",
+        original: "- [ ] todo",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- [x] done",
+        original: "- [x] done",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- [X] also",
+        original: "- [X] also",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " done",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "done",
+        original: "done",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

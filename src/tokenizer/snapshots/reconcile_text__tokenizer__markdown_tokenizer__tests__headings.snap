@@ -1,0 +1,24 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"# Hello world\")"
+---
+[
+    Token {
+        normalized: "# Hello",
+        original: "# Hello",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " world",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "world",
+        original: "world",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

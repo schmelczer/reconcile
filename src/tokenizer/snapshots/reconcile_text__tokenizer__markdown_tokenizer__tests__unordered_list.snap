@@ -1,0 +1,72 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"- item one\\n- item two\\n- item three\")"
+---
+[
+    Token {
+        normalized: "- item",
+        original: "- item",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " one",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "one",
+        original: "one",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- item",
+        original: "- item",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " two",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "two",
+        original: "two",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- item",
+        original: "- item",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " three",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "three",
+        original: "three",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

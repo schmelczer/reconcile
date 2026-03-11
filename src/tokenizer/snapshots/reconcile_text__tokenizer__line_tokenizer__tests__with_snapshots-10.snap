@@ -1,0 +1,36 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"Old\\rMac\\rStyle\")"
+---
+[
+    Token {
+        normalized: "Old",
+        original: "Old",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\r",
+        original: "\r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "Mac",
+        original: "Mac",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\r",
+        original: "\r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "Style",
+        original: "Style",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]
