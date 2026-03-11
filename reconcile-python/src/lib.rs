@@ -21,7 +21,7 @@ fn extract_text_with_cursors(input: &Bound<'_, PyAny>) -> PyResult<TextWithCurso
         return Ok(TextWithCursors::from(text));
     }
 
-    let dict = input.downcast::<PyDict>()?;
+    let dict = input.cast::<PyDict>()?;
 
     let text: String = dict
         .get_item("text")?
@@ -30,10 +30,10 @@ fn extract_text_with_cursors(input: &Bound<'_, PyAny>) -> PyResult<TextWithCurso
 
     let cursors = match dict.get_item("cursors")? {
         Some(obj) if !obj.is_none() => {
-            let list = obj.downcast::<PyList>()?;
+            let list = obj.cast::<PyList>()?;
             let mut cursors = Vec::with_capacity(list.len());
             for item in list {
-                let cursor_dict = item.downcast::<PyDict>()?;
+                let cursor_dict = item.cast::<PyDict>()?;
                 let id: usize = cursor_dict
                     .get_item("id")?
                     .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("id"))?
