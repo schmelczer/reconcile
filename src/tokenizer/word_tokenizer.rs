@@ -9,6 +9,26 @@ use super::token::Token;
 /// "Hi there!" -> ["Hi", " ", "there!"]
 /// ```
 pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
+    let mut result = split_words(text);
+
+    if result.is_empty() {
+        return result;
+    }
+
+    // normalize whitespace tokens by concatenating with the following token
+    for i in 0..result.len() - 1 {
+        if result[i].original().chars().all(char::is_whitespace) {
+            let normalized = result[i].normalized().to_owned() + result[i + 1].original();
+            result[i].set_normalized(normalized);
+        }
+    }
+
+    result
+}
+
+/// Splits text into alternating word and whitespace tokens without any
+/// normalization. Shared by `word_tokenizer` and `markdown_tokenizer`.
+pub(super) fn split_words(text: &str) -> Vec<Token<String>> {
     let mut result = Vec::new();
 
     let mut previous_boundary_index = 0;
@@ -26,18 +46,6 @@ pub fn word_tokenizer(text: &str) -> Vec<Token<String>> {
 
     if previous_boundary_index < text.len() {
         result.push(text[previous_boundary_index..].into());
-    }
-
-    if result.is_empty() {
-        return result;
-    }
-
-    // normalize whitespace tokens by concatenating with the following token
-    for i in 0..result.len() - 1 {
-        if result[i].original().chars().all(char::is_whitespace) {
-            let normalized = result[i].normalized().to_owned() + result[i + 1].original();
-            result[i].set_normalized(normalized);
-        }
     }
 
     result
