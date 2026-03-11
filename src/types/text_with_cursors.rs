@@ -33,15 +33,21 @@ impl TextWithCursors {
     }
 
     #[must_use]
-    pub fn text(&self) -> String { self.text.to_string() }
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
 
     #[must_use]
-    pub fn cursors(&self) -> Vec<CursorPosition> { self.cursors.clone() }
+    pub fn cursors(&self) -> Vec<CursorPosition> {
+        self.cursors.clone()
+    }
 }
 
 impl TextWithCursors {
     #[must_use]
-    pub fn text_ref(&self) -> &str { &self.text }
+    pub fn text_ref(&self) -> &str {
+        &self.text
+    }
 }
 
 impl<'a> From<&'a str> for TextWithCursors {

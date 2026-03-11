@@ -18,7 +18,9 @@ pub struct ExampleDocument {
 
 impl ExampleDocument {
     #[must_use]
-    pub fn parent(&self) -> String { self.parent.clone() }
+    pub fn parent(&self) -> String {
+        self.parent.clone()
+    }
 
     #[must_use]
     pub fn left(&self) -> TextWithCursors {

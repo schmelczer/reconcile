@@ -1,6 +1,5 @@
 ---
 source: src/tokenizer/line_tokenizer.rs
-assertion_line: 78
 expression: "line_tokenizer(\"Mixed\\r\\nand\\rbare\")"
 ---
 [

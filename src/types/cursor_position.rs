@@ -18,7 +18,9 @@ pub struct CursorPosition {
 impl CursorPosition {
     #[cfg_attr(feature = "wasm", wasm_bindgen(constructor))]
     #[must_use]
-    pub fn new(id: usize, char_index: usize) -> Self { Self { id, char_index } }
+    pub fn new(id: usize, char_index: usize) -> Self {
+        Self { id, char_index }
+    }
 
     #[must_use]
     pub fn with_index(&self, index: usize) -> Self {
@@ -29,9 +31,13 @@ impl CursorPosition {
     }
 
     #[must_use]
-    pub fn id(&self) -> usize { self.id }
+    pub fn id(&self) -> usize {
+        self.id
+    }
 
     #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = characterIndex))]
     #[must_use]
-    pub fn char_index(&self) -> usize { self.char_index }
+    pub fn char_index(&self) -> usize {
+        self.char_index
+    }
 }

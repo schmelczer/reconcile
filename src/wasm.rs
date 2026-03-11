@@ -139,13 +139,19 @@ pub struct TextWithCursorsAndHistory {
 #[wasm_bindgen]
 impl TextWithCursorsAndHistory {
     #[must_use]
-    pub fn text(&self) -> String { self.text_with_cursors.text() }
+    pub fn text(&self) -> String {
+        self.text_with_cursors.text()
+    }
 
     #[must_use]
-    pub fn cursors(&self) -> Vec<CursorPosition> { self.text_with_cursors.cursors() }
+    pub fn cursors(&self) -> Vec<CursorPosition> {
+        self.text_with_cursors.cursors()
+    }
 
     #[must_use]
-    pub fn history(&self) -> Vec<SpanWithHistory> { self.history.clone() }
+    pub fn history(&self) -> Vec<SpanWithHistory> {
+        self.history.clone()
+    }
 }
 
 /// Returns the UTF8 parsed string if it's a text, or `None` if it's likely

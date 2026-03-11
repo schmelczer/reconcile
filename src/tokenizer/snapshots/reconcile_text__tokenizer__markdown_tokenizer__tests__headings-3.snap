@@ -1,12 +1,11 @@
 ---
 source: src/tokenizer/markdown_tokenizer.rs
-assertion_line: 199
-expression: "markdown_tokenizer(\"## Sub heading\")"
+expression: "markdown_tokenizer(\"###### Deep heading\")"
 ---
 [
     Token {
-        normalized: "## Sub",
-        original: "## Sub",
+        normalized: "###### Deep",
+        original: "###### Deep",
         is_left_joinable: false,
         is_right_joinable: true,
     },

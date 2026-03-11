@@ -331,7 +331,7 @@ where
                     order: last_equal_order,
                     length: last_equal_length,
                     #[cfg(debug_assertions)]
-                    text: last_equal_text,
+                        text: last_equal_text,
                     ..
                 }),
             ) => {
@@ -342,7 +342,8 @@ where
                     // matching (order, length) means they cover the same substring
                     #[cfg(debug_assertions)]
                     debug_assert_eq!(
-                        text, last_equal_text,
+                        text,
+                        last_equal_text,
                         "Equal operations with same order and length should have the same text, \
                          but got {operation:?} vs {:?}",
                         Operation::<T>::Equal {
@@ -438,7 +439,9 @@ impl<T> Debug for Operation<T>
 where
     T: PartialEq + Clone + Debug,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { write!(f, "{self}") }
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self}")
+    }
 }
 
 #[cfg(test)]

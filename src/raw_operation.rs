@@ -20,7 +20,9 @@ impl<T> RawOperation<T>
 where
     T: PartialEq + Clone + Debug,
 {
-    pub fn vec_from(left: &[Token<T>], right: &[Token<T>]) -> Vec<Self> { myers_diff(left, right) }
+    pub fn vec_from(left: &[Token<T>], right: &[Token<T>]) -> Vec<Self> {
+        myers_diff(left, right)
+    }
 
     pub fn tokens(&self) -> &[Token<T>] {
         match self {

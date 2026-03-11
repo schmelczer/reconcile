@@ -1,0 +1,24 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"## Sub heading\")"
+---
+[
+    Token {
+        normalized: "## Sub",
+        original: "## Sub",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " heading",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "heading",
+        original: "heading",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

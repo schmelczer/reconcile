@@ -2,7 +2,7 @@
 name = "reconcile-text-python"
 version = "0.8.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
 authors = ["Andras Schmelczer <andras@schmelczer.dev>"]
 license = "MIT"
 publish = false

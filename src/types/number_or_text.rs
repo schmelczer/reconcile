@@ -62,19 +62,27 @@ impl From<NumberOrText> for JsValue {
 }
 
 impl From<i64> for NumberOrText {
-    fn from(value: i64) -> Self { NumberOrText::Number(value) }
+    fn from(value: i64) -> Self {
+        NumberOrText::Number(value)
+    }
 }
 
 impl From<String> for NumberOrText {
-    fn from(value: String) -> Self { NumberOrText::Text(value) }
+    fn from(value: String) -> Self {
+        NumberOrText::Text(value)
+    }
 }
 
 impl From<&str> for NumberOrText {
-    fn from(value: &str) -> Self { NumberOrText::Text(value.to_owned()) }
+    fn from(value: &str) -> Self {
+        NumberOrText::Text(value.to_owned())
+    }
 }
 
 impl<'a> From<Cow<'a, str>> for NumberOrText {
-    fn from(value: Cow<'a, str>) -> Self { NumberOrText::Text(value.into_owned()) }
+    fn from(value: Cow<'a, str>) -> Self {
+        NumberOrText::Text(value.into_owned())
+    }
 }
 
 /// Error type for deserialisation failures
@@ -105,5 +113,7 @@ impl std::error::Error for DeserialisationError {}
 
 #[cfg(feature = "wasm")]
 impl From<DeserialisationError> for JsValue {
-    fn from(error: DeserialisationError) -> Self { JsValue::from_str(&error.message) }
+    fn from(error: DeserialisationError) -> Self {
+        JsValue::from_str(&error.message)
+    }
 }

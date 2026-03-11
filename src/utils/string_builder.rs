@@ -35,7 +35,9 @@ impl StringBuilder<'_> {
     }
 
     /// Insert a string at the end of the built buffer
-    pub fn insert(&mut self, text: &str) { self.buffer.push_str(text); }
+    pub fn insert(&mut self, text: &str) {
+        self.buffer.push_str(text);
+    }
 
     /// Skip copying `length` characters from the original string to the built
     /// buffer
@@ -64,7 +66,9 @@ impl StringBuilder<'_> {
 
     /// Returns the currently built buffer and clears it to allow consuming
     /// the result incrementally.
-    pub fn take(&mut self) -> String { std::mem::take(&mut self.buffer) }
+    pub fn take(&mut self) -> String {
+        std::mem::take(&mut self.buffer)
+    }
 
     /// Get a slice of the remaining original string. The slice starts from
     /// where the next delete/retain operation would start and is of length

@@ -18,11 +18,17 @@ pub struct SpanWithHistory {
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl SpanWithHistory {
     #[must_use]
-    pub fn new(text: String, history: History) -> Self { SpanWithHistory { text, history } }
+    pub fn new(text: String, history: History) -> Self {
+        SpanWithHistory { text, history }
+    }
 
     #[must_use]
-    pub fn history(&self) -> History { self.history }
+    pub fn history(&self) -> History {
+        self.history
+    }
 
     #[must_use]
-    pub fn text(&self) -> String { self.text.clone() }
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
 }

@@ -94,7 +94,9 @@ impl V {
         }
     }
 
-    fn len(&self) -> usize { self.v.len() }
+    fn len(&self) -> usize {
+        self.v.len()
+    }
 }
 
 impl Index<isize> for V {
