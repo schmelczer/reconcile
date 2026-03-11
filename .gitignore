@@ -9,3 +9,6 @@ node_modules
 
 # WebPack build output
 dist
+
+# Python virtual environment
+.venv

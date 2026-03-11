@@ -11,7 +11,7 @@ repository = "https://github.com/schmelczer/reconcile"
 homepage = "https://schmelczer.dev/reconcile"
 keywords = ["merge", "OT", "CRDT", "3-way", "diff"]
 categories = ["wasm", "text-processing", "text-editors", "algorithms", "data-structures"]
-exclude = ["reconcile-js", ".*", "examples/website"]
+exclude = ["reconcile-js", "reconcile-python", ".*", "examples/website"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

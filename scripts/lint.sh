@@ -19,4 +19,11 @@ cd ../examples/website
 npm ci
 npm run format
 
+cd ../../reconcile-python
+uv run maturin develop -q
+uv run ruff check python/ tests/
+uv run ruff format python/ tests/
+uv run pyright python/ tests/
+cd -
+
 echo "Success!"

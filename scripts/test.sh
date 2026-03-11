@@ -27,4 +27,9 @@ npm run build
 npm run test
 cd -
 
+cd reconcile-python
+uv run maturin develop
+uv run pytest -v
+cd -
+
 echo "Success!"
