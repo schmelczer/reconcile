@@ -48,7 +48,6 @@ async function main(): Promise<void> {
 
   loadSample();
   updateMergedText();
-  focusTextArea(leftTextArea);
 }
 
 // Edit the instructions to generate example edits
@@ -210,12 +209,6 @@ function resizeTextAreas(): void {
 function autoResize(textarea: HTMLTextAreaElement): void {
   textarea.style.height = 'auto';
   textarea.style.height = textarea.scrollHeight + 'px';
-}
-
-function focusTextArea(textarea: HTMLTextAreaElement): void {
-  textarea.focus();
-  textarea.selectionStart = 0;
-  textarea.selectionEnd = 0;
 }
 
 main().catch((error) => {
