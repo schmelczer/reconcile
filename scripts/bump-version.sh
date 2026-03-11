@@ -41,6 +41,8 @@ NEWVER=$(grep '^version = ' ../Cargo.toml | head -1 | sed 's/version = "\(.*\)"/
 cd ../reconcile-python
 sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" Cargo.toml
 sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" pyproject.toml
+cargo update --workspace
+uv lock
 
 cd ../examples/website
 npm install
