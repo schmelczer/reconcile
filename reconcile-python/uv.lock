@@ -168,7 +168,7 @@ wheels = [
 
 [[package]]
 name = "reconcile-text"
-version = "0.8.0"
+version = "0.9.1"
 source = { editable = "." }
 
 [package.dev-dependencies]

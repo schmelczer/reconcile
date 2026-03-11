@@ -140,9 +140,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.x'
 
       - uses: PyO3/maturin-action@v1
         with:
