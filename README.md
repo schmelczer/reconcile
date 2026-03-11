@@ -104,7 +104,7 @@ result = reconcile(parent, left, right)
 print(result["text"])  # "Hi beautiful world"
 ```
 
-See the [advanced Python examples](docs/advanced-python.md) for cursor tracking, change provenance, and compact diffs.
+See the [merge-file example](examples/merge_file.py) for a file-merging CLI, or the [advanced examples document](docs/advanced-python.md) for cursor tracking, change provenance, and compact diffs.
 
 ## Motivation
 
