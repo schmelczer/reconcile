@@ -1,0 +1,36 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"Click [here](https://example.com) now\")"
+---
+[
+    Token {
+        normalized: "Click",
+        original: "Click",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " [here](https://example.com)",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "[here](https://example.com)",
+        original: "[here](https://example.com)",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " now",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "now",
+        original: "now",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

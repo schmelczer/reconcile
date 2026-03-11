@@ -1,0 +1,120 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"# Title\\n\\nSome text with **bold**.\\n\\n- list item\\n- another item\")"
+---
+[
+    Token {
+        normalized: "# Title",
+        original: "# Title",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "Some",
+        original: "Some",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " text",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "text",
+        original: "text",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " with",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "with",
+        original: "with",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " **bold**.",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "**bold**.",
+        original: "**bold**.",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- list",
+        original: "- list",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " item",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "item",
+        original: "item",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "- another",
+        original: "- another",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " item",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "item",
+        original: "item",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

@@ -1,0 +1,36 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"1. first\\n2. second\\n3. third\")"
+---
+[
+    Token {
+        normalized: "1. first",
+        original: "1. first",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "2. second",
+        original: "2. second",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+    Token {
+        normalized: "3. third",
+        original: "3. third",
+        is_left_joinable: false,
+        is_right_joinable: true,
+    },
+]

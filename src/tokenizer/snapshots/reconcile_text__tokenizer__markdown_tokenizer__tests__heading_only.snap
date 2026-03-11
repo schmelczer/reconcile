@@ -1,0 +1,12 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"# \")"
+---
+[
+    Token {
+        normalized: "# ",
+        original: "# ",
+        is_left_joinable: false,
+        is_right_joinable: false,
+    },
+]

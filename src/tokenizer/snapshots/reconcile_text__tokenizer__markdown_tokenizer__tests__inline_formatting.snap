@@ -1,0 +1,60 @@
+---
+source: src/tokenizer/markdown_tokenizer.rs
+expression: "markdown_tokenizer(\"Some **bold** and *italic* text\")"
+---
+[
+    Token {
+        normalized: "Some",
+        original: "Some",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " **bold**",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "**bold**",
+        original: "**bold**",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " and",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "and",
+        original: "and",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " *italic*",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "*italic*",
+        original: "*italic*",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: " text",
+        original: " ",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "text",
+        original: "text",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]
