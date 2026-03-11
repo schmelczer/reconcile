@@ -12,7 +12,7 @@ import {
 import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
 
 // Define the enum values as const arrays to avoid duplication
-const BUILTIN_TOKENIZERS = ['Character', 'Line', 'Word'] as const;
+const BUILTIN_TOKENIZERS = ['Character', 'Line', 'Markdown', 'Word'] as const;
 const HISTORY_VALUES = [
   'Unchanged',
   'AddedFromLeft',
