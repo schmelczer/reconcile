@@ -155,7 +155,7 @@ jobs:
           manylinux: auto
           working-directory: reconcile-python
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.target }}
           path: reconcile-python/dist/*.whl
@@ -177,7 +177,7 @@ jobs:
           args: --out dist
           working-directory: reconcile-python
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: reconcile-python/dist/*.tar.gz
