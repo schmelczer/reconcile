@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 from reconcile_text import diff, reconcile, reconcile_with_history, undiff
 
+EXAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "examples"
 RESOURCES_DIR = Path(__file__).resolve().parent.parent.parent / "tests" / "resources"
 
 FILES = ["pride_and_prejudice.txt", "room_with_a_view.txt", "blns.txt"]
@@ -116,6 +119,50 @@ class TestUndiff:
     def test_invalid_diff(self) -> None:
         with pytest.raises(ValueError):
             undiff("short", [100])
+
+
+class TestExamples:
+    def test_merge_file_stdout(self, tmp_path: Path) -> None:
+        (tmp_path / "base.txt").write_text("Hello world")
+        (tmp_path / "mine.txt").write_text("Hello beautiful world")
+        (tmp_path / "theirs.txt").write_text("Hi world")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(EXAMPLES_DIR / "merge_file.py"),
+                str(tmp_path / "mine.txt"),
+                str(tmp_path / "base.txt"),
+                str(tmp_path / "theirs.txt"),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        assert result.stdout == "Hi beautiful world"
+
+    def test_merge_file_output_file(self, tmp_path: Path) -> None:
+        (tmp_path / "base.txt").write_text("Hello world")
+        (tmp_path / "mine.txt").write_text("Hello beautiful world")
+        (tmp_path / "theirs.txt").write_text("Hi world")
+        output = tmp_path / "output.txt"
+
+        subprocess.run(
+            [
+                sys.executable,
+                str(EXAMPLES_DIR / "merge_file.py"),
+                str(tmp_path / "mine.txt"),
+                str(tmp_path / "base.txt"),
+                str(tmp_path / "theirs.txt"),
+                str(output),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        assert output.read_text() == "Hi beautiful world"
 
 
 class TestDiffUndiffInverse:

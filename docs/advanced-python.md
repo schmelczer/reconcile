@@ -86,3 +86,7 @@ assert reconstructed == changed
 ```
 
 Diff entries are positive integers (retain N characters), negative integers (delete N characters), and strings (insert text).
+
+## File Merging Example
+
+For a complete file-merging CLI (a trivial `git merge-file`), see [`examples/merge_file.py`](../examples/merge_file.py).
