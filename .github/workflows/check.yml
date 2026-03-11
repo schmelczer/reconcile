@@ -140,6 +140,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
