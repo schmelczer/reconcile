@@ -1,0 +1,37 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+assertion_line: 78
+expression: "line_tokenizer(\"Mixed\\r\\nand\\rbare\")"
+---
+[
+    Token {
+        normalized: "Mixed",
+        original: "Mixed",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\r\n",
+        original: "\r\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "and",
+        original: "and",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\r",
+        original: "\r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "bare",
+        original: "bare",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]
