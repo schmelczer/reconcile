@@ -1,6 +1,6 @@
 # `reconcile-text`: conflict-free 3-way text merging
 
-A Rust and TypeScript library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts by applying both sets of changes (while updating cursor positions) using an algorithm inspired by Operational Transformation.
+A Rust, TypeScript, and Python library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts by applying both sets of changes (while updating cursor positions) using an algorithm inspired by Operational Transformation.
 
 ## Try it
 
@@ -10,6 +10,7 @@ A Rust and TypeScript library for merging conflicting text edits without manual 
 
 - `cargo add reconcile-text` ([reconcile-text on crates.io][9])
 - `npm install reconcile-text` ([reconcile-text on NPM][10])
+- `uv add reconcile-text` or `pip install reconcile-text` ([reconcile-text on PyPI][27])
 
 ## Key features
 
@@ -17,7 +18,7 @@ A Rust and TypeScript library for merging conflicting text edits without manual 
 - **Cursor tracking** - Automatically repositions cursors and selections throughout the merging process
 - **Flexible tokenisation** - Word-level (default), character-level, line-level, or custom tokenisation strategies
 - **Unicode support** - Full UTF-8 support with proper handling of complex scripts and grapheme clusters
-- **Cross-platform** - Native Rust performance with WebAssembly bindings for JavaScript environments
+- **Cross-platform** - Native Rust performance with WebAssembly bindings for JavaScript and native bindings for Python
 
 ## Quick start
 
@@ -78,6 +79,32 @@ console.log(result.text); // "Hi beautiful world"
 ```
 
 See the [example website source](examples/website/src/index.ts) for a more complex example, or the [advanced examples document](docs/advanced-ts.md).
+
+### Python
+
+Install via uv or pip:
+
+```sh
+uv add reconcile-text
+# or: pip install reconcile-text
+```
+
+Then use it in your application:
+
+```python
+from reconcile_text import reconcile
+
+# Start with the original text
+parent = "Hello world"
+# Two users edit simultaneously
+left = "Hello beautiful world"
+right = "Hi world"
+
+result = reconcile(parent, left, right)
+print(result["text"])  # "Hi beautiful world"
+```
+
+See the [advanced Python examples](docs/advanced-python.md) for cursor tracking, change provenance, and compact diffs.
 
 ## Motivation
 
@@ -150,6 +177,15 @@ Contributions are welcome!
 
 ### Environment
 
+#### Python setup
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and build the extension for development:
+
+```sh
+cd reconcile-python
+uv run maturin develop
+```
+
 #### Node.js setup
 
 1. Install [nvm][25]:
@@ -210,3 +246,4 @@ Install [rustup][26]:
 [24]: https://github.com/josephg/ShareJS
 [25]: https://github.com/nvm-sh/nvm
 [26]: https://rustup.rs
+[27]: https://pypi.org/project/reconcile-text/

@@ -37,6 +37,11 @@ cd reconcile-js
 npm version $1
 npm install
 
+NEWVER=$(grep '^version = ' ../Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+cd ../reconcile-python
+sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" Cargo.toml
+sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" pyproject.toml
+
 cd ../examples/website
 npm install
 

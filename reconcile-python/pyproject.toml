@@ -1,0 +1,52 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "reconcile-text"
+version = "0.8.0"
+description = "Intelligent 3-way text merging with automated conflict resolution"
+readme = "../README.md"
+license = { text = "MIT" }
+authors = [{ name = "Andras Schmelczer", email = "andras@schmelczer.dev" }]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+keywords = ["merge", "OT", "CRDT", "3-way", "diff", "text"]
+
+[dependency-groups]
+dev = ["maturin>=1.0,<2.0", "pytest>=8", "ruff>=0.15", "pyright>=1"]
+
+[project.urls]
+Homepage = "https://schmelczer.dev/reconcile"
+Repository = "https://github.com/schmelczer/reconcile"
+Issues = "https://github.com/schmelczer/reconcile/issues"
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+module-name = "reconcile_text._native"
+python-source = "python"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["reconcile_text"]
+
+[tool.pyright]
+pythonVersion = "3.9"
+typeCheckingMode = "strict"
+include = ["python", "tests"]
