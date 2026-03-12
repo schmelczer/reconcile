@@ -8,5 +8,8 @@
     },
     "rust-analyzer.cargo.features": [
         "all"
+    ],
+    "python.analysis.extraPaths": [
+        "./reconcile-python/python"
     ]
 }
