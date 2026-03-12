@@ -145,6 +145,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Copy README
+        run: cp README.md reconcile-python/
+
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
@@ -164,6 +167,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Copy README
+        run: cp README.md reconcile-python/
 
       - uses: PyO3/maturin-action@v1
         with:

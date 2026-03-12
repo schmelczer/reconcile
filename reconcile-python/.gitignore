@@ -7,3 +7,4 @@ __pycache__/
 *.dylib
 *.dSYM/
 dist/
+README.md
