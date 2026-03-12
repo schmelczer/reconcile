@@ -86,6 +86,10 @@ jobs:
         with:
           node-version: '22.x'
           check-latest: true
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Remove token auth to allow OIDC
+        run: npm config delete //registry.npmjs.org/:_authToken
 
       - name: Cache Rust dependencies
         uses: actions/cache@v5
@@ -117,7 +121,7 @@ jobs:
         run: |
           cd reconcile-js
           cp ../README.md .
-          npm publish --access public
+          npm publish --provenance --access public
 
   build-python-wheels:
     needs: build
