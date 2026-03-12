@@ -479,27 +479,29 @@ $DOT_RADIUS: 4;
 }
 
 footer {
-  padding: 16px;
+  padding: 32px 16px;
   width: 100%;
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 24px;
   color: $text-secondary;
 }
 
-.github-link > svg {
-  position: absolute;
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-links > a > svg {
   color: $text-secondary;
-  top: 50%;
-  right: 36px;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   transition: transform 0.2s;
 }
 
-.github-link > svg:hover {
+.footer-links > a > svg:hover {
   cursor: pointer;
-  transform: translateY(-50%) scale(1.15);
+  transform: scale(1.15);
 }
