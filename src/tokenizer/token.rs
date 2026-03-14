@@ -1,4 +1,7 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    hash::{Hash, Hasher},
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -76,5 +79,16 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.normalized == other.normalized
+    }
+}
+
+/// Hashes based on the `normalized` field only, consistent with the
+/// [`PartialEq`] implementation.
+impl<T> Hash for Token<T>
+where
+    T: PartialEq + Clone + Debug + Hash,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.normalized.hash(state);
     }
 }
