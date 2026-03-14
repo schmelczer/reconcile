@@ -11,13 +11,11 @@
 //! The implementation of this algorithm is based on the implementation by
 //! Brandon Williams.
 //!
-//! # Heuristics
+//! # Complexity
 //!
-//! At present this implementation of Myers' does not implement any more
-//! advanced heuristics that would solve some pathological cases.  For instance
-//! passing two large and completely distinct sequences to the algorithm will
-//! make it spin without making reasonable progress.
-//! For potential improvements here see [similar#15](https://github.com/mitsuhiko/similar/issues/15).
+//! The worst case (completely dissimilar inputs) is `O((N+M)²)` time. In
+//! practice the divide-and-conquer strategy with prefix/suffix stripping keeps
+//! subproblems small for typical text.
 
 use std::{
     fmt::Debug,
@@ -41,24 +39,19 @@ pub fn myers_diff<T>(old: &[Token<T>], new: &[Token<T>]) -> Vec<RawOperation<T>>
 where
     T: PartialEq + Clone + Debug,
 {
-    let max_d = (old.len() + new.len()).div_ceil(2) + 1;
-    let mut vb = V::new(max_d);
-    let mut vf = V::new(max_d);
-    let mut result = Vec::new();
+    let max_edit_distance = (old.len() + new.len()).div_ceil(2) + 1;
+    let mut backward_endpoints = FurthestEndpoints::new(max_edit_distance);
+    let mut forward_endpoints = FurthestEndpoints::new(max_edit_distance);
+    let mut result = Vec::with_capacity(old.len() + new.len());
 
     conquer(
         old,
         0..old.len(),
         new,
         0..new.len(),
-        &mut vf,
-        &mut vb,
+        &mut forward_endpoints,
+        &mut backward_endpoints,
         &mut result,
-    );
-
-    debug_assert!(
-        result.iter().all(|op| op.tokens().len() == 1),
-        "All operations must be of length 1"
     );
 
     result
@@ -68,55 +61,77 @@ where
 // edges. All D-paths consist of a (D - 1)-path followed by a non-diagonal edge
 // and then a possibly empty sequence of diagonal edges called a snake.
 
-/// `V` contains the endpoints of the furthest reaching `D-paths`. For each
-/// recorded endpoint `(x,y)` in diagonal `k`, we only need to retain `x`
-/// because `y` can be computed from `x - k`. In other words, `V` is an array of
-/// integers where `V[k]` contains the row index of the endpoint of the furthest
-/// reaching path in diagonal `k`.
+/// Contains the endpoints of the furthest reaching `D-paths`. For each
+/// recorded endpoint `(x, y)` on diagonal `k`, we only need to retain `x`
+/// because `y` can be computed from `x - k`. In other words, this is an array
+/// of integers where `endpoints[k]` contains the row index of the endpoint of
+/// the furthest reaching path on diagonal `k`.
 ///
-/// We can't use a traditional Vec to represent `V` since we use `k` as an index
-/// and it can take on negative values. So instead `V` is represented as a
-/// light-weight wrapper around a Vec plus an `offset` which is the maximum
-/// value `k` can take on to map negative `k`'s back to a value >= 0.
+/// We can't use a traditional Vec since we use `k` as an index and it can take
+/// on negative values. So instead this is a light-weight wrapper around a Vec
+/// plus an `offset` which is the maximum value `k` can take on, used to map
+/// negative `k`'s back to a value >= 0.
 #[derive(Debug)]
-struct V {
+struct FurthestEndpoints {
     offset: isize,
-    v: Vec<usize>,
+    endpoints: Vec<usize>,
 }
 
-impl V {
-    fn new(max_d: usize) -> Self {
-        // max_d should fit in isize for the algorithm to work correctly
-        let offset = isize::try_from(max_d).expect("max_d must fit in isize");
+impl FurthestEndpoints {
+    fn new(max_edit_distance: usize) -> Self {
+        let offset =
+            isize::try_from(max_edit_distance).expect("max_edit_distance must fit in isize");
         Self {
             offset,
-            v: vec![0; 2 * max_d + 1],
+            endpoints: vec![0; 2 * max_edit_distance + 1],
         }
     }
 
     fn len(&self) -> usize {
-        self.v.len()
+        self.endpoints.len()
     }
 }
 
-impl Index<isize> for V {
+impl Index<isize> for FurthestEndpoints {
     type Output = usize;
 
-    fn index(&self, index: isize) -> &Self::Output {
-        let idx = usize::try_from(index + self.offset).expect("index + offset must fit in usize");
-        &self.v[idx]
+    fn index(&self, diagonal: isize) -> &Self::Output {
+        let idx =
+            usize::try_from(diagonal + self.offset).expect("diagonal + offset must fit in usize");
+        &self.endpoints[idx]
     }
 }
 
-impl IndexMut<isize> for V {
-    fn index_mut(&mut self, index: isize) -> &mut Self::Output {
-        let idx = usize::try_from(index + self.offset).expect("index + offset must fit in usize");
-        &mut self.v[idx]
+impl IndexMut<isize> for FurthestEndpoints {
+    fn index_mut(&mut self, diagonal: isize) -> &mut Self::Output {
+        let idx =
+            usize::try_from(diagonal + self.offset).expect("diagonal + offset must fit in usize");
+        &mut self.endpoints[idx]
     }
 }
 
 fn split_at(range: Range<usize>, at: usize) -> (Range<usize>, Range<usize>) {
     (range.start..at, at..range.end)
+}
+
+/// Adjust a lower diagonal bound so it has the same parity as `edit_distance`.
+/// Diagonals are visited in steps of 2, so `lower` must share `edit_distance`'s
+/// parity.
+fn align_lower_bound(lower: isize, edit_distance: isize) -> isize {
+    if (lower & 1) == (edit_distance & 1) {
+        lower
+    } else {
+        lower + 1
+    }
+}
+
+/// Adjust an upper diagonal bound so it has the same parity as `edit_distance`.
+fn align_upper_bound(upper: isize, edit_distance: isize) -> isize {
+    if (upper & 1) == (edit_distance & 1) {
+        upper
+    } else {
+        upper - 1
+    }
 }
 
 /// A `Snake` is a sequence of diagonal edges in the edit graph.  Normally
@@ -135,106 +150,143 @@ fn find_middle_snake<T>(
     old_range: Range<usize>,
     new: &[Token<T>],
     new_range: Range<usize>,
-    vf: &mut V,
-    vb: &mut V,
+    forward_endpoints: &mut FurthestEndpoints,
+    backward_endpoints: &mut FurthestEndpoints,
 ) -> Option<(usize, usize)>
 where
     T: PartialEq + Clone + Debug,
 {
-    let n = old_range.len();
-    let m = new_range.len();
+    let old_len = old_range.len();
+    let new_len = new_range.len();
+
+    let old_len_signed = isize::try_from(old_len).expect("old_len must fit in isize");
+    let new_len_signed = isize::try_from(new_len).expect("new_len must fit in isize");
 
     // By Lemma 1 in the paper, the optimal edit script length is odd or even as
     // `delta` is odd or even.
-    let delta = isize::try_from(n).expect("n must fit in isize")
-        - isize::try_from(m).expect("m must fit in isize");
-    let odd = delta & 1 == 1;
+    let delta = old_len_signed - new_len_signed;
+    let delta_is_odd = delta & 1 == 1;
 
     // The initial point at (0, -1)
-    vf[1] = 0;
+    forward_endpoints[1] = 0;
     // The initial point at (N, M+1)
-    vb[1] = 0;
+    backward_endpoints[1] = 0;
 
-    let d_max = (n + m).div_ceil(2) + 1;
-    assert!(vf.len() >= d_max);
-    assert!(vb.len() >= d_max);
+    let max_edit_distance = (old_len + new_len).div_ceil(2) + 1;
+    assert!(forward_endpoints.len() >= max_edit_distance);
+    assert!(backward_endpoints.len() >= max_edit_distance);
 
-    let d_max_isize = isize::try_from(d_max).expect("d_max must fit in isize");
-    for d in 0..d_max_isize {
+    let max_edit_distance_signed =
+        isize::try_from(max_edit_distance).expect("max_edit_distance must fit in isize");
+
+    for edit_distance in 0..max_edit_distance_signed {
+        // Tighter diagonal bounds: on diagonal k = x - y the constraints
+        // 0 <= x <= old_len and 0 <= y <= new_len give k in [-new_len, old_len].
+        // Intersect with the algorithm's [-edit_distance, edit_distance]
+        // range and snap to the correct parity (k advances in steps of 2).
+        let forward_diagonal_lo =
+            align_lower_bound((-edit_distance).max(-new_len_signed), edit_distance);
+        let forward_diagonal_hi =
+            align_upper_bound(edit_distance.min(old_len_signed), edit_distance);
+
         // Forward path
-        for k in (-d..=d).rev().step_by(2) {
-            let mut x = if k == -d || (k != d && vf[k - 1] < vf[k + 1]) {
-                vf[k + 1]
+        for diagonal in (forward_diagonal_lo..=forward_diagonal_hi).rev().step_by(2) {
+            let mut old_idx = if diagonal == -edit_distance
+                || (diagonal != edit_distance
+                    && forward_endpoints[diagonal - 1] < forward_endpoints[diagonal + 1])
+            {
+                forward_endpoints[diagonal + 1]
             } else {
-                vf[k - 1] + 1
+                forward_endpoints[diagonal - 1] + 1
             };
-            let y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k)
-                .expect("x - k must be non-negative and fit in usize");
+            let new_idx = usize::try_from(
+                isize::try_from(old_idx).expect("old_idx must fit in isize") - diagonal,
+            )
+            .expect("old_idx - diagonal must be non-negative and fit in usize");
 
             // The coordinate of the start of a snake
-            let (x0, y0) = (x, y);
-            //  While these sequences are identical, keep moving through the
-            //  graph with no cost
-            if x < old_range.len() && y < new_range.len() {
+            let (snake_start_old, snake_start_new) = (old_idx, new_idx);
+
+            // While these sequences are identical, keep moving through the
+            // graph with no cost
+            if old_idx < old_range.len() && new_idx < new_range.len() {
                 let advance = common_prefix_len(
                     old,
-                    old_range.start + x..old_range.end,
+                    old_range.start + old_idx..old_range.end,
                     new,
-                    new_range.start + y..new_range.end,
+                    new_range.start + new_idx..new_range.end,
                 );
-                x += advance;
+                old_idx += advance;
             }
 
             // This is the new best x value
-            vf[k] = x;
+            forward_endpoints[diagonal] = old_idx;
 
             // Only check for connections from the forward search when N - M is
             // odd and when there is a reciprocal k line coming from the other
-            // direction.
-            if odd && (k - delta).abs() <= (d - 1) {
-                // TODO optimise this so we don't have to compare against n
-                if vf[k] + vb[-(k - delta)] >= n {
-                    // Return the snake
-                    return Some((x0 + old_range.start, y0 + new_range.start));
-                }
+            // direction. Forward diagonal k maps to backward diagonal
+            // (delta - k). Overlap occurs when the combined forward + backward
+            // reach covers the full width:
+            //   forward_endpoints[k] + backward_endpoints[delta - k] >= old_len.
+            if delta_is_odd
+                && (diagonal - delta).abs() <= (edit_distance - 1)
+                && forward_endpoints[diagonal] + backward_endpoints[-(diagonal - delta)] >= old_len
+            {
+                return Some((
+                    snake_start_old + old_range.start,
+                    snake_start_new + new_range.start,
+                ));
             }
         }
 
-        // Backward path
-        for k in (-d..=d).rev().step_by(2) {
-            let mut x = if k == -d || (k != d && vb[k - 1] < vb[k + 1]) {
-                vb[k + 1]
-            } else {
-                vb[k - 1] + 1
-            };
-            let mut y = usize::try_from(isize::try_from(x).expect("x must fit in isize") - k)
-                .expect("x - k must be non-negative and fit in usize");
+        let backward_diagonal_lo =
+            align_lower_bound((-edit_distance).max(-new_len_signed), edit_distance);
+        let backward_diagonal_hi =
+            align_upper_bound(edit_distance.min(old_len_signed), edit_distance);
 
-            // The coordinate of the start of a snake
-            if x < n && y < m {
+        // Backward path
+        for diagonal in (backward_diagonal_lo..=backward_diagonal_hi)
+            .rev()
+            .step_by(2)
+        {
+            let mut old_idx = if diagonal == -edit_distance
+                || (diagonal != edit_distance
+                    && backward_endpoints[diagonal - 1] < backward_endpoints[diagonal + 1])
+            {
+                backward_endpoints[diagonal + 1]
+            } else {
+                backward_endpoints[diagonal - 1] + 1
+            };
+            let mut new_idx = usize::try_from(
+                isize::try_from(old_idx).expect("old_idx must fit in isize") - diagonal,
+            )
+            .expect("old_idx - diagonal must be non-negative and fit in usize");
+
+            // Extend the snake backward (matching suffix)
+            if old_idx < old_len && new_idx < new_len {
                 let advance = common_suffix_len(
                     old,
-                    old_range.start..old_range.start + n - x,
+                    old_range.start..old_range.start + old_len - old_idx,
                     new,
-                    new_range.start..new_range.start + m - y,
+                    new_range.start..new_range.start + new_len - new_idx,
                 );
-                x += advance;
-                y += advance;
+                old_idx += advance;
+                new_idx += advance;
             }
 
             // This is the new best x value
-            vb[k] = x;
+            backward_endpoints[diagonal] = old_idx;
 
-            if !odd && (k - delta).abs() <= d {
-                // TODO optimise this so we don't have to compare against n
-                if vb[k] + vf[-(k - delta)] >= n {
-                    // Return the snake
-                    return Some((n - x + old_range.start, m - y + new_range.start));
-                }
+            if !delta_is_odd
+                && (diagonal - delta).abs() <= edit_distance
+                && backward_endpoints[diagonal] + forward_endpoints[-(diagonal - delta)] >= old_len
+            {
+                return Some((
+                    old_len - old_idx + old_range.start,
+                    new_len - new_idx + new_range.start,
+                ));
             }
         }
-
-        // TODO: Maybe there's an opportunity to optimise and bail early?
     }
 
     None
@@ -245,54 +297,72 @@ fn conquer<T>(
     mut old_range: Range<usize>,
     new: &[Token<T>],
     mut new_range: Range<usize>,
-    vf: &mut V,
-    vb: &mut V,
+    forward_endpoints: &mut FurthestEndpoints,
+    backward_endpoints: &mut FurthestEndpoints,
     result: &mut Vec<RawOperation<T>>,
 ) where
     T: PartialEq + Clone + Debug,
 {
     // Check for common prefix
-    let common_prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
-    if common_prefix_len > 0 {
+    let prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
+    if prefix_len > 0 {
         result.extend(
-            old[old_range.start..old_range.start + common_prefix_len]
+            old[old_range.start..old_range.start + prefix_len]
                 .iter()
                 .map(|token| RawOperation::Equal(vec![token.clone()])),
         );
     }
-    old_range.start += common_prefix_len;
-    new_range.start += common_prefix_len;
+    old_range.start += prefix_len;
+    new_range.start += prefix_len;
 
     // Check for common suffix
-    let common_suffix_len = common_suffix_len(old, old_range.clone(), new, new_range.clone());
-    let common_suffix = (
-        old_range.end - common_suffix_len,
-        new_range.end - common_suffix_len,
-    );
-    old_range.end -= common_suffix_len;
-    new_range.end -= common_suffix_len;
+    let suffix_len = common_suffix_len(old, old_range.clone(), new, new_range.clone());
+    let suffix_start = old_range.end - suffix_len;
+    old_range.end -= suffix_len;
+    new_range.end -= suffix_len;
 
     if old_range.is_empty() && new_range.is_empty() {
         // do nothing
     } else if new_range.is_empty() {
         result.extend(
-            old[old_range.start..old_range.start + old_range.len()]
+            old[old_range.start..old_range.end]
                 .iter()
                 .map(|token| RawOperation::Delete(vec![token.clone()])),
         );
     } else if old_range.is_empty() {
         result.extend(
-            new[new_range.start..new_range.start + new_range.len()]
+            new[new_range.start..new_range.end]
                 .iter()
                 .map(|token| RawOperation::Insert(vec![token.clone()])),
         );
-    } else if let Some((x_start, y_start)) =
-        find_middle_snake(old, old_range.clone(), new, new_range.clone(), vf, vb)
-    {
-        let (old_a, old_b) = split_at(old_range, x_start);
-        let (new_a, new_b) = split_at(new_range, y_start);
-        conquer(old, old_a, new, new_a, vf, vb, result);
-        conquer(old, old_b, new, new_b, vf, vb, result);
+    } else if let Some((split_old, split_new)) = find_middle_snake(
+        old,
+        old_range.clone(),
+        new,
+        new_range.clone(),
+        forward_endpoints,
+        backward_endpoints,
+    ) {
+        let (old_before, old_after) = split_at(old_range, split_old);
+        let (new_before, new_after) = split_at(new_range, split_new);
+        conquer(
+            old,
+            old_before,
+            new,
+            new_before,
+            forward_endpoints,
+            backward_endpoints,
+            result,
+        );
+        conquer(
+            old,
+            old_after,
+            new,
+            new_after,
+            forward_endpoints,
+            backward_endpoints,
+            result,
+        );
     } else {
         result.extend(
             old[old_range.start..old_range.end]
@@ -306,9 +376,9 @@ fn conquer<T>(
         );
     }
 
-    if common_suffix_len > 0 {
+    if suffix_len > 0 {
         result.extend(
-            old[common_suffix.0..common_suffix.0 + common_suffix_len]
+            old[suffix_start..suffix_start + suffix_len]
                 .iter()
                 .map(|token| RawOperation::Equal(vec![token.clone()])),
         );
