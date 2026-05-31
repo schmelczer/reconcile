@@ -170,3 +170,96 @@ jobs:
           npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-pypi:
+    needs: build
+    runs-on: docker
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-pypi-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-pypi-
+            ${{ runner.os }}-cargo-
+
+      # clang/lld/llvm provide clang-cl, lld-link and llvm-lib, which cargo-xwin
+      # uses to cross-compile the Windows wheel from this Linux runner.
+      - name: Install cross-compilation system dependencies
+        run: |
+          apt-get update
+          apt-get install -y clang lld llvm
+
+      - name: Install Rust toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      # The Linux targets ship in rust-toolchain.toml; add the cross targets.
+      - name: Add cross-compilation Rust targets
+        run: |
+          rustup target add aarch64-unknown-linux-gnu x86_64-pc-windows-msvc
+
+      # zig is the C toolchain maturin's `--zig` uses to produce manylinux2014
+      # wheels with a pinned (old) glibc, independent of the runner's glibc.
+      - name: Install zig
+        run: |
+          ZIG_VERSION=0.13.0
+          curl --proto '=https' --tlsv1.2 -fLsS \
+            "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+            | tar -xJ
+          echo "$PWD/zig-linux-x86_64-${ZIG_VERSION}" >> "$GITHUB_PATH"
+
+      - name: Install cargo-xwin
+        run: command -v cargo-xwin || cargo install --locked cargo-xwin
+
+      - name: Install uv
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Copy README
+        run: cp README.md reconcile-python/
+
+      - name: Build sdist
+        working-directory: reconcile-python
+        run: uv run maturin sdist --out dist
+
+      - name: Build Linux x86_64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --compatibility manylinux2014
+          --target x86_64-unknown-linux-gnu --zig
+
+      - name: Build Linux aarch64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --compatibility manylinux2014
+          --target aarch64-unknown-linux-gnu --zig
+
+      - name: Build Windows x86_64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --target x86_64-pc-windows-msvc
+
+      # Forgejo cannot use PyPI trusted publishing (OIDC), so authenticate with
+      # an API token. --skip-existing makes re-runs of a tag idempotent.
+      - name: Publish to PyPI
+        working-directory: reconcile-python
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv run maturin upload --skip-existing dist/*
