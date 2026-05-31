@@ -10,5 +10,8 @@ node_modules
 # WebPack build output
 dist
 
+# Generated wasm-bindgen bundler + wasm2js output for the React Native build
+pkg-rn
+
 # Python virtual environment
 .venv

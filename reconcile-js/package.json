@@ -4,6 +4,7 @@
   "description": "Intelligent 3-way text merging with automated conflict resolution",
   "main": "dist/reconcile.node.js",
   "browser": "dist/reconcile.web.js",
+  "react-native": "dist/reconcile.rn.js",
   "keywords": [
     "text editing",
     "sync",
@@ -31,12 +32,13 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "webpack --mode production",
-    "format": "prettier --write \"./**/*.(ts|scss|json|html)\"",
+    "build": "node scripts/build-rn.mjs && webpack --mode production",
+    "format": "prettier --write \"./**/*.(ts|mjs|scss|json|html)\"",
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "binaryen": "^123.0.0",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
     "reconcile-text": "file:../pkg",

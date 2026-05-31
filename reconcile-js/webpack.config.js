@@ -2,7 +2,6 @@ const path = require('path');
 const { merge } = require('webpack-merge');
 
 const common = {
-  entry: './src/index.ts',
   optimization: {
     // the consuming project should take care of minification
     minimize: false,
@@ -38,8 +37,10 @@ const common = {
 };
 
 module.exports = [
+  // Web build: real WebAssembly, instantiated synchronously from inlined base64.
   merge(common, {
     target: 'web',
+    entry: './src/index.ts',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: 'reconcile.web.js',
@@ -50,12 +51,31 @@ module.exports = [
       globalObject: 'this',
     },
   }),
+
+  // Node build: real WebAssembly.
   merge(common, {
     target: 'node',
+    entry: './src/index.ts',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: 'reconcile.node.js',
       libraryTarget: 'commonjs2',
+    },
+  }),
+
+  // React Native build: wasm2js (pure JS), for Hermes which has no
+  // `WebAssembly` global. Sources come from `pkg-rn/`
+  merge(common, {
+    target: 'web',
+    entry: './src/index.rn.ts',
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: 'reconcile.rn.js',
+      library: {
+        name: 'reconcile',
+        type: 'umd',
+      },
+      globalObject: 'this',
     },
   }),
 ];

@@ -80,6 +80,13 @@ console.log(result.text); // "Hi beautiful world"
 
 See the [example website source](examples/website/src/index.ts) for a more complex example, or the [advanced examples document](docs/advanced-ts.md).
 
+#### React Native (Hermes)
+
+React Native's default engine, Hermes, does not expose a runtime `WebAssembly`
+global, so the WebAssembly build cannot run there. For React Native, the package
+ships a pure-JavaScript build produced by [Binaryen's `wasm2js`](https://github.com/WebAssembly/binaryen)
+via its `react-native` entry point.
+
 ### Python
 
 Install via uv or pip:
