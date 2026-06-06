@@ -79,9 +79,10 @@ jobs:
 
       - name: Deploy to pages mount
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          apt-get update && apt-get install -y rsync
-          rsync -a --delete examples/website/dist/ /pages/reconcile
+        uses: http://forgejo:3000/andras/ci-actions/deploy-pages@main
+        with:
+          source: examples/website/dist
+          target: reconcile
 
   publish-crate:
     needs: build
