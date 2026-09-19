@@ -208,7 +208,7 @@
 //! ## Algorithm overview
 //!
 //! For detailed algorithm explanation, see the
-//! [README](https://github.com/schmelczer/reconcile/blob/main/README.md#how-it-works).
+//! [README](https://git.schmelczer.dev/andras/reconcile/blob/main/README.md#how-it-works).
 
 mod operation_transformation;
 mod raw_operation;

@@ -9,18 +9,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/schmelczer/reconcile.git"
+    "url": "git+https://git.schmelczer.dev/andras/reconcile.git"
   },
   "keywords": [],
   "author": "Andras Schmelczer",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/schmelczer/reconcile/issues"
+    "url": "https://git.schmelczer.dev/andras/reconcile/issues"
   },
   "browserslist": [
     "defaults"
   ],
-  "homepage": "https://github.com/schmelczer/reconcile#readme",
+  "homepage": "https://git.schmelczer.dev/andras/reconcile#readme",
   "devDependencies": {
     "copy-webpack-plugin": "^14.0.0",
     "css-loader": "^7.1.4",
