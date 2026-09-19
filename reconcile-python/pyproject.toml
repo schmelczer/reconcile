@@ -25,8 +25,8 @@ dev = ["maturin>=1.0,<2.0", "pytest>=8", "ruff>=0.15", "pyright>=1"]
 
 [project.urls]
 Homepage = "https://schmelczer.dev/reconcile"
-Repository = "https://github.com/schmelczer/reconcile"
-Issues = "https://github.com/schmelczer/reconcile/issues"
+Repository = "https://git.schmelczer.dev/andras/reconcile"
+Issues = "https://git.schmelczer.dev/andras/reconcile/issues"
 
 [tool.maturin]
 manifest-path = "Cargo.toml"
