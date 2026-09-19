@@ -6,6 +6,8 @@ A Rust, TypeScript, and Python library for merging conflicting text edits withou
 
 ✨ **[Try the interactive demo][8]** to see it in action!
 
+> Or read my [blog post](https://schmelczer.dev/articles/reconcile-text-3-way-merge/) on it!
+
 ### Install it in your project
 
 - `cargo add reconcile-text` ([reconcile-text on crates.io][9])
