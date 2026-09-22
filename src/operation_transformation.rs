@@ -14,6 +14,9 @@ use crate::{Tokenizer, types::text_with_cursors::TextWithCursors};
 /// return a document containing all changes from both `left`
 /// and `right`.
 ///
+/// If both updated texts are identical, the resulting text is exactly that
+/// text, regardless of the original document.
+///
 /// If a span has been inserted in either the `left` or `right`
 /// versions, it will be present in the return value. If both sides
 /// insert the same span with a common prefix, that prefix will only

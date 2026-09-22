@@ -1,4 +1,3 @@
-use core::iter;
 use std::fmt::Debug;
 
 use crate::raw_operation::RawOperation;
@@ -11,55 +10,40 @@ where
     I: IntoIterator<Item = RawOperation<T>>,
     T: PartialEq + Clone + Debug,
 {
-    // This might look bad, but this makes sense. The inserts and deltes can be
-    // interleaved, such as: IDIDID and we need to turn this into IIIDDD.
-    // So we need to keep track of both the last insert and delete operations, not
-    // just the last one.
-    let mut maybe_previous_insert: Option<RawOperation<T>> = None;
-    let mut maybe_previous_delete: Option<RawOperation<T>> = None;
+    let mut inserts: Vec<RawOperation<T>> = Vec::new();
+    let mut deletes: Vec<RawOperation<T>> = Vec::new();
+    let mut result = Vec::new();
 
-    // We don't elongate `equals` as they're needed to maintain cursor positions
-    // when merging against deletes.
-    let mut result: Vec<RawOperation<T>> = raw_operations
-        .into_iter()
-        .flat_map(|next| match next {
-            RawOperation::Insert(..) => match maybe_previous_insert.take() {
-                Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_insert = Some(prev.join(next));
-                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                }
-                prev => {
-                    maybe_previous_insert = Some(next);
-                    Box::new(prev.into_iter())
-                }
-            },
-            RawOperation::Delete(..) => match maybe_previous_delete.take() {
-                Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
-                    maybe_previous_delete = Some(prev.join(next));
-                    Box::new(iter::empty()) as Box<dyn Iterator<Item = RawOperation<T>>>
-                }
-                prev => {
-                    maybe_previous_delete = Some(next);
-                    Box::new(prev.into_iter())
-                }
-            },
-            RawOperation::Equal(..) => Box::new(
-                maybe_previous_delete
-                    .take()
-                    .into_iter()
-                    .chain(maybe_previous_insert.take())
-                    .chain(iter::once(next)),
-            ) as Box<dyn Iterator<Item = RawOperation<T>>>,
-        })
-        .collect();
+    // Emit all deletions before insertions within each changed span, even
+    // when tokens cannot be joined. Otherwise an insertion followed by a
+    // deletion at the same offset can separate identical insertions during
+    // merging and prevent their deduplication.
+    for next in raw_operations {
+        let pending = match next {
+            RawOperation::Insert(..) => &mut inserts,
+            RawOperation::Delete(..) => &mut deletes,
+            RawOperation::Equal(..) => {
+                result.append(&mut deletes);
+                result.append(&mut inserts);
 
-    if let Some(prev) = maybe_previous_delete {
-        result.push(prev);
+                // Keep retains separate for cursor positioning
+                result.push(next);
+
+                continue;
+            }
+        };
+
+        match pending.pop() {
+            Some(prev) if prev.is_right_joinable() && next.is_left_joinable() => {
+                pending.push(prev.join(next));
+            }
+            Some(prev) => pending.extend([prev, next]),
+            None => pending.push(next),
+        }
     }
 
-    if let Some(prev) = maybe_previous_insert {
-        result.push(prev);
-    }
+    result.append(&mut deletes);
+    result.append(&mut inserts);
 
     result
 }
@@ -115,12 +99,48 @@ mod tests {
 
     #[test]
     fn merges_interleaved_insert_delete_sequences() {
-        // Pattern IDID -> II DD
+        // Pattern IDID -> DD II
         let ops = vec![ins(&["i1"]), del(&["d1"]), ins(&["i2"]), del(&["d2"])];
         let result = elongate_operations(ops);
 
         assert_eq!(result.len(), 2);
         assert!(matches!(result[0], RawOperation::Delete(_)));
         assert!(matches!(result[1], RawOperation::Insert(_)));
+    }
+
+    #[test]
+    fn orders_non_joinable_edits_before_each_retain() {
+        let insert1 = ins_custom("a", false, false);
+        let insert2 = ins_custom("\n", false, false);
+        let delete1 = RawOperation::Delete(vec![Token::new(
+            "b".to_owned(),
+            "b".to_owned(),
+            false,
+            false,
+        )]);
+        let delete2 = del(&["c"]);
+        let retain = RawOperation::Equal(vec!["d".into()]);
+        let ops = vec![
+            insert1.clone(),
+            delete1.clone(),
+            insert2.clone(),
+            delete2.clone(),
+            retain.clone(),
+            insert1.clone(),
+            delete1.clone(),
+        ];
+
+        assert_eq!(
+            elongate_operations(ops),
+            vec![
+                delete1.clone(),
+                delete2,
+                insert1.clone(),
+                insert2,
+                retain,
+                delete1,
+                insert1,
+            ],
+        );
     }
 }

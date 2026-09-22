@@ -306,10 +306,10 @@ fn conquer<T>(
     // Check for common prefix
     let prefix_len = common_prefix_len(old, old_range.clone(), new, new_range.clone());
     if prefix_len > 0 {
-        result.extend(
-            old[old_range.start..old_range.start + prefix_len]
-                .iter()
-                .map(|token| RawOperation::Equal(vec![token.clone()])),
+        emit_matches(
+            &old[old_range.start..old_range.start + prefix_len],
+            &new[new_range.start..new_range.start + prefix_len],
+            result,
         );
     }
     old_range.start += prefix_len;
@@ -317,9 +317,10 @@ fn conquer<T>(
 
     // Check for common suffix
     let suffix_len = common_suffix_len(old, old_range.clone(), new, new_range.clone());
-    let suffix_start = old_range.end - suffix_len;
-    old_range.end -= suffix_len;
-    new_range.end -= suffix_len;
+    let old_suffix_start = old_range.end - suffix_len;
+    let new_suffix_start = new_range.end - suffix_len;
+    old_range.end = old_suffix_start;
+    new_range.end = new_suffix_start;
 
     if old_range.is_empty() && new_range.is_empty() {
         // do nothing
@@ -377,11 +378,27 @@ fn conquer<T>(
     }
 
     if suffix_len > 0 {
-        result.extend(
-            old[suffix_start..suffix_start + suffix_len]
-                .iter()
-                .map(|token| RawOperation::Equal(vec![token.clone()])),
+        emit_matches(
+            &old[old_suffix_start..old_suffix_start + suffix_len],
+            &new[new_suffix_start..new_suffix_start + suffix_len],
+            result,
         );
+    }
+}
+
+/// Normalized matches guide alignment, but only identical original text can
+/// be retained. Emit replacements for matches with different spellings.
+fn emit_matches<T>(old: &[Token<T>], new: &[Token<T>], result: &mut Vec<RawOperation<T>>)
+where
+    T: PartialEq + Clone + Debug,
+{
+    for (old_token, new_token) in old.iter().zip(new) {
+        if old_token.original() == new_token.original() {
+            result.push(RawOperation::Equal(vec![old_token.clone()]));
+        } else {
+            result.push(RawOperation::Delete(vec![old_token.clone()]));
+            result.push(RawOperation::Insert(vec![new_token.clone()]));
+        }
     }
 }
 
