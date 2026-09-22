@@ -24,6 +24,15 @@ else
   echo "Your working directory is clean."
 fi
 
+# GNU sed takes the suffix as part of -i, BSD sed requires a separate argument
+sed_inplace() {
+  if sed --version >/dev/null 2>&1; then
+    sed -i "$@"
+  else
+    sed -i '' "$@"
+  fi
+}
+
 echo "Bumping versions"
 
 which cargo-set-version || cargo install cargo-edit
@@ -39,8 +48,8 @@ npm install
 
 NEWVER=$(grep '^version = ' ../Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 cd ../reconcile-python
-sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" Cargo.toml
-sed -i '' "s/^version = \".*\"/version = \"$NEWVER\"/" pyproject.toml
+sed_inplace "s/^version = \".*\"/version = \"$NEWVER\"/" Cargo.toml
+sed_inplace "s/^version = \".*\"/version = \"$NEWVER\"/" pyproject.toml
 cargo update --workspace
 uv lock
 
