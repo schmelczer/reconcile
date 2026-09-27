@@ -130,14 +130,14 @@ dependencies = [
 
 [[package]]
 name = "reconcile-text"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "reconcile-text-python"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "pyo3",
  "reconcile-text",
