@@ -37,6 +37,8 @@
 //!   fine-grained control
 //! - **`BuiltinTokenizer::Line`**: Line-based merging, similar to traditional
 //!   diff tools
+//! - **`BuiltinTokenizer::Markdown`**: Preserves newlines and keeps Markdown
+//!   block prefixes attached to the first word
 //!
 //! ```
 //! use reconcile_text::{reconcile, BuiltinTokenizer};
