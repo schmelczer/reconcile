@@ -81,7 +81,7 @@ changed = "Hello beautiful world"
 
 # Generate a compact diff
 d = diff(original, changed)
-print(d)  # [5, ' beautiful world']
+print(d)  # [5, ' beautiful', 6]
 
 # Reconstruct the changed text from the diff
 reconstructed = undiff(original, d)

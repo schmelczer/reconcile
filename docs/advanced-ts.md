@@ -236,7 +236,7 @@ const changed = 'Hello beautiful world';
 
 // Generate a compact diff
 const changes = diff(original, changed);
-console.log(changes); // [5, " beautiful world"]
+console.log(changes); // [5, " beautiful", 6]
 
 // Reconstruct the changed text from the diff
 const reconstructed = undiff(original, changes);
