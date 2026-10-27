@@ -22,15 +22,23 @@ def main() -> None:
         print("Usage: merge_file.py <mine> <base> <theirs> [output]", file=sys.stderr)
         sys.exit(1)
 
-    mine = Path(args[0]).read_text()
-    base = Path(args[1]).read_text()
-    theirs = Path(args[2]).read_text()
+    # Disable universal newline translation to preserve the original line endings.
+    with Path(args[0]).open(newline="") as file:
+        mine = file.read()
+    with Path(args[1]).open(newline="") as file:
+        base = file.read()
+    with Path(args[2]).open(newline="") as file:
+        theirs = file.read()
 
     result = reconcile(base, mine, theirs)
 
     if len(args) == 4:
-        Path(args[3]).write_text(result["text"])
+        with Path(args[3]).open("w", newline="") as file:
+            file.write(result["text"])
     else:
+        reconfigure = getattr(sys.stdout, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(newline="")
         print(result["text"], end="")
 
 
