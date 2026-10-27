@@ -7,19 +7,63 @@
 //                    implementation, since Hermes does not expose a runtime
 //                    `WebAssembly` global. See `scripts/build-rn.mjs`.
 
-type WasmModule = typeof import('reconcile-text');
+// Keep these structural types local: the raw wasm-bindgen package and this
+// wrapper share a name, so an import of 'reconcile-text' in emitted declarations
+// would resolve to the wrapper's public API in a consumer.
+interface WasmCursorPosition {
+  id(): number;
+  characterIndex(): number;
+  free(): void;
+}
+
+interface WasmTextWithCursors {
+  text(): string;
+  cursors(): WasmCursorPosition[];
+  free(): void;
+}
+
+interface WasmSpanWithHistory {
+  text(): string;
+  history(): History;
+  free(): void;
+}
+
+interface WasmTextWithCursorsAndHistory extends WasmTextWithCursors {
+  history(): WasmSpanWithHistory[];
+}
 
 /**
  * The generated wasm-bindgen surface this library wraps, plus a hook to make
  * sure the underlying module is ready. Supplied by a platform entrypoint.
  */
-export interface WasmBackend {
-  CursorPosition: WasmModule['CursorPosition'];
-  TextWithCursors: WasmModule['TextWithCursors'];
-  reconcile: WasmModule['reconcile'];
-  reconcileWithHistory: WasmModule['reconcileWithHistory'];
-  diff: WasmModule['diff'];
-  undiff: WasmModule['undiff'];
+export interface WasmBackend<
+  Cursor extends WasmCursorPosition,
+  Text extends WasmTextWithCursors,
+> {
+  CursorPosition: new (id: number, position: number) => Cursor;
+  TextWithCursors: new (text: string, cursors: Cursor[]) => Text;
+  reconcile(
+    original: string,
+    left: Text,
+    right: Text,
+    tokenizer: BuiltinTokenizer
+  ): WasmTextWithCursors;
+  reconcileWithHistory(
+    original: string,
+    left: Text,
+    right: Text,
+    tokenizer: BuiltinTokenizer
+  ): WasmTextWithCursorsAndHistory;
+  diff(
+    original: string,
+    changed: Text,
+    tokenizer: BuiltinTokenizer
+  ): Array<number | bigint | string>;
+  undiff(
+    original: string,
+    changes: Array<number | bigint | string>,
+    tokenizer: BuiltinTokenizer
+  ): string;
   /**
    * Make the wasm module ready for use. Invoked before every operation, so it
    * must be cheap and idempotent (a no-op once initialised).
@@ -255,7 +299,10 @@ const UNSUPPORTED_TOKENIZER_ERROR = `Unsupported tokenizer, only ${BUILTIN_TOKEN
  * objects. The behaviour is identical regardless of whether the backend is a
  * real WebAssembly module or its wasm2js translation.
  */
-export function makeReconcileApi(backend: WasmBackend): ReconcileApi {
+export function makeReconcileApi<
+  Cursor extends WasmCursorPosition,
+  Text extends WasmTextWithCursors,
+>(backend: WasmBackend<Cursor, Text>): ReconcileApi {
   function assertTokenizer(tokenizer: BuiltinTokenizer): void {
     if (!BUILTIN_TOKENIZERS.includes(tokenizer)) {
       throw new Error(UNSUPPORTED_TOKENIZER_ERROR);
@@ -273,10 +320,7 @@ export function makeReconcileApi(backend: WasmBackend): ReconcileApi {
     );
   }
 
-  function toTextWithCursors(textWithCursor: {
-    text(): string;
-    cursors(): Array<{ id(): number; characterIndex(): number; free(): void }>;
-  }): TextWithCursors {
+  function toTextWithCursors(textWithCursor: WasmTextWithCursors): TextWithCursors {
     const wasmCursors = textWithCursor.cursors();
     const cursors = wasmCursors.map((cursor) => ({
       id: cursor.id(),
@@ -292,11 +336,7 @@ export function makeReconcileApi(backend: WasmBackend): ReconcileApi {
     };
   }
 
-  function toSpanWithHistory(span: {
-    text(): string;
-    history(): History;
-    free(): void;
-  }): SpanWithHistory {
+  function toSpanWithHistory(span: WasmSpanWithHistory): SpanWithHistory {
     const result = {
       text: span.text(),
       history: span.history(),

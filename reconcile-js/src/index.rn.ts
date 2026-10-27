@@ -20,9 +20,9 @@ import {
   undiff as wasmUndiff,
 } from '../pkg-rn/reconcile_text.js';
 
-import { makeReconcileApi, type WasmBackend } from './core';
+import { makeReconcileApi } from './core';
 
-const backend: WasmBackend = {
+const backend = {
   CursorPosition: wasmCursorPosition,
   TextWithCursors: wasmTextWithCursors,
   reconcile: wasmReconcile,

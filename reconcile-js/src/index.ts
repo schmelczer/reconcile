@@ -10,11 +10,11 @@ import {
 
 import wasmBytes from 'reconcile-text/reconcile_text_bg.wasm';
 
-import { makeReconcileApi, type WasmBackend } from './core';
+import { makeReconcileApi } from './core';
 
 let isInitialised = false;
 
-const backend: WasmBackend = {
+const backend = {
   CursorPosition: wasmCursorPosition,
   TextWithCursors: wasmTextWithCursors,
   reconcile: wasmReconcile,
