@@ -154,27 +154,29 @@ The key differences from `reconcile-text`:
 
 - **Character-level only** - Word-level and line-level diffs require encoding tokens as single Unicode characters before diffing ([7]). `reconcile-text` supports word, character, line, and custom tokenisation natively.
 
-- **Patches can fail** - `patch_apply` returns a boolean array indicating success per patch; failed patches are silently dropped. In Differential Synchronisation, failures self-correct in the next cycle, but for one-shot merges edits can be lost. `reconcile-text` always produces a complete merged result.
+- **Patches can fail** - `patch_apply` returns a boolean array indicating success per patch. In Differential Synchronisation, failures self-correct in the next cycle, but for one-shot merges callers need to check the flags and handle failures. `reconcile-text` always produces a complete merged result.
 
 - **No cursor tracking or change provenance** - diff-match-patch does not reposition cursors or track which side made which edit. `reconcile-text` does both automatically.
 
-See the [comparison example](examples/compare-with-diff-match-patch.rs) for concrete cases where diff-match-patch garbles adjacent edits and silently drops an entire sentence, while `reconcile-text` merges both users' changes correctly.
+See the [comparison example](examples/compare-with-diff-match-patch.rs) for cases where diff-match-patch garbles overlapping edits and reports a failed sentence-insertion patch, alongside `reconcile-text`'s three-way merge results.
 
 > **When to use diff-match-patch instead**: when you don't have a common ancestor, for example synchronising texts that have diverged through an unknown sequence of edits. If you have a common ancestor (as in most version control and collaborative editing scenarios), `reconcile-text` produces more reliable results.
 
 ### CRDTs (Yjs, Automerge, Loro, diamond-types)
 
-Conflict-free Replicated Data Types guarantee convergence by mathematical construction: every operation commutes, so the order of application doesn't matter. Libraries like [Yjs][20] (and its Rust port [Yrs][21]), [Automerge][16], [Loro][14], [cola][15], and [diamond-types][22] implement this approach.
+Conflict-free Replicated Data Types ensure that replicas incorporating the same updates reach equivalent states according to the data type's defined conflict semantics, provided its delivery assumptions are met. In operation-based CRDTs, effectors (the updates applied at replicas) commute for concurrently invoked operations; the original operations need not commute, and causally dependent updates may require causal delivery. State-based CRDTs instead propagate and merge replica states ([28], sections 2.4 and 3.1).
 
-CRDTs capture every individual keystroke or operation, assigning each a unique identity. This makes them ideal when you control the complete editing infrastructure: the editor, the transport layer, and the storage format. They work peer-to-peer, handle arbitrary numbers of concurrent editors, and never lose an edit.
+Convergence does not guarantee that every edit remains visible or that every user's intent is preserved. For example, a last-writer-wins register selects a winner among competing writes ([28]).
 
-The trade-off is that CRDTs require **maintaining document state over time** - an operation log or internal data structure that grows with the document's edit history. You cannot simply hand a CRDT library three plain strings and get a merged result. This makes them unsuitable for Differential Synchronisation scenarios where you only observe the final state of each document, which is exactly the niche `reconcile-text` fills.
+Document CRDT libraries like [Yjs][20] (and its Rust port [Yrs][21]), [Automerge][16], [Loro][14], [cola][15], and [diamond-types][22] maintain replicated text structures with identities and causal metadata for merging concurrent changes. They are well suited to collaborative editing across multiple replicas when the application can integrate changes into those structures; this does not require recording every keystroke.
 
-> **When to use CRDTs instead**: if you control the complete editing stack and can capture every operation as it happens, CRDTs provide stronger convergence guarantees. They also support more than two concurrent editors naturally, whereas `reconcile-text` merges exactly two forks at a time (though merges can be chained).
+The trade-off for these document libraries is **maintaining document state over time**, including metadata beyond the visible text. For a workflow that only observes final text snapshots, using these structures entails translating differences into CRDT updates and managing CRDT state. `reconcile-text` instead accepts a parent and two edited strings directly.
+
+> **When to use CRDTs instead**: if you can integrate a document CRDT and persist its state, these libraries provide convergence under their documented assumptions and naturally support multiple concurrent editors. `reconcile-text` merges exactly two forks at a time (though merges can be chained).
 
 ### Operational Transformation (OT)
 
-OT libraries like [ot.js][23] and [ShareJS][24] transform concurrent operations against each other so that applying them in any order produces the same result. Like CRDTs, they capture individual operations and require infrastructure to coordinate them, typically a central server that determines the canonical operation order.
+OT libraries like [ot.js][23] and [ShareJS][24] transform concurrent operations against each other so that applying them in any order produces the same result. They work with individual operations and require infrastructure to coordinate them, typically a central server that determines the canonical operation order.
 
 `reconcile-text` borrows the *concept* of OT (transforming one side's edits against the other) but applies it to a different problem. Instead of transforming individual keystrokes in real time, it transforms the consolidated diff output of two complete edits. This means it doesn't need a server, doesn't need to capture operations as they happen, and works entirely offline.
 
@@ -256,3 +258,4 @@ Install [rustup][26]:
 [25]: https://github.com/nvm-sh/nvm
 [26]: https://rustup.rs
 [27]: https://pypi.org/project/reconcile-text/
+[28]: https://arxiv.org/html/2310.18220v2
