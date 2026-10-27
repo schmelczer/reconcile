@@ -21,4 +21,4 @@ expected: a b c d
 parent: a
 left: abc
 right: abcd
-expected: abcabcd
+expected: abcd

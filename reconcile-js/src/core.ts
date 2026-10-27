@@ -143,6 +143,9 @@ export interface ReconcileApi {
    * This is the primary function for 3-way text merging. Unlike traditional merge tools
    * that produce conflict markers, this function automatically resolves conflicts by
    * applying both sets of changes where possible.
+   * Replaying either unchanged input against the same base preserves the merged
+   * text. Replay stability can supersede ambiguous concurrent edits; the guarantee
+   * applies to text, not the combined cursor list.
    *
    * @param original - The original/base version of the text that both sides diverged from
    * @param left - The left version of the text (either string or TextWithCursors with cursor positions)

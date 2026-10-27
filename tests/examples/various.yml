@@ -85,7 +85,7 @@ expected: Please submit your |completed |assignment |online |by Friday
 parent: "a b "
 left: "c d "
 right: "a b c d "
-expected: "c d c d "
+expected: "a b c d "
 
 ---
 parent: a b c d e

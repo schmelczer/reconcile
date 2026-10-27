@@ -1,6 +1,7 @@
 mod diff_error;
 mod edited_text;
 mod operation;
+mod replay;
 mod utils;
 use std::fmt::Debug;
 
@@ -10,22 +11,22 @@ pub use operation::Operation;
 
 use crate::{Tokenizer, types::text_with_cursors::TextWithCursors};
 
-/// Given an `original` document and two concurrent edits to it,
-/// return a document containing all changes from both `left`
-/// and `right`.
+/// Merge two concurrent snapshots, prioritizing stability when either input
+/// is replayed against the same `original` document.
 ///
 /// If both updated texts are identical, the resulting text is exactly that
 /// text, regardless of the original document.
 ///
-/// If a span has been inserted in either the `left` or `right`
-/// versions, it will be present in the return value. If both sides
-/// insert the same span with a common prefix, that prefix will only
-/// be present once in the output.
+/// With a deterministic, lossless tokenizer, if `merged = reconcile(original, left,
+/// right).apply()`, reconciling `merged` with either input again produces the
+/// same text. This guarantee concerns text, not the combined cursor list.
 ///
-/// When both sides delete the same span, it will be deleted in the
-/// return value. If one side deletes a span and the other side inserts
-/// into that span, the inserted text will be present in the return
-/// value.
+/// Already incorporated insertions are recognized as character subsequences
+/// of the other side's inserted text, including inside joined words. A combined
+/// result is kept only when it absorbs both inputs on replay. Otherwise one
+/// snapshot is selected, preferring more inserted characters, then more deleted
+/// characters, then lexicographically greater text. Some independent concurrent
+/// edits can therefore be superseded to keep retries stable.
 ///
 /// Supports UTF-8. Arguments are tokenized using the provided `tokenizer`.
 ///
@@ -49,10 +50,7 @@ pub fn reconcile<'a, T>(
 where
     T: PartialEq + Clone + Debug,
 {
-    let left_operations = EditedText::from_strings_with_tokenizer(original, left, tokenizer);
-    let right_operations = EditedText::from_strings_with_tokenizer(original, right, tokenizer);
-
-    left_operations.merge(right_operations)
+    replay::merge_stable(original, left, right, tokenizer)
 }
 
 #[cfg(test)]

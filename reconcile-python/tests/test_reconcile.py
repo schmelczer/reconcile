@@ -27,6 +27,19 @@ class TestReconcile:
         result = reconcile(parent, left, right)
         assert result["text"] == "With reconcile, merging documents is easy!"
 
+    @pytest.mark.parametrize("parent", ["", "a"])
+    def test_replaying_conflicting_replacements(self, parent: str) -> None:
+        merged = reconcile(parent, "b", "x")
+        assert merged["text"] == "bx"
+        assert reconcile(parent, merged, "x") == merged
+        assert reconcile(parent, merged, "b") == merged
+        assert reconcile_with_history(parent, merged, "x")["text"] == "bx"
+
+    def test_replaying_preserves_repeated_text(self) -> None:
+        merged = reconcile("a", "bb", "x")
+        assert merged["text"] == "bbx"
+        assert reconcile("a", merged, "x") == merged
+
     def test_with_cursors(self) -> None:
         result = reconcile(
             "Hello",

@@ -95,10 +95,58 @@ where
         }
     }
 
+    pub(crate) fn inserted_text(&self) -> String {
+        let mut result = String::new();
+        for operation in &self.operations {
+            if let Operation::Insert { text, .. } = operation {
+                for token in text {
+                    result.push_str(token.original());
+                }
+            }
+        }
+        result
+    }
+
+    pub(crate) fn edit_counts(&self) -> (usize, usize) {
+        self.operations
+            .iter()
+            .fold((0, 0), |(inserted, deleted), operation| match operation {
+                Operation::Insert { .. } => (inserted + operation.len(), deleted),
+                Operation::Delete {
+                    deleted_character_count,
+                    ..
+                } => (inserted, deleted + deleted_character_count),
+                Operation::Equal { .. } => (inserted, deleted),
+            })
+    }
+
+    pub(crate) fn with_cursors_and_side(
+        mut self,
+        mut cursors: Vec<CursorPosition>,
+        side: Side,
+    ) -> Self {
+        cursors.sort_by_key(|cursor| cursor.char_index);
+        self.cursors = cursors;
+        self.operation_sides.fill(side);
+        self
+    }
+
+    pub(crate) fn swap_sides(mut self) -> Self {
+        for side in &mut self.operation_sides {
+            *side = match side {
+                Side::Left => Side::Right,
+                Side::Right => Side::Left,
+            };
+        }
+        self
+    }
+
     /// Merge two `EditedText` instances. The two instances must be derived
     /// from the same original text. The operations are merged using the
     /// principles of Operational Transformation. The cursors are updated
     /// accordingly to reflect the changes made by the merged operations.
+    /// This operation-level API does not guarantee snapshot replay stability;
+    /// use [`Self::merge_with_tokenizer`] or [`crate::reconcile`] for that contract.
     ///
     /// # Panics
     ///
@@ -252,6 +300,23 @@ where
             merged_operation_sides,
             merged_cursors,
         )
+    }
+
+    /// Merge snapshots with the same replay guarantees as [`crate::reconcile`].
+    /// The tokenizer must be deterministic, lossless, and match the tokenizer used
+    /// to create these edits. Operations are recalculated from their snapshots.
+    ///
+    /// # Panics
+    ///
+    /// Panics in debug builds if the original texts differ, or if a cursor index
+    /// overflows an `isize` during transformation.
+    #[must_use]
+    pub fn merge_with_tokenizer(&self, other: &Self, tokenizer: &Tokenizer<T>) -> Self {
+        debug_assert_eq!(
+            self.text, other.text,
+            "Edits must share the same original text"
+        );
+        super::reconcile(self.text, &self.apply(), &other.apply(), tokenizer)
     }
 
     /// Apply the operations to the text and return the resulting text

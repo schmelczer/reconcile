@@ -1,6 +1,6 @@
 # `reconcile-text`: conflict-free 3-way text merging
 
-A Rust, TypeScript, and Python library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts by applying both sets of changes (while updating cursor positions) using an algorithm inspired by Operational Transformation.
+A Rust, TypeScript, and Python library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts using an algorithm inspired by Operational Transformation. It combines edits where possible and prioritizes stable replay while updating cursor positions.
 
 ## Try it
 
@@ -132,11 +132,45 @@ Differential sync is implemented by [universal-sync][12], and it requires a merg
 1. **Tokenisation** - Input texts are split into meaningful units (words, characters, etc.) for granular merging
 2. **Diff computation** - Myers' algorithm calculates differences between (parent ↔ left) and (parent ↔ right)
 3. **Diff optimisation** - Operations are reordered and consolidated to maximise chained changes
-4. **Operational Transformation** - Edits are woven together using OT principles, preserving all modifications and updating cursors
+4. **Operational Transformation** - Edits are woven together using OT principles, combining changes and updating cursors
+5. **Replay verification** - Combined text is accepted only when it absorbs both inputs on replay; ambiguous cases keep one input deterministically
 
 Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs][13].) The same could be achieved with CRDTs, which many libraries implement well for text (see [Loro][14], [cola][15], and [automerge][16]).
 
 However, when only the end result of concurrent changes is observable, merge quality depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations cannot be supported because Myers' algorithm decomposes them into separate `insert` and `delete` operations, regardless of the merging algorithm used.
+
+### Replay stability
+
+Reapplying either unchanged input against the same base preserves the merged text:
+
+```javascript
+const merged = reconcile('a', 'b', 'x').text; // 'bx'
+reconcile('a', merged, 'x').text;             // 'bx'
+reconcile('a', merged, 'b').text;             // 'bx'
+```
+
+This holds for every built-in tokenizer and deterministic, lossless custom
+tokenizers whose original token text concatenates back to the input.
+The guarantee applies to text; cursors from both supplied inputs are mapped into
+the result on each call.
+
+The merge treats insertions already included in the other side's inserted text
+as incorporated, including character subsequences inside joined words. It checks
+that a tentative combined result absorbs both inputs. If it does not, the merge
+keeps one input deterministically: more inserted characters take precedence,
+then more deleted characters, then lexicographically greater text.
+
+This gives retry stability precedence over preserving every concurrent edit.
+For example, changing `a` to `abc` and `abcd` now produces `abcd`. Plain strings
+cannot distinguish a replay from every independent edit containing the same
+text, so some concurrent edits can be superseded. The fallback selects an input
+without iterating until convergence; concurrent merges perform at most two
+additional candidate merges to verify replay.
+
+In Rust, use `reconcile` or `EditedText::merge_with_tokenizer` for this guarantee.
+The lower-level `EditedText::merge` combines operations without the snapshot
+replay check. Continue advancing the sync base after a successful application;
+this guarantee covers replay of the unchanged merge result.
 
 ## Comparison with other approaches
 

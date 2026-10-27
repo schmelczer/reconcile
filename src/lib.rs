@@ -2,8 +2,9 @@
 //!
 //! A library for merging conflicting text edits without manual intervention.
 //! Unlike traditional 3-way merge tools that produce conflict markers,
-//! reconcile-text automatically resolves conflicts by applying both sets of
-//! changes (while updating cursor positions) using an algorithm inspired by
+//! reconcile-text automatically resolves conflicts by combining edits where
+//! possible, prioritizing stable replay, and updating cursor positions with
+//! an algorithm inspired by
 //! Operational Transformation.
 //!
 //! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.

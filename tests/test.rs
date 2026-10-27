@@ -65,7 +65,7 @@ fn test_document_one_way_with_serialisation() {
 
         doc.assert_eq_without_cursors(
             &restored_left_operations
-                .merge(restored_right_operations)
+                .merge_with_tokenizer(&restored_right_operations, &*BuiltinTokenizer::Word)
                 .apply()
                 .text(),
         );

@@ -73,6 +73,40 @@ describe.each(backends)('reconcile [$name]', ({ api }) => {
     expect(result.history.length).toBeGreaterThan(0);
   });
 
+  it.each(['a', ''])(
+    'replaying conflicting replacements with base %p keeps both edits',
+    (base) => {
+      for (const tokenizer of ['Character', 'Line', 'Markdown', 'Word'] as const) {
+        const merged = reconcile(base, 'b', 'x', tokenizer);
+        expect(merged.text).toBe('bx');
+        expect(reconcile(base, merged, 'x', tokenizer)).toEqual(merged);
+        expect(reconcile(base, merged, 'b', tokenizer)).toEqual(merged);
+        expect(reconcileWithHistory(base, merged, 'x', tokenizer).text).toBe('bx');
+      }
+    }
+  );
+
+  it('preserves intentional repeats and Unicode cursor positions on replay', () => {
+    const repeated = reconcile('a', 'bb', 'x');
+    expect(repeated.text).toBe('bbx');
+    expect(reconcile('a', repeated, 'x')).toEqual(repeated);
+    const local = {
+      text: '🦊x',
+      cursors: [
+        { id: 1, position: 1 },
+        { id: 2, position: 2 },
+      ],
+    };
+    const result = reconcile('a', local, {
+      text: 'x',
+      cursors: [{ id: 3, position: 1 }],
+    });
+    expect(result.text).toBe(local.text);
+    expect(result.cursors).toEqual(
+      expect.arrayContaining([...local.cursors, { id: 3, position: 2 }])
+    );
+  });
+
   it('undiff accepts bigint entries (per the Array<number | bigint | string> type)', () => {
     const original = 'Hello world';
     const changed = 'Hello cruel world';
