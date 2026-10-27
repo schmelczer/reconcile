@@ -6,7 +6,7 @@ A Rust, TypeScript, and Python library for merging conflicting text edits withou
 
 ✨ **[Try the interactive demo][8]** to see it in action!
 
-> Or read my [blog post](https://schmelczer.dev/articles/reconcile-text-3-way-merge/) on it!
+For the motivation and algorithm behind the library, read [Conflict-Free Three-Way Text Merging](https://schmelczer.dev/articles/reconcile-text-3-way-merge/).
 
 ### Install it in your project
 

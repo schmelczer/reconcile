@@ -1,5 +1,8 @@
 # Advanced Usage (Python)
 
+For the motivation and algorithm behind the library, read
+[Conflict-Free Three-Way Text Merging](https://schmelczer.dev/articles/reconcile-text-3-way-merge/).
+
 ## Edit Provenance
 
 Track which changes came from where using `reconcile_with_history`:

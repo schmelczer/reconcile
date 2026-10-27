@@ -207,7 +207,9 @@
 //!
 //! ## Algorithm overview
 //!
-//! For detailed algorithm explanation, see the
+//! For the motivation and algorithm behind the library, read
+//! [Conflict-Free Three-Way Text Merging](https://schmelczer.dev/articles/reconcile-text-3-way-merge/).
+//! For a shorter overview, see the
 //! [README](https://git.schmelczer.dev/andras/reconcile/blob/main/README.md#how-it-works).
 
 mod operation_transformation;
