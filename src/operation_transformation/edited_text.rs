@@ -157,10 +157,20 @@ where
             );
 
             let original_length = operation.len();
-            let (side, result) = match side {
-                Side::Left => {
-                    let result = operation.merge_operations(last_right_op.as_ref());
+            let previous_operation = match side {
+                Side::Left => &mut last_right_op,
+                Side::Right => &mut last_left_op,
+            };
+            let result = operation.merge_operations(previous_operation.as_ref());
 
+            if matches!(result, Operation::Insert { .. })
+                && matches!(previous_operation, Some(Operation::Insert { .. }))
+            {
+                *previous_operation = None;
+            }
+
+            match side {
+                Side::Left => {
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
                         let merged_length_signed = isize::try_from(merged_length)
                             .expect("merged_length must fit in isize");
@@ -189,12 +199,8 @@ where
 
                     maybe_left_op = left_iter.next();
                     last_left_op = Some(result.clone());
-
-                    (Side::Left, result)
                 }
                 Side::Right => {
-                    let result = operation.merge_operations(last_left_op.as_ref());
-
                     if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
                         let merged_length_signed = isize::try_from(merged_length)
                             .expect("merged_length must fit in isize");
@@ -223,10 +229,8 @@ where
 
                     maybe_right_op = right_iter.next();
                     last_right_op = Some(result.clone());
-
-                    (Side::Right, result)
                 }
-            };
+            }
 
             if result.len() == 0 {
                 continue;
@@ -544,6 +548,7 @@ where
 mod tests {
     use insta::assert_debug_snapshot;
     use pretty_assertions::assert_eq;
+    use test_case::test_case;
 
     use super::*;
 
@@ -584,6 +589,28 @@ mod tests {
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply().text(), expected);
+    }
+
+    #[test_case("", "- item", "- item\n- item"; "empty_parent")]
+    #[test_case("", "- item\n- item", "- item\n- item\n- item"; "repeated_items")]
+    #[test_case("", "- item\n", "- item\n- item\n"; "trailing_newline")]
+    #[test_case("", "- 世界", "- 世界\r\n- 世界"; "unicode_and_crlf")]
+    #[test_case("# Title\n", "# Title\n- item", "# Title\n- item\n- item"; "nonempty_parent")]
+    fn test_merge_preserves_repeated_markdown_items(parent: &str, shorter: &str, longer: &str) {
+        for (left, right) in [(shorter, longer), (longer, shorter)] {
+            let left = EditedText::from_strings_with_tokenizer(
+                parent,
+                &left.into(),
+                &*BuiltinTokenizer::Markdown,
+            );
+            let right = EditedText::from_strings_with_tokenizer(
+                parent,
+                &right.into(),
+                &*BuiltinTokenizer::Markdown,
+            );
+
+            assert_eq!(left.merge(right).apply().text(), longer);
+        }
     }
 
     #[test]
