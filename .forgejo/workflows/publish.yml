@@ -222,10 +222,11 @@ jobs:
       - name: Install zig
         run: |
           ZIG_VERSION=0.13.0
+          ZIG_INSTALL_DIR=$(mktemp -d "${RUNNER_TEMP:-/tmp}/reconcile-zig.XXXXXX")
           curl --proto '=https' --tlsv1.2 -fLsS \
             "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-            | tar -xJ
-          echo "$PWD/zig-linux-x86_64-${ZIG_VERSION}" >> "$GITHUB_PATH"
+            | tar -xJ -C "$ZIG_INSTALL_DIR"
+          echo "$ZIG_INSTALL_DIR/zig-linux-x86_64-${ZIG_VERSION}" >> "$GITHUB_PATH"
 
       - name: Install cargo-xwin
         run: command -v cargo-xwin || cargo install --locked cargo-xwin
@@ -241,6 +242,10 @@ jobs:
       - name: Build sdist
         working-directory: reconcile-python
         run: uv run maturin sdist --out dist
+
+      - name: Validate sdist contents and size
+        working-directory: reconcile-python
+        run: uv run python ../scripts/check-python-sdist.py dist/*.tar.gz
 
       - name: Build Linux x86_64 wheel
         working-directory: reconcile-python
