@@ -12,9 +12,10 @@ const tokenizerRadios = document.querySelectorAll(
 
 const sampleText = `The reconcile-text library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First user's edit", and "Second user's edit" text boxes to see competing changes get merged in real-time within the "Merged result" box. 
 
-Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result highly depends on the tokenisation strategy which may be:
+Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result depends on the tokenisation strategy selected above:
 - Character-based
-- Word-based`;
+- Word-based (default)
+- Markdown-based`;
 
 let pendingUpdate: number | null = null;
 function scheduleUpdate(): void {
@@ -55,10 +56,10 @@ function loadSample(): void {
   originalTextArea.value = sampleText;
   leftTextArea.value =
     sampleText.replace('color', 'colour') +
-    "\n- Line-based\n\nCheck out what's the most complex conflict you can come up with!";
-  rightTextArea.value =
-    sampleText.replace(', for example,', ' such as').replace('WASM', 'WebAssembly') +
-    '\n- Or your custom tokeniser';
+    "\n\nCheck out what's the most complex conflict you can come up with!";
+  rightTextArea.value = sampleText
+    .replace('Experiment with changing', 'Try editing')
+    .replace('WASM', 'WebAssembly');
 }
 
 function updateMergedText(): void {
@@ -194,7 +195,7 @@ function createSelectionOverlay(isLeft: boolean, isSelection: boolean): HTMLSpan
 
 function getSelectedTokenizer(): BuiltinTokenizer {
   const selectedRadio = Array.from(tokenizerRadios).find((radio) => radio.checked);
-  return (selectedRadio?.value ?? 'Markdown') as BuiltinTokenizer;
+  return (selectedRadio?.value ?? 'Word') as BuiltinTokenizer;
 }
 
 function resizeTextAreas(): void {

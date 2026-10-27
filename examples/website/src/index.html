@@ -108,7 +108,13 @@
                 </div>
               </label>
               <label class="radio-option">
-                <input type="radio" name="tokenizer" value="Word" id="tokenizer-word" />
+                <input
+                  type="radio"
+                  name="tokenizer"
+                  value="Word"
+                  id="tokenizer-word"
+                  checked
+                />
                 <span class="radio-custom" aria-hidden="true"></span>
                 <div class="radio-content">
                   <span class="radio-label">Word</span>
@@ -121,7 +127,6 @@
                   name="tokenizer"
                   value="Markdown"
                   id="tokenizer-markdown"
-                  checked
                 />
                 <span class="radio-custom" aria-hidden="true"></span>
                 <div class="radio-content">
@@ -165,7 +170,7 @@
 
           <div class="text-area-card diamond-result">
             <label
-              for="merged"
+              id="merged-label"
               title="The automatically merged result - edit the boxes above to see changes in real-time."
             >
               Merged result
@@ -189,7 +194,13 @@
                 <path d="M3 3l18 18"></path>
               </svg>
             </label>
-            <div id="merged" role="textbox" aria-readonly="true" aria-live="off"></div>
+            <div
+              id="merged"
+              role="textbox"
+              aria-labelledby="merged-label"
+              aria-readonly="true"
+              aria-live="off"
+            ></div>
           </div>
         </main>
 
