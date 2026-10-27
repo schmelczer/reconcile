@@ -34,7 +34,9 @@
   ],
   "scripts": {
     "build": "node scripts/build-rn.mjs && webpack --mode production",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../LICENSE', 'LICENSE')\"",
     "format": "prettier --write \"./**/*.(ts|mjs|scss|json|html)\"",
+    "format:check": "prettier --check --ignore-path ../.gitignore \"./**/*.(ts|mjs|scss|json|html)\"",
     "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
   },
   "devDependencies": {
