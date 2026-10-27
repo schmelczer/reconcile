@@ -128,6 +128,24 @@ console.log(result.cursors); // [{ id: 2, position: 0 }, { id: 1, position: 3 }]
 
 > The `cursors` list is sorted by character position (not IDs).
 
+Input and output cursor positions count Unicode scalars (code points), starting
+at zero and allowing a position just after the last scalar. They do not count
+UTF-16 code units or grapheme clusters. For example, the position after `😀` is
+`1`, although JavaScript's `'😀'.length` is `2`.
+
+DOM `selectionStart` and `selectionEnd` use UTF-16 code units. Convert both
+endpoints before passing a textarea selection to the library:
+
+```typescript
+const edited = {
+  text: textarea.value,
+  cursors: [
+    { id: 1, position: [...textarea.value.slice(0, textarea.selectionStart)].length },
+    { id: 2, position: [...textarea.value.slice(0, textarea.selectionEnd)].length },
+  ],
+} satisfies TextWithOptionalCursors;
+```
+
 ## Generic Helpers and Inference
 
 The exported merge functions are intentionally small: they merge strings, or

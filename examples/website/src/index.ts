@@ -1,5 +1,5 @@
 import { reconcileWithHistory } from 'reconcile-text';
-import type { BuiltinTokenizer } from 'reconcile-text';
+import type { BuiltinTokenizer, CursorPosition } from 'reconcile-text';
 import './style.scss';
 
 const originalTextArea = document.getElementById('original') as HTMLTextAreaElement;
@@ -157,17 +157,20 @@ function getCursorsFromActiveTextArea() {
   let rightCursors = undefined;
 
   if (activeElement === leftTextArea) {
-    leftCursors = [
-      { id: 1, position: leftTextArea.selectionStart },
-      { id: 2, position: leftTextArea.selectionEnd },
-    ];
+    leftCursors = getSelectionCursors(leftTextArea);
   } else if (activeElement === rightTextArea) {
-    rightCursors = [
-      { id: 1, position: rightTextArea.selectionStart },
-      { id: 2, position: rightTextArea.selectionEnd },
-    ];
+    rightCursors = getSelectionCursors(rightTextArea);
   }
   return { leftCursors, rightCursors };
+}
+
+function getSelectionCursors(textarea: HTMLTextAreaElement): CursorPosition[] {
+  const text = textarea.value;
+  // DOM selections count UTF-16 code units; reconcile counts Unicode scalars.
+  return [
+    { id: 1, position: [...text.slice(0, textarea.selectionStart)].length },
+    { id: 2, position: [...text.slice(0, textarea.selectionEnd)].length },
+  ];
 }
 
 function createSelectionOverlay(isLeft: boolean, isSelection: boolean): HTMLSpanElement {

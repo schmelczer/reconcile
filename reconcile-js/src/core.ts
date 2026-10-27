@@ -136,7 +136,13 @@ export interface CursorPosition {
   /** Unique identifier for the cursor (can be any number, must be unique within the document) */
   id: number;
 
-  /** Character position in the text, 0-based index from the beginning of the document */
+  /**
+   * Zero-based offset in Unicode scalars (code points), from 0 through
+   * `[...text].length` inclusive. Applies to both input and output cursors.
+   * These are not UTF-16 code units or grapheme clusters: `😀` counts as one.
+   * Convert DOM selectionStart/selectionEnd offsets before passing them in:
+   * `[...text.slice(0, offset)].length`.
+   */
   position: number;
 }
 
