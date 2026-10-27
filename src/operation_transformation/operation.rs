@@ -42,6 +42,13 @@ where
     },
 }
 
+/// Character bounds of a matched prefix within the cached insertion.
+#[derive(Debug)]
+pub(crate) struct InsertionOverlap {
+    pub offset_from_end: usize,
+    pub length: usize,
+}
+
 impl<T> Operation<T>
 where
     T: PartialEq + Clone + Debug,
@@ -221,10 +228,12 @@ where
 
     /// Merges operations while consuming the matched part of a cached insertion.
     /// Keeps its suffix for later matches until new text is emitted after it.
+    /// Also returns the matched prefix's position within the cached insertion,
+    /// for positioning cursors in deduplicated text.
     pub(crate) fn merge_operations_consuming_insert(
         self,
         previous_operation: Option<&mut Self>,
-    ) -> Self {
+    ) -> (Self, Option<InsertionOverlap>) {
         match (self, previous_operation) {
             (
                 Operation::Insert { order, text },
@@ -234,16 +243,35 @@ where
                 }),
             ) => {
                 let overlap = find_longest_prefix_contained_within(previous_inserted_text, &text);
+                let insertion_overlap = (!overlap.is_empty()).then(|| {
+                    let length = previous_inserted_text[overlap.clone()]
+                        .iter()
+                        .map(Token::get_original_length)
+                        .sum::<usize>();
+                    let trailing_length = previous_inserted_text[overlap.end..]
+                        .iter()
+                        .map(Token::get_original_length)
+                        .sum::<usize>();
+
+                    InsertionOverlap {
+                        offset_from_end: length + trailing_length,
+                        length,
+                    }
+                });
                 if overlap.len() == text.len() {
                     previous_inserted_text.drain(..overlap.end);
                 } else {
                     previous_inserted_text.clear();
                 }
-                Operation::create_insert(order, text[overlap.len()..].to_vec())
+                (
+                    Operation::create_insert(order, text[overlap.len()..].to_vec()),
+                    insertion_overlap,
+                )
             }
-            (operation, previous_operation) => {
-                operation.merge_operations(previous_operation.as_deref())
-            }
+            (operation, previous_operation) => (
+                operation.merge_operations(previous_operation.as_deref()),
+                None,
+            ),
         }
     }
 

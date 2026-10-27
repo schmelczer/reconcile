@@ -95,6 +95,25 @@ where
         }
     }
 
+    fn remember_operation(previous: &mut Option<Operation<T>>, operation: &Operation<T>) {
+        // Consecutive insertions can all contribute to a later overlap match.
+        // Preserve their unconsumed tokens even when the latest result is empty.
+        if let (
+            Some(Operation::Insert {
+                order: previous_order,
+                text: previous_text,
+            }),
+            Operation::Insert { order, text },
+        ) = (previous.as_mut(), operation)
+            && previous_order == order
+        {
+            previous_text.extend_from_slice(text);
+            return;
+        }
+
+        *previous = Some(operation.clone());
+    }
+
     /// Merge two `EditedText` instances. The two instances must be derived
     /// from the same original text. The operations are merged using the
     /// principles of Operational Transformation. The cursors are updated
@@ -209,7 +228,7 @@ where
                     }
 
                     maybe_left_op = left_iter.next();
-                    last_left_op = Some(result.clone());
+                    Self::remember_operation(&mut last_left_op, &result);
                 }
                 Side::Right => {
                     if is_advancing_operation {
@@ -217,7 +236,7 @@ where
                     }
 
                     maybe_right_op = right_iter.next();
-                    last_right_op = Some(result.clone());
+                    Self::remember_operation(&mut last_right_op, &result);
                 }
             }
 

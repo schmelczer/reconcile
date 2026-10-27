@@ -79,3 +79,26 @@ fn identical_edits_preserve_original_spelling(parent: &str, updated: &str) {
         updated,
     );
 }
+
+#[test_case("a", "\n\n", "a\n\n", "\n\n"; "deleted_prefix")]
+#[test_case("a b", "\n\n", "b\n\n", "\n\n"; "partially_deleted_prefix")]
+fn consecutive_markdown_insertions_preserve_text_in_both_orders(
+    parent: &str,
+    left: &str,
+    right: &str,
+    expected: &str,
+) {
+    for (left, right) in [(left, right), (right, left)] {
+        assert_eq!(
+            reconcile(
+                parent,
+                &left.into(),
+                &right.into(),
+                &*BuiltinTokenizer::Markdown
+            )
+            .apply()
+            .text(),
+            expected,
+        );
+    }
+}
