@@ -161,32 +161,49 @@ where
                 Side::Left => &mut last_right_op,
                 Side::Right => &mut last_left_op,
             };
-            let result = operation.merge_operations_consuming_insert(previous_operation.as_mut());
+            let (result, insertion_overlap) =
+                operation.merge_operations_consuming_insert(previous_operation.as_mut());
+
+            if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
+                let (cursors, seen_length) = match side {
+                    Side::Left => (&mut left_cursors, seen_left_length),
+                    Side::Right => (&mut right_cursors, seen_right_length),
+                };
+                let merged_length_signed =
+                    isize::try_from(merged_length).expect("merged_length must fit in isize");
+                let seen_length_signed =
+                    isize::try_from(seen_length).expect("seen_length must fit in isize");
+                let op_len_signed = isize::try_from(op.len()).expect("op.len() must fit in isize");
+                let original_length_signed =
+                    isize::try_from(original_length).expect("original_length must fit in isize");
+
+                let shift = merged_length_signed - seen_length_signed + op_len_signed
+                    - original_length_signed;
+                let deduplicated_prefix = insertion_overlap.map(|overlap| {
+                    let start = merged_length - overlap.offset_from_end;
+                    start..start + overlap.length
+                });
+                let deduplicated_prefix_end = seen_length + original_length - op.len();
+
+                while let Some(cursor) =
+                    cursors.next_if(|cursor| cursor.char_index <= seen_length + original_length)
+                {
+                    // Shared text stays at its matched location; the remaining suffix
+                    // is appended at the current end of the merged text.
+                    let index = match deduplicated_prefix.as_ref() {
+                        Some(prefix) if cursor.char_index <= deduplicated_prefix_end => {
+                            let offset = cursor.char_index.saturating_sub(seen_length);
+                            // Normalized tokens can have different original lengths.
+                            prefix.start + offset.min(prefix.len())
+                        }
+                        _ => cursor.char_index.saturating_add_signed(shift),
+                    };
+                    merged_cursors.push(cursor.with_index(index));
+                }
+            }
 
             match side {
                 Side::Left => {
-                    if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let merged_length_signed = isize::try_from(merged_length)
-                            .expect("merged_length must fit in isize");
-                        let seen_left_length_signed = isize::try_from(seen_left_length)
-                            .expect("seen_left_length must fit in isize");
-                        let op_len_signed =
-                            isize::try_from(op.len()).expect("op.len() must fit in isize");
-                        let original_length_signed = isize::try_from(original_length)
-                            .expect("original_length must fit in isize");
-
-                        let shift = merged_length_signed - seen_left_length_signed + op_len_signed
-                            - original_length_signed;
-
-                        while let Some(cursor) = left_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_left_length + original_length
-                        }) {
-                            merged_cursors.push(
-                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
-                            );
-                        }
-                    }
-
                     if is_advancing_operation {
                         seen_left_length += original_length;
                     }
@@ -195,28 +212,6 @@ where
                     last_left_op = Some(result.clone());
                 }
                 Side::Right => {
-                    if let ref op @ (Operation::Insert { .. } | Operation::Equal { .. }) = result {
-                        let merged_length_signed = isize::try_from(merged_length)
-                            .expect("merged_length must fit in isize");
-                        let seen_right_length_signed = isize::try_from(seen_right_length)
-                            .expect("seen_right_length must fit in isize");
-                        let op_len_signed =
-                            isize::try_from(op.len()).expect("op.len() must fit in isize");
-                        let original_length_signed = isize::try_from(original_length)
-                            .expect("original_length must fit in isize");
-
-                        let shift = merged_length_signed - seen_right_length_signed + op_len_signed
-                            - original_length_signed;
-
-                        while let Some(cursor) = right_cursors.next_if(|cursor| {
-                            cursor.char_index <= seen_right_length + original_length
-                        }) {
-                            merged_cursors.push(
-                                cursor.with_index(cursor.char_index.saturating_add_signed(shift)),
-                            );
-                        }
-                    }
-
                     if is_advancing_operation {
                         seen_right_length += original_length;
                     }
@@ -583,6 +578,80 @@ mod tests {
 
         let operations = operations_1.merge(operations_2);
         assert_eq!(operations.apply().text(), expected);
+    }
+
+    #[test_case(
+        "hello world foo", "world bar", "hello world foo bar",
+        &[6, 7, 8, 9, 10, 11, 16, 17, 18, 19]; "partial_internal_overlap"
+    )]
+    #[test_case(
+        "hello world foo", "world", "hello world foo",
+        &[6, 7, 8, 9, 10, 11]; "fully_deduplicated_internal_insertion"
+    )]
+    #[test_case(
+        "hello bar", "hello world foo", "hello bar world foo",
+        &[0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]; "shared_prefix"
+    )]
+    #[test_case(
+        "hello world", "world bar", "hello world bar",
+        &[6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; "suffix_overlap"
+    )]
+    #[test_case(
+        "héllo 世界 fin", "世界 bar", "héllo 世界 fin bar",
+        &[6, 7, 8, 13, 14, 15, 16]; "unicode_internal_overlap"
+    )]
+    fn test_merge_cursors_in_deduplicated_insertions(
+        first: &str,
+        second: &str,
+        expected_text: &str,
+        expected_positions: &[usize],
+    ) {
+        let second = TextWithCursors::new(
+            second.to_owned(),
+            (0..=second.chars().count())
+                .map(|index| CursorPosition::new(index, index))
+                .collect(),
+        );
+        let first = EditedText::from_strings("", &first.into());
+        let second = EditedText::from_strings("", &second);
+
+        for (left, right) in [(first.clone(), second.clone()), (second, first)] {
+            let merged = left.merge(right).apply();
+            assert_eq!(merged.text(), expected_text);
+            assert_eq!(
+                merged.cursors(),
+                expected_positions
+                    .iter()
+                    .enumerate()
+                    .map(|(id, &index)| CursorPosition::new(id, index))
+                    .collect::<Vec<_>>()
+            );
+        }
+    }
+
+    #[test]
+    fn test_merge_cursors_in_normalized_deduplicated_insertions() {
+        let tokenizer = |text: &str| {
+            text.split_inclusive(' ')
+                .map(|word| Token::new(word.replace('!', ""), word.to_owned(), true, true))
+                .collect()
+        };
+        let first =
+            EditedText::from_strings_with_tokenizer("", &"hello world foo".into(), &tokenizer);
+        let second = TextWithCursors::new(
+            "world!!! bar".into(),
+            vec![CursorPosition::new(0, 0), CursorPosition::new(1, 8)],
+        );
+        let second = EditedText::from_strings_with_tokenizer("", &second, &tokenizer);
+
+        for (left, right) in [(first.clone(), second.clone()), (second, first)] {
+            let merged = left.merge(right).apply();
+            assert_eq!(merged.text(), "hello world foobar");
+            assert_eq!(
+                merged.cursors(),
+                vec![CursorPosition::new(0, 6), CursorPosition::new(1, 12)]
+            );
+        }
     }
 
     #[test_case("", "- item", "- item\n- item"; "empty_parent")]
