@@ -38,6 +38,9 @@ echo "Bumping versions"
 which cargo-set-version || cargo install cargo-edit
 cargo set-version --bump $1
 
+NEWVER=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+sed_inplace "s/^reconcile-text = \".*\"/reconcile-text = \"$NEWVER\"/" README.md
+
 which wasm-pack || cargo install wasm-pack
 
 wasm-pack build --target web --features wasm
@@ -46,7 +49,6 @@ cd reconcile-js
 npm version $1
 npm install
 
-NEWVER=$(grep '^version = ' ../Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 cd ../reconcile-python
 sed_inplace "s/^version = \".*\"/version = \"$NEWVER\"/" Cargo.toml
 sed_inplace "s/^version = \".*\"/version = \"$NEWVER\"/" pyproject.toml

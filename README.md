@@ -18,7 +18,7 @@ For the motivation and algorithm behind the library, read [Conflict-Free Three-W
 
 - **No conflict markers** - Clean, merged output without Git's `<<<<<<<` markers
 - **Cursor tracking** - Automatically repositions cursors and selections throughout the merging process
-- **Flexible tokenisation** - Word-level (default), character-level, line-level, or custom tokenisation strategies
+- **Flexible tokenisation** - Word-level (default), character-level, line-level, Markdown-aware, or custom tokenisation strategies
 - **Unicode support** - Full UTF-8 support with proper handling of complex scripts and grapheme clusters
 - **Cross-platform** - Native Rust performance with WebAssembly bindings for JavaScript and native bindings for Python
 
@@ -36,7 +36,7 @@ Alternatively, add `reconcile-text` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-reconcile-text = "0.8"
+reconcile-text = "0.13.2"
 ```
 
 Then start merging:
@@ -220,7 +220,7 @@ Install [rustup][26]:
 ### Scripts
 
 - **Run tests**: `scripts/test.sh`
-- **Lint and format**: `scripts/lint.sh`
+- **Check lint and formatting**: `scripts/lint.sh`
 - **Develop demo website**: `scripts/dev-website.sh`
 - **Build demo website**: `scripts/build-website.sh`
 - **Publish new version**: `scripts/bump-version.sh patch`
