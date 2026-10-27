@@ -139,6 +139,7 @@ export interface CursorPosition {
   /**
    * Zero-based offset in Unicode scalars (code points), from 0 through
    * `[...text].length` inclusive. Applies to both input and output cursors.
+   * Non-integer or out-of-range input positions throw `RangeError`.
    * These are not UTF-16 code units or grapheme clusters: `😀` counts as one.
    * Convert DOM selectionStart/selectionEnd offsets before passing them in:
    * `[...text.slice(0, offset)].length`.
@@ -320,35 +321,72 @@ export function makeReconcileApi<
     const innerText = isInputString ? text : text.text;
     const innerCursors = isInputString ? [] : (text.cursors ?? []);
 
-    return new backend.TextWithCursors(
-      innerText,
-      innerCursors.map(({ id, position }) => new backend.CursorPosition(id, position))
-    );
+    const wasmCursors: Cursor[] = [];
+    let textLength: number | undefined;
+    try {
+      for (const { id, position } of innerCursors) {
+        if (textLength === undefined) {
+          textLength = 0;
+          for (const _character of innerText) {
+            textLength++;
+          }
+        }
+
+        // The WASM constructor panics after consuming the inputs on an invalid
+        // position. A trap cannot unwind and release those Rust allocations.
+        if (!Number.isInteger(position) || position < 0 || position > textLength) {
+          throw new RangeError(
+            `Cursor position ${position} must be an integer between 0 and ${textLength}`
+          );
+        }
+
+        wasmCursors.push(new backend.CursorPosition(id, position));
+      }
+
+      return new backend.TextWithCursors(innerText, wasmCursors);
+    } catch (error) {
+      for (const cursor of wasmCursors) {
+        // wasm-bindgen zeroes the pointer when the text constructor takes
+        // ownership. Only cursors still owned by JS can be freed here.
+        if (!('__wbg_ptr' in cursor) || cursor.__wbg_ptr !== 0) {
+          cursor.free();
+        }
+      }
+
+      throw error;
+    }
   }
 
   function toTextWithCursors(textWithCursor: WasmTextWithCursors): TextWithCursors {
     const wasmCursors = textWithCursor.cursors();
-    const cursors = wasmCursors.map((cursor) => ({
-      id: cursor.id(),
-      position: cursor.characterIndex(),
-    }));
-    for (const cursor of wasmCursors) {
-      cursor.free();
-    }
+    try {
+      const cursors = wasmCursors.map((cursor) => ({
+        id: cursor.id(),
+        position: cursor.characterIndex(),
+      }));
 
-    return {
-      text: textWithCursor.text(),
-      cursors,
-    };
+      return {
+        text: textWithCursor.text(),
+        cursors,
+      };
+    } finally {
+      for (const cursor of wasmCursors) {
+        cursor.free();
+      }
+    }
   }
 
-  function toSpanWithHistory(span: WasmSpanWithHistory): SpanWithHistory {
-    const result = {
-      text: span.text(),
-      history: span.history(),
-    };
-    span.free();
-    return result;
+  function toSpansWithHistory(spans: WasmSpanWithHistory[]): SpanWithHistory[] {
+    try {
+      return spans.map((span) => ({
+        text: span.text(),
+        history: span.history(),
+      }));
+    } finally {
+      for (const span of spans) {
+        span.free();
+      }
+    }
   }
 
   function reconcile(
@@ -361,17 +399,18 @@ export function makeReconcileApi<
     assertTokenizer(tokenizer);
 
     const leftCursor = toWasmTextWithCursors(left);
-    const rightCursor = toWasmTextWithCursors(right);
+    let rightCursor: Text | undefined;
+    let result: WasmTextWithCursors | undefined;
+    try {
+      rightCursor = toWasmTextWithCursors(right);
+      result = backend.reconcile(original, leftCursor, rightCursor, tokenizer);
 
-    const result = backend.reconcile(original, leftCursor, rightCursor, tokenizer);
-
-    leftCursor.free();
-    rightCursor.free();
-
-    const jsResult = toTextWithCursors(result);
-    result.free();
-
-    return jsResult;
+      return toTextWithCursors(result);
+    } finally {
+      result?.free();
+      rightCursor?.free();
+      leftCursor.free();
+    }
   }
 
   function diff(
@@ -383,12 +422,12 @@ export function makeReconcileApi<
     assertTokenizer(tokenizer);
 
     const changedWasm = toWasmTextWithCursors(changed);
-
-    const result = backend.diff(original, changedWasm, tokenizer);
-
-    changedWasm.free();
-
-    return result.map((item) => (typeof item === 'bigint' ? Number(item) : item));
+    try {
+      const result = backend.diff(original, changedWasm, tokenizer);
+      return result.map((item) => (typeof item === 'bigint' ? Number(item) : item));
+    } finally {
+      changedWasm.free();
+    }
   }
 
   function undiff(
@@ -420,26 +459,24 @@ export function makeReconcileApi<
     assertTokenizer(tokenizer);
 
     const leftCursor = toWasmTextWithCursors(left);
-    const rightCursor = toWasmTextWithCursors(right);
+    let rightCursor: Text | undefined;
+    let result: WasmTextWithCursorsAndHistory | undefined;
+    try {
+      rightCursor = toWasmTextWithCursors(right);
+      result = backend.reconcileWithHistory(original, leftCursor, rightCursor, tokenizer);
 
-    const result = backend.reconcileWithHistory(
-      original,
-      leftCursor,
-      rightCursor,
-      tokenizer
-    );
+      const jsResult = toTextWithCursors(result);
+      const history = toSpansWithHistory(result.history());
 
-    leftCursor.free();
-    rightCursor.free();
-
-    const jsResult = toTextWithCursors(result);
-    const history = result.history().map(toSpanWithHistory);
-    result.free();
-
-    return {
-      ...jsResult,
-      history,
-    };
+      return {
+        ...jsResult,
+        history,
+      };
+    } finally {
+      result?.free();
+      rightCursor?.free();
+      leftCursor.free();
+    }
   }
 
   return { reconcile, diff, undiff, reconcileWithHistory };
