@@ -6,12 +6,47 @@ from pathlib import Path
 
 import pytest
 
-from reconcile_text import diff, reconcile, reconcile_with_history, undiff
+from reconcile_text import TextWithCursors, diff, reconcile, reconcile_with_history, undiff
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "examples"
 RESOURCES_DIR = Path(__file__).resolve().parent.parent.parent / "tests" / "resources"
 
 FILES = ["pride_and_prejudice.txt", "room_with_a_view.txt", "blns.txt"]
+
+
+class TestCursorPositions:
+    @pytest.mark.parametrize("text", ["", "a", "é", "😀", "e\u0301"])
+    def test_out_of_bounds(self, text: str) -> None:
+        position = len(text) + 1
+        invalid: TextWithCursors = {
+            "text": text,
+            "cursors": [{"id": 1, "position": position}],
+        }
+        message = f"Cursor position {position} exceeds text length {len(text)}"
+
+        for merge in (reconcile, reconcile_with_history):
+            with pytest.raises(ValueError, match=message):
+                merge(text, invalid, text)
+            with pytest.raises(ValueError, match=message):
+                merge(text, text, invalid)
+
+        with pytest.raises(ValueError, match=message):
+            diff(text, invalid)
+
+    @pytest.mark.parametrize("text", ["", "a", "é", "😀", "e\u0301"])
+    def test_boundary_positions(self, text: str) -> None:
+        valid: TextWithCursors = {
+            "text": text,
+            "cursors": [{"id": 1, "position": 0}, {"id": 2, "position": len(text)}],
+        }
+
+        for merge in (reconcile, reconcile_with_history):
+            for left, right in ((valid, text), (text, valid)):
+                result = merge(text, left, right)
+                assert result["text"] == text
+                assert result["cursors"] == valid["cursors"]
+
+        assert diff(text, valid) == diff(text, text)
 
 
 class TestReconcile:
@@ -122,6 +157,34 @@ class TestUndiff:
 
 
 class TestExamples:
+    @pytest.mark.parametrize(
+        "content",
+        [
+            b"line1\r\nline2\r\n",
+            b"line1\nline2\n",
+            b"line1\rline2\r",
+            b"line1\r\nline2\nline3\rline4",
+        ],
+        ids=["crlf", "lf", "cr", "mixed-no-final-newline"],
+    )
+    @pytest.mark.parametrize("write_output", [False, True], ids=["stdout", "file"])
+    def test_merge_file_preserves_line_endings(
+        self, tmp_path: Path, content: bytes, write_output: bool
+    ) -> None:
+        inputs = [tmp_path / name for name in ("mine.txt", "base.txt", "theirs.txt")]
+        for path in inputs:
+            path.write_bytes(content)
+
+        args = [sys.executable, str(EXAMPLES_DIR / "merge_file.py"), *map(str, inputs)]
+        output = tmp_path / "output.txt"
+        if write_output:
+            args.append(str(output))
+
+        result = subprocess.run(args, capture_output=True, check=True)
+
+        actual = output.read_bytes() if write_output else result.stdout
+        assert actual == content
+
     def test_merge_file_stdout(self, tmp_path: Path) -> None:
         (tmp_path / "base.txt").write_text("Hello world")
         (tmp_path / "mine.txt").write_text("Hello beautiful world")

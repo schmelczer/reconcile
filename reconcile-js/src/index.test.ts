@@ -1,5 +1,9 @@
 import * as webApi from './index';
 import * as rnApi from './index.rn';
+import * as webBindings from 'reconcile-text';
+import * as rnBindings from '../pkg-rn/reconcile_text.js';
+import { jest } from '@jest/globals';
+import type { TextWithOptionalCursors } from './core';
 import { installWasmLeakDetector, checkForWasmLeaks } from './wasm-leak-detector';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -23,8 +27,8 @@ afterEach(() => {
 // same `src/core.ts` wrapper and expose an identical public API, so the behavioural
 // suite below runs against both to guarantee they stay in lock-step.
 const backends = [
-  { name: 'web/node (WebAssembly)', api: webApi },
-  { name: 'React Native (wasm2js)', api: rnApi },
+  { name: 'web/node (WebAssembly)', api: webApi, bindings: webBindings },
+  { name: 'React Native (wasm2js)', api: rnApi, bindings: rnBindings },
 ];
 
 describe.each(backends)('reconcile [$name]', ({ api }) => {
@@ -86,6 +90,204 @@ describe.each(backends)('reconcile [$name]', ({ api }) => {
 
     expect(withBigints.some((item) => typeof item === 'bigint')).toBe(true);
     expect(undiff(original, withBigints)).toEqual(changed);
+  });
+});
+
+describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, bindings }) => {
+  const mergeOperations = ['reconcile', 'reconcileWithHistory'] as const;
+  const operations = [...mergeOperations, 'diff'] as const;
+  const left = {
+    text: 'Hello world',
+    cursors: [{ id: 1, position: 2 }],
+  };
+
+  function failingString(error: Error): string {
+    return {
+      get length() {
+        throw error;
+      },
+      [Symbol.iterator]() {
+        return 'Hello world'[Symbol.iterator]();
+      },
+    } as unknown as string;
+  }
+
+  it.each(mergeOperations)(
+    '%s frees the left input if reading the right input throws',
+    (operation) => {
+      const error = new Error('right input failed');
+      const right = {
+        get text(): string {
+          throw error;
+        },
+        cursors: [],
+      };
+
+      expect(() => api[operation]('Hello', left, right)).toThrow(error);
+    }
+  );
+
+  it.each(operations)(
+    '%s frees cursors when a later input cursor throws',
+    (operation) => {
+      const error = new Error('cursor input failed');
+      const input = {
+        text: 'Hello world',
+        cursors: [
+          { id: 2, position: 1 },
+          {
+            get id(): number {
+              throw error;
+            },
+            position: 2,
+          },
+        ],
+      };
+      const invoke = () =>
+        operation === 'diff'
+          ? api.diff('Hello', input)
+          : api[operation]('Hello', left, input);
+
+      expect(invoke).toThrow(error);
+    }
+  );
+
+  it.each(operations)(
+    '%s frees cursors if the text constructor throws before consuming them',
+    (operation) => {
+      const error = new Error('text input failed');
+      const input: TextWithOptionalCursors = {
+        text: failingString(error),
+        cursors: [{ id: 2, position: 1 }],
+      };
+      const invoke = () =>
+        operation === 'diff'
+          ? api.diff('Hello', input)
+          : api[operation]('Hello', left, input);
+
+      expect(invoke).toThrow(error);
+    }
+  );
+
+  it.each(operations)('%s frees inputs when the backend throws', (operation) => {
+    const error = new Error('backend failed');
+    const original = failingString(error);
+    const invoke = () =>
+      operation === 'diff'
+        ? api.diff(original, left)
+        : api[operation](original, left, 'Hi world');
+
+    expect(invoke).toThrow(error);
+  });
+
+  describe.each(operations)('%s cursor validation', (operation) => {
+    it.each([-1, 0.5, NaN, Infinity, 4])(
+      'rejects position %s before the WASM constructor can trap',
+      (position) => {
+        const input = {
+          text: 'a😀b',
+          cursors: [
+            { id: 2, position: 1 },
+            { id: 3, position },
+          ],
+        };
+        const invoke = () =>
+          operation === 'diff'
+            ? api.diff('Hello', input)
+            : api[operation]('Hello', left, input);
+
+        expect(invoke).toThrow(RangeError);
+        expect(invoke).toThrow(
+          `Cursor position ${position} must be an integer between 0 and 3`
+        );
+      }
+    );
+
+    it('accepts the start and Unicode scalar end positions', () => {
+      const input = {
+        text: 'a😀b',
+        cursors: [
+          { id: 2, position: 0 },
+          { id: 3, position: 3 },
+        ],
+      };
+      if (operation === 'diff') {
+        expect(api.undiff('Hello', api.diff('Hello', input))).toBe(input.text);
+      } else {
+        expect(api[operation]('Hello', 'Hello', input).cursors).toEqual(input.cursors);
+      }
+    });
+  });
+
+  describe.each(mergeOperations)('%s result conversion', (operation) => {
+    it.each(['id', 'characterIndex'] as const)(
+      'frees all result cursors if %s throws',
+      (method) => {
+        const error = new Error('cursor conversion failed');
+        const spy = jest
+          .spyOn(bindings.CursorPosition.prototype, method)
+          .mockImplementation(() => {
+            throw error;
+          });
+        try {
+          expect(() =>
+            api[operation]('Hello', left, {
+              text: 'Hi world',
+              cursors: [{ id: 2, position: 1 }],
+            })
+          ).toThrow(error);
+        } finally {
+          spy.mockRestore();
+        }
+      }
+    );
+
+    it.each(['text', 'cursors'] as const)('frees the result if %s throws', (method) => {
+      const error = new Error('result conversion failed');
+      const prototype =
+        operation === 'reconcile'
+          ? bindings.TextWithCursors.prototype
+          : bindings.TextWithCursorsAndHistory.prototype;
+      const spy = jest.spyOn(prototype, method).mockImplementation(() => {
+        throw error;
+      });
+      try {
+        expect(() => api[operation]('Hello', left, 'Hi world')).toThrow(error);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
+  it.each(['text', 'history'] as const)(
+    'frees all history spans if %s throws',
+    (method) => {
+      const error = new Error('history conversion failed');
+      const spy = jest
+        .spyOn(bindings.SpanWithHistory.prototype, method)
+        .mockImplementation(() => {
+          throw error;
+        });
+      try {
+        expect(() => api.reconcileWithHistory('Hello', left, 'Hi world')).toThrow(error);
+      } finally {
+        spy.mockRestore();
+      }
+    }
+  );
+
+  it('frees the result if reading history throws', () => {
+    const error = new Error('reading history failed');
+    const spy = jest
+      .spyOn(bindings.TextWithCursorsAndHistory.prototype, 'history')
+      .mockImplementation(() => {
+        throw error;
+      });
+    try {
+      expect(() => api.reconcileWithHistory('Hello', left, 'Hi world')).toThrow(error);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 
