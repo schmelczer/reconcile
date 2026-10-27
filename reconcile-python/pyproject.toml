@@ -7,7 +7,7 @@ name = "reconcile-text"
 version = "0.13.2"
 description = "Intelligent 3-way text merging with automated conflict resolution"
 readme = "README.md"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 authors = [{ name = "Andras Schmelczer", email = "andras@schmelczer.dev" }]
 requires-python = ">=3.9"
 classifiers = [

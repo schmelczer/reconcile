@@ -230,8 +230,8 @@ jobs:
           curl --proto '=https' --tlsv1.2 -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Copy README
-        run: cp README.md reconcile-python/
+      - name: Copy README and license
+        run: cp README.md LICENSE reconcile-python/
 
       - name: Build sdist
         working-directory: reconcile-python

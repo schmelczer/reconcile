@@ -29,7 +29,8 @@
   "license": "MIT",
   "types": "dist/types/index.d.ts",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "LICENSE"
   ],
   "scripts": {
     "build": "node scripts/build-rn.mjs && webpack --mode production",

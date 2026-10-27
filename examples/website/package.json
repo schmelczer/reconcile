@@ -13,7 +13,7 @@
   },
   "keywords": [],
   "author": "Andras Schmelczer",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "bugs": {
     "url": "https://git.schmelczer.dev/andras/reconcile/issues"
   },
