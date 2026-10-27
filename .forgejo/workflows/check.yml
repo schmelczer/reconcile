@@ -67,6 +67,11 @@ jobs:
       - name: Lint
         run: scripts/lint.sh
 
+      - name: Verify checkout is clean
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"
+
       - name: Test
         run: scripts/test.sh
 

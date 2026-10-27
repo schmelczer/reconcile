@@ -28,7 +28,7 @@ npm run test
 cd -
 
 cd reconcile-python
-cp ../README.md .
+cp ../README.md ../LICENSE .
 uv run maturin develop
 uv run pytest -v
 cd -
