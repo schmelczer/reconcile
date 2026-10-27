@@ -219,6 +219,34 @@ where
         }
     }
 
+    /// Merges operations while consuming the matched part of a cached insertion.
+    /// Keeps its suffix for later matches until new text is emitted after it.
+    pub(crate) fn merge_operations_consuming_insert(
+        self,
+        previous_operation: Option<&mut Self>,
+    ) -> Self {
+        match (self, previous_operation) {
+            (
+                Operation::Insert { order, text },
+                Some(Operation::Insert {
+                    text: previous_inserted_text,
+                    ..
+                }),
+            ) => {
+                let overlap = find_longest_prefix_contained_within(previous_inserted_text, &text);
+                if overlap.len() == text.len() {
+                    previous_inserted_text.drain(..overlap.end);
+                } else {
+                    previous_inserted_text.clear();
+                }
+                Operation::create_insert(order, text[overlap.len()..].to_vec())
+            }
+            (operation, previous_operation) => {
+                operation.merge_operations(previous_operation.as_deref())
+            }
+        }
+    }
+
     /// Adjusts this operation based on `previous_operation` from the other side
     /// to avoid duplicating or conflicting changes
     #[allow(clippy::too_many_lines)]
@@ -236,10 +264,9 @@ where
                 // In case the current insert's prefix appears in the previously inserted text,
                 // we can trim the current insert to only include the non-overlapping part.
                 // This way, we don't end up duplicating text.
-                let offset_in_tokens =
-                    find_longest_prefix_contained_within(previous_inserted_text, &text);
+                let overlap = find_longest_prefix_contained_within(previous_inserted_text, &text);
 
-                Operation::create_insert(order, text[offset_in_tokens..].to_vec())
+                Operation::create_insert(order, text[overlap.len()..].to_vec())
             }
 
             (

@@ -161,13 +161,7 @@ where
                 Side::Left => &mut last_right_op,
                 Side::Right => &mut last_left_op,
             };
-            let result = operation.merge_operations(previous_operation.as_ref());
-
-            if matches!(result, Operation::Insert { .. })
-                && matches!(previous_operation, Some(Operation::Insert { .. }))
-            {
-                *previous_operation = None;
-            }
+            let result = operation.merge_operations_consuming_insert(previous_operation.as_mut());
 
             match side {
                 Side::Left => {
