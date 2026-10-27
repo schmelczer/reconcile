@@ -3,7 +3,7 @@ use std::panic;
 use diff_match_patch_rs::{Compat, DiffMatchPatch, PatchInput};
 use reconcile_text::{BuiltinTokenizer, reconcile};
 
-fn dmp_merge(parent: &str, left: &str, right: &str) -> Option<String> {
+fn dmp_merge(parent: &str, left: &str, right: &str) -> Option<(String, Vec<bool>)> {
     let parent = parent.to_owned();
     let left = left.to_owned();
     let right = right.to_owned();
@@ -15,8 +15,7 @@ fn dmp_merge(parent: &str, left: &str, right: &str) -> Option<String> {
         let patches = dmp
             .patch_make(PatchInput::new_text_diffs(&parent, &diffs))
             .ok()?;
-        let (result, _) = dmp.patch_apply(&patches, &right).ok()?;
-        Some(result)
+        dmp.patch_apply(&patches, &right).ok()
     })
     .ok()
     .flatten()
@@ -39,32 +38,34 @@ fn try_merge(parent: &str, left: &str, right: &str) {
     println!("Right:  {right:?}");
     println!();
     match dmp_result {
-        Some(r) => println!("diff-match-patch: {r:?}"),
+        Some((result, applied)) => {
+            println!("diff-match-patch: {result:?}");
+            println!("Patch success:   {applied:?}");
+        }
         None => println!("diff-match-patch: <panic or error>"),
     }
     println!("reconcile-text:   {reconcile_result:?}");
     println!();
 }
 
-/// Demonstrates cases where diff-match-patch silently produces incorrect
-/// output, while reconcile-text preserves both users' edits correctly
+/// Compares applying parent → left patches to right with three-way merging.
+/// Shows both a garbled result reported as successful and a reported patch failure.
 ///
 /// Run it with:
 /// `cargo run --example compare-with-diff-match-patch`
 fn main() {
     // Example 1
-    // Two users edit the same short phrase. Alice replaces "old(!)" with
-    // "new improved", Bob replaces "broken" with "working". These are
-    // independent changes to adjacent words.
+    // Two users edit the same short phrase. Alice replaces "old(!) broken"
+    // with "new improved", deleting "broken", while Bob replaces "broken"
+    // with "working". These changes overlap.
     //
-    // diff-match-patch has no common ancestor, so it diffs parent → left
-    // and applies the patch to right. The character-level patches overlap
-    // and produce garbled text ("impovind"). It reports success.
+    // This comparison diffs parent → left and applies the patch to right.
+    // diff-match-patch produces garbled text ("impovind") but reports
+    // patch success as [true].
     //
-    // reconcile-text sees both changes relative to the parent and merges
-    // them cleanly.
+    // reconcile-text resolves the overlap to "new improved working code".
 
-    println!("── Example 1: adjacent edits ──");
+    println!("── Example 1: overlapping edits ──");
     try_merge(
         "old(!) broken code",
         "new improved code",
@@ -72,18 +73,15 @@ fn main() {
     );
 
     // Example 2
-    // Alice adds a sentence. Bob rewrites the surrounding text. Because
-    // diff-match-patch works without a common ancestor, Alice's entire
-    // sentence is silently lost.
-
-    println!("── Example 2: sentence lost ──");
     // Alice adds a sentence in the middle of a paragraph. Bob rephrases
     // the same paragraph. Because the patch context from Alice's edit no
-    // longer appears in Bob's version, diff-match-patch silently drops
-    // Alice's entire sentence.
+    // longer matches closely enough in Bob's version, diff-match-patch
+    // leaves Bob's text unchanged and reports patch success as [false].
+    // The missing sentence is a reported patch failure.
     //
-    // reconcile-text understands both edits relative to the common ancestor
-    // and keeps both.
+    // reconcile-text retains Alice's sentence alongside Bob's rewrite.
+
+    println!("── Example 2: reported patch failure ──");
     try_merge(
         "We used the existing parsing approach for processing. The output was saved to the \
          database.",
