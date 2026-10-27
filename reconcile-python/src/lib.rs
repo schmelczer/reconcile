@@ -1,8 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use reconcile_text::{
-    BuiltinTokenizer, CursorPosition, EditedText, NumberOrText, TextWithCursors,
-};
+use reconcile_text::{BuiltinTokenizer, CursorPosition, EditedText, NumberOrText, TextWithCursors};
 
 fn parse_tokenizer(tokenizer: &str) -> PyResult<BuiltinTokenizer> {
     match tokenizer {
@@ -31,6 +29,7 @@ fn extract_text_with_cursors(input: &Bound<'_, PyAny>) -> PyResult<TextWithCurso
     let cursors = match dict.get_item("cursors")? {
         Some(obj) if !obj.is_none() => {
             let list = obj.cast::<PyList>()?;
+            let text_length = text.chars().count();
             let mut cursors = Vec::with_capacity(list.len());
             for item in list {
                 let cursor_dict = item.cast::<PyDict>()?;
@@ -42,6 +41,11 @@ fn extract_text_with_cursors(input: &Bound<'_, PyAny>) -> PyResult<TextWithCurso
                     .get_item("position")?
                     .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("position"))?
                     .extract()?;
+                if position > text_length {
+                    return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "Cursor position {position} exceeds text length {text_length}"
+                    )));
+                }
                 cursors.push(CursorPosition::new(id, position));
             }
             cursors
