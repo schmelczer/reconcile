@@ -112,7 +112,7 @@ export interface TextWithCursors {
 }
 
 /**
- * Like `TextWithCursors`, but cursors may be null or undefined (treated as empty).
+ * Like `TextWithCursors`, but cursors may be omitted, null, or undefined (treated as empty).
  * Used as input where cursor tracking is optional.
  */
 export interface TextWithOptionalCursors {
@@ -123,7 +123,7 @@ export interface TextWithOptionalCursors {
    * Array of cursor positions within the text. Can be null, undefined, or empty
    * if there are no cursors to track. Each cursor has a unique ID and position.
    */
-  cursors: null | undefined | CursorPosition[];
+  cursors?: null | undefined | CursorPosition[];
 }
 
 /**
