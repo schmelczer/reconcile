@@ -145,31 +145,36 @@
 
           <div class="text-area-card diamond-parent">
             <label
+              class="input-label"
               for="original"
               title="The original text before any concurrent edits were made."
-              >Original</label
             >
+              Original
+              <span class="edit-hint" aria-hidden="true">Click to edit</span>
+            </label>
             <textarea id="original" name="original"></textarea>
           </div>
 
           <div class="text-area-card diamond-left">
             <label
+              class="input-label"
               for="left"
               title="First user's edits - changes from this box appear in green in the result."
             >
-              First user's edits
-              <div class="box Left"></div>
+              <span>First user's edits <span class="box Left"></span></span>
+              <span class="edit-hint" aria-hidden="true">Click to edit</span>
             </label>
             <textarea id="left" name="left"></textarea>
           </div>
 
           <div class="text-area-card diamond-right">
             <label
+              class="input-label"
               for="right"
               title="Second user's edits - changes from this box appear in blue in the result."
             >
-              Second user's edits
-              <div class="box Right"></div>
+              <span>Second user's edits <span class="box Right"></span></span>
+              <span class="edit-hint" aria-hidden="true">Click to edit</span>
             </label>
             <textarea id="right" name="right"></textarea>
           </div>

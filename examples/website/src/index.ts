@@ -225,7 +225,8 @@ function resizeTextAreas(): void {
 
 function autoResize(textarea: HTMLTextAreaElement): void {
   textarea.style.height = 'auto';
-  textarea.style.height = textarea.scrollHeight + 'px';
+  const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+  textarea.style.height = textarea.scrollHeight + borderHeight + 'px';
 }
 
 main().catch((error) => {

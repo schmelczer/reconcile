@@ -272,6 +272,22 @@ label {
   cursor: help;
 }
 
+.input-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  cursor: text;
+}
+
+.edit-hint {
+  color: $text-secondary;
+  font-size: 0.75rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
 .box {
   width: 1ch;
   height: 1ch;
@@ -283,16 +299,37 @@ label {
 
 textarea {
   width: 100%;
-  border: none;
+  border: 1px solid $border-grey;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: $light-bg;
   font-size: 1rem;
   font-family: inherit;
   color: $text-primary;
   box-sizing: border-box;
   resize: none;
-  outline: none;
+  cursor: text;
+  user-select: text;
+  caret-color: $primary-blue;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    outline-color 0.15s;
   margin-bottom: 0;
   field-sizing: content;
   /* Doesn't work in Safari yet */
+}
+
+textarea:hover {
+  border-color: $primary-blue;
+}
+
+textarea:focus {
+  border-color: $primary-blue;
+  background: $white;
+  outline-color: selection-colour($primary-blue, 0.3);
 }
 
 #merged {
