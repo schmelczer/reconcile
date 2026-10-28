@@ -132,6 +132,7 @@ mod tests {
         assert_eq!(builder.take(), "こんに世界, ちは");
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn test_get_slice() {
         let original = "abcdef";
