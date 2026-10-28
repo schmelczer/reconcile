@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{cmp::Ordering, fmt::Debug};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -81,10 +81,19 @@ where
     /// applied. The operations must not overlap.
     fn new(
         text: &'a str,
-        operations: Vec<Operation<T>>,
+        mut operations: Vec<Operation<T>>,
         operation_sides: Vec<Side>,
         mut cursors: Vec<CursorPosition>,
     ) -> Self {
+        // Inserts are anchored after the parent text consumed by earlier operations.
+        let mut parent_index = 0;
+        for operation in &mut operations {
+            if let Operation::Insert { order, .. } = operation {
+                *order = parent_index;
+            } else {
+                parent_index += operation.len();
+            }
+        }
         cursors.sort_by_key(|cursor| cursor.char_index);
 
         Self {
@@ -121,8 +130,7 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if there's an integer overflow (in isize) when calculating new
-    /// cursor positions.
+    /// Panics in debug builds if the instances have different original texts.
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn merge(self, other: Self) -> Self {
@@ -130,6 +138,16 @@ where
             self.text, other.text,
             "`EditedText`-s must be derived from the same text to be mergable"
         );
+
+        // Identical current operations can have different continuations (for
+        // example, Markdown whitespace followed by a newline). Break those ties.
+        let stream_priority = self
+            .operations
+            .iter()
+            .zip(&other.operations)
+            .map(|(left, right)| left.cmp_priority(0, right, 0))
+            .find(|order| !order.is_eq())
+            .unwrap_or_else(|| self.operations.len().cmp(&other.operations.len()));
 
         let mut merged_cursors = Vec::with_capacity(self.cursors.len() + other.cursors.len());
         let mut left_cursors = self.cursors.into_iter().peekable();
@@ -154,10 +172,12 @@ where
         let mut last_right_op = None;
 
         loop {
-            let (side, operation) = match (maybe_left_op.as_ref(), maybe_right_op.as_ref()) {
+            let (side, mut operation) = match (maybe_left_op.as_ref(), maybe_right_op.as_ref()) {
                 (Some(left_op), Some(right_op)) => {
-                    if left_op.cmp_priority(seen_left_length, right_op, seen_right_length)
-                        == std::cmp::Ordering::Less
+                    if left_op
+                        .cmp_priority(seen_left_length, right_op, seen_right_length)
+                        .then(stream_priority)
+                        == Ordering::Less
                     {
                         (Side::Left, maybe_left_op.take().unwrap())
                     } else {
@@ -170,6 +190,13 @@ where
                 (None, None) => break,
             };
 
+            // Process a broad retain only up to the other input's next boundary.
+            let remainder = match side {
+                Side::Left => maybe_right_op.as_ref(),
+                Side::Right => maybe_left_op.as_ref(),
+            }
+            .and_then(|next| operation.split_retain_before(next));
+
             let is_advancing_operation = matches!(
                 operation,
                 Operation::Insert { .. } | Operation::Equal { .. }
@@ -180,6 +207,7 @@ where
                 Side::Left => &mut last_right_op,
                 Side::Right => &mut last_left_op,
             };
+            let previous_is_equal = matches!(previous_operation, Some(Operation::Equal { .. }));
             let (result, insertion_overlap) =
                 operation.merge_operations_consuming_insert(previous_operation.as_mut());
 
@@ -188,34 +216,30 @@ where
                     Side::Left => (&mut left_cursors, seen_left_length),
                     Side::Right => (&mut right_cursors, seen_right_length),
                 };
-                let merged_length_signed =
-                    isize::try_from(merged_length).expect("merged_length must fit in isize");
-                let seen_length_signed =
-                    isize::try_from(seen_length).expect("seen_length must fit in isize");
-                let op_len_signed = isize::try_from(op.len()).expect("op.len() must fit in isize");
-                let original_length_signed =
-                    isize::try_from(original_length).expect("original_length must fit in isize");
-
-                let shift = merged_length_signed - seen_length_signed + op_len_signed
-                    - original_length_signed;
-                let deduplicated_prefix = insertion_overlap.map(|overlap| {
-                    let start = merged_length - overlap.offset_from_end;
-                    start..start + overlap.length
-                });
-                let deduplicated_prefix_end = seen_length + original_length - op.len();
+                let removed_prefix_length = original_length - op.len();
+                let prefix_position = match insertion_overlap {
+                    Some(overlap) => {
+                        let start = merged_length - overlap.offset_from_end;
+                        start..start + overlap.length
+                    }
+                    None if previous_is_equal => {
+                        merged_length - removed_prefix_length..merged_length
+                    }
+                    // Deleted text collapses to the current output boundary.
+                    _ => merged_length..merged_length,
+                };
 
                 while let Some(cursor) =
                     cursors.next_if(|cursor| cursor.char_index <= seen_length + original_length)
                 {
                     // Shared text stays at its matched location; the remaining suffix
                     // is appended at the current end of the merged text.
-                    let index = match deduplicated_prefix.as_ref() {
-                        Some(prefix) if cursor.char_index <= deduplicated_prefix_end => {
-                            let offset = cursor.char_index.saturating_sub(seen_length);
-                            // Normalized tokens can have different original lengths.
-                            prefix.start + offset.min(prefix.len())
-                        }
-                        _ => cursor.char_index.saturating_add_signed(shift),
+                    let offset = cursor.char_index.saturating_sub(seen_length);
+                    let index = if offset <= removed_prefix_length {
+                        // Normalized tokens can have different original lengths.
+                        prefix_position.start + offset.min(prefix_position.len())
+                    } else {
+                        merged_length + offset - removed_prefix_length
                     };
                     merged_cursors.push(cursor.with_index(index));
                 }
@@ -227,7 +251,7 @@ where
                         seen_left_length += original_length;
                     }
 
-                    maybe_left_op = left_iter.next();
+                    maybe_left_op = remainder.or_else(|| left_iter.next());
                     Self::remember_operation(&mut last_left_op, &result);
                 }
                 Side::Right => {
@@ -235,7 +259,7 @@ where
                         seen_right_length += original_length;
                     }
 
-                    maybe_right_op = right_iter.next();
+                    maybe_right_op = remainder.or_else(|| right_iter.next());
                     Self::remember_operation(&mut last_right_op, &result);
                 }
             }

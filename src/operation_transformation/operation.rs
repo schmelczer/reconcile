@@ -111,6 +111,43 @@ where
         }
     }
 
+    /// Split a retain where the next operation starts or ends, returning its tail.
+    pub(super) fn split_retain_before(&mut self, next: &Self) -> Option<Self> {
+        let Self::Equal { order, length, .. } = self else {
+            return None;
+        };
+
+        let boundary = if next.order() > *order {
+            next.order()
+        } else if !matches!(next, Self::Insert { .. }) {
+            next.order() + next.len()
+        } else {
+            return None;
+        };
+
+        if boundary <= *order || boundary >= *order + *length {
+            return None;
+        }
+        let tail = Self::create_equal(boundary, *order + *length - boundary);
+        let prefix_length = boundary - *order;
+        *length = prefix_length;
+
+        #[cfg(debug_assertions)]
+        let tail = if let Self::Equal {
+            text: Some(text), ..
+        } = self
+        {
+            let byte_index = text.char_indices().nth(prefix_length).unwrap().0;
+            let suffix = text.split_off(byte_index);
+            text.shrink_to_fit();
+            Self::create_equal_with_text(boundary, suffix)
+        } else {
+            tail
+        };
+
+        Some(tail)
+    }
+
     fn type_priority(&self) -> u8 {
         match self {
             Operation::Delete { .. } => 1,
