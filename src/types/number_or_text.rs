@@ -37,8 +37,14 @@ impl TryFrom<JsValue> for NumberOrText {
                 ));
             }
 
+            if num.fract() != 0.0 {
+                return Err(DeserialisationError::new(
+                    "Floating-point number must be an integer",
+                ));
+            }
+
             #[allow(clippy::cast_possible_truncation)]
-            return Ok(NumberOrText::Number(num.round() as i64));
+            return Ok(NumberOrText::Number(num as i64));
         }
 
         if let Ok(text) = value.try_into() {
@@ -110,10 +116,3 @@ impl std::fmt::Display for DeserialisationError {
 
 #[cfg(feature = "wasm")]
 impl std::error::Error for DeserialisationError {}
-
-#[cfg(feature = "wasm")]
-impl From<DeserialisationError> for JsValue {
-    fn from(error: DeserialisationError) -> Self {
-        JsValue::from_str(&error.message)
-    }
-}
