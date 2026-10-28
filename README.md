@@ -16,14 +16,6 @@ For the motivation and algorithm behind the library, read [Conflict-Free Three-W
 - `npm install reconcile-text` ([reconcile-text on NPM][10])
 - `uv add reconcile-text` or `pip install reconcile-text` ([reconcile-text on PyPI][27])
 
-## Key features
-
-- **No conflict markers** - Clean, merged output without Git's `<<<<<<<` markers
-- **Cursor tracking** - Automatically repositions cursors and selections throughout the merging process
-- **Flexible tokenisation** - Word-level (default), character-level, line-level, Markdown-aware, or custom tokenisation strategies
-- **Unicode support** - Full UTF-8 support with proper handling of complex scripts and grapheme clusters
-- **Cross-platform** - Native Rust performance with WebAssembly bindings for JavaScript and native bindings for Python
-
 ## Quick start
 
 Each example merges two changes to the same greeting: one side adds a word, while the other changes the greeting itself.
@@ -51,11 +43,11 @@ let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::
 assert_eq!(result.apply().text(), "Hi beautiful world");
 ```
 
-See the [merge-file example](examples/merge-file.rs) for another example, or the [library's documentation][11].
+See the [merge-file example](examples/merge-file.rs) for a file-merging CLI, or the [Rust API documentation][rust-docs].
 
 ### JavaScript/TypeScript
 
-Install via NPM:
+Install from [npm][npm]:
 
 ```sh
 npm install reconcile-text
@@ -76,18 +68,13 @@ const result = reconcile(parent, left, right);
 console.log(result.text); // "Hi beautiful world"
 ```
 
-See the [example website source](examples/website/src/index.ts) for a more complex example, or the [advanced examples document](docs/advanced-ts.md).
+See the [TypeScript guide](docs/advanced-ts.md) for cursors, change provenance, and compact diffs, or the [demo website source](examples/website/src/index.ts) for an editor integration.
 
-#### React Native (Hermes)
-
-React Native's default engine, Hermes, does not expose a runtime `WebAssembly`
-global, so the WebAssembly build cannot run there. For React Native, the package
-ships a pure-JavaScript build produced by [Binaryen's `wasm2js`](https://github.com/WebAssembly/binaryen)
-via its `react-native` entry point.
+The Node.js and browser builds use the Rust library compiled to WebAssembly. For React Native, the package ships a pure-JavaScript build produced by [Binaryen's `wasm2js`](https://github.com/WebAssembly/binaryen) via its `react-native` entry point, so it can run in Hermes without a `WebAssembly` global.
 
 ### Python
 
-Install via uv or pip:
+Install from [PyPI][pypi] with uv or pip:
 
 ```sh
 uv add reconcile-text
@@ -99,9 +86,7 @@ Then use it in your application:
 ```python
 from reconcile_text import reconcile
 
-# Start with the original text
 parent = "Hello world"
-# Two users edit simultaneously
 left = "Hello beautiful world"
 right = "Hi world"
 
@@ -109,7 +94,7 @@ result = reconcile(parent, left, right)
 print(result["text"])  # "Hi beautiful world"
 ```
 
-See the [merge-file example](examples/merge_file.py) for a file-merging CLI, or the [advanced examples document](docs/advanced-python.md) for cursor tracking, change provenance, and compact diffs.
+The Python package provides native bindings to the same Rust implementation. See the [merge-file example](examples/merge_file.py) for a file-merging CLI, or the [Python guide](docs/advanced-python.md) for cursors, change provenance, and compact diffs.
 
 ## Motivation
 
@@ -195,7 +180,7 @@ uv run maturin develop
 
 #### Node.js setup
 
-1. Install [nvm][25]:
+1. Install [nvm][nvm]:
    ```sh
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
    ```
@@ -210,7 +195,7 @@ uv run maturin develop
 
 #### Rust toolchain
 
-Install [rustup][26]:
+Install [rustup][rustup]:
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
@@ -227,31 +212,19 @@ Install [rustup][26]:
 
 [MIT](./LICENSE)
 
-[1]: https://marijnhaverbeke.nl/blog/collaborative-editing-cm.html
-[2]: https://neil.fraser.name/writing/sync/
-[3]: https://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf
-[4]: https://blog.jcoglan.com/2017/05/08/merging-with-diff3/
-[5]: https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/35605.pdf
-[6]: https://github.com/google/diff-match-patch
-[7]: https://github.com/google/diff-match-patch/wiki/Line-or-Word-Diffs
-[8]: https://schmelczer.dev/reconcile
-[9]: https://crates.io/crates/reconcile-text
-[10]: https://www.npmjs.com/package/reconcile-text
-[11]: https://docs.rs/reconcile-text/latest/reconcile_text
-[12]: https://github.com/invisible-college/universal-sync
-[13]: https://github.com/spebern/operational-transform-rs
-[14]: https://github.com/loro-dev/loro/
-[15]: https://github.com/nomad/cola
-[16]: https://github.com/automerge/automerge
-[17]: https://crates.io/crates/diffy
-[18]: https://github.com/breezy-team/merge3-rs
-[19]: https://github.com/bhousel/node-diff3
-[20]: https://github.com/yjs/yjs
-[21]: https://github.com/y-crdt/y-crdt
-[22]: https://github.com/josephg/diamond-types
-[23]: https://ot.js.org/
-[24]: https://github.com/josephg/ShareJS
-[25]: https://github.com/nvm-sh/nvm
-[26]: https://rustup.rs
-[27]: https://pypi.org/project/reconcile-text/
-[28]: https://arxiv.org/html/2310.18220v2
+[demo]: https://reconcile.schmelczer.dev
+[article]: https://schmelczer.dev/articles/reconcile-text-3-way-merge/
+[syncer]: https://schmelczer.dev/articles/reconcile-text-3-way-merge/#how-to-implement-a-syncer
+[crates]: https://crates.io/crates/reconcile-text
+[npm]: https://www.npmjs.com/package/reconcile-text
+[pypi]: https://pypi.org/project/reconcile-text/
+[rust-docs]: https://docs.rs/reconcile-text/latest/reconcile_text
+[diff3]: https://blog.jcoglan.com/2017/05/08/merging-with-diff3/
+[git-merge-drivers]: https://git-scm.com/docs/gitattributes#_built_in_merge_drivers
+[diff-match-patch]: https://github.com/google/diff-match-patch
+[yjs]: https://github.com/yjs/yjs
+[automerge]: https://github.com/automerge/automerge
+[loro]: https://github.com/loro-dev/loro/
+[ot-js]: https://ot.js.org/
+[nvm]: https://github.com/nvm-sh/nvm
+[rustup]: https://rustup.rs
