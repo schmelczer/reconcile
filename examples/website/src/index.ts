@@ -13,20 +13,13 @@ const tokenizerRadios = document.querySelectorAll(
 
 const sampleText = `## Draft release
 ## Release plan
-
-Build steps:
 - Prototype
 - Publish
-
-Review checklist:
 - [ ] Draft
 - [ ] Review
-
-Announcement:
 > Internal
 > Ready
-
-Use color-coded changes to compare tokenisers.`;
+Color-coded edits.`;
 
 let pendingUpdate: number | null = null;
 function scheduleUpdate(): void {
@@ -74,7 +67,7 @@ function loadSample(): void {
     .replace('- Prototype\n', '')
     .replace('- [ ] Draft\n', '')
     .replace('> Internal\n', '')
-    .replace('color', 'colour');
+    .replace('Color', 'Colour');
   rightTextArea.value = sampleText
     .replace('## Release plan', '# Release plan')
     .replace('- Publish', '1. Publish')
