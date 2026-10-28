@@ -61,14 +61,17 @@ where
         );
 
         match (self, other) {
-            (RawOperation::Insert(self_tokens), RawOperation::Insert(other_tokens)) => {
-                RawOperation::Insert(self_tokens.into_iter().chain(other_tokens).collect())
+            (RawOperation::Insert(mut tokens1), RawOperation::Insert(tokens2)) => {
+                tokens1.extend(tokens2);
+                RawOperation::Insert(tokens1)
             }
-            (RawOperation::Delete(tokens1), RawOperation::Delete(tokens2)) => {
-                RawOperation::Delete(tokens1.into_iter().chain(tokens2).collect())
+            (RawOperation::Delete(mut tokens1), RawOperation::Delete(tokens2)) => {
+                tokens1.extend(tokens2);
+                RawOperation::Delete(tokens1)
             }
-            (RawOperation::Equal(tokens1), RawOperation::Equal(tokens2)) => {
-                RawOperation::Equal(tokens1.into_iter().chain(tokens2).collect())
+            (RawOperation::Equal(mut tokens1), RawOperation::Equal(tokens2)) => {
+                tokens1.extend(tokens2);
+                RawOperation::Equal(tokens1)
             }
             _ => unreachable!("Only operations of the same type can be extended"),
         }
