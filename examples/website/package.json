@@ -5,6 +5,7 @@
   "scripts": {
     "start": "webpack serve --open --mode development",
     "format": "prettier --write \"./**/*.(ts|scss|json|html)\"",
+    "format:check": "prettier --check --ignore-path ../../.gitignore \"./**/*.(ts|scss|json|html)\"",
     "build": "webpack --mode production"
   },
   "repository": {
