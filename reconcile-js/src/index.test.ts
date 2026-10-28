@@ -91,6 +91,27 @@ describe.each(backends)('reconcile [$name]', ({ api }) => {
     expect(withBigints.some((item) => typeof item === 'bigint')).toBe(true);
     expect(undiff(original, withBigints)).toEqual(changed);
   });
+
+  // A trap would also be an `Error` (`RuntimeError: unreachable`), so check the message
+  it.each([
+    { invalidDiff: [10], message: 'Invalid diff' },
+    { invalidDiff: [2 ** 32], message: 'Invalid diff' },
+    { invalidDiff: [-(2 ** 40)], message: 'Invalid diff' },
+    { invalidDiff: [2n ** 40n], message: 'Invalid diff' },
+    { invalidDiff: [1.5], message: 'must be an integer' },
+    { invalidDiff: [-0.4, 'X', 3], message: 'must be an integer' },
+    { invalidDiff: [NaN], message: 'NaN' },
+  ])('undiff rejects $invalidDiff with an Error', ({ invalidDiff, message }) => {
+    let thrown: unknown;
+    try {
+      undiff('abc', invalidDiff);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toContain(message);
+  });
 });
 
 describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, bindings }) => {

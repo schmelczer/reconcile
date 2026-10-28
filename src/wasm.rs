@@ -81,45 +81,44 @@ pub fn generic_reconcile(
 ///
 /// # Errors
 ///
-/// Returns a JS error if integer overflow occurs during diff computation.
+/// Throws a JS `Error` if integer overflow occurs during diff computation.
 #[wasm_bindgen(js_name = diff)]
 pub fn diff(
     parent: &str,
     changed: &TextWithCursors,
     tokenizer: BuiltinTokenizer,
-) -> Result<Vec<JsValue>, JsValue> {
+) -> Result<Vec<JsValue>, JsError> {
     set_panic_hook();
 
     let edited_text = EditedText::from_strings_with_tokenizer(parent, changed, &*tokenizer);
     edited_text
         .to_diff()
         .map(|diff| diff.into_iter().map(std::convert::Into::into).collect())
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(JsError::from)
 }
 
 /// Inverse of `diff`, applies a compact diff representation to a parent text
 ///
 /// # Errors
 ///
-/// Returns a JS error if the diff format is invalid or references ranges
+/// Throws a JS `Error` if the diff format is invalid or references ranges
 /// exceeding the original text length.
 #[wasm_bindgen(js_name = undiff)]
 pub fn undiff(
     parent: &str,
     diff: Vec<JsValue>,
     tokenizer: BuiltinTokenizer,
-) -> Result<String, JsValue> {
+) -> Result<String, JsError> {
     set_panic_hook();
 
     let parsed_diff: Vec<_> = diff
         .into_iter()
         .map(std::convert::TryInto::try_into)
-        .collect::<Result<_, _>>()
-        .map_err(|e: crate::types::number_or_text::DeserialisationError| -> JsValue { e.into() })?;
+        .collect::<Result<_, crate::types::number_or_text::DeserialisationError>>()?;
 
     EditedText::from_diff(parent, parsed_diff, &*tokenizer)
         .map(|edited_text| edited_text.apply().text())
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(JsError::from)
 }
 
 fn set_panic_hook() {

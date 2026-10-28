@@ -254,6 +254,7 @@ export interface ReconcileApi {
    * @param diff - The compact diff array (inserts as strings, deletes as negative integers, retained spans as positive integers)
    * @param tokenizer - The tokenisation strategy, which is the same as used in `reconcile`.
    * @returns The reconstructed changed text as a string.
+   * @throws {Error} If the diff contains a non-integer, or spans more characters than `original` has.
    */
   undiff(
     original: string,
