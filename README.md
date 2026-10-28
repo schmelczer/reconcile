@@ -6,15 +6,15 @@ It is built for syncing text files when all you have are snapshots: the document
 
 ## Try it
 
-✨ **[Try the interactive demo][8]** to see it in action!
+✨ **[Try the interactive demo][demo]** to see it in action!
 
-For the motivation and algorithm behind the library, read [Conflict-Free Three-Way Text Merging](https://schmelczer.dev/articles/reconcile-text-3-way-merge/).
+For the motivation and algorithm behind the library, read [Conflict-Free Three-Way Text Merging][article].
 
 ### Install it in your project
 
-- `cargo add reconcile-text` ([reconcile-text on crates.io][9])
-- `npm install reconcile-text` ([reconcile-text on NPM][10])
-- `uv add reconcile-text` or `pip install reconcile-text` ([reconcile-text on PyPI][27])
+- `cargo add reconcile-text` ([reconcile-text on crates.io][crates])
+- `npm install reconcile-text` ([reconcile-text on NPM][npm])
+- `uv add reconcile-text` or `pip install reconcile-text` ([reconcile-text on PyPI][pypi])
 
 ## Quick start
 
@@ -43,7 +43,7 @@ let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::
 assert_eq!(result.apply().text(), "Hi beautiful world");
 ```
 
-See the [merge-file example](examples/merge-file.rs) for a file-merging CLI, or the [Rust API documentation][rust-docs].
+See the [merge-file example][rust-merge-file] for a file-merging CLI, or the [Rust API documentation][rust-docs].
 
 ### JavaScript/TypeScript
 
@@ -68,9 +68,9 @@ const result = reconcile(parent, left, right);
 console.log(result.text); // "Hi beautiful world"
 ```
 
-See the [TypeScript guide](docs/advanced-ts.md) for cursors, change provenance, and compact diffs, or the [demo website source](examples/website/src/index.ts) for an editor integration.
+See the [TypeScript guide][typescript-guide] for cursors, change provenance, and compact diffs, or the [demo website source][demo-source] for an editor integration.
 
-The Node.js and browser builds use the Rust library compiled to WebAssembly. For React Native, the package ships a pure-JavaScript build produced by [Binaryen's `wasm2js`](https://github.com/WebAssembly/binaryen) via its `react-native` entry point, so it can run in Hermes without a `WebAssembly` global.
+The Node.js and browser builds use the Rust library compiled to WebAssembly. For React Native, the package ships a pure-JavaScript build produced by [Binaryen's `wasm2js`][binaryen] via its `react-native` entry point, so it can run in Hermes without a `WebAssembly` global.
 
 ### Python
 
@@ -94,74 +94,57 @@ result = reconcile(parent, left, right)
 print(result["text"])  # "Hi beautiful world"
 ```
 
-The Python package provides native bindings to the same Rust implementation. See the [merge-file example](examples/merge_file.py) for a file-merging CLI, or the [Python guide](docs/advanced-python.md) for cursors, change provenance, and compact diffs.
+The Python package provides native bindings to the same Rust implementation. See the [merge-file example][python-merge-file] for a file-merging CLI, or the [Python guide][python-guide] for cursors, change provenance, and compact diffs.
 
-## Motivation
+## Why merge snapshots?
 
-Collaborative editing presents the challenge of merging conflicting changes when multiple users edit documents simultaneously or asynchronously whilst offline. Traditional solutions like Conflict-free Replicated Data Types (CRDTs) or Operational Transformation (OT) work well when you control the complete editing infrastructure and can capture every individual operation ([1]). However, many workflows involve users editing with various tools, for example, Obsidian users editing Markdown files with various editors ranging from Vim to VS Code.
+Collaborative editing presents the challenge of merging conflicting changes when multiple users edit documents simultaneously or asynchronously whilst offline. A note might be edited in Obsidian on one device and Vim on another, with a file sync service carrying changes between them. By the time those changes meet, the syncer sees two files. It cannot ask either editor for the operations that produced them.
 
-This creates **Differential Synchronisation** scenarios ([2], [3]): we only know the final state of each document, not the sequence of operations that produced it. This is the same challenge Git addresses, but Git requires manual conflict resolution. The key insight is that while incorrect merges in source code can introduce bugs, human text is more forgiving: a slightly imperfect sentence is often preferable to conflict markers interrupting the flow.
-
-> **Note**: Some text domains require more careful handling. Legal contracts, for instance, could have unintended meaning changes from conflicting edits that create double negations. At the same time, semantic conflicts can still arise when merging code, even in the absence of syntactic conflicts.
-
-Differential sync is implemented by [universal-sync][12], and it requires a merging tool that creates conflict-free results for the best user experience.
+A common ancestor gives it enough context to compare both sets of edits. Git works with the same inputs, but usually leaves ambiguous conflicts for a person to resolve. That is a useful default for source code. For notes and prose, an automatic merge can be more useful, even if the wording occasionally needs tidying up.
 
 ## How it works
 
-`reconcile-text` starts off similarly to `diff3` ([4], [5]) but adds automated conflict resolution. Given a **parent** document and two modified versions (`left` and `right`), the following happens:
+`reconcile-text` starts off similarly to [`diff3`][diff3] but adds automated conflict resolution. Given a **parent** document and two modified versions (`left` and `right`), the following happens:
 
 1. **Tokenisation** - Input texts are split into meaningful units (words, characters, etc.) for granular merging
 2. **Diff computation** - Myers' algorithm calculates differences between (parent ↔ left) and (parent ↔ right)
 3. **Diff optimisation** - Operations are reordered and consolidated to maximise chained changes
 4. **Operational Transformation** - Edits are woven together using OT principles, preserving all modifications and updating cursors
 
-Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs][13].) The same could be achieved with CRDTs, which many libraries implement well for text (see [Loro][14], [cola][15], and [automerge][16]).
+Whilst the primary goal of `reconcile-text` isn't to implement OT, it provides an elegant way to merge Myers' diff outputs. (For a dedicated Rust OT implementation, see [operational-transform-rs][operational-transform-rs].) The same could be achieved with CRDTs, which many libraries implement well for text (see [Loro][loro], [cola][cola], and [automerge][automerge]).
 
 However, when only the end result of concurrent changes is observable, merge quality depends entirely on the quality of the underlying 2-way diffs. For instance, `move` operations cannot be supported because Myers' algorithm decomposes them into separate `insert` and `delete` operations, regardless of the merging algorithm used.
 
+### Choosing a tokeniser
+
+Tokenisation affects the result, especially when edits overlap. The built-in options are:
+
+- **Word**: keeps words together; the default in JavaScript/TypeScript and Python.
+- **Character**: merges individual Unicode code points for finer-grained changes.
+- **Line**: treats each line as a unit.
+- **Markdown**: builds on word tokenisation, preserving newlines and attaching block prefixes such as list markers to their first word.
+
+Rust callers choose a tokeniser explicitly and can also supply a custom function. The merge keeps tokens intact, but the Markdown tokeniser does not validate the resulting document's syntax. Try different tokenisers in the [demo][demo] to see how they handle your text.
+
 ## Comparison with other approaches
 
-### Traditional 3-way merge (diff3, Git)
+### diff3 and Git
 
-Tools like `diff3` ([4]) and Git produce **conflict markers** (`<<<<<<<` / `=======` / `>>>>>>>`) when both sides modify the same region. This works for source code where a human must verify correctness, but breaks the reading flow for prose. `reconcile-text` uses the same diff3-like foundation but adds an OT-inspired resolution step that eliminates conflict markers entirely. Libraries like [diffy][17], [merge3][18] (Rust), and [node-diff3][19] (JavaScript) all fall into this category.
+`diff3` and Git's default text merge leave conflict markers where changes cannot be combined automatically. Git also has a [`union` merge driver][git-merge-drivers] that retains lines from both sides of a conflict. Because it works with whole lines, two edits to different words in a sentence can leave two versions of the sentence. Word tokenisation lets `reconcile-text` combine those edits within the line.
 
 ### diff-match-patch
 
-[diff-match-patch][6] is a widely-used library created by Neil Fraser at Google in 2006, providing character-level diffing (Myers' algorithm), fuzzy string matching (Bitap algorithm), and patch application. It powers Fraser's **Differential Synchronisation** protocol ([2]): compute a diff between two texts, apply the patch to a third text that may have drifted, and repeat until convergence. If a patch fails, the failure self-corrects in the next sync cycle.
+[diff-match-patch][diff-match-patch] computes two-way diffs and applies patches using fuzzy matching. It is useful when you need to apply changes to text whose context may have shifted. A patch can fail, so callers need to inspect its success flags.
 
-The key differences from `reconcile-text`:
+`reconcile-text` uses the common parent to derive both sides' changes before combining them. The [comparison example][comparison-example] shows how the two approaches handle overlapping replacements and a sentence inserted into a rewritten paragraph.
 
-- **2-way vs 3-way** - diff-match-patch diffs two texts and applies the result as a patch. It has no concept of a common ancestor and cannot reason about "left changes" vs "right changes". `reconcile-text` performs true 3-way merging, understanding the intent behind each side's edits.
+### CRDTs and OT
 
-- **Character-level only** - Word-level and line-level diffs require encoding tokens as single Unicode characters before diffing ([7]). `reconcile-text` supports word, character, line, and custom tokenisation natively.
+Libraries based on conflict-free replicated data types (CRDTs), such as [Yjs][yjs], [Automerge][automerge], and [Loro][loro], maintain document structures and metadata that let replicas merge updates. They fit applications that can persist that state and integrate edits into it. Snapshot changes can also be translated into CRDT updates; using a CRDT does not require recording every keystroke.
 
-- **Patches can fail** - `patch_apply` returns a boolean array indicating success per patch. In Differential Synchronisation, failures self-correct in the next cycle, but for one-shot merges callers need to check the flags and handle failures. `reconcile-text` always produces a complete merged result.
+OT libraries such as [ot.js][ot-js] work with operations and a protocol for coordinating them. `reconcile-text` uses OT ideas internally, deriving the operations from each pair of snapshots at merge time.
 
-- **No cursor tracking or change provenance** - diff-match-patch does not reposition cursors or track which side made which edit. `reconcile-text` does both automatically.
-
-See the [comparison example](examples/compare-with-diff-match-patch.rs) for cases where diff-match-patch garbles overlapping edits and reports a failed sentence-insertion patch, alongside `reconcile-text`'s three-way merge results.
-
-> **When to use diff-match-patch instead**: when you don't have a common ancestor, for example synchronising texts that have diverged through an unknown sequence of edits. If you have a common ancestor (as in most version control and collaborative editing scenarios), `reconcile-text` produces more reliable results.
-
-### CRDTs (Yjs, Automerge, Loro, diamond-types)
-
-Conflict-free Replicated Data Types ensure that replicas incorporating the same updates reach equivalent states according to the data type's defined conflict semantics, provided its delivery assumptions are met. In operation-based CRDTs, effectors (the updates applied at replicas) commute for concurrently invoked operations; the original operations need not commute, and causally dependent updates may require causal delivery. State-based CRDTs instead propagate and merge replica states ([28], sections 2.4 and 3.1).
-
-Convergence does not guarantee that every edit remains visible or that every user's intent is preserved. For example, a last-writer-wins register selects a winner among competing writes ([28]).
-
-Document CRDT libraries like [Yjs][20] (and its Rust port [Yrs][21]), [Automerge][16], [Loro][14], [cola][15], and [diamond-types][22] maintain replicated text structures with identities and causal metadata for merging concurrent changes. They are well suited to collaborative editing across multiple replicas when the application can integrate changes into those structures; this does not require recording every keystroke.
-
-The trade-off for these document libraries is **maintaining document state over time**, including metadata beyond the visible text. For a workflow that only observes final text snapshots, using these structures entails translating differences into CRDT updates and managing CRDT state. `reconcile-text` instead accepts a parent and two edited strings directly.
-
-> **When to use CRDTs instead**: if you can integrate a document CRDT and persist its state, these libraries provide convergence under their documented assumptions and naturally support multiple concurrent editors. `reconcile-text` merges exactly two forks at a time (though merges can be chained).
-
-### Operational Transformation (OT)
-
-OT libraries like [ot.js][23] and [ShareJS][24] transform concurrent operations against each other so that applying them in any order produces the same result. They work with individual operations and require infrastructure to coordinate them, typically a central server that determines the canonical operation order.
-
-`reconcile-text` borrows the *concept* of OT (transforming one side's edits against the other) but applies it to a different problem. Instead of transforming individual keystrokes in real time, it transforms the consolidated diff output of two complete edits. This means it doesn't need a server, doesn't need to capture operations as they happen, and works entirely offline.
-
-> **When to use OT instead**: if you need real-time collaboration with sub-second latency and can run a coordination server, dedicated OT libraries handle this well. `reconcile-text` is designed for merge points, not live keystroke-by-keystroke synchronisation.
+The practical distinction is what your application keeps between merges. `reconcile-text` accepts three texts and merges two forks at a time. A collaborative editing system built around a CRDT or OT also manages the state and protocol needed to coordinate replicas over time.
 
 ## Development
 
@@ -171,7 +154,7 @@ Contributions are welcome!
 
 #### Python setup
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and build the extension for development:
+Install [uv][uv] and build the extension for development:
 
 ```sh
 cd reconcile-python
@@ -210,21 +193,31 @@ Install [rustup][rustup]:
 
 ## License
 
-[MIT](./LICENSE)
+[MIT][license]
 
-[demo]: https://reconcile.schmelczer.dev
+[demo]: https://reconcile.schmelczer.dev/
 [article]: https://schmelczer.dev/articles/reconcile-text-3-way-merge/
-[syncer]: https://schmelczer.dev/articles/reconcile-text-3-way-merge/#how-to-implement-a-syncer
 [crates]: https://crates.io/crates/reconcile-text
 [npm]: https://www.npmjs.com/package/reconcile-text
 [pypi]: https://pypi.org/project/reconcile-text/
-[rust-docs]: https://docs.rs/reconcile-text/latest/reconcile_text
+[rust-merge-file]: examples/merge-file.rs
+[rust-docs]: https://docs.rs/reconcile-text/latest/reconcile_text/
+[typescript-guide]: docs/advanced-ts.md
+[demo-source]: examples/website/src/index.ts
+[binaryen]: https://github.com/WebAssembly/binaryen
+[python-merge-file]: examples/merge_file.py
+[python-guide]: docs/advanced-python.md
 [diff3]: https://blog.jcoglan.com/2017/05/08/merging-with-diff3/
+[operational-transform-rs]: https://github.com/spebern/operational-transform-rs
+[loro]: https://github.com/loro-dev/loro
+[cola]: https://github.com/noib3/cola
+[automerge]: https://github.com/automerge/automerge
 [git-merge-drivers]: https://git-scm.com/docs/gitattributes#_built_in_merge_drivers
 [diff-match-patch]: https://github.com/google/diff-match-patch
+[comparison-example]: examples/compare-with-diff-match-patch.rs
 [yjs]: https://github.com/yjs/yjs
-[automerge]: https://github.com/automerge/automerge
-[loro]: https://github.com/loro-dev/loro/
-[ot-js]: https://ot.js.org/
+[ot-js]: https://github.com/Operational-Transformation/ot.js
+[uv]: https://docs.astral.sh/uv/getting-started/installation/
 [nvm]: https://github.com/nvm-sh/nvm
 [rustup]: https://rustup.rs
+[license]: ./LICENSE
