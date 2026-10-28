@@ -133,7 +133,11 @@ export interface TextWithOptionalCursors {
  * relative positions as text is inserted, deleted, or modified around them.
  */
 export interface CursorPosition {
-  /** Unique identifier for the cursor (can be any number, must be unique within the document) */
+  /**
+   * Unique identifier for the cursor, unique within the document.
+   * Must be an integer from 0 through 2^32-1 inclusive (unsigned 32-bit).
+   * Non-integer or out-of-range input IDs throw `RangeError`.
+   */
   id: number;
 
   /**
@@ -325,6 +329,11 @@ export function makeReconcileApi<
     let textLength: number | undefined;
     try {
       for (const { id, position } of innerCursors) {
+        // Both backends store IDs as wasm32 usize values
+        if (!Number.isInteger(id) || id < 0 || id > 0xffff_ffff) {
+          throw new RangeError(`Cursor ID ${id} must be an integer between 0 and 2^32-1`);
+        }
+
         if (textLength === undefined) {
           textLength = 0;
           for (const _character of innerText) {

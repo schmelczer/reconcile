@@ -181,6 +181,50 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
   });
 
   describe.each(operations)('%s cursor validation', (operation) => {
+    it.each([
+      -1,
+      -0.5,
+      0.5,
+      2 ** 32,
+      2 ** 32 + 1,
+      Number.MAX_SAFE_INTEGER,
+      NaN,
+      Infinity,
+      -Infinity,
+    ])('rejects ID %s before it can be truncated', (id) => {
+      const input = {
+        text: 'Hello world',
+        cursors: [
+          { id: 0, position: 1 },
+          { id, position: 2 },
+        ],
+      };
+      const invoke = () =>
+        operation === 'diff'
+          ? api.diff('Hello', input)
+          : api[operation]('Hello', left, input);
+
+      expect(invoke).toThrow(RangeError);
+      expect(invoke).toThrow(`Cursor ID ${id} must be an integer between 0 and 2^32-1`);
+    });
+
+    it('accepts unsigned 32-bit IDs without changing them', () => {
+      const input = {
+        text: 'Hello world',
+        cursors: [
+          { id: 0, position: 0 },
+          { id: 2 ** 31, position: 1 },
+          { id: 2 ** 32 - 1, position: 2 },
+        ],
+      };
+      if (operation === 'diff') {
+        expect(api.undiff('Hello', api.diff('Hello', input))).toBe(input.text);
+      } else {
+        expect(api[operation]('Hello', 'Hello', input).cursors).toEqual(input.cursors);
+        expect(api[operation]('Hello', input, 'Hello').cursors).toEqual(input.cursors);
+      }
+    });
+
     it.each([-1, 0.5, NaN, Infinity, 4])(
       'rejects position %s before the WASM constructor can trap',
       (position) => {
@@ -217,6 +261,16 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
         expect(api[operation]('Hello', 'Hello', input).cursors).toEqual(input.cursors);
       }
     });
+  });
+
+  it.each(mergeOperations)('%s rejects an invalid ID in the left input', (operation) => {
+    expect(() =>
+      api[operation](
+        'Hello',
+        { text: 'Hello world', cursors: [{ id: 2 ** 32, position: 0 }] },
+        'Hello'
+      )
+    ).toThrow(RangeError);
   });
 
   describe.each(mergeOperations)('%s result conversion', (operation) => {
