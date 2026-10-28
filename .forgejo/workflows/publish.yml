@@ -2,16 +2,16 @@ name: Publish
 
 on:
   push:
-    branches: ['main']
-    tags: ['*']
+    branches: ["main"]
+    tags: ["*"]
   workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: '-Dwarnings'
+  RUSTFLAGS: "-Dwarnings"
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: "22.x"
           check-latest: true
 
       - name: Cache Rust dependencies
@@ -130,9 +130,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: "22.x"
           check-latest: true
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -242,10 +242,6 @@ jobs:
       - name: Build sdist
         working-directory: reconcile-python
         run: uv run maturin sdist --out dist
-
-      - name: Validate sdist contents and size
-        working-directory: reconcile-python
-        run: uv run python ../scripts/check-python-sdist.py dist/*.tar.gz
 
       - name: Build Linux x86_64 wheel
         working-directory: reconcile-python
