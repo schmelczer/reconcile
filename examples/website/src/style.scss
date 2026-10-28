@@ -68,7 +68,7 @@ header {
   padding: 32px 32px 0 32px;
 }
 
-header > h1 {
+header>h1 {
   font-size: 2.5rem;
   font-weight: 700;
   color: $primary-blue;
@@ -93,13 +93,13 @@ code {
   font-weight: 500;
 }
 
-header > p {
+header>p {
   color: $text-secondary;
   font-size: 1.1rem;
   margin-bottom: 0;
 }
 
-header > p:not(:first-of-type) {
+header>p:not(:first-of-type) {
   margin-top: 16px;
 }
 
@@ -234,6 +234,20 @@ main {
   align-items: center;
 }
 
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.history-toggle {
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .diamond-result svg {
   width: 20px;
   height: 20px;
@@ -277,16 +291,25 @@ textarea {
   resize: none;
   outline: none;
   margin-bottom: 0;
-  field-sizing: content; /* Doesn't work in Safari yet */
+  field-sizing: content;
+  /* Doesn't work in Safari yet */
 }
 
 #merged {
   width: 100%;
   user-select: text;
 
-  > * {
+  >* {
     position: relative;
     white-space: pre-wrap;
+  }
+
+  &:not(.show-deletions) {
+
+    .RemovedFromLeft,
+    .RemovedFromRight {
+      display: none;
+    }
   }
 }
 
@@ -348,12 +371,12 @@ $DOT_RADIUS: 4;
     background: caret-colour($light-blue);
   }
 
-  > * {
+  >* {
     position: absolute;
     background-color: inherit;
   }
 
-  > .stick {
+  >.stick {
     left: 0;
     top: 0;
     transform: translateX(-50%);
@@ -364,7 +387,7 @@ $DOT_RADIUS: 4;
     animation: blink-stick 1s steps(1) infinite;
   }
 
-  > .dot {
+  >.dot {
     border-radius: 50%;
     width: #{$DOT_RADIUS * 2}px;
     height: #{$DOT_RADIUS * 2}px;
@@ -386,11 +409,11 @@ $DOT_RADIUS: 4;
     }
   }
 
-  &:hover > .dot {
+  &:hover>.dot {
     opacity: 0;
   }
 
-  > .info {
+  >.info {
     top: -1.3em;
     left: calc(-#{$CARET_WIDTH} / 2 * 1px);
     font-size: 0.9em;
@@ -403,16 +426,18 @@ $DOT_RADIUS: 4;
     border-radius: 3px 3px 3px 0;
   }
 
-  &:hover > .info {
+  &:hover>.info {
     opacity: 1;
   }
 }
 
 @keyframes blink-stick {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
@@ -423,11 +448,11 @@ $DOT_RADIUS: 4;
     padding: 32px 18px 0 18px;
   }
 
-  header > h1 {
+  header>h1 {
     margin-bottom: 18px;
   }
 
-  header > p {
+  header>p {
     font-size: 1rem;
   }
 
@@ -494,14 +519,14 @@ footer {
   gap: 16px;
 }
 
-.footer-links > a > svg {
+.footer-links>a>svg {
   color: $text-secondary;
   width: 28px;
   height: 28px;
   transition: transform 0.2s;
 }
 
-.footer-links > a > svg:hover {
+.footer-links>a>svg:hover {
   cursor: pointer;
   transform: scale(1.15);
 }

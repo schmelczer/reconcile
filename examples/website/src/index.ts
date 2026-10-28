@@ -6,16 +6,27 @@ const originalTextArea = document.getElementById('original') as HTMLTextAreaElem
 const leftTextArea = document.getElementById('left') as HTMLTextAreaElement;
 const rightTextArea = document.getElementById('right') as HTMLTextAreaElement;
 const mergedTextArea = document.getElementById('merged') as HTMLDivElement;
+const showDeletions = document.getElementById('show-deletions') as HTMLInputElement;
 const tokenizerRadios = document.querySelectorAll(
   'input[name="tokenizer"]'
 ) as NodeListOf<HTMLInputElement>;
 
-const sampleText = `The reconcile-text library is embedded on this page as a WASM module and powers these text boxes. Experiment with changing the "Original", "First user's edit", and "Second user's edit" text boxes to see competing changes get merged in real-time within the "Merged result" box. 
+const sampleText = `## Draft release
+## Release plan
 
-Here, you will see color-coded tokens marking the origin of each token, including ones that got deleted. The result depends on the tokenisation strategy selected above:
-- Character-based
-- Word-based (default)
-- Markdown-based`;
+Build steps:
+- Prototype
+- Publish
+
+Review checklist:
+- [ ] Draft
+- [ ] Review
+
+Announcement:
+> Internal
+> Ready
+
+Use color-coded changes to compare tokenisers.`;
 
 let pendingUpdate: number | null = null;
 function scheduleUpdate(): void {
@@ -31,6 +42,9 @@ async function main(): Promise<void> {
   originalTextArea.addEventListener('input', scheduleUpdate);
   leftTextArea.addEventListener('input', scheduleUpdate);
   rightTextArea.addEventListener('input', scheduleUpdate);
+  showDeletions.addEventListener('change', () => {
+    mergedTextArea.classList.toggle('show-deletions', showDeletions.checked);
+  });
 
   document.addEventListener('selectionchange', () => {
     if (
@@ -51,15 +65,21 @@ async function main(): Promise<void> {
   updateMergedText();
 }
 
-// Edit the instructions to generate example edits
+// Deleting obsolete lines while reformatting their neighbours leaves orphaned
+// markers with Word, but Markdown keeps each marker attached to its line's first word.
 function loadSample(): void {
   originalTextArea.value = sampleText;
-  leftTextArea.value =
-    sampleText.replace('color', 'colour') +
-    "\n\nCheck out what's the most complex conflict you can come up with!";
+  leftTextArea.value = sampleText
+    .replace('## Draft release\n', '')
+    .replace('- Prototype\n', '')
+    .replace('- [ ] Draft\n', '')
+    .replace('> Internal\n', '')
+    .replace('color', 'colour');
   rightTextArea.value = sampleText
-    .replace('Experiment with changing', 'Try editing')
-    .replace('WASM', 'WebAssembly');
+    .replace('## Release plan', '# Release plan')
+    .replace('- Publish', '1. Publish')
+    .replace('- [ ] Review', '- [x] Review')
+    .replace('> Ready', 'Ready');
 }
 
 function updateMergedText(): void {
