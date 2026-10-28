@@ -2,12 +2,6 @@
 
 set -e
 
-VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-if ! grep -Fxq "reconcile-text = \"$VERSION\"" README.md; then
-  echo "README.md must use the Cargo.toml version ($VERSION) in the Rust installation example."
-  exit 1
-fi
-
 which cargo-machete || cargo install cargo-machete
 cargo machete
 

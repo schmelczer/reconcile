@@ -39,7 +39,6 @@ which cargo-set-version || cargo install cargo-edit
 cargo set-version --bump $1
 
 NEWVER=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-sed_inplace "s/^reconcile-text = \".*\"/reconcile-text = \"$NEWVER\"/" README.md
 
 which wasm-pack || cargo install wasm-pack
 

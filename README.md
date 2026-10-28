@@ -1,6 +1,8 @@
 # `reconcile-text`: conflict-free 3-way text merging
 
-A Rust, TypeScript, and Python library for merging conflicting text edits without manual intervention. Unlike traditional 3-way merge tools that produce conflict markers, `reconcile-text` automatically resolves conflicts by applying both sets of changes (while updating cursor positions) using an algorithm inspired by Operational Transformation.
+Merge a common parent and two edited versions into one text, without conflict markers. `reconcile-text` combines changes from both sides and updates any cursor positions you pass in. It is available as a library for Rust, JavaScript/TypeScript, and Python.
+
+It is built for syncing text files when all you have are snapshots: the document before editing and the two versions it became. The merge needs no saved operation history or persistent document metadata beyond that parent text.
 
 ## Try it
 
@@ -24,22 +26,16 @@ For the motivation and algorithm behind the library, read [Conflict-Free Three-W
 
 ## Quick start
 
+Each example merges two changes to the same greeting: one side adds a word, while the other changes the greeting itself.
+
 ### Rust
 
-Install via crates.io:
+Install from [crates.io][crates]:
 
 ```sh
 cargo add reconcile-text
 ```
 
-Alternatively, add `reconcile-text` to your `Cargo.toml`:
-
-```toml
-[dependencies]
-reconcile-text = "0.13.2"
-```
-
-Then start merging:
 
 ```rust
 use reconcile_text::{reconcile, BuiltinTokenizer};
