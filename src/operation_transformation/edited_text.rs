@@ -474,7 +474,9 @@ where
         Ok(result)
     }
 
-    /// Reconstruct an `EditedText` from a diff and the original text.
+    /// Reconstruct the edited text from a diff, then derive operations using
+    /// the provided tokenizer. The tokenizer determines merge granularity,
+    /// regardless of the character boundaries in the serialized diff.
     ///
     /// # Errors
     ///
@@ -483,71 +485,45 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if there's an integer overflow in i64.
+    /// Panics if a character count cannot be represented as usize.
     pub fn from_diff(
         original_text: &'a str,
         diff: Vec<NumberOrText>,
         tokenizer: &Tokenizer<T>,
     ) -> Result<EditedText<'a, T>, DiffError> {
-        let mut operations: Vec<Operation<T>> = Vec::with_capacity(diff.len());
+        let mut builder = StringBuilder::new(original_text);
         let mut order = 0;
-        let chars: Vec<char> = original_text.chars().collect();
-        let text_length = chars.len();
+        let text_length = original_text.chars().count();
 
         for item in diff {
             match item {
                 NumberOrText::Number(length) => {
-                    if length >= 0 {
-                        let length = usize::try_from(length).expect("length must fit in usize");
-
-                        // Validate that the range doesn't exceed the original text
-                        if order + length > text_length {
-                            return Err(DiffError::LengthExceedsOriginal {
-                                position: order,
-                                requested: length,
-                                available: text_length.saturating_sub(order),
-                            });
-                        }
-
-                        let original_characters: String =
-                            chars[order..order + length].iter().collect();
-
-                        let original_tokens = tokenizer(&original_characters);
-                        for token in original_tokens {
-                            operations
-                                .push(Operation::create_equal(order, token.get_original_length()));
-                            order += token.get_original_length();
-                        }
-                    } else {
-                        let length =
-                            usize::try_from(-length).expect("negative length must fit in usize");
-
-                        // Validate that the delete range doesn't exceed the original text
-                        if order + length > text_length {
-                            return Err(DiffError::LengthExceedsOriginal {
-                                position: order,
-                                requested: length,
-                                available: text_length.saturating_sub(order),
-                            });
-                        }
-
-                        operations.push(Operation::create_delete(order, length));
-                        order += length;
+                    let count =
+                        usize::try_from(length.unsigned_abs()).expect("length must fit in usize");
+                    let available = text_length - order;
+                    if count > available {
+                        return Err(DiffError::LengthExceedsOriginal {
+                            position: order,
+                            requested: count,
+                            available,
+                        });
                     }
+
+                    if length >= 0 {
+                        builder.retain(count);
+                    } else {
+                        builder.delete(count);
+                    }
+                    order += count;
                 }
-                NumberOrText::Text(text) => {
-                    let tokens = tokenizer(&text);
-                    operations.push(Operation::create_insert(order, tokens));
-                }
+                NumberOrText::Text(text) => builder.insert(&text),
             }
         }
 
-        let operation_count = operations.len();
-        Ok(EditedText::new(
+        Ok(Self::from_strings_with_tokenizer(
             original_text,
-            operations,
-            vec![Side::Left; operation_count],
-            vec![],
+            &builder.take().into(),
+            tokenizer,
         ))
     }
 }
@@ -736,6 +712,71 @@ mod tests {
         let content = edited_text.apply().text();
 
         assert_eq!(content, "hello world");
+    }
+
+    #[test]
+    fn test_from_diff_uses_tokenizer_boundaries() {
+        let parent = "hello";
+        let word_diff = EditedText::from_strings(parent, &"hxello".into());
+        assert_eq!(
+            word_diff.to_diff().unwrap(),
+            vec![(-5).into(), "hxello".into()]
+        );
+
+        let character_diff = EditedText::from_strings_with_tokenizer(
+            parent,
+            &"hxello".into(),
+            &*BuiltinTokenizer::Character,
+        );
+        assert_eq!(
+            character_diff.to_diff().unwrap(),
+            vec![1.into(), "x".into(), 4.into()]
+        );
+        let restored = EditedText::from_diff(
+            parent,
+            character_diff.to_diff().unwrap(),
+            &*BuiltinTokenizer::Word,
+        )
+        .unwrap();
+        assert_eq!(restored.to_diff().unwrap(), word_diff.to_diff().unwrap());
+
+        let unchanged = EditedText::from_strings(parent, &parent.into());
+        assert_eq!(
+            restored.clone().merge(unchanged.clone()).apply().text(),
+            "hxello"
+        );
+        assert_eq!(unchanged.merge(restored).apply().text(), "hxello");
+    }
+
+    #[test_case("", " \n", " ", "  \n"; "adjacent_insertions")]
+    #[test_case("", " \r\n", " ", "  \r\n"; "crlf")]
+    #[test_case("word", " word", " \nword", "  \nword"; "retained_context")]
+    #[test_case("word", " word", " word word", " word word"; "retained_word_normalization")]
+    #[test_case("text ", "text - item", "text item", "text - item"; "inline_list_marker")]
+    fn test_markdown_diff_round_trip_preserves_merge(
+        parent: &str,
+        left: &str,
+        right: &str,
+        expected: &str,
+    ) {
+        let tokenizer = &*BuiltinTokenizer::Markdown;
+        let left = EditedText::from_strings_with_tokenizer(parent, &left.into(), tokenizer);
+        let right = EditedText::from_strings_with_tokenizer(parent, &right.into(), tokenizer);
+        let restored_left =
+            EditedText::from_diff(parent, left.to_diff().unwrap(), tokenizer).unwrap();
+        let restored_right =
+            EditedText::from_diff(parent, right.to_diff().unwrap(), tokenizer).unwrap();
+
+        assert_eq!(left.merge(right).apply().text(), expected);
+        assert_eq!(
+            restored_left
+                .clone()
+                .merge(restored_right.clone())
+                .apply()
+                .text(),
+            expected
+        );
+        assert_eq!(restored_right.merge(restored_left).apply().text(), expected);
     }
 
     #[cfg(feature = "serde")]
