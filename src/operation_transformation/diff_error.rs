@@ -17,6 +17,13 @@ pub enum DiffError {
         available: usize,
     },
 
+    /// A diff character count was too large to represent as usize
+    #[error("Invalid diff: character count {value} cannot be represented as usize")]
+    LengthOverflow {
+        /// The absolute character count from the diff
+        value: u64,
+    },
+
     /// A character count was too large to represent as i64
     #[error("Integer overflow: value {value} cannot be represented as i64")]
     IntegerOverflow {

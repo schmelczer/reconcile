@@ -505,11 +505,8 @@ where
     /// # Errors
     ///
     /// Returns `DiffError::LengthExceedsOriginal` if the diff references a
-    /// range that exceeds the original text length.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a character count cannot be represented as usize.
+    /// range that exceeds the original text length, or `DiffError::LengthOverflow`
+    /// if a character count cannot be represented as usize.
     pub fn from_diff(
         original_text: &'a str,
         diff: Vec<NumberOrText>,
@@ -522,8 +519,11 @@ where
         for item in diff {
             match item {
                 NumberOrText::Number(length) => {
-                    let count =
-                        usize::try_from(length.unsigned_abs()).expect("length must fit in usize");
+                    let count = usize::try_from(length.unsigned_abs()).map_err(|_| {
+                        DiffError::LengthOverflow {
+                            value: length.unsigned_abs(),
+                        }
+                    })?;
                     let available = text_length - order;
                     if count > available {
                         return Err(DiffError::LengthExceedsOriginal {

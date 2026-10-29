@@ -102,10 +102,10 @@ function updateMergedText(): void {
   const selection =
     results.cursors?.length === 2
       ? {
-        start: results.cursors[0].position,
-        end: results.cursors[1].position,
-        side: leftCursors ? 'left' : 'right',
-      }
+          start: results.cursors[0].position,
+          end: results.cursors[1].position,
+          side: leftCursors ? 'left' : 'right',
+        }
       : undefined;
 
   const fragment = document.createDocumentFragment();
@@ -127,10 +127,7 @@ function updateMergedText(): void {
     }
 
     fragment.appendChild(
-      createSelectionOverlay(
-        selection.side === 'left',
-        selection.start !== selection.end
-      )
+      createSelectionOverlay(selection.side === 'left', selection.start !== selection.end)
     );
   }
 

@@ -40,10 +40,9 @@ impl ExampleDocument {
     /// If the result string does not match the expected string, the program
     /// will panic.
     pub fn assert_eq(&self, result: &EditedText<'_, String>) {
-        let result_str = ExampleDocument::text_with_cursors_to_string(result);
         assert_eq!(
-            self.expected, result_str,
-            "Left (expected) isn't equal to right (actual). Actual: ```\n{result_str}```",
+            Self::string_to_text_with_cursors(&self.expected),
+            result.apply()
         );
     }
 
@@ -60,30 +59,6 @@ impl ExampleDocument {
             expected, result,
             "Left (expected) isn't equal to right (actual), Actual: ```\n{result}```",
         );
-    }
-
-    fn text_with_cursors_to_string(document: &EditedText<'_, String>) -> String {
-        let merged = document.apply();
-        let mut result = merged.text();
-        for (i, cursor) in merged.cursors().iter().enumerate() {
-            assert!(
-                cursor.char_index() <= result.len(), // equals in case of insert at the end
-                "Cursor index out of bounds: {} > {} when testing for '{}.'",
-                cursor.char_index(),
-                result.len(),
-                result
-            );
-
-            result.insert(
-                result
-                    .char_indices()
-                    .nth(cursor.char_index() + i)
-                    .map_or_else(|| result.len(), |(byte_index, _)| byte_index), /* find the utf8 char index of the insert
-                                                                                  * in byte index */
-                '|',
-            );
-        }
-        result
     }
 
     fn string_to_text_with_cursors(text: &str) -> TextWithCursors {

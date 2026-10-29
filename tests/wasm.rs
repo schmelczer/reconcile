@@ -1,6 +1,6 @@
 #![cfg(feature = "wasm")]
 
-use reconcile_text::{BuiltinTokenizer, CursorPosition, TextWithCursors, wasm::*};
+use reconcile_text::{BuiltinTokenizer, CursorPosition, EditedText, TextWithCursors, wasm::*};
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test(unsupported = test)]
@@ -53,6 +53,16 @@ fn test_merge_binary() {
         generic_reconcile(b"", &left, &right, BuiltinTokenizer::Word),
         right
     );
+}
+
+#[wasm_bindgen_test(unsupported = test)]
+fn test_from_diff_rejects_oversized_lengths() {
+    for length in [1_i64 << 32, -(1_i64 << 40), i64::MAX, i64::MIN] {
+        let error = EditedText::from_diff("abc", vec![length.into()], &*BuiltinTokenizer::Word)
+            .unwrap_err();
+
+        assert!(error.to_string().starts_with("Invalid diff:"));
+    }
 }
 
 #[wasm_bindgen_test] // JsValue isn't supported outside of wasm

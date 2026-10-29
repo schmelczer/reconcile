@@ -202,25 +202,25 @@ where
     /// Applies the operation to the given `StringBuilder`, returning the
     /// modified `StringBuilder`.
     ///
-    /// When compiled in debug mode, panics if a delete operation is attempted
-    /// on a range of text that does not match the text to be deleted.
+    /// When compiled in debug mode, panics if a retain or delete operation is
+    /// out of order, out of bounds, or does not match its expected text.
     pub fn apply<'a>(&self, mut builder: StringBuilder<'a>) -> StringBuilder<'a> {
         match self {
             Operation::Equal {
                 #[cfg(debug_assertions)]
                 text,
+                #[cfg(debug_assertions)]
+                order,
                 length,
                 ..
             } => {
                 #[cfg(debug_assertions)]
-                debug_assert!(
-                    text.as_ref()
-                        .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
-                    "Text (`{}`) which is supposed to be equal does not match the text in the \
-                     range: `{}`",
-                    text.as_ref().unwrap_or(&String::new()),
-                    builder.get_slice_from_remaining(self.len())
-                );
+                {
+                    builder.assert_range(*order, *length);
+                    if let Some(text) = text {
+                        builder.assert_text(*length, text);
+                    }
+                }
 
                 builder.retain(*length);
             }
@@ -230,18 +230,18 @@ where
             Operation::Delete {
                 #[cfg(debug_assertions)]
                 deleted_text,
+                #[cfg(debug_assertions)]
+                order,
                 deleted_character_count,
                 ..
             } => {
                 #[cfg(debug_assertions)]
-                debug_assert!(
-                    deleted_text
-                        .as_ref()
-                        .is_none_or(|text| builder.get_slice_from_remaining(self.len()) == *text),
-                    "Text to-be-deleted `{}` does not match the text in the range: `{}`",
-                    deleted_text.as_ref().unwrap_or(&String::new()),
-                    builder.get_slice_from_remaining(self.len())
-                );
+                {
+                    builder.assert_range(*order, *deleted_character_count);
+                    if let Some(text) = deleted_text {
+                        builder.assert_text(*deleted_character_count, text);
+                    }
+                }
 
                 builder.delete(*deleted_character_count);
             }

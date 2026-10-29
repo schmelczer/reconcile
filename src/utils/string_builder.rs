@@ -8,7 +8,7 @@ pub struct StringBuilder<'a> {
     buffer: String,
 
     #[cfg(debug_assertions)]
-    remaining: String,
+    position: usize,
 }
 
 impl fmt::Debug for StringBuilder<'_> {
@@ -17,7 +17,7 @@ impl fmt::Debug for StringBuilder<'_> {
         debug_struct.field("buffer", &self.buffer);
 
         #[cfg(debug_assertions)]
-        debug_struct.field("remaining", &self.remaining);
+        debug_struct.field("remaining", &self.original.as_str());
 
         debug_struct.finish_non_exhaustive()
     }
@@ -30,7 +30,7 @@ impl StringBuilder<'_> {
             buffer: String::with_capacity(original.len()),
 
             #[cfg(debug_assertions)]
-            remaining: original.to_owned(),
+            position: 0,
         }
     }
 
@@ -50,7 +50,7 @@ impl StringBuilder<'_> {
 
         #[cfg(debug_assertions)]
         {
-            self.remaining = self.remaining.chars().skip(length).collect();
+            self.position += length;
         }
     }
 
@@ -60,7 +60,7 @@ impl StringBuilder<'_> {
 
         #[cfg(debug_assertions)]
         {
-            self.remaining = self.remaining.chars().skip(length).collect();
+            self.position += length;
         }
     }
 
@@ -70,16 +70,24 @@ impl StringBuilder<'_> {
         std::mem::take(&mut self.buffer)
     }
 
-    /// Get a slice of the remaining original string. The slice starts from
-    /// where the next delete/retain operation would start and is of length
-    /// `length`.
+    /// Check the original-text position and range without copying the text.
     #[cfg(debug_assertions)]
-    pub fn get_slice_from_remaining(&self, length: usize) -> String {
-        let result = self.remaining.chars().take(length).collect::<String>();
+    pub fn assert_range(&self, order: usize, length: usize) {
+        debug_assert_eq!(self.position, order, "Operation out of order");
+        debug_assert!(
+            length == 0 || self.original.clone().nth(length - 1).is_some(),
+            "Range out of bounds"
+        );
+    }
 
-        debug_assert_eq!(result.chars().count(), length, "Range out of bounds");
-
-        result
+    /// Check the next original characters without allocating a substring.
+    #[cfg(debug_assertions)]
+    pub fn assert_text(&self, length: usize, text: &str) {
+        debug_assert!(
+            self.original.clone().take(length).eq(text.chars()),
+            "Text `{text}` does not match the next {length} characters of `{}`",
+            self.original.as_str()
+        );
     }
 }
 
@@ -130,21 +138,6 @@ mod tests {
         builder.retain(2);
 
         assert_eq!(builder.take(), "こんに世界, ちは");
-    }
-
-    #[cfg(debug_assertions)]
-    #[test]
-    fn test_get_slice() {
-        let original = "abcdef";
-        let builder = StringBuilder::new(original);
-
-        // Test getting a slice of the original string
-        assert_eq!(builder.get_slice_from_remaining(3), "abc");
-
-        // Test getting a slice that includes both buffer and remaining original
-        let mut builder = StringBuilder::new(original);
-        builder.retain(2); // "ab" in buffer
-        assert_eq!(builder.get_slice_from_remaining(2), "cd");
     }
 
     #[test]
