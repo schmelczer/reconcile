@@ -1,27 +1,15 @@
 #!/bin/bash
 
 set -e
+cd "$(dirname "$0")/.."
 
-which cargo-machete || cargo install cargo-machete
 cargo machete
-
 cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --all -- --check
 
-cd reconcile-js
-npm ci
-npm run format:check
+npm run format:check --prefix reconcile-js
+npm run format:check --prefix examples/website
 
-cd ../examples/website
-npm ci
-npm run format:check
-
-cd ../../reconcile-python
-cp ../README.md ../LICENSE .
-uv run maturin develop -q
-uv run ruff check python/ tests/
-uv run ruff format --check python/ tests/
-uv run pyright python/ tests/
-cd -
-
-echo "Success!"
+uv run --directory reconcile-python --no-sync ruff check python/ tests/
+uv run --directory reconcile-python --no-sync ruff format --check python/ tests/
+uv run --directory reconcile-python --no-sync pyright python/ tests/

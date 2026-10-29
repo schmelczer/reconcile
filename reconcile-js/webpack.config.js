@@ -1,5 +1,4 @@
 const path = require('path');
-const { merge } = require('webpack-merge');
 
 const common = {
   optimization: {
@@ -15,9 +14,6 @@ const common = {
   },
   performance: {
     hints: false,
-  },
-  experiments: {
-    asyncWebAssembly: true,
   },
   module: {
     rules: [
@@ -38,7 +34,8 @@ const common = {
 
 module.exports = [
   // Web build: real WebAssembly, instantiated synchronously from inlined base64.
-  merge(common, {
+  {
+    ...common,
     target: 'web',
     entry: './src/index.ts',
     output: {
@@ -50,10 +47,11 @@ module.exports = [
       },
       globalObject: 'this',
     },
-  }),
+  },
 
   // Node build: real WebAssembly.
-  merge(common, {
+  {
+    ...common,
     target: 'node',
     entry: './src/index.ts',
     output: {
@@ -61,11 +59,12 @@ module.exports = [
       filename: 'reconcile.node.js',
       libraryTarget: 'commonjs2',
     },
-  }),
+  },
 
   // React Native build: wasm2js (pure JS), for Hermes which has no
   // `WebAssembly` global. Sources come from `pkg-rn/`
-  merge(common, {
+  {
+    ...common,
     target: 'web',
     entry: './src/index.rn.ts',
     output: {
@@ -77,5 +76,5 @@ module.exports = [
       },
       globalObject: 'this',
     },
-  }),
+  },
 ];

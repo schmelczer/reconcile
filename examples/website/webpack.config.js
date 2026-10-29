@@ -56,20 +56,12 @@ module.exports = (_env, argv) => ({
   module: {
     rules: [
       {
-        test: /\.svg$/i,
-        use: 'svg-inline-loader',
-      },
-      {
         test: /\.scss$/i,
         use: [
           MiniCssExtractPlugin.loader,
           'css-loader',
-          'resolve-url-loader',
           {
             loader: 'sass-loader',
-            options: {
-              sourceMap: true, // required by resolve-url-loader
-            },
           },
         ],
       },

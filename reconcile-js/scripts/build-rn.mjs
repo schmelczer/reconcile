@@ -3,19 +3,14 @@
 // wasm2js (pure-JS) translation.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { homedir } from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const reconcileJsDir = resolve(here, '..');
 const repoRoot = resolve(reconcileJsDir, '..');
 
-const releaseWasm = resolve(
-  repoRoot,
-  'target/wasm32-unknown-unknown/release/reconcile_text.wasm'
-);
 const outDir = resolve(reconcileJsDir, 'pkg-rn');
 const bgWasm = resolve(outDir, 'reconcile_text_bg.wasm');
 const bgWasmJs = resolve(outDir, 'reconcile_text_bg.wasm.js');
@@ -29,87 +24,19 @@ function run(cmd, args) {
   execFileSync(cmd, args, { stdio: 'inherit' });
 }
 
-// Locate the wasm-bindgen CLI. It MUST match the `wasm-bindgen` crate version pinned
-// in Cargo.toml: a mismatched CLI emits bindings the runtime can't use. So we resolve
-// the required version first and verify every candidate against it, failing loudly
-// rather than silently falling back to whatever other version happens to be around.
-function findWasmBindgen() {
-  const cargoToml = readFileSync(resolve(repoRoot, 'Cargo.toml'), 'utf8');
-  const wanted = cargoToml.match(
-    /wasm-bindgen\s*=\s*\{[^}]*version\s*=\s*"([^"]+)"/
-  )?.[1];
-  if (!wanted) {
-    throw new Error(
-      '[build-rn] Could not parse the pinned wasm-bindgen version from Cargo.toml, so ' +
-        'the required CLI version is unknown. Has the dependency declaration changed?'
-    );
-  }
-
-  // 1. On PATH: accept it only if its version matches the pin.
-  let onPath = null;
-  try {
-    onPath = execFileSync('which', ['wasm-bindgen'], { encoding: 'utf8' }).trim();
-  } catch {
-    /* not on PATH; try the wasm-pack cache next */
-  }
-  if (onPath) {
-    const version = execFileSync(onPath, ['--version'], { encoding: 'utf8' }).match(
-      /\d+\.\d+\.\d+/
-    )?.[0];
-    if (version !== wanted) {
-      throw new Error(
-        `[build-rn] wasm-bindgen on PATH (${onPath}) is ${version ?? 'an unknown version'}, ` +
-          `but Cargo.toml pins ${wanted}. Install the matching CLI ` +
-          `(\`cargo install wasm-bindgen-cli --version ${wanted}\`) or remove the mismatched one.`
-      );
-    }
-    return onPath;
-  }
-
-  const cacheRoots = [
-    resolve(homedir(), 'Library/Caches/.wasm-pack'),
-    resolve(homedir(), '.cache/.wasm-pack'),
-  ];
-  for (const root of cacheRoots) {
-    if (!existsSync(root)) {
-      continue;
-    }
-    for (const entry of readdirSync(root)) {
-      const candidate = resolve(root, entry, 'wasm-bindgen');
-      if (!existsSync(candidate)) {
-        continue;
-      }
-      let version;
-      try {
-        version = execFileSync(candidate, ['--version'], { encoding: 'utf8' }).match(
-          /\d+\.\d+\.\d+/
-        )?.[0];
-      } catch {
-        continue; // not an invokable wasm-bindgen; ignore
-      }
-      if (version === wanted) {
-        return candidate;
-      }
-    }
-  }
-
-  throw new Error(
-    `[build-rn] No wasm-bindgen ${wanted} found on PATH or in the wasm-pack cache. ` +
-      'Run `wasm-pack build --target web --features wasm` first (it caches the matching ' +
-      `wasm-bindgen), or \`cargo install wasm-bindgen-cli --version ${wanted}\`.`
-  );
-}
-
-if (!existsSync(releaseWasm)) {
-  throw new Error(
-    `Missing ${releaseWasm}.\nRun \`wasm-pack build --target web --features wasm\` from the repo root first.`
-  );
-}
-
-console.log('[build-rn] generating bundler-target bindings with wasm-bindgen');
+console.log('[build-rn] generating bundler-target bindings with wasm-pack');
 rmSync(outDir, { recursive: true, force: true });
-const wasmBindgen = findWasmBindgen();
-run(wasmBindgen, ['--target', 'bundler', '--out-dir', outDir, releaseWasm]);
+run('wasm-pack', [
+  'build',
+  repoRoot,
+  '--target',
+  'bundler',
+  '--out-dir',
+  outDir,
+  '--no-opt',
+  '--features',
+  'wasm',
+]);
 
 // --- Patch wasm-bindgen's cached-memory getters for wasm2js -----------------
 //

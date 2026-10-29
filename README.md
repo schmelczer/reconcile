@@ -134,9 +134,10 @@ Contributions are welcome!
 
 ### Python setup
 
-Install [uv][uv] and build the extension for development:
+Install [uv][uv], then build the extension for Python-only development:
 
 ```sh
+cp README.md LICENSE reconcile-python/
 cd reconcile-python
 uv run maturin develop
 ```
@@ -166,6 +167,16 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ### Scripts
 
+After installing Node 22, rustup, and uv, run `scripts/check.sh` for the full
+install, build, lint, test, and demo build sequence.
+
+For individual steps, run `scripts/setup.sh` once to install dependencies and
+`scripts/build.sh` to build the JS and Python bindings. Run the build again after
+changing Rust or binding code. The lint, test, and website scripts use those
+existing dependencies and build outputs.
+
+- **Install dependencies**: `scripts/setup.sh`
+- **Build bindings**: `scripts/build.sh` (or `scripts/build-js.sh` for JS only)
 - **Run tests**: `scripts/test.sh`
 - **Check lint and formatting**: `scripts/lint.sh`
 - **Run the demo locally**: `scripts/dev-website.sh`

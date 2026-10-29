@@ -36,7 +36,7 @@ sed_inplace() {
 echo "Bumping versions"
 
 which cargo-set-version || cargo install cargo-edit
-cargo set-version --bump $1
+cargo set-version --bump "$1"
 
 NEWVER=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 
@@ -45,7 +45,7 @@ which wasm-pack || cargo install wasm-pack
 wasm-pack build --target web --features wasm
 
 cd reconcile-js
-npm version $1
+npm version "$NEWVER" --no-git-tag-version
 npm install
 
 cd ../reconcile-python
@@ -60,12 +60,11 @@ npm install
 cd ../..
 
 git add .
-TAG=$(node -p "require('./reconcile-js/package.json').version")
 
-git commit -m "Bump versions to $TAG"
+git commit -m "Bump versions to $NEWVER"
 
 git push
-echo "Tagging $TAG"
-git tag -a $TAG -m "Release $TAG"
-git push origin $TAG
+echo "Tagging $NEWVER"
+git tag -a $NEWVER -m "Release $NEWVER"
+git push origin $NEWVER
 echo "Done"
