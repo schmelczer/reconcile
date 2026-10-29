@@ -1,24 +1,29 @@
-from typing import Any
+from reconcile_text._types import (
+    BuiltinTokenizer,
+    TextInput,
+    TextWithCursors,
+    TextWithCursorsAndHistory,
+)
 
 def reconcile(
     parent: str,
-    left: Any,
-    right: Any,
-    tokenizer: str = "Word",
-) -> dict[str, Any]: ...
+    left: TextInput,
+    right: TextInput,
+    tokenizer: BuiltinTokenizer = "Word",
+) -> TextWithCursors: ...
 def reconcile_with_history(
     parent: str,
-    left: Any,
-    right: Any,
-    tokenizer: str = "Word",
-) -> dict[str, Any]: ...
+    left: TextInput,
+    right: TextInput,
+    tokenizer: BuiltinTokenizer = "Word",
+) -> TextWithCursorsAndHistory: ...
 def diff(
     parent: str,
-    changed: Any,
-    tokenizer: str = "Word",
+    changed: TextInput,
+    tokenizer: BuiltinTokenizer = "Word",
 ) -> list[int | str]: ...
 def undiff(
     parent: str,
     diff: list[int | str],
-    tokenizer: str = "Word",
+    tokenizer: BuiltinTokenizer = "Word",
 ) -> str: ...
