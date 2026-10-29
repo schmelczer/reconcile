@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "reconcile-text"
-version = "0.13.2"
+version = "0.14.0"
 description = "Intelligent 3-way text merging with automated conflict resolution"
 readme = "README.md"
 license = { file = "LICENSE" }
