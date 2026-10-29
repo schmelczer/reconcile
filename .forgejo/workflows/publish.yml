@@ -212,13 +212,15 @@ jobs:
             | sh -s -- -y --default-toolchain none --profile minimal
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
-      # The Linux targets ship in rust-toolchain.toml; add the cross targets.
+      # The x86_64 Linux targets ship in rust-toolchain.toml; add the cross targets.
       - name: Add cross-compilation Rust targets
         run: |
-          rustup target add aarch64-unknown-linux-gnu x86_64-pc-windows-msvc
+          rustup target add aarch64-unknown-linux-gnu aarch64-unknown-linux-musl \
+            aarch64-apple-darwin x86_64-apple-darwin x86_64-pc-windows-msvc
 
       # zig is the C toolchain maturin's `--zig` uses to produce manylinux2014
       # wheels with a pinned (old) glibc, independent of the runner's glibc.
+      # It also links the musllinux and macOS wheels, without a macOS SDK.
       - name: Install zig
         run: |
           ZIG_VERSION=0.13.0
@@ -243,6 +245,13 @@ jobs:
         working-directory: reconcile-python
         run: uv run maturin sdist --out dist
 
+      - name: Check sdist size
+        working-directory: reconcile-python
+        run: |
+          size=$(stat -c %s dist/*.tar.gz)
+          echo "sdist is $size bytes"
+          test "$size" -lt 5000000
+
       - name: Build Linux x86_64 wheel
         working-directory: reconcile-python
         run: >-
@@ -256,6 +265,32 @@ jobs:
           uv run maturin build --release --out dist
           --compatibility manylinux2014
           --target aarch64-unknown-linux-gnu --zig
+
+      - name: Build musllinux x86_64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --compatibility musllinux_1_2
+          --target x86_64-unknown-linux-musl --zig
+
+      - name: Build musllinux aarch64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --compatibility musllinux_1_2
+          --target aarch64-unknown-linux-musl --zig
+
+      - name: Build macOS x86_64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --target x86_64-apple-darwin --zig
+
+      - name: Build macOS arm64 wheel
+        working-directory: reconcile-python
+        run: >-
+          uv run maturin build --release --out dist
+          --target aarch64-apple-darwin --zig
 
       - name: Build Windows x86_64 wheel
         working-directory: reconcile-python
