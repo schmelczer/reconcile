@@ -25,7 +25,6 @@ $gradient-end: #e0e7ef;
 * {
   box-sizing: border-box;
   margin: 0;
-  user-select: none;
 }
 
 html,
@@ -76,13 +75,6 @@ header > h1 {
   text-align: center;
 }
 
-h1,
-code,
-p,
-p * {
-  user-select: text;
-}
-
 code {
   background: $code-bg;
   color: $code-text;
@@ -121,6 +113,7 @@ main {
 }
 
 .radio-group {
+  user-select: none;
   display: flex;
   gap: 16px;
   justify-content: center;
@@ -265,6 +258,7 @@ main {
 }
 
 label {
+  user-select: none;
   display: inline-block;
   margin-bottom: 8px;
   font-weight: 600;
@@ -309,7 +303,6 @@ textarea {
   box-sizing: border-box;
   resize: none;
   cursor: text;
-  user-select: text;
   caret-color: $primary-blue;
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -334,7 +327,6 @@ textarea:focus {
 
 #merged {
   width: 100%;
-  user-select: text;
 
   > * {
     position: relative;
@@ -349,14 +341,9 @@ textarea:focus {
   }
 }
 
-.Unchanged {
-  user-select: text;
-}
-
 .Left,
 .AddedFromLeft,
 .RemovedFromLeft {
-  user-select: text;
   background: $green;
 }
 
@@ -381,7 +368,6 @@ textarea:focus {
 .Right,
 .AddedFromRight,
 .RemovedFromRight {
-  user-select: text;
   background: $light-blue;
 }
 
@@ -396,6 +382,7 @@ $CARET_WIDTH: 2;
 $DOT_RADIUS: 4;
 
 .selection-caret {
+  user-select: none;
   position: relative;
   z-index: 1000;
 
@@ -453,7 +440,6 @@ $DOT_RADIUS: 4;
     top: -1.3em;
     left: calc(-#{$CARET_WIDTH} / 2 * 1px);
     font-size: 0.9em;
-    user-select: none;
     color: white;
     padding: 0 2px;
     transition: opacity 0.3s ease-in-out;

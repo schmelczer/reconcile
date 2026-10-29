@@ -99,65 +99,72 @@ function updateMergedText(): void {
     selectedTokenizer
   );
 
-  let selectionStart: number = Number.NEGATIVE_INFINITY;
-  let selectionEnd: number = Number.NEGATIVE_INFINITY;
-  if ((results.cursors?.length ?? 0) > 0) {
-    selectionStart = results.cursors![0].position;
-    selectionEnd = results.cursors![1].position;
-  }
-  const isSelection = selectionStart !== selectionEnd;
+  const selection =
+    results.cursors?.length === 2
+      ? {
+        start: results.cursors[0].position,
+        end: results.cursors[1].position,
+        side: leftCursors ? 'left' : 'right',
+      }
+      : undefined;
 
-  const selectionSide = leftCursors ? 'left' : 'right';
   const fragment = document.createDocumentFragment();
 
+  function appendSpan(text: string, className: string): void {
+    if (text.length === 0) {
+      return;
+    }
+
+    const span = document.createElement('span');
+    span.className = className;
+    span.textContent = text;
+    fragment.appendChild(span);
+  }
+
+  function appendCaret(): void {
+    if (!selection) {
+      return;
+    }
+
+    fragment.appendChild(
+      createSelectionOverlay(
+        selection.side === 'left',
+        selection.start !== selection.end
+      )
+    );
+  }
+
   let currentPosition = 0;
-  if (selectionEnd === 0) {
-    fragment.appendChild(createSelectionOverlay(selectionSide === 'left', isSelection));
+  if (selection?.end === 0) {
+    appendCaret();
   }
 
   for (const { text, history } of results.history) {
     const isDelete = history === 'RemovedFromLeft' || history === 'RemovedFromRight';
-    let spanChars: string[] = [];
-    let currentClass = '';
-
-    const flushSpan = () => {
-      if (spanChars.length > 0) {
-        const span = document.createElement('span');
-        span.className = currentClass;
-        span.textContent = spanChars.join('');
-        fragment.appendChild(span);
-        spanChars = [];
-      }
-    };
-
-    for (const character of text) {
-      let className = history;
-      if (
-        !isDelete &&
-        selectionStart <= currentPosition &&
-        currentPosition < selectionEnd
-      ) {
-        className += ` selection-${selectionSide}`;
-      }
-
-      if (className !== currentClass) {
-        flushSpan();
-        currentClass = className;
-      }
-      spanChars.push(character);
-
-      if (!isDelete) {
-        if (currentPosition === selectionEnd - 1) {
-          flushSpan();
-          fragment.appendChild(
-            createSelectionOverlay(selectionSide === 'left', isSelection)
-          );
-        }
-        currentPosition++;
-      }
+    if (isDelete || !selection) {
+      appendSpan(text, history);
+      continue;
     }
 
-    flushSpan();
+    // Reconcile positions count Unicode scalars, rather than UTF-16 code units.
+    const chars = [...text];
+    const start = Math.max(0, Math.min(chars.length, selection.start - currentPosition));
+    const end = Math.max(0, Math.min(chars.length, selection.end - currentPosition));
+    appendSpan(chars.slice(0, start).join(''), history);
+    appendSpan(
+      chars.slice(start, end).join(''),
+      `${history} selection-${selection.side}`
+    );
+
+    if (
+      currentPosition < selection.end &&
+      selection.end <= currentPosition + chars.length
+    ) {
+      appendCaret();
+    }
+
+    appendSpan(chars.slice(end).join(''), history);
+    currentPosition += chars.length;
   }
 
   mergedTextArea.innerHTML = '';
