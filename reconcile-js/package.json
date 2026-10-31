@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "binaryen": "^123.0.0",
+    "binaryen": "^132.0.0",
     "jest": "^30.3.0",
     "prettier": "^3.8.1",
     "reconcile-text": "file:../pkg",
