@@ -31,7 +31,7 @@
     "prettier": "^3.8.1",
     "reconcile-text": "file:../../reconcile-js",
     "sass": "^1.98.0",
-    "sass-loader": "^16.0.7",
+    "sass-loader": "^17.0.0",
     "terser-webpack-plugin": "^5.4.0",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
