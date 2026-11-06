@@ -6,7 +6,7 @@
 //! changes (while updating cursor positions) using an algorithm inspired by
 //! Operational Transformation.
 //!
-//! ✨ **[Try the interactive demo](https://schmelczer.dev/reconcile)** to see it in action.
+//! ✨ **[Try the interactive demo](https://reconcile.schmelczer.dev/)** to see it in action.
 //!
 //! ## Simple example
 //!

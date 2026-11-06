@@ -24,7 +24,7 @@ keywords = ["merge", "OT", "CRDT", "3-way", "diff", "text"]
 dev = ["maturin>=1.0,<2.0", "pytest>=8", "ruff>=0.15", "pyright>=1"]
 
 [project.urls]
-Homepage = "https://schmelczer.dev/reconcile"
+Homepage = "https://reconcile.schmelczer.dev/"
 Repository = "https://git.schmelczer.dev/andras/reconcile"
 Issues = "https://git.schmelczer.dev/andras/reconcile/issues"
 

@@ -16,7 +16,7 @@
     "operational transformation",
     "CRDT"
   ],
-  "homepage": "https://schmelczer.dev/reconcile/",
+  "homepage": "https://reconcile.schmelczer.dev/",
   "repository": {
     "type": "git",
     "url": "git+https://git.schmelczer.dev/andras/reconcile.git"
