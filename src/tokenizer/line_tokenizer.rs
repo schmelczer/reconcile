@@ -1,12 +1,13 @@
 use super::token::Token;
 
-/// Splits text into lines, preserving line endings as separate tokens
+/// Splits text into lines, keeping each line ending attached to its content.
+/// An unterminated final line is kept as-is, without adding a line ending.
 ///
 /// ## Example
 ///
 /// ```not_rust
-/// "Hello\nWorld!" -> ["Hello", "\n", "World!"]
-/// "Line 1\r\nLine 2" -> ["Line 1", "\r\n", "Line 2"]
+/// "Hello\nWorld!" -> ["Hello\n", "World!"]
+/// "Line 1\r\nLine 2" -> ["Line 1\r\n", "Line 2"]
 /// ```
 pub fn line_tokenizer(text: &str) -> Vec<Token<String>> {
     let mut result = Vec::new();
@@ -14,29 +15,17 @@ pub fn line_tokenizer(text: &str) -> Vec<Token<String>> {
 
     let mut chars = text.char_indices().peekable();
     while let Some((i, c)) = chars.next() {
-        if c == '\n' {
-            // Add line content if any
-            if i > line_start {
-                result.push(text[line_start..i].into());
-            }
-            // Add newline
-            result.push("\n".into());
-            line_start = i + 1;
-        } else if c == '\r' {
-            if i > line_start {
-                result.push(text[line_start..i].into());
-            }
-            if chars.peek() == Some(&(i + 1, '\n')) {
-                // Handle \r\n
+        let line_end = match c {
+            '\r' if chars.peek() == Some(&(i + 1, '\n')) => {
                 chars.next(); // consume \n
-                result.push("\r\n".into());
-                line_start = i + 2;
-            } else {
-                // Handle bare \r
-                result.push("\r".into());
-                line_start = i + 1;
+                i + 2
             }
-        }
+            '\n' | '\r' => i + 1,
+            _ => continue,
+        };
+
+        result.push(text[line_start..line_end].into());
+        line_start = line_end;
     }
 
     // Add final line if any
@@ -76,5 +65,9 @@ mod tests {
         assert_debug_snapshot!(line_tokenizer("Old\rMac\rStyle"));
 
         assert_debug_snapshot!(line_tokenizer("Mixed\r\nand\rbare"));
+
+        assert_debug_snapshot!(line_tokenizer("Héllo\r\n世界\r🦊\n\n"));
+
+        assert_debug_snapshot!(line_tokenizer("\r\n\r\r\n\n"));
     }
 }

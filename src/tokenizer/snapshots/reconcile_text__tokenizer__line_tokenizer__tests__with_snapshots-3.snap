@@ -1,18 +1,11 @@
 ---
 source: src/tokenizer/line_tokenizer.rs
 expression: "line_tokenizer(\"Hello\\nWorld\")"
-snapshot_kind: text
 ---
 [
     Token {
-        normalized: "Hello",
-        original: "Hello",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "\n",
-        original: "\n",
+        normalized: "Hello\n",
+        original: "Hello\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },

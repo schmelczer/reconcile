@@ -4,26 +4,14 @@ expression: "line_tokenizer(\"Old\\rMac\\rStyle\")"
 ---
 [
     Token {
-        normalized: "Old",
-        original: "Old",
+        normalized: "Old\r",
+        original: "Old\r",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalized: "\r",
-        original: "\r",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "Mac",
-        original: "Mac",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "\r",
-        original: "\r",
+        normalized: "Mac\r",
+        original: "Mac\r",
         is_left_joinable: true,
         is_right_joinable: true,
     },

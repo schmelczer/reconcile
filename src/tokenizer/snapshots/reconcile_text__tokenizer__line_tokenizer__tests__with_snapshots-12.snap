@@ -1,0 +1,30 @@
+---
+source: src/tokenizer/line_tokenizer.rs
+expression: "line_tokenizer(\"Héllo\\r\\n世界\\r🦊\\n\\n\")"
+---
+[
+    Token {
+        normalized: "Héllo\r\n",
+        original: "Héllo\r\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "世界\r",
+        original: "世界\r",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "🦊\n",
+        original: "🦊\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+    Token {
+        normalized: "\n",
+        original: "\n",
+        is_left_joinable: true,
+        is_right_joinable: true,
+    },
+]

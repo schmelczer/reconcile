@@ -51,10 +51,10 @@
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Word);
 //! assert_eq!(result.apply().text(), "The very quick red fox\njumps over the lazy dog");
 //!
-//! // Line-level tokenisation (similar to git merge)
+//! // Line-level tokenisation
 //! let result = reconcile(parent, &left.into(), &right.into(), &*BuiltinTokenizer::Line);
-//! // Line-level produces different results as it treats each line as atomic
-//! assert_eq!(result.apply().text(), "The quick red foxThe very quick brown fox\njumps over the lazy dog");
+//! // Both edits replace the same atomic line, so both replacements are kept.
+//! assert_eq!(result.apply().text(), "The quick red fox\nThe very quick brown fox\njumps over the lazy dog");
 //! ```
 //!
 //! ### Custom tokenisation

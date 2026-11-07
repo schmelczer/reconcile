@@ -4,26 +4,14 @@ expression: "line_tokenizer(\"Mixed\\r\\nand\\rbare\")"
 ---
 [
     Token {
-        normalized: "Mixed",
-        original: "Mixed",
+        normalized: "Mixed\r\n",
+        original: "Mixed\r\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
     Token {
-        normalized: "\r\n",
-        original: "\r\n",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "and",
-        original: "and",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "\r",
-        original: "\r",
+        normalized: "and\r",
+        original: "and\r",
         is_left_joinable: true,
         is_right_joinable: true,
     },

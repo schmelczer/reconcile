@@ -1,18 +1,11 @@
 ---
 source: src/tokenizer/line_tokenizer.rs
 expression: "line_tokenizer(\"Line 1\\r\\nLine 2\")"
-snapshot_kind: text
 ---
 [
     Token {
-        normalized: "Line 1",
-        original: "Line 1",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "\r\n",
-        original: "\r\n",
+        normalized: "Line 1\r\n",
+        original: "Line 1\r\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },

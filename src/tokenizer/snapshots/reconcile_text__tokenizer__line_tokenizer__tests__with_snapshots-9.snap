@@ -1,18 +1,11 @@
 ---
 source: src/tokenizer/line_tokenizer.rs
 expression: "line_tokenizer(\"Start\\n\\nEnd\")"
-snapshot_kind: text
 ---
 [
     Token {
-        normalized: "Start",
-        original: "Start",
-        is_left_joinable: true,
-        is_right_joinable: true,
-    },
-    Token {
-        normalized: "\n",
-        original: "\n",
+        normalized: "Start\n",
+        original: "Start\n",
         is_left_joinable: true,
         is_right_joinable: true,
     },
