@@ -18,11 +18,14 @@ concurrency:
 
 jobs:
   build:
-    runs-on: docker
+    runs-on: ${{ (github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+      'renovate/')) && 'renovate' || 'docker' }}
 
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+        with:
+          persist-credentials: false
       - name: Setup Node
         uses: https://github.com/actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -96,10 +99,12 @@ jobs:
           npm pack --pack-destination ../dist/npm
 
       - name: Publish to npm
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+          'renovate/')) && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
         run: npm publish dist/npm/*.tgz
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/')
+            || startsWith(github.head_ref, 'renovate/')) && (secrets.NPM_TOKEN) || '' }}
 
       - name: Upload static site artifact 1
         if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
@@ -109,16 +114,20 @@ jobs:
           path: examples/website/dist
           if-no-files-found: error
           retention-days: 1
-    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') }}
+    if: ${{ contains(fromJSON('["andras","ruby336688","renovate-bot"]'), github.actor) && (!github.event.pull_request || contains(fromJSON('["andras","ruby336688","renovate-bot"]'),
+      github.event.pull_request.user.login)) }}
   publish-crate:
     needs: build
-    runs-on: docker
-    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && (github.event_name ==
-      'push' && startsWith(github.ref, 'refs/tags/')) }}
+    runs-on: ${{ (github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+      'renovate/')) && 'renovate' || 'docker' }}
+    if: ${{ contains(fromJSON('["andras","ruby336688","renovate-bot"]'), github.actor) && (!github.event.pull_request || contains(fromJSON('["andras","ruby336688","renovate-bot"]'),
+      github.event.pull_request.user.login)) && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
 
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+        with:
+          persist-credentials: false
       - name: Cache Rust dependencies
         uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
@@ -139,17 +148,23 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --token ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/')
+          || startsWith(github.head_ref, 'renovate/')) && (secrets.CRATES_IO_TOKEN) || '' }}
 
+        if: ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+          'renovate/')) }}
   publish-pypi:
     needs: build
-    runs-on: docker
-    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && (github.event_name ==
-      'push' && startsWith(github.ref, 'refs/tags/')) }}
+    runs-on: ${{ (github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+      'renovate/')) && 'renovate' || 'docker' }}
+    if: ${{ contains(fromJSON('["andras","ruby336688","renovate-bot"]'), github.actor) && (!github.event.pull_request || contains(fromJSON('["andras","ruby336688","renovate-bot"]'),
+      github.event.pull_request.user.login)) && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
 
     steps:
       - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+        with:
+          persist-credentials: false
       - name: Cache Rust dependencies
         uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
@@ -270,13 +285,17 @@ jobs:
       - name: Publish to PyPI
         working-directory: reconcile-python
         env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          MATURIN_PYPI_TOKEN: ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/')
+            || startsWith(github.head_ref, 'renovate/')) && (secrets.PYPI_TOKEN) || '' }}
         run: uv run --no-sync maturin upload --skip-existing dist/*
+        if: ${{ !(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref, 'refs/heads/renovate/') || startsWith(github.head_ref,
+          'renovate/')) }}
   build-pages:
     name: Deploy static site artifacts
     needs: build
-    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && ((github.event_name
-      == 'push' && github.ref == 'refs/heads/main')) }}
+    if: ${{ contains(fromJSON('["andras","ruby336688","renovate-bot"]'), github.actor) && (!github.event.pull_request || contains(fromJSON('["andras","ruby336688","renovate-bot"]'),
+      github.event.pull_request.user.login)) && (!(github.actor == 'renovate-bot' || github.event.pull_request.user.login == 'renovate-bot' || startsWith(github.ref,
+      'refs/heads/renovate/') || startsWith(github.head_ref, 'renovate/'))) && ((github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     runs-on: pages
     container:
       image: node:22-bookworm@sha256:63538dfe497cc29dfafdda25ada09b46db68a3f4cc205abf1f5d6bf0913f3384
@@ -293,7 +312,7 @@ jobs:
           path: examples/website/dist
       - name: Deploy to pages mount
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: https://git.schmelczer.dev/andras/ci-actions/deploy-pages@18419c79a58572be1bb3759b334f43306be44a29
+        uses: https://git.schmelczer.dev/andras/ci-actions/deploy-pages@c80f2f0701d7618f1f0b2bb52ebd332ea34b6e28
         with:
           source: examples/website/dist
           target: reconcile
