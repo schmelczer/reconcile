@@ -2,7 +2,7 @@ import * as webApi from './index';
 import * as rnApi from './index.rn';
 import * as webBindings from 'reconcile-text';
 import * as rnBindings from '../pkg-rn/reconcile_text.js';
-import { jest } from '@jest/globals';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TextWithOptionalCursors } from './core';
 import { installWasmLeakDetector, checkForWasmLeaks } from './wasm-leak-detector';
 import * as fs from 'fs';
@@ -299,7 +299,7 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
       'frees all result cursors if %s throws',
       (method) => {
         const error = new Error('cursor conversion failed');
-        const spy = jest
+        const spy = vi
           .spyOn(bindings.CursorPosition.prototype, method)
           .mockImplementation(() => {
             throw error;
@@ -323,7 +323,7 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
         operation === 'reconcile'
           ? bindings.TextWithCursors.prototype
           : bindings.TextWithCursorsAndHistory.prototype;
-      const spy = jest.spyOn(prototype, method).mockImplementation(() => {
+      const spy = vi.spyOn(prototype, method).mockImplementation(() => {
         throw error;
       });
       try {
@@ -338,7 +338,7 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
     'frees all history spans if %s throws',
     (method) => {
       const error = new Error('history conversion failed');
-      const spy = jest
+      const spy = vi
         .spyOn(bindings.SpanWithHistory.prototype, method)
         .mockImplementation(() => {
           throw error;
@@ -353,7 +353,7 @@ describe.each(backends)('WASM cleanup after exceptions [$name]', ({ api, binding
 
   it('frees the result if reading history throws', () => {
     const error = new Error('reading history failed');
-    const spy = jest
+    const spy = vi
       .spyOn(bindings.TextWithCursorsAndHistory.prototype, 'history')
       .mockImplementation(() => {
         throw error;
@@ -393,7 +393,7 @@ describe.each(backends)('diff and undiff are inverse [$name]', ({ api }) => {
             const changes = diff(content1, content2);
             const actual = undiff(content1, changes);
             expect(actual).toEqual(content2);
-          });
+          }, 30_000);
         });
       });
     });

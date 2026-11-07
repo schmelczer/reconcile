@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { afterAll, beforeAll, test } from 'vitest';
 
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 let consumerDir: string;

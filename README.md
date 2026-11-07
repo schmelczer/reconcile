@@ -148,9 +148,9 @@ uv run maturin develop
    ```sh
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
    ```
-2. Install and use Node 22:
+2. Install and use the Node 22 version selected by `.nvmrc` (22.15.0 or newer):
    ```sh
-   nvm install 22 && nvm use 22
+   nvm install && nvm use
    ```
 3. Optionally, make Node 22 your default:
    ```sh
@@ -169,6 +169,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 After installing Node 22, rustup, and uv, run `scripts/check.sh` for the full
 install, build, lint, test, and demo build sequence.
+
+Setup and release scripts install wasm-pack 0.15.1, including when an older
+version is already installed. Run `nvm use` before these scripts to select Node 22.
 
 For individual steps, run `scripts/setup.sh` once to install dependencies and
 `scripts/build.sh` to build the JS and Python bindings. Run the build again after

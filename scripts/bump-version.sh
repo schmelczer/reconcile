@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -e
-
-git pull --rebase
+cd "$(dirname "$0")/.."
 
 if [[ -z $1 ]]; then
   echo "Usage: $0 {patch|minor|major}"
@@ -24,6 +23,9 @@ else
   echo "Your working directory is clean."
 fi
 
+scripts/setup-js-toolchain.sh
+git pull --rebase
+
 # GNU sed takes the suffix as part of -i, BSD sed requires a separate argument
 sed_inplace() {
   if sed --version >/dev/null 2>&1; then
@@ -39,8 +41,6 @@ which cargo-set-version || cargo install cargo-edit
 cargo set-version --bump "$1"
 
 NEWVER=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-
-which wasm-pack || cargo install wasm-pack
 
 wasm-pack build --target web --features wasm
 
