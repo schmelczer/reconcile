@@ -57,7 +57,9 @@ module.exports = [
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: 'reconcile.node.js',
-      libraryTarget: 'commonjs2',
+      library: {
+        type: 'commonjs-static',
+      },
     },
   },
 
