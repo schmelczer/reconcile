@@ -21,17 +21,17 @@ jobs:
     runs-on: docker
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: https://github.com/actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22.x"
           check-latest: true
           registry-url: https://registry.npmjs.org
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/bin/
@@ -44,7 +44,7 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.npm
@@ -101,23 +101,26 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Deploy to pages mount
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: http://forgejo:3000/andras/ci-actions/deploy-pages@main
+      - name: Upload static site artifact 1
+        if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        uses: https://github.com/actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5
         with:
-          source: examples/website/dist
-          target: reconcile
-
+          name: pages-build-0
+          path: examples/website/dist
+          if-no-files-found: error
+          retention-days: 1
+    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') }}
   publish-crate:
     needs: build
     runs-on: docker
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && (github.event_name ==
+      'push' && startsWith(github.ref, 'refs/tags/')) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/bin/
@@ -141,13 +144,14 @@ jobs:
   publish-pypi:
     needs: build
     runs-on: docker
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && (github.event_name ==
+      'push' && startsWith(github.ref, 'refs/tags/')) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://github.com/actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: https://github.com/actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/bin/
@@ -268,3 +272,29 @@ jobs:
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: uv run --no-sync maturin upload --skip-existing dist/*
+  build-pages:
+    name: Deploy static site artifacts
+    needs: build
+    if: ${{ github.actor != 'renovate-bot' && !startsWith(github.ref, 'refs/heads/renovate/') && !startsWith(github.head_ref, 'renovate/') && ((github.event_name
+      == 'push' && github.ref == 'refs/heads/main')) }}
+    runs-on: pages
+    container:
+      image: node:22-bookworm@sha256:63538dfe497cc29dfafdda25ada09b46db68a3f4cc205abf1f5d6bf0913f3384
+      volumes:
+        - /pages/reconcile:/pages/reconcile
+    concurrency:
+      group: pages-deploy-reconcile
+      cancel-in-progress: false
+    steps:
+      - name: Download static site artifact 1
+        uses: https://github.com/actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: pages-build-0
+          path: examples/website/dist
+      - name: Deploy to pages mount
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: https://git.schmelczer.dev/andras/ci-actions/deploy-pages@a415e2a50992af99b7b6dd3f02cca372d87b11f6
+        with:
+          source: examples/website/dist
+          target: reconcile
+
